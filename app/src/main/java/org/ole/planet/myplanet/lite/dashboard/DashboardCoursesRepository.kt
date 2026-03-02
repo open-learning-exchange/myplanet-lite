@@ -318,26 +318,34 @@ class DashboardCoursesRepository {
                 }
 
                 val remainingIds = uniqueIds.filterNot { cachedDocuments.containsKey(it) }
-                val fetchedDocuments = remainingIds.mapNotNull { courseId ->
+                remainingIds.chunked(50).forEach { chunk ->
+                    val requestUrl = "$normalizedBase/db/courses/_find"
+                    val payload = coursesFindRequestAdapter.toJson(
+                        CoursesFindRequest(
+                            selector = CoursesSelector(id = CourseIdFilter(inList = chunk)),
+                            limit = chunk.size,
+                            skip = 0
+                        )
+                    )
+                    val mediaType = "application/json; charset=utf-8".toMediaType()
                     val request = Request.Builder()
-                        .url("$normalizedBase/db/courses/$courseId")
-                        .get()
+                        .url(requestUrl)
+                        .post(payload.toRequestBody(mediaType))
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
+
                     client.newCall(request).execute().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
-                            if (response.code == 404) {
-                                return@mapNotNull null
-                            }
                             throw IOException("Unexpected response ${response.code}")
                         }
-                        courseResponseAdapter.fromJson(response.body.string())
-                            ?.also { document ->
-                                courseCache[courseId] = document
-                                cachedDocuments[courseId] = document
-                            }
-                            ?: throw IOException("Invalid course document")
+                        val parsed = coursesFindResponseAdapter.fromJson(response.body.string())
+                            ?: throw IOException("Invalid response body")
+                        parsed.docs.forEach { document ->
+                            val id = document.id ?: return@forEach
+                            courseCache[id] = document
+                            cachedDocuments[id] = document
+                        }
                     }
                 }
 
@@ -799,7 +807,8 @@ class DashboardCoursesRepository {
     @JsonClass(generateAdapter = true)
     data class CourseIdFilter(
         @param:Json(name = "\$gt") val gt: Any? = null,
-        @param:Json(name = "\$nin") val notIn: List<String>
+        @param:Json(name = "\$nin") val notIn: List<String>? = null,
+        @param:Json(name = "\$in") val inList: List<String>? = null
     )
 
     @JsonClass(generateAdapter = true)
