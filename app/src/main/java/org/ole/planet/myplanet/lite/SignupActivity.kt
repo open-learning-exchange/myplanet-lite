@@ -36,6 +36,9 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.imageview.ShapeableImageView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import org.ole.planet.myplanet.lite.model.ServerMetadataResponse
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
@@ -163,6 +166,8 @@ class SignupActivity : AppCompatActivity() {
     private val serverPreferences by lazy {
         applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
     }
+    private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
+    private val serverMetadataAdapter by lazy { moshi.adapter(ServerMetadataResponse::class.java) }
 
     private val steps = SignupStep.values().toList()
     private var currentStepIndex = 0
@@ -842,13 +847,12 @@ class SignupActivity : AppCompatActivity() {
 
     private fun extractServerMetadata(payload: String): Pair<String?, String?>? {
         return runCatching {
-            val root = JSONObject(payload)
-            val rows = root.optJSONArray("rows") ?: return@runCatching null
-            for (index in 0 until rows.length()) {
-                val row = rows.optJSONObject(index) ?: continue
-                val doc = row.optJSONObject("doc") ?: continue
-                val parentCode = doc.optString("parentCode").takeIf { it.isNotBlank() }
-                val code = doc.optString("code").takeIf { it.isNotBlank() }
+            val response = serverMetadataAdapter.fromJson(payload)
+            val rows = response?.rows ?: return@runCatching null
+            for (row in rows) {
+                val doc = row.doc ?: continue
+                val parentCode = doc.parentCode?.takeIf { it.isNotBlank() }
+                val code = doc.code?.takeIf { it.isNotBlank() }
                 if (parentCode != null || code != null) {
                     return@runCatching Pair(parentCode, code)
                 }
