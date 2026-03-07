@@ -284,12 +284,25 @@ class DashboardTeamsRepository {
                 val memberships = fetchTeamMembers(baseUrl, credentials, sessionCookie, teamId)
                     .getOrThrow()
                 val normalizedBase = baseUrl.trim().trimEnd('/')
-                memberships.mapNotNull { member ->
-                    val username = member.userId?.substringAfter("org.couchdb.user:")
-                    if (username.isNullOrBlank()) {
+
+                val validMemberships = memberships.filter { !it.userId.isNullOrBlank() }
+                val userIds = validMemberships.mapNotNull { it.userId }
+
+                val profiles = if (userIds.isNotEmpty()) {
+                    fetchUserProfiles(normalizedBase, credentials, sessionCookie, userIds).getOrNull() ?: emptyList()
+                } else {
+                    emptyList()
+                }
+
+                val profileMap = profiles.associateBy { it._id }
+
+                validMemberships.mapNotNull { member ->
+                    val userId = member.userId!!
+                    val username = userId.substringAfter("org.couchdb.user:")
+                    if (username.isBlank()) {
                         return@mapNotNull null
                     }
-                    val profile = fetchUserProfile(normalizedBase, username, credentials, sessionCookie)
+                    val profile = profileMap[userId]
                     val fullName = listOfNotNull(
                         profile?.firstName,
                         profile?.middleName,
@@ -300,7 +313,7 @@ class DashboardTeamsRepository {
                         username = username,
                         fullName = fullName,
                         isLeader = member.isLeader == true,
-                        hasAvatar = profile?.hasAvatar == true,
+                        hasAvatar = profile?.attachments?.image != null,
                         membership = member,
                     )
                 }
@@ -1087,6 +1100,7 @@ class DashboardTeamsRepository {
         @param:Json(name = "planetCode") val planetCode: String?,
         @param:Json(name = "parentCode") val parentCode: String?,
         val firstName: String?,
+        val middleName: String?,
         val lastName: String?,
         val email: String?,
         val language: String?,
