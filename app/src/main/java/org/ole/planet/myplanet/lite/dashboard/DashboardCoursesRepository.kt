@@ -144,7 +144,7 @@ class DashboardCoursesRepository {
                             }
                         }
                         if (BuildConfig.DEBUG) {
-                            Log.d(TAG, "fetchShelfDocument error ${response.code} for $requestUrl body=$responseBody")
+                            Log.d(TAG, "fetchShelfDocument error ${response.code} for $requestUrl")
                         }
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -205,7 +205,7 @@ class DashboardCoursesRepository {
                         if (BuildConfig.DEBUG) {
                             Log.d(
                                 TAG,
-                                "joinCourse update shelf $requestUrl payload=$payload responseCode=${response.code} body=$responseBody"
+                                "joinCourse update shelf $requestUrl responseCode=${response.code}"
                             )
                         }
                         if (response.isSuccessful) {
