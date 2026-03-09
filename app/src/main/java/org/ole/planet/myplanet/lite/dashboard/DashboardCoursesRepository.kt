@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.util.Log
-
 import org.ole.planet.myplanet.lite.BuildConfig
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
@@ -30,10 +28,6 @@ import java.io.IOException
 import java.util.ArrayList
 
 class DashboardCoursesRepository {
-    companion object {
-        private const val TAG = "DashboardCoursesRepo"
-    }
-
     private val client: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(
             HttpLoggingInterceptor().apply {
@@ -134,22 +128,13 @@ class DashboardCoursesRepository {
                             }.getOrNull()
                             if (reason == "missing") {
                                 val fallbackId = "org.couchdb.user:${credentials.username}"
-                                if (BuildConfig.DEBUG) {
-                                    Log.d(TAG, "fetchShelfDocument missing for $requestUrl, creating fallback shelf.")
-                                }
                                 return@runCatching ShelfDocument(
                                     id = fallbackId,
                                     rev = null
                                 )
                             }
                         }
-                        if (BuildConfig.DEBUG) {
-                            Log.d(TAG, "fetchShelfDocument error ${response.code} for $requestUrl")
-                        }
                         throw IOException("Unexpected response ${response.code}")
-                    }
-                    if (BuildConfig.DEBUG) {
-                        Log.d(TAG, "fetchShelfDocument success for $requestUrl")
                     }
                     val document = shelfDocumentAdapter.fromJson(response.body.string())
                         ?: throw IOException("Invalid shelf response")
@@ -202,12 +187,6 @@ class DashboardCoursesRepository {
 
                     client.newCall(request).execute().use { response ->
                         val responseBody = response.body.string()
-                        if (BuildConfig.DEBUG) {
-                            Log.d(
-                                TAG,
-                                "joinCourse update shelf $requestUrl responseCode=${response.code}"
-                            )
-                        }
                         if (response.isSuccessful) {
                             val updatedRev = runCatching {
                                 org.json.JSONObject(responseBody).optString("rev").takeIf { it.isNotBlank() }
