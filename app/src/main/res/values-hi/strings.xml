@@ -554,7 +554,6 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="dashboard_post_delete_error">इस आवाज़ को हटाने में असमर्थ। कृपया पुनः प्रयास करें।</string>
     <string name="dashboard_share_post_title">आवाज़ - Planet - %1$s</string>
     <string name="dashboard_share_post_server_fallback">MyPlanetLite</string>
-    <string name="share_post">पोस्ट साझा करें</string>
     <string name="dashboard_share_post_chooser_title">आवाज़ साझा करें</string>
     <string name="dashboard_share_post_fallback">MyPlanetLite से साझा किया गया</string>
     <string name="dashboard_relative_time_seconds">कुछ सेकंड पहले</string>

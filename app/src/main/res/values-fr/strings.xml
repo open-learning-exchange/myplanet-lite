@@ -514,7 +514,6 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_share_post_server_fallback">MyPlanetLite</string>
     <string name="dashboard_share_post_chooser_title">Partager la voix</string>
     <string name="dashboard_share_post_fallback">Partagé depuis MyPlanetLite</string>
-    <string name="share_post">Partager la publication</string>
     <string name="dashboard_relative_time_seconds">il y a quelques secondes</string>
     <string name="dashboard_relative_time_minute">il y a 1 minute</string>
     <string name="dashboard_relative_time_minutes">il y a %1$d minutes</string>
