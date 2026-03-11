@@ -63,7 +63,6 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-import org.json.JSONArray
 import org.json.JSONObject
 
 import java.io.BufferedInputStream
@@ -1105,21 +1104,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             return trimmed.takeIf { it.isNotEmpty() }
         }
         return trimmed.substring(lastSlash + 1).takeIf { it.isNotEmpty() }
-    }
-
-    private fun collectNormalizedImagePaths(markdown: String): Set<String> {
-        if (markdown.isBlank()) {
-            return emptySet()
-        }
-        val regex = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
-        val normalized = mutableSetOf<String>()
-        regex.findAll(markdown).forEach { match ->
-            val path = match.groupValues.getOrNull(1)
-            if (path != null) {
-                normalized += normalizeImagePath(path)
-            }
-        }
-        return normalized
     }
 
     private fun derivePendingNormalizedKey(pending: PendingVoiceImage): String {

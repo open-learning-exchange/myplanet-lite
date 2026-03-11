@@ -43,7 +43,6 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
 
 import com.blongho.country_data.World
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
@@ -1020,8 +1019,6 @@ class MyPlanetLite : AppCompatActivity() {
             ?.build()
             ?.toString()
     }
-
-    private fun String.nullIfBlank(): String? = if (isBlank()) null else this
 
     private fun buildLoginActivityPayload(username: String): JSONObject? {
         val parentCode = serverPreferences.getString(KEY_SERVER_PARENT_CODE, null)
