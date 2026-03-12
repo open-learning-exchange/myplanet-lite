@@ -22,7 +22,6 @@ import android.widget.Toast
 
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatImageView
-import androidx.core.os.bundleOf
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -921,10 +920,10 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
         fun newInstanceForTeam(teamId: String, teamName: String): DashboardVoicesFragment {
             return DashboardVoicesFragment().apply {
-                arguments = bundleOf(
-                    ARG_TEAM_ID to teamId,
-                    ARG_TEAM_NAME to teamName
-                )
+                arguments = Bundle().apply {
+                    putString(ARG_TEAM_ID, teamId)
+                    putString(ARG_TEAM_NAME, teamName)
+                }
             }
         }
     }

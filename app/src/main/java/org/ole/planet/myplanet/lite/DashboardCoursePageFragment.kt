@@ -15,7 +15,6 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 
-import androidx.core.os.bundleOf
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
@@ -428,7 +427,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 }
                 requireActivity().supportFragmentManager.setFragmentResult(
                     RESULT_JOINED_COURSE,
-                    bundleOf(KEY_JOINED_COURSE_ID to course.id)
+                    Bundle().apply {
+                        putString(KEY_JOINED_COURSE_ID, course.id)
+                    }
                 )
             }
 
@@ -467,10 +468,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 }
                 requireActivity().supportFragmentManager.setFragmentResult(
                     RESULT_JOINED_COURSE,
-                    bundleOf(
-                        KEY_JOINED_COURSE_ID to course.id,
-                        KEY_LEFT_COURSE to true
-                    )
+                    Bundle().apply {
+                        putString(KEY_JOINED_COURSE_ID, course.id)
+                        putBoolean(KEY_LEFT_COURSE, true)
+                    }
                 )
             }
 
