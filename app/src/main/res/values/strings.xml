@@ -545,7 +545,6 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="dashboard_post_delete_error">Unable to delete this voice. Please try again.</string>
     <string name="dashboard_share_post_title">Voice - Planet - %1$s</string>
     <string name="dashboard_share_post_server_fallback">MyPlanetLite</string>
-    <string name="share_post">Share post</string>
     <string name="dashboard_share_post_chooser_title">Share voice</string>
     <string name="dashboard_share_post_fallback">Shared from MyPlanetLite</string>
     <string name="dashboard_relative_time_seconds">a few seconds ago</string>

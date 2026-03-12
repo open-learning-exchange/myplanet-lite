@@ -516,7 +516,6 @@ Si no está de acuerdo, debe seleccionar "Cancelar" y dejar de usar la aplicaci�
     <string name="dashboard_share_post_server_fallback">MyPlanetLite</string>
     <string name="dashboard_share_post_chooser_title">Compartir voz</string>
     <string name="dashboard_share_post_fallback">Compartido desde MyPlanetLite</string>
-    <string name="share_post">Compartir publicación</string>
     <string name="dashboard_relative_time_seconds">hace unos segundos</string>
     <string name="dashboard_relative_time_minute">hace 1 minuto</string>
     <string name="dashboard_relative_time_minutes">hace %1$d minutos</string>

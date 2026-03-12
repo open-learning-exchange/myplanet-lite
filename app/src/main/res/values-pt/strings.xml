@@ -545,7 +545,6 @@ Se você não concordar, deve selecionar "Cancelar" e parar de usar o aplicativo
     <string name="dashboard_post_delete_error">Não foi possível excluir esta voz. Tente novamente.</string>
     <string name="dashboard_share_post_title">Voz - Planet - %1$s</string>
     <string name="dashboard_share_post_server_fallback">MyPlanetLite</string>
-    <string name="share_post">Compartilhar post</string>
     <string name="dashboard_share_post_chooser_title">Compartilhar voz</string>
     <string name="dashboard_share_post_fallback">Compartilhado do MyPlanetLite</string>
     <string name="dashboard_relative_time_seconds">há alguns segundos</string>

@@ -478,7 +478,6 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="dashboard_share_post_server_fallback">MyPlanetLite</string>
     <string name="dashboard_share_post_chooser_title">La wadaag codka</string>
     <string name="dashboard_share_post_fallback">Lagaga wadaagay MyPlanetLite</string>
-    <string name="share_post">La wadaag qoraalka</string>
     <string name="dashboard_relative_time_seconds">dhowr ilbiriqsi kahor</string>
     <string name="dashboard_relative_time_minute">hal daqiiqo kahor</string>
     <string name="dashboard_relative_time_minutes">%1$d daqiiqo kahor</string>
