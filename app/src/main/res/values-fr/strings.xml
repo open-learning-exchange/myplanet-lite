@@ -335,6 +335,7 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">Équipes</string>
     <string name="dashboard_profile_menu_logout">Se déconnecter</string>
+    <string name="privacy_policy_title">Politique de confidentialité</string>
     <string name="teams_title">Équipes</string>
     <string name="profile_title">Profil</string>
     <string name="profile_description">Consultez et modifiez vos informations personnelles.</string>
