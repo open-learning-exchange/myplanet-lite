@@ -1263,24 +1263,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         return builder.toString()
     }
 
-    private fun buildServerImageMarkdown(
-        baseUrl: String,
-        resourceId: String,
-        fileName: String,
-        fallback: String
-    ): String {
-        val normalizedBase = baseUrl.trim().trimEnd('/')
-        if (normalizedBase.isEmpty()) {
-            return fallback
-        }
-        val sanitizedId = resourceId.trim()
-        val sanitizedName = fileName.trim()
-        if (sanitizedId.isEmpty() || sanitizedName.isEmpty()) {
-            return fallback
-        }
-        return "![]($normalizedBase/db/resources/$sanitizedId/$sanitizedName)"
-    }
-
     private fun buildResourceMetadata(
         context: VoiceImageResourceContext,
         fileName: String

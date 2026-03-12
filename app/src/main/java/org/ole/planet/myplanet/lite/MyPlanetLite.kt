@@ -1025,8 +1025,6 @@ class MyPlanetLite : AppCompatActivity() {
             ?.toString()
     }
 
-    private fun String.nullIfBlank(): String? = if (isBlank()) null else this
-
     private fun buildLoginActivityPayload(username: String): JSONObject? {
         val parentCode = serverPreferences.getString(KEY_SERVER_PARENT_CODE, null)
         val code = serverPreferences.getString(KEY_SERVER_CODE, null)
