@@ -298,6 +298,7 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">Kooxo</string>
     <string name="dashboard_profile_menu_logout">Ka bax</string>
+    <string name="privacy_policy_title">Qaanuunka Arrimaha Khaaska ah</string>
     <string name="teams_title">Kooxo</string>
     <string name="profile_title">Xogtaada</string>
     <string name="profile_description">Dib u eeg oo wax ka beddel xogtaada gaarka ah.</string>

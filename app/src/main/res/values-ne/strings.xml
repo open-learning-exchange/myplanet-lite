@@ -298,6 +298,7 @@
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">टोलीहरू</string>
     <string name="dashboard_profile_menu_logout">लग आउट</string>
+    <string name="privacy_policy_title">गोपनीयता नीति</string>
     <string name="teams_title">टोलीहरू</string>
     <string name="profile_title">प्रोफाइल</string>
     <string name="profile_description">आफ्नो व्यक्तिगत जानकारी हेर्नुहोस् र सम्पादन गर्नुहोस्।</string>

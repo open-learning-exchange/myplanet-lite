@@ -339,6 +339,7 @@
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">الفرق</string>
     <string name="dashboard_profile_menu_logout">تسجيل الخروج</string>
+    <string name="privacy_policy_title">سياسة الخصوصية</string>
     <string name="teams_title">الفرق</string>
     <string name="profile_title">الملف الشخصي</string>
     <string name="profile_description">راجع وعدّل معلوماتك الشخصية.</string>
