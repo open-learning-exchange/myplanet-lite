@@ -89,18 +89,26 @@ class DashboardSurveyOutboxStore(
             null,
             "$COLUMN_CREATED_AT DESC",
         ).use { cursor ->
+            val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
+            val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)
+            val teamIdIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_ID)
+            val teamNameIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_NAME)
+            val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
+            val createdAtIdx = cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)
+            val payloadIdx = cursor.getColumnIndexOrThrow(COLUMN_PAYLOAD)
+
             buildList {
                 while (cursor.moveToNext()) {
-                    val payload = cursor.getStringOrNull(COLUMN_PAYLOAD) ?: continue
+                    val payload = cursor.getStringOrNull(payloadIdx) ?: continue
                     val parsed = runCatching { submissionAdapter.fromJson(payload) }.getOrNull() ?: continue
                     add(
                         OutboxEntry(
-                            id = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ID)),
-                            surveyId = cursor.getStringOrNull(COLUMN_SURVEY_ID),
-                            teamId = cursor.getStringOrNull(COLUMN_TEAM_ID),
-                            teamName = cursor.getStringOrNull(COLUMN_TEAM_NAME),
-                            surveyName = cursor.getStringOrNull(COLUMN_SURVEY_NAME),
-                            createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)),
+                            id = cursor.getLong(idIdx),
+                            surveyId = cursor.getStringOrNull(surveyIdIdx),
+                            teamId = cursor.getStringOrNull(teamIdIdx),
+                            teamName = cursor.getStringOrNull(teamNameIdx),
+                            surveyName = cursor.getStringOrNull(surveyNameIdx),
+                            createdAt = cursor.getLong(createdAtIdx),
                             submission = parsed,
                         ),
                     )
@@ -128,16 +136,24 @@ class DashboardSurveyOutboxStore(
             null,
             "1",
         ).use { cursor ->
+            val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
+            val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)
+            val teamIdIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_ID)
+            val teamNameIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_NAME)
+            val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
+            val createdAtIdx = cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)
+            val payloadIdx = cursor.getColumnIndexOrThrow(COLUMN_PAYLOAD)
+
             if (cursor.moveToFirst()) {
-                val payload = cursor.getStringOrNull(COLUMN_PAYLOAD) ?: return@use null
+                val payload = cursor.getStringOrNull(payloadIdx) ?: return@use null
                 val parsed = runCatching { submissionAdapter.fromJson(payload) }.getOrNull() ?: return@use null
                 OutboxEntry(
-                    id = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_ID)),
-                    surveyId = cursor.getStringOrNull(COLUMN_SURVEY_ID),
-                    teamId = cursor.getStringOrNull(COLUMN_TEAM_ID),
-                    teamName = cursor.getStringOrNull(COLUMN_TEAM_NAME),
-                    surveyName = cursor.getStringOrNull(COLUMN_SURVEY_NAME),
-                    createdAt = cursor.getLong(cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)),
+                    id = cursor.getLong(idIdx),
+                    surveyId = cursor.getStringOrNull(surveyIdIdx),
+                    teamId = cursor.getStringOrNull(teamIdIdx),
+                    teamName = cursor.getStringOrNull(teamNameIdx),
+                    surveyName = cursor.getStringOrNull(surveyNameIdx),
+                    createdAt = cursor.getLong(createdAtIdx),
                     submission = parsed,
                 )
             } else {
@@ -161,7 +177,10 @@ class DashboardSurveyOutboxStore(
     )
 
     private fun Cursor.getStringOrNull(columnName: String): String? {
-        val index = getColumnIndexOrThrow(columnName)
+        return getStringOrNull(getColumnIndexOrThrow(columnName))
+    }
+
+    private fun Cursor.getStringOrNull(index: Int): String? {
         return if (isNull(index)) null else getString(index)
     }
 
