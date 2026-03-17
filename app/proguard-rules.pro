@@ -28,3 +28,6 @@
     public static *** e(...);
     public static *** wtf(...);
 }
+
+# Keep the com.blongho.country_data library for GSON reflection
+-keep class com.blongho.country_data.** { *; }
