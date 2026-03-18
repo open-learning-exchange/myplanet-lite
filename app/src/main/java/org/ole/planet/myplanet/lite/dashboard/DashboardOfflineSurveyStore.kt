@@ -82,8 +82,9 @@ class DashboardOfflineSurveyStore(
             null,
         ).use { cursor ->
             buildSet {
+                val idIndex = cursor.getColumnIndexOrThrow(COLUMN_ID)
                 while (cursor.moveToNext()) {
-                    add(cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_ID)))
+                    add(cursor.getString(idIndex))
                 }
             }
         }
