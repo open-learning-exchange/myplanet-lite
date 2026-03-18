@@ -6,6 +6,7 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
+import org.ole.planet.myplanet.lite.util.nullIfBlank
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import com.squareup.moshi.FromJson
 import com.squareup.moshi.Json
@@ -949,7 +950,7 @@ class DashboardTeamsRepository {
             }
     }
 
-    private fun String.nullIfBlank(): String? = if (isBlank()) null else this
+
 
     @JsonClass(generateAdapter = true)
     data class TeamsFindRequest(val selector: TeamsSelector)

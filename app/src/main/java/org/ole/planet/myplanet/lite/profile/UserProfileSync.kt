@@ -6,6 +6,7 @@
 
 package org.ole.planet.myplanet.lite.profile
 
+import org.ole.planet.myplanet.lite.util.nullIfBlank
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
@@ -111,7 +112,7 @@ class UserProfileSync(
         }
     }
 
-    private fun String.nullIfBlank(): String? = if (isBlank()) null else this
+
 
     private companion object {}
 }
