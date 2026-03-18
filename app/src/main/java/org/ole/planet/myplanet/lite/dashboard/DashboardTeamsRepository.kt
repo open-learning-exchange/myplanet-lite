@@ -26,6 +26,7 @@ import kotlinx.coroutines.withContext
 
 import org.json.JSONArray
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.util.nullIfBlank
 
 import java.io.IOException
 import java.text.SimpleDateFormat
@@ -948,8 +949,6 @@ class DashboardTeamsRepository {
                 return if (parts.isEmpty()) null else parts.joinToString(" ")
             }
     }
-
-    private fun String.nullIfBlank(): String? = if (isBlank()) null else this
 
     @JsonClass(generateAdapter = true)
     data class TeamsFindRequest(val selector: TeamsSelector)

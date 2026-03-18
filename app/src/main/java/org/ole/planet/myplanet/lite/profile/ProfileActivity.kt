@@ -54,6 +54,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.util.nullIfBlank
 
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
@@ -950,8 +951,6 @@ class ProfileActivity : AppCompatActivity() {
     private fun JSONObject.optStringOrNull(key: String): String? {
         return optString(key).nullIfBlank()
     }
-
-    private fun String?.nullIfBlank(): String? = if (this.isNullOrBlank()) null else this
 
     private companion object {
         private const val AVATAR_ATTACHMENT_KEY = "img"

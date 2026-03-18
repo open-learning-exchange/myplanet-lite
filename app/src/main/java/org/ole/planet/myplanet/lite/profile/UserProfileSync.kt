@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.util.nullIfBlank
 
 import java.io.IOException
 
@@ -110,8 +111,6 @@ class UserProfileSync(
             null
         }
     }
-
-    private fun String.nullIfBlank(): String? = if (isBlank()) null else this
 
     private companion object {}
 }
