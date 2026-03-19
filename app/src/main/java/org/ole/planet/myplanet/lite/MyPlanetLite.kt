@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 /**
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
@@ -200,8 +201,6 @@ class MyPlanetLite : AppCompatActivity() {
         loginUsernameInput = findViewById(R.id.usernameInput)
         loginPasswordInput = findViewById(R.id.passwordInput)
         serverStatusIconView = findViewById(R.id.serverStatusIcon)
-        val usernameInput: TextInputEditText = findViewById(R.id.usernameInput)
-        val passwordInput: TextInputEditText = findViewById(R.id.passwordInput)
         val appVersionTextView: TextView = findViewById(R.id.appVersionTextView)
         val poweredByTextView: TextView = findViewById(R.id.poweredByText)
         val loginScroll: ScrollView = findViewById(R.id.loginScroll)
