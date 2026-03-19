@@ -8,14 +8,12 @@
 package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
+import org.ole.planet.myplanet.lite.MyPlanetLite
 
 /**
  * Reads the credentials that were persisted after login so the profile screen can refresh data.
  */
 object ProfileCredentialsStore {
-    private const val KEY_REMEMBER_CREDENTIALS = "remember_credentials"
     private const val KEY_REMEMBERED_USERNAME = "remembered_username"
     private const val KEY_REMEMBERED_PASSWORD = "remembered_password"
     @Volatile
@@ -29,15 +27,15 @@ object ProfileCredentialsStore {
         sessionCredentials?.let { return it }
 
         val appContext = context.applicationContext
-        val masterKey = MasterKey.Builder(appContext)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        val masterKey = androidx.security.crypto.MasterKey.Builder(appContext)
+            .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
             .build()
-        val securePrefs = EncryptedSharedPreferences.create(
+        val securePrefs = androidx.security.crypto.EncryptedSharedPreferences.create(
             appContext,
-            "secure_server_prefs",
+            MyPlanetLite.SECURE_PREFS_NAME,
             masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
 
         val username = securePrefs.getString(KEY_REMEMBERED_USERNAME, null)?.takeIf { it.isNotBlank() }

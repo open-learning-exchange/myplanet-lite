@@ -132,7 +132,7 @@ class MyPlanetLite : AppCompatActivity() {
             .build()
         androidx.security.crypto.EncryptedSharedPreferences.create(
             applicationContext,
-            "secure_server_prefs",
+            SECURE_PREFS_NAME,
             masterKey,
             androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
@@ -448,7 +448,7 @@ class MyPlanetLite : AppCompatActivity() {
             loginErrorTextView.isVisible = false
 
             val username = loginUsernameInput.text?.toString()?.trim().orEmpty()
-            val password = loginPasswordInput.text?.toString()?.orEmpty()
+            val password = loginPasswordInput.text?.toString().orEmpty()
             val serverBaseUrl = (serverInput.tag as? String).orEmpty().trim()
 
             var hasError = false
@@ -1192,9 +1192,10 @@ class MyPlanetLite : AppCompatActivity() {
         super.onDestroy()
     }
 
-    private companion object {
+    companion object {
         private const val MIN_PASSWORD_LENGTH = 4
         private const val PREFS_NAME = "server_preferences"
+        const val SECURE_PREFS_NAME = "secure_server_prefs"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
         private const val KEY_SERVER_CODE = "server_code"
@@ -1335,7 +1336,7 @@ class MyPlanetLite : AppCompatActivity() {
             nameView.text = option.displayName
 
             val desiredMargin = if (isDropdown) {
-                context.resources.getDimensionPixelSize(R.dimen.server_flag_margin)
+                context.resources.getDimensionPixelSize(R.dimen.server_option_flag_margin)
             } else {
                 0
             }
