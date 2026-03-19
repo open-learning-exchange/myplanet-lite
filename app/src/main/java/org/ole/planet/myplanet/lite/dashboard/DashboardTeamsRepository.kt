@@ -87,7 +87,6 @@ class DashboardTeamsRepository {
     private val membershipBulkDeleteAdapter = moshi.adapter(BulkMembershipDeleteRequest::class.java)
     private val membershipBulkAddAdapter = moshi.adapter(BulkMembershipAddRequest::class.java)
     private val usersFindResponseAdapter = moshi.adapter(UsersFindResponse::class.java)
-    private val userDocumentAdapter = moshi.adapter(UserDocument::class.java)
 
     suspend fun fetchUserProfile(
         baseUrl: String,
@@ -1213,49 +1212,9 @@ class DashboardTeamsRepository {
                         throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
-                    val users = usersFindResponseAdapter.fromJson(body)?.docs ?: emptyList()
-                    users.map { user ->
-                        val username = user._id?.substringAfter("org.couchdb.user:")
-                            ?.takeIf { it.isNotBlank() }
-                        if (username == null) {
-                            user
-                        } else {
-                            runCatching {
-                                fetchUserDocument(normalizedBase, credentials, sessionCookie, username)
-                            }.getOrNull() ?: user
-                        }
-                    }
+                    usersFindResponseAdapter.fromJson(body)?.docs ?: emptyList()
                 }
             }
-        }
-    }
-
-    private fun fetchUserDocument(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        username: String,
-    ): UserDocument? {
-        val requestUrl = baseUrl.trim().trimEnd('/') + "/db/_users/org.couchdb.user:$username"
-        val requestBuilder = Request.Builder()
-            .url(requestUrl)
-            .get()
-        credentials?.let {
-            requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
-        }
-        sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-            requestBuilder.addHeader("Cookie", cookie)
-        }
-        return try {
-            client.newCall(requestBuilder.build()).execute().use { response ->
-                if (!response.isSuccessful) {
-                    return null
-                }
-                val body = response.body.string()
-                userDocumentAdapter.fromJson(body)
-            }
-        } catch (error: IOException) {
-            null
         }
     }
 
