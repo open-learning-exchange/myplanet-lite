@@ -42,8 +42,6 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 
 import com.blongho.country_data.World
 import com.google.android.material.checkbox.MaterialCheckBox
@@ -129,15 +127,15 @@ class MyPlanetLite : AppCompatActivity() {
     }
 
     private val securePreferences: SharedPreferences by lazy {
-        val masterKey = MasterKey.Builder(applicationContext)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        val masterKey = androidx.security.crypto.MasterKey.Builder(applicationContext)
+            .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
             .build()
-        EncryptedSharedPreferences.create(
+        androidx.security.crypto.EncryptedSharedPreferences.create(
             applicationContext,
             "secure_server_prefs",
             masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
@@ -450,7 +448,7 @@ class MyPlanetLite : AppCompatActivity() {
             loginErrorTextView.isVisible = false
 
             val username = loginUsernameInput.text?.toString()?.trim().orEmpty()
-            val password = loginPasswordInput.text?.toString().orEmpty()
+            val password = loginPasswordInput.text?.toString()?.orEmpty()
             val serverBaseUrl = (serverInput.tag as? String).orEmpty().trim()
 
             var hasError = false
@@ -1337,7 +1335,7 @@ class MyPlanetLite : AppCompatActivity() {
             nameView.text = option.displayName
 
             val desiredMargin = if (isDropdown) {
-                context.resources.getDimensionPixelSize(R.dimen.server_option_flag_margin)
+                context.resources.getDimensionPixelSize(R.dimen.server_flag_margin)
             } else {
                 0
             }
