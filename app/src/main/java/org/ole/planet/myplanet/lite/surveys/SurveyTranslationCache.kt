@@ -66,10 +66,14 @@ class SurveyTranslationCache(
             )
             cursor.use {
                 buildMap {
+                    val indexQuestionIndex = cursor.getColumnIndexOrThrow(COLUMN_QUESTION_INDEX)
+                    val indexBody = cursor.getColumnIndexOrThrow(COLUMN_BODY)
+                    val indexChoices = cursor.getColumnIndexOrThrow(COLUMN_CHOICES)
+
                     while (cursor.moveToNext()) {
-                        val questionIndex = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_QUESTION_INDEX))
-                        val body = cursor.getStringOrNull(COLUMN_BODY)
-                        val choices = cursor.getStringOrNull(COLUMN_CHOICES)
+                        val questionIndex = cursor.getInt(indexQuestionIndex)
+                        val body = cursor.getStringOrNull(indexBody)
+                        val choices = cursor.getStringOrNull(indexChoices)
                             ?.let { choicesAdapter.fromJson(it) }
                             ?: emptyList()
                         put(questionIndex, SurveyTranslationManager.TranslatedQuestion(body, choices))
@@ -103,8 +107,7 @@ class SurveyTranslationCache(
         }
     }
 
-    private fun Cursor.getStringOrNull(columnName: String): String? {
-        val index = getColumnIndexOrThrow(columnName)
+    private fun Cursor.getStringOrNull(index: Int): String? {
         return if (isNull(index)) null else getString(index)
     }
 
