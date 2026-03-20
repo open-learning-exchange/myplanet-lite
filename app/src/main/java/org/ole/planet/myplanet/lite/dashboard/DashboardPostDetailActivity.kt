@@ -71,6 +71,9 @@ import kotlin.math.max
 import kotlin.math.min
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -1051,13 +1054,21 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             return PreparedVoicePost(originalMessage, emptyList())
         }
         val context = buildReplyImageResourceContext(credentials)
+
+        val uploads = pendingReplyImages.values.filter { it.resourceId == null }
+        val uploadResults = coroutineScope {
+            uploads.map { pending ->
+                async {
+                    val markdown = ensureReplyImageUpload(baseUrl, credentials, context, pending)
+                    pending to markdown
+                }
+            }.awaitAll()
+        }
+
         var updatedMessage = originalMessage
         val preparedImages = mutableListOf<VoicesComposerRepository.ImagePayload>()
-        for (pending in pendingReplyImages.values) {
-            if (pending.resourceId != null) {
-                continue
-            }
-            val markdown = ensureReplyImageUpload(baseUrl, credentials, context, pending)
+
+        for ((pending, markdown) in uploadResults) {
             val replaced = replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
             updatedMessage = ensureMarkdownPresent(replaced, markdown)
             val resourceId = pending.resourceId

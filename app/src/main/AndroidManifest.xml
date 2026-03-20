@@ -30,12 +30,7 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity>
-        <activity
-            android:name=".MyPlanetLite"
-            android:exported="true"
-            android:windowSoftInputMode="adjustResize">
-            <intent-filter>
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
 
                 <category android:name="android.intent.category.DEFAULT" />
@@ -49,6 +44,11 @@
                     android:host="post"
                     android:scheme="myplanetlite" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".MyPlanetLite"
+            android:exported="false"
+            android:windowSoftInputMode="adjustResize">
         </activity>
         <activity
             android:name=".DashboardActivity"

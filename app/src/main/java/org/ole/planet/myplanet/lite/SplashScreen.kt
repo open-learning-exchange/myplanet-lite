@@ -111,16 +111,52 @@ class SplashScreen : AppCompatActivity() {
         lifecycleScope.launch {
             delay(SPLASH_DELAY_MS)
             val launchMode = attemptDirectDashboardLaunch()
-            val intent = when (launchMode) {
+            val nextIntent = when (launchMode) {
                 DashboardLaunchMode.ONLINE -> Intent(this@SplashScreen, DashboardActivity::class.java)
                 DashboardLaunchMode.OFFLINE -> Intent(this@SplashScreen, DashboardActivity::class.java).apply {
                     putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
                 }
                 DashboardLaunchMode.NONE -> Intent(this@SplashScreen, MyPlanetLite::class.java)
             }
-            startActivity(intent)
+
+            if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
+                if (launchMode == DashboardLaunchMode.NONE) {
+                    nextIntent.action = intent.action
+                    nextIntent.data = intent.data
+                } else {
+                    val postId = extractDeepLinkPostId(intent)
+                    if (postId != null) {
+                        nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
+                    }
+                }
+            }
+
+            startActivity(nextIntent)
             finish()
         }
+    }
+
+    private fun extractDeepLinkPostId(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_VIEW) {
+            return null
+        }
+        val data = intent.data ?: return null
+        val queryPostId = data.getQueryParameter("postId")
+        if (!queryPostId.isNullOrBlank()) {
+            return queryPostId
+        }
+        val segments = data.pathSegments
+        if (segments.isEmpty()) {
+            return null
+        }
+        val postIndex = segments.indexOfFirst { segment ->
+            segment.equals("post", ignoreCase = true)
+        }
+        val candidate = when {
+            postIndex >= 0 && postIndex + 1 < segments.size -> segments[postIndex + 1]
+            else -> segments.last()
+        }
+        return candidate.takeIf { it.isNotBlank() }
     }
 
     private suspend fun attemptDirectDashboardLaunch(): DashboardLaunchMode {

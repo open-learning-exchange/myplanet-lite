@@ -15,8 +15,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.0.1"
+        versionCode = 4
+        versionName = "0.0.4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -24,11 +24,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
+            isMinifyEnabled = false
         }
     }
     compileOptions {
@@ -60,6 +56,12 @@ dependencies {
     implementation("com.squareup.moshi:moshi-kotlin:1.15.2")
     implementation("com.squareup.okhttp3:logging-interceptor:5.3.2")
     implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.retrofit)
+    implementation(libs.converter.moshi)
+    implementation(libs.moshi.kotlin)
+    implementation(libs.logging.interceptor)
     implementation(libs.core)
     implementation(libs.photoview)
     implementation(libs.worldcountrydata)
@@ -67,7 +69,7 @@ dependencies {
     implementation(libs.circleimageview)
     implementation(libs.glide)
     implementation(libs.language.id)
-    implementation("io.noties.markwon:ext-tables:4.6.2")
+    implementation(libs.ext.tables)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockwebserver)
