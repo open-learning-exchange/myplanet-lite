@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 /**
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
@@ -124,6 +125,19 @@ class MyPlanetLite : AppCompatActivity() {
     private val serverPreferences: SharedPreferences by lazy {
         applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
     }
+
+    private val securePreferences: SharedPreferences by lazy {
+        val masterKey = androidx.security.crypto.MasterKey.Builder(applicationContext)
+            .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        androidx.security.crypto.EncryptedSharedPreferences.create(
+            applicationContext,
+            SECURE_PREFS_NAME,
+            masterKey,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+    }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
     private val serverMetadataAdapter by lazy { moshi.adapter(ServerMetadataResponse::class.java) }
 
@@ -185,8 +199,6 @@ class MyPlanetLite : AppCompatActivity() {
         loginUsernameInput = findViewById(R.id.usernameInput)
         loginPasswordInput = findViewById(R.id.passwordInput)
         serverStatusIconView = findViewById(R.id.serverStatusIcon)
-        val usernameInput: TextInputEditText = findViewById(R.id.usernameInput)
-        val passwordInput: TextInputEditText = findViewById(R.id.passwordInput)
         val appVersionTextView: TextView = findViewById(R.id.appVersionTextView)
         val poweredByTextView: TextView = findViewById(R.id.poweredByText)
         val loginScroll: ScrollView = findViewById(R.id.loginScroll)
@@ -1075,7 +1087,7 @@ class MyPlanetLite : AppCompatActivity() {
     }
 
     private fun saveRememberedCredentials(username: String, password: String) {
-        serverPreferences.edit()
+        securePreferences.edit()
             .putBoolean(KEY_REMEMBER_CREDENTIALS, true)
             .putString(KEY_REMEMBERED_USERNAME, username)
             .putString(KEY_REMEMBERED_PASSWORD, password)
@@ -1083,7 +1095,7 @@ class MyPlanetLite : AppCompatActivity() {
     }
 
     private fun clearRememberedCredentials() {
-        serverPreferences.edit()
+        securePreferences.edit()
             .putBoolean(KEY_REMEMBER_CREDENTIALS, false)
             .remove(KEY_REMEMBERED_USERNAME)
             .remove(KEY_REMEMBERED_PASSWORD)
@@ -1091,7 +1103,7 @@ class MyPlanetLite : AppCompatActivity() {
     }
 
     private fun clearStoredSessionIfNotRemembered() {
-        if (serverPreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)) {
+        if (securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)) {
             return
         }
         val baseUrl = loadServerConfiguration().baseUrl.trim()
@@ -1105,11 +1117,27 @@ class MyPlanetLite : AppCompatActivity() {
     }
 
     private fun loadRememberedCredentials(): RememberedCredentials? {
-        if (!serverPreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)) {
+        if (serverPreferences.contains(KEY_REMEMBER_CREDENTIALS)) {
+            val legacyUsername = serverPreferences.getString(KEY_REMEMBERED_USERNAME, null)
+            val legacyPassword = serverPreferences.getString(KEY_REMEMBERED_PASSWORD, null)
+            val legacyRemembered = serverPreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)
+
+            if (legacyRemembered && legacyUsername != null && legacyPassword != null) {
+                saveRememberedCredentials(legacyUsername, legacyPassword)
+            }
+
+            serverPreferences.edit()
+                .remove(KEY_REMEMBER_CREDENTIALS)
+                .remove(KEY_REMEMBERED_USERNAME)
+                .remove(KEY_REMEMBERED_PASSWORD)
+                .apply()
+        }
+
+        if (!securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)) {
             return null
         }
-        val username = serverPreferences.getString(KEY_REMEMBERED_USERNAME, null)
-        val password = serverPreferences.getString(KEY_REMEMBERED_PASSWORD, null)
+        val username = securePreferences.getString(KEY_REMEMBERED_USERNAME, null)
+        val password = securePreferences.getString(KEY_REMEMBERED_PASSWORD, null)
         if (username.isNullOrEmpty() && password.isNullOrEmpty()) {
             return null
         }
@@ -1164,9 +1192,10 @@ class MyPlanetLite : AppCompatActivity() {
         super.onDestroy()
     }
 
-    private companion object {
+    companion object {
         private const val MIN_PASSWORD_LENGTH = 4
         private const val PREFS_NAME = "server_preferences"
+        const val SECURE_PREFS_NAME = "secure_server_prefs"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
         private const val KEY_SERVER_CODE = "server_code"
