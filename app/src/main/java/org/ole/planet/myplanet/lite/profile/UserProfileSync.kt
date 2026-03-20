@@ -37,7 +37,7 @@ class UserProfileSync(
                 val profileRequestBuilder = Request.Builder()
                     .url(profileUrl)
                     .get()
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     profileRequestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -97,7 +97,7 @@ class UserProfileSync(
             val avatarRequestBuilder = Request.Builder()
                 .url(avatarUrl)
                 .get()
-            sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+            sessionCookie.nullIfBlank()?.let { cookie ->
                 avatarRequestBuilder.addHeader("Cookie", cookie)
             }
 

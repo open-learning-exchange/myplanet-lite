@@ -449,7 +449,7 @@ class ProfileActivity : AppCompatActivity() {
             }
         }
 
-        val nonNullCookie = sessionCookie?.takeIf { it.isNotBlank() } ?: return false
+        val nonNullCookie = sessionCookie.nullIfBlank() ?: return false
         val avatarUploadBytes = pendingAvatarUpload
         val document = buildUpdatedProfileDocument(
             normalizedBase,
@@ -477,7 +477,7 @@ class ProfileActivity : AppCompatActivity() {
                         return@withContext false
                     }
                     val responseBody = response.body.string()
-                    val newRevision = responseBody.takeIf { it.isNotBlank() }
+                    val newRevision = responseBody.nullIfBlank()
                         ?.let { JSONObject(it) }
                         ?.optString("rev")
                         .nullIfBlank()

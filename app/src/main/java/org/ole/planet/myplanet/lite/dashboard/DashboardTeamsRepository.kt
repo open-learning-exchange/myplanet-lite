@@ -108,7 +108,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
@@ -177,7 +177,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -259,7 +259,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
@@ -354,7 +354,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -419,7 +419,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -460,7 +460,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
@@ -508,7 +508,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
@@ -550,7 +550,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -598,7 +598,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -649,7 +649,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -691,7 +691,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -719,7 +719,7 @@ class DashboardTeamsRepository {
         credentials?.let {
             requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
         }
-        sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+        sessionCookie.nullIfBlank()?.let { cookie ->
             requestBuilder.addHeader("Cookie", cookie)
         }
 
@@ -732,7 +732,7 @@ class DashboardTeamsRepository {
                 val json = JSONObject(body)
                 val attachments = json.optJSONObject("_attachments")
                 TeamMemberProfileDetails(
-                    username = json.optString("name").takeIf { it.isNotBlank() } ?: username,
+                    username = json.optString("name").nullIfBlank() ?: username,
                     firstName = json.optString("firstName").nullIfBlank(),
                     middleName = json.optString("middleName").nullIfBlank(),
                     lastName = json.optString("lastName").nullIfBlank(),
@@ -797,7 +797,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -839,7 +839,7 @@ class DashboardTeamsRepository {
                 credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -1147,7 +1147,7 @@ class DashboardTeamsRepository {
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                     .header("Authorization", basicAuth)
                     .header("Content-Type", "application/json")
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
@@ -1185,9 +1185,9 @@ class DashboardTeamsRepository {
                     return@runCatching emptyList()
                 }
 
-                val filteredPlanet = planetCode?.takeIf { it.isNotBlank() }
+                val filteredPlanet = planetCode.nullIfBlank()
                     ?: throw IOException("Missing planet code for user search")
-                val filteredParent = parentCode?.takeIf { it.isNotBlank() }
+                val filteredParent = parentCode.nullIfBlank()
                     ?: throw IOException("Missing parent code for user search")
 
                 val payload = buildUsersFindPayload(
@@ -1203,7 +1203,7 @@ class DashboardTeamsRepository {
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                     .header("Authorization", basicAuth)
                     .header("Content-Type", "application/json")
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                sessionCookie.nullIfBlank()?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
