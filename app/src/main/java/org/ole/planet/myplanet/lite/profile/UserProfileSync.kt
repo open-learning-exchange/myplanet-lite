@@ -60,7 +60,7 @@ class UserProfileSync(
                     }
 
                     val userProfile = UserProfile(
-                        username = json.optString("name").ifBlank { username },
+                        username = json.optString("name").nullIfBlank() ?: username,
                         firstName = json.optString("firstName").nullIfBlank(),
                         middleName = json.optString("middleName").nullIfBlank(),
                         lastName = json.optString("lastName").nullIfBlank(),

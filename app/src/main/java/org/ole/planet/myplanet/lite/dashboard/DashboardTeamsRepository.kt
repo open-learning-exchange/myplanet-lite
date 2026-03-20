@@ -161,7 +161,7 @@ class DashboardTeamsRepository {
                             BulkMembershipAddDoc(
                                 teamId = teamId,
                                 teamPlanetCode = teamPlanetCode,
-                                teamType = teamType.ifBlank { "local" },
+                                teamType = teamType.nullIfBlank() ?: "local",
                                 userId = userId,
                                 userPlanetCode = userPlanetCode,
                                 docType = "membership",
@@ -382,17 +382,17 @@ class DashboardTeamsRepository {
                     throw IOException("Missing server base URL")
                 }
 
-                val id = membership.id?.nullIfBlank() ?: throw IOException("Missing membership id")
-                val revision = membership.revision?.nullIfBlank()
+                val id = membership.id.nullIfBlank() ?: throw IOException("Missing membership id")
+                val revision = membership.revision.nullIfBlank()
                     ?: throw IOException("Missing membership revision")
-                val teamId = membership.teamId?.nullIfBlank() ?: throw IOException("Missing team id")
-                val teamPlanetCode = membership.teamPlanetCode?.nullIfBlank()
+                val teamId = membership.teamId.nullIfBlank() ?: throw IOException("Missing team id")
+                val teamPlanetCode = membership.teamPlanetCode.nullIfBlank()
                     ?: throw IOException("Missing team planet code")
-                val userId = membership.userId?.nullIfBlank() ?: throw IOException("Missing user id")
-                val userPlanetCode = membership.userPlanetCode?.nullIfBlank()
+                val userId = membership.userId.nullIfBlank() ?: throw IOException("Missing user id")
+                val userPlanetCode = membership.userPlanetCode.nullIfBlank()
                     ?: throw IOException("Missing user planet code")
-                val teamType = membership.teamType?.nullIfBlank() ?: "local"
-                val docType = membership.docType?.nullIfBlank() ?: "membership"
+                val teamType = membership.teamType.nullIfBlank() ?: "local"
+                val docType = membership.docType.nullIfBlank() ?: "membership"
 
                 val payload = membershipBulkDeleteAdapter.toJson(
                     BulkMembershipDeleteRequest(
@@ -728,7 +728,7 @@ class DashboardTeamsRepository {
                 if (!response.isSuccessful) {
                     return null
                 }
-                val body = response.body.string().takeIf { it.isNotBlank() } ?: return null
+                val body = response.body.string().nullIfBlank() ?: return null
                 val json = JSONObject(body)
                 val attachments = json.optJSONObject("_attachments")
                 TeamMemberProfileDetails(
