@@ -62,15 +62,16 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
     }
 
     private fun showSelectionState(forceReload: Boolean) {
-        val hasSelection = !selectedTeamId.isNullOrBlank() && !selectedTeamName.isNullOrBlank()
+        val teamId = selectedTeamId
+        val teamName = selectedTeamName
 
-        if (hasSelection) {
+        if (!teamId.isNullOrBlank() && !teamName.isNullOrBlank()) {
             emptyView.isVisible = false
             teamContentContainer.isVisible = true
             if (forceReload) {
                 when (currentSection) {
-                    TeamSection.VOICES -> loadTeamVoices(selectedTeamId!!, selectedTeamName!!)
-                    TeamSection.SURVEYS -> loadTeamSurveys(selectedTeamId!!, selectedTeamName!!)
+                    TeamSection.VOICES -> loadTeamVoices(teamId, teamName)
+                    TeamSection.SURVEYS -> loadTeamSurveys(teamId, teamName)
                 }
             }
         } else {
@@ -117,11 +118,12 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
         }
         currentSection = section
         updateActionSelection()
-        val hasSelection = !selectedTeamId.isNullOrBlank() && !selectedTeamName.isNullOrBlank()
-        if (hasSelection) {
+        val teamId = selectedTeamId
+        val teamName = selectedTeamName
+        if (!teamId.isNullOrBlank() && !teamName.isNullOrBlank()) {
             when (section) {
-                TeamSection.VOICES -> loadTeamVoices(selectedTeamId!!, selectedTeamName!!)
-                TeamSection.SURVEYS -> loadTeamSurveys(selectedTeamId!!, selectedTeamName!!)
+                TeamSection.VOICES -> loadTeamVoices(teamId, teamName)
+                TeamSection.SURVEYS -> loadTeamSurveys(teamId, teamName)
             }
         } else {
             emptyView.text = getString(R.string.dashboard_teams_select_team_hint)
