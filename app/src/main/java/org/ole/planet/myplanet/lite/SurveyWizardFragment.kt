@@ -685,7 +685,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 0
             }
         }.sum()
-        val percentage = ((earned.toDouble() / totalMarks.toDouble()) * 100).roundToInt()
+        val percentage = (earned * 100.0 / totalMarks).roundToInt()
         return percentage >= passingPercentage
     }
 
