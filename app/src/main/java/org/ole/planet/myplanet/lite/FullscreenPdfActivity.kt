@@ -83,8 +83,9 @@ class FullscreenPdfActivity : AppCompatActivity() {
                 return@launch
             }
             pdfFile = file
-            fileDescriptor = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
-            pdfRenderer = PdfRenderer(fileDescriptor!!)
+            val fd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
+            fileDescriptor = fd
+            pdfRenderer = PdfRenderer(fd)
             val renderer = pdfRenderer
             if (renderer == null || renderer.pageCount == 0) {
                 Toast.makeText(
