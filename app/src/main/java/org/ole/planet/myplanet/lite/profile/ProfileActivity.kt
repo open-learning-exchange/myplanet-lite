@@ -449,7 +449,7 @@ class ProfileActivity : AppCompatActivity() {
             }
         }
 
-        val nonNullCookie = sessionCookie?.takeIf { it.isNotBlank() } ?: return false
+        val nonNullCookie = sessionCookie.nullIfBlank() ?: return false
         val avatarUploadBytes = pendingAvatarUpload
         val document = buildUpdatedProfileDocument(
             normalizedBase,
@@ -477,7 +477,7 @@ class ProfileActivity : AppCompatActivity() {
                         return@withContext false
                     }
                     val responseBody = response.body.string()
-                    val newRevision = responseBody.takeIf { it.isNotBlank() }
+                    val newRevision = responseBody.nullIfBlank()
                         ?.let { JSONObject(it) }
                         ?.optString("rev")
                         .nullIfBlank()
@@ -509,7 +509,7 @@ class ProfileActivity : AppCompatActivity() {
         storedProfile: UserProfile?,
         avatarUploadBytes: ByteArray?
     ): JSONObject? {
-        val baseDocument = storedProfile?.rawDocument?.takeIf { it.isNotBlank() }?.let { JSONObject(it) }
+        val baseDocument = storedProfile?.rawDocument?.nullIfBlank()?.let { JSONObject(it) }
             ?: fetchRemoteProfileDocument(serverBaseUrl, username, sessionCookie)
             ?: return null
 
@@ -517,9 +517,9 @@ class ProfileActivity : AppCompatActivity() {
         latestRevision?.let { baseDocument.put("_rev", it) }
         val derivedKey = storedProfile?.derivedKey ?: baseDocument.optString("derived_key").nullIfBlank()
         derivedKey?.let { baseDocument.put("derived_key", it) }
-        baseDocument.put("_id", baseDocument.optString("_id").ifBlank { "org.couchdb.user:$username" })
+        baseDocument.put("_id", baseDocument.optString("_id").nullIfBlank() ?: "org.couchdb.user:$username")
         baseDocument.put("name", username)
-        baseDocument.put("type", baseDocument.optString("type").ifBlank { "user" })
+        baseDocument.put("type", baseDocument.optString("type").nullIfBlank() ?: "user")
 
         applyFormValuesToDocument(baseDocument, formValues)
 
@@ -599,18 +599,18 @@ class ProfileActivity : AppCompatActivity() {
         avatarBytes: ByteArray?,
         usernameFallback: String
     ) {
-        val resolvedUsername = document.optString("name").takeIf { it.isNotBlank() } ?: usernameFallback
+        val resolvedUsername = document.optString("name").nullIfBlank() ?: usernameFallback
         val updatedProfile = UserProfile(
             username = resolvedUsername,
-            firstName = document.optStringOrNull("firstName"),
-            middleName = document.optStringOrNull("middleName"),
-            lastName = document.optStringOrNull("lastName"),
-            email = document.optStringOrNull("email"),
-            language = document.optStringOrNull("language"),
-            phoneNumber = document.optStringOrNull("phoneNumber"),
-            birthDate = document.optStringOrNull("birthDate"),
-            gender = document.optStringOrNull("gender"),
-            level = document.optStringOrNull("level"),
+            firstName = document.optString("firstName").nullIfBlank(),
+            middleName = document.optString("middleName").nullIfBlank(),
+            lastName = document.optString("lastName").nullIfBlank(),
+            email = document.optString("email").nullIfBlank(),
+            language = document.optString("language").nullIfBlank(),
+            phoneNumber = document.optString("phoneNumber").nullIfBlank(),
+            birthDate = document.optString("birthDate").nullIfBlank(),
+            gender = document.optString("gender").nullIfBlank(),
+            level = document.optString("level").nullIfBlank(),
             avatarImage = avatarBytes,
             revision = document.optString("_rev").nullIfBlank(),
             derivedKey = document.optString("derived_key").nullIfBlank(),
@@ -948,9 +948,6 @@ class ProfileActivity : AppCompatActivity() {
         }
     }
 
-    private fun JSONObject.optStringOrNull(key: String): String? {
-        return optString(key).nullIfBlank()
-    }
 
     private companion object {
         private const val AVATAR_ATTACHMENT_KEY = "img"
