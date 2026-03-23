@@ -54,7 +54,7 @@ import kotlinx.coroutines.withContext
 class DashboardTeamMembersFragment : Fragment() {
 
     private var _binding: FragmentDashboardTeamMembersBinding? = null
-    private val binding get() = _binding!!
+    private val binding get() = _binding ?: error("Binding is only valid between onCreateView and onDestroyView")
 
     private val repository = DashboardTeamsRepository()
     private var avatarLoader: DashboardAvatarLoader? = null
