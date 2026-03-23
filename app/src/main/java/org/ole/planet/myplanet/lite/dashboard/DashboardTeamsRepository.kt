@@ -297,7 +297,7 @@ class DashboardTeamsRepository {
                 val profileMap = profiles.associateBy { it._id }
 
                 validMemberships.mapNotNull { member ->
-                    val userId = member.userId!!
+                    val userId = member.userId ?: return@mapNotNull null
                     val username = userId.substringAfter("org.couchdb.user:")
                     if (username.isBlank()) {
                         return@mapNotNull null
