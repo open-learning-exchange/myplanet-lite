@@ -23,6 +23,7 @@ worldcountrydata = "1.5.3"
 ucrop = "2.2.8"
 swiperefreshlayout = "1.2.0"
 json = "20251224"
+security-crypto = "1.1.0-alpha06"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -50,6 +51,7 @@ photoview = { module = "com.github.chrisbanes:PhotoView", version.ref = "photovi
 worldcountrydata = { module = "com.github.blongho:worldCountryData", version.ref = "worldcountrydata" }
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 json = { group = "org.json", name = "json", version.ref = "json" }
+androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "security-crypto" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
