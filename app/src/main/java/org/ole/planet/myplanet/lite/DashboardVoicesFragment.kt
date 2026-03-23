@@ -196,21 +196,22 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             val profile = loadCurrentUserProfile()
             currentUsername = profile?.username
             isUserAdmin = profile?.isUserAdmin == true
-            if (baseUrl.isNullOrEmpty()) {
+            val currentBaseUrl = baseUrl
+            if (currentBaseUrl.isNullOrEmpty()) {
                 showEmptyState(R.string.dashboard_voices_no_server)
                 updateLoadingVisibility()
                 return@launch
             }
-            avatarLoader = DashboardAvatarLoader(baseUrl!!, sessionCookie, credentials, viewLifecycleOwner.lifecycleScope)
+            avatarLoader = DashboardAvatarLoader(currentBaseUrl, sessionCookie, credentials, viewLifecycleOwner.lifecycleScope)
             avatarUpdateListener = AvatarUpdateNotifier.register(AvatarUpdateNotifier.Listener { username ->
                 handleAvatarUpdated(username)
             })
-            postImageLoader = DashboardPostImageLoader(baseUrl!!, sessionCookie, viewLifecycleOwner.lifecycleScope)
+            postImageLoader = DashboardPostImageLoader(currentBaseUrl, sessionCookie, viewLifecycleOwner.lifecycleScope)
             postShareHelper = PostShareHelper(
                 requireContext().applicationContext,
-                { baseUrl },
+                { currentBaseUrl },
                 { sessionCookie },
-                { serverCode ?: baseUrl?.let { Uri.parse(it).host } }
+                { serverCode ?: Uri.parse(currentBaseUrl).host }
             )
             loadInitial()
         }
