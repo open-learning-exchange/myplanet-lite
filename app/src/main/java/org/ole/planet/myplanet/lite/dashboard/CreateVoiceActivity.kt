@@ -1357,11 +1357,13 @@ class CreateVoiceActivity : AppCompatActivity() {
                 return resolved
             }
         }
-        val creationResponse = if (pending.resourceId != null && pending.resourceRevision != null) {
+        val resourceId = pending.resourceId
+        val resourceRevision = pending.resourceRevision
+        val creationResponse = if (resourceId != null && resourceRevision != null) {
             VoicesComposerRepository.ResourceCreationResponse(
                 ok = true,
-                id = pending.resourceId!!,
-                revision = pending.resourceRevision!!
+                id = resourceId,
+                revision = resourceRevision
             )
         } else {
             val metadata = buildResourceMetadata(context, pending.fileName)
