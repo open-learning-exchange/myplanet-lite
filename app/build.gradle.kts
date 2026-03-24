@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "org.ole.planet.myplanet.lite"
+    namespace = "org.ole.planet.myplanet-lite"
     compileSdk = 36
     buildFeatures {
         buildConfig = true
