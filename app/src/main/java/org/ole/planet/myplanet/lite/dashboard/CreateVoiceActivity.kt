@@ -59,6 +59,9 @@ import kotlin.math.roundToInt
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -977,14 +980,12 @@ class CreateVoiceActivity : AppCompatActivity() {
             return
         }
         val base = baseUrl ?: return
-        val loaded = mutableListOf<PendingVoiceImage>()
-        for (path in editInitialImagePaths) {
-            val pending = withContext(Dispatchers.IO) {
-                runCatching { fetchExistingVoiceImage(base, path) }.getOrNull()
-            }
-            if (pending != null) {
-                loaded += pending
-            }
+        val loaded = coroutineScope {
+            editInitialImagePaths.map { path ->
+                async(Dispatchers.IO) {
+                    runCatching { fetchExistingVoiceImage(base, path) }.getOrNull()
+                }
+            }.awaitAll().filterNotNull()
         }
         if (loaded.isEmpty()) {
             return
@@ -1357,11 +1358,13 @@ class CreateVoiceActivity : AppCompatActivity() {
                 return resolved
             }
         }
-        val creationResponse = if (pending.resourceId != null && pending.resourceRevision != null) {
+        val resourceId = pending.resourceId
+        val resourceRevision = pending.resourceRevision
+        val creationResponse = if (resourceId != null && resourceRevision != null) {
             VoicesComposerRepository.ResourceCreationResponse(
                 ok = true,
-                id = pending.resourceId!!,
-                revision = pending.resourceRevision!!
+                id = resourceId,
+                revision = resourceRevision
             )
         } else {
             val metadata = buildResourceMetadata(context, pending.fileName)

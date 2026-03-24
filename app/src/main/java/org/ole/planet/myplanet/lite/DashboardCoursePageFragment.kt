@@ -671,7 +671,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             null
         }
         val progressPercent = if (steps.isNotEmpty() && completedSteps != null) {
-            ((completedSteps.toDouble() / steps.size.toDouble()) * 100)
+            (completedSteps * 100.0 / steps.size)
                 .toInt()
                 .coerceIn(0, 100)
         } else if (steps.isNotEmpty()) {

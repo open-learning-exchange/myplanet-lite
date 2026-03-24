@@ -64,6 +64,7 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
     private fun showSelectionState(forceReload: Boolean) {
         val teamId = selectedTeamId
         val teamName = selectedTeamName
+        val hasSelection = !teamId.isNullOrBlank() && !teamName.isNullOrBlank()
 
         if (!teamId.isNullOrBlank() && !teamName.isNullOrBlank()) {
             emptyView.isVisible = false
@@ -120,7 +121,8 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
         updateActionSelection()
         val teamId = selectedTeamId
         val teamName = selectedTeamName
-        if (!teamId.isNullOrBlank() && !teamName.isNullOrBlank()) {
+        val hasSelection = !teamId.isNullOrBlank() && !teamName.isNullOrBlank()
+        if (hasSelection) {
             when (section) {
                 TeamSection.VOICES -> loadTeamVoices(teamId, teamName)
                 TeamSection.SURVEYS -> loadTeamSurveys(teamId, teamName)
