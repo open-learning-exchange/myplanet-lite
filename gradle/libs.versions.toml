@@ -27,6 +27,7 @@ worldcountrydata = "1.5.3"
 ucrop = "2.2.8"
 swiperefreshlayout = "1.2.0"
 json = "20251224"
+robolectric = "4.11.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -62,6 +63,7 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 worldcountrydata = { module = "com.github.blongho:worldCountryData", version.ref = "worldcountrydata" }
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 json = { group = "org.json", name = "json", version.ref = "json" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
