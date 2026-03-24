@@ -29,6 +29,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.lite.util.nullIfBlank
 
 import java.io.IOException
+import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
 
@@ -47,7 +48,7 @@ class DateStringAdapter {
         } else {
             try {
                 dateFormat.parse(dateString)?.time
-            } catch (e: Exception) {
+            } catch (e: ParseException) {
                 // It might already be a long
                 dateString.toLongOrNull()
             }
