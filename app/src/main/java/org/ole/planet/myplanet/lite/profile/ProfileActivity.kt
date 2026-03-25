@@ -59,6 +59,7 @@ import org.ole.planet.myplanet.lite.util.nullIfBlank
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -852,7 +853,7 @@ class ProfileActivity : AppCompatActivity() {
                 try {
                     bufferedInput.reset()
                     BitmapFactory.decodeStream(bufferedInput, null, decodeOptions)
-                } catch (e: Exception) {
+                } catch (e: IOException) {
                     // Fallback to reopening the stream if reset fails
                     resolver.openInputStream(uri)?.use { fallbackInput ->
                         BitmapFactory.decodeStream(fallbackInput, null, decodeOptions)
