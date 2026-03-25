@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
