@@ -10,6 +10,7 @@ import retrofit2.HttpException
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
 
 import org.json.JSONException
@@ -67,6 +68,8 @@ class NetworkAuthService(
             AuthResult.Error(http.code(), http.message())
         } catch (io: IOException) {
             AuthResult.Error(null, "Error de red: ${io.localizedMessage ?: io.message}")
+        } catch (e: CancellationException) {
+            throw e
         } catch (e: Exception) {
             AuthResult.Error(null, "Error inesperado: ${e.localizedMessage ?: e.message}")
         }
