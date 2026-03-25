@@ -13,7 +13,7 @@ import org.robolectric.annotation.Config
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.*
 
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE, sdk = [34])
+@Config(manifest = Config.NONE)
 class DashboardSurveyOutboxStoreTest {
 
     private lateinit var store: DashboardSurveyOutboxStore
