@@ -39,6 +39,13 @@ kotlin {
     }
 }
 val mockitoAgent by configurations.creating
+
+tasks.withType<Test> {
+    doFirst {
+        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
+    }
+}
+
 dependencies {
     mockitoAgent(libs.mockito.core) { isTransitive = false }
     implementation(libs.androidx.core.ktx)
