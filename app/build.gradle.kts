@@ -4,6 +4,10 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+val mockitoAgent by configurations.creating {
+    isTransitive = false
+}
+
 android {
     namespace = "org.ole.planet.myplanet.lite"
     compileSdk = 36
@@ -84,4 +88,11 @@ dependencies {
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.core.ktx)
+    mockitoAgent(libs.mockito.core)
+}
+
+tasks.withType<Test>().configureEach {
+    doFirst {
+        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
+    }
 }
