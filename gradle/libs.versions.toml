@@ -68,7 +68,6 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 worldcountrydata = { module = "com.github.blongho:worldCountryData", version.ref = "worldcountrydata" }
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 json = { group = "org.json", name = "json", version.ref = "json" }
-robolectric = { module = "org.robolectric:robolectric", version.ref = "robolectric" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
