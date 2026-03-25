@@ -10,6 +10,8 @@
     <string name="login_password_error">The password must be at least 4 characters long</string>
     <string name="login_invalid_credentials">Incorrect username or password</string>
     <string name="login_generic_error">Couldn\'t sign in. Please try again.</string>
+    <string name="login_success_title">Login Successful</string>
+    <string name="login_success_message">Welcome, %1$s!</string>
     <string name="logo">Logo</string>
     <string name="login_signup_prompt">Don\'t have an account?</string>
     <string name="login_signup_action">Sign Up</string>
