@@ -84,7 +84,7 @@ class DashboardSurveyOutboxStore(
                 COLUMN_PAYLOAD,
             ),
             if (teamId.isNullOrBlank()) null else "$COLUMN_TEAM_ID = ?",
-            teamId?.let { arrayOf(it) },
+            if (teamId.isNullOrBlank()) null else arrayOf(teamId),
             null,
             null,
             "$COLUMN_CREATED_AT DESC",

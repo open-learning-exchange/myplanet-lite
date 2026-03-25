@@ -101,6 +101,23 @@ class NetworkAuthServiceTest {
         assertTrue(error.message.contains("Error de red"))
     }
 
+    @Test
+    fun `login returns raw body when error JSON is malformed`() = runTest {
+        val malformedJson = "Mal-formed { JSON"
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setBody(malformedJson)
+        )
+
+        val result = service.login("user@planet.com", "secret")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(400, error.code)
+        assertEquals(malformedJson, error.message)
+    }
+
     private class FakeTokenStorage : TokenStorage {
         var token: String? = null
 
