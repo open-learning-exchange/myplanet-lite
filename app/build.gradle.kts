@@ -4,6 +4,8 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+val mockkAgent: Configuration by configurations.creating
+
 android {
     namespace = "org.ole.planet.myplanet.lite"
     compileSdk = 36
@@ -38,6 +40,18 @@ android {
     }
 }
 
+tasks.withType<Test>().configureEach {
+    doFirst {
+        val agentFile = mockkAgent.find { it.name.startsWith("byte-buddy-agent") }
+        if (agentFile != null) {
+            jvmArgs("-javaagent:$agentFile")
+        }
+        if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+            jvmArgs("-XX:+EnableDynamicAgentLoading")
+        }
+    }
+}
+
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
@@ -45,6 +59,8 @@ kotlin {
 }
 
 dependencies {
+    mockkAgent(libs.byte.buddy)
+    mockkAgent(libs.byte.buddy.agent)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -73,9 +89,9 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.json)
-    testImplementation("org.robolectric:robolectric:4.14.1")
-    testImplementation("io.mockk:mockk:1.13.10")
-    testImplementation("androidx.test:core:1.5.0")
+    testImplementation(libs.robolectric)
+    testImplementation(libs.mockk)
+    testImplementation(libs.androidx.core)
     testImplementation(libs.core.ktx)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
