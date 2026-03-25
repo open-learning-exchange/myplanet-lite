@@ -15,8 +15,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 16
-        versionName = "0.0.16"
+        versionCode = 17
+        versionName = "0.0.17"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -38,8 +38,13 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_11)
     }
 }
-
 val mockitoAgent by configurations.creating
+
+tasks.withType<Test> {
+    doFirst {
+        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
+    }
+}
 
 dependencies {
     mockitoAgent(libs.mockito.core) { isTransitive = false }
@@ -77,10 +82,4 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.core.ktx)
-}
-
-tasks.withType<Test>().configureEach {
-    doFirst {
-        jvmArgs("-javaagent:${mockitoAgent.asPath}")
-    }
 }
