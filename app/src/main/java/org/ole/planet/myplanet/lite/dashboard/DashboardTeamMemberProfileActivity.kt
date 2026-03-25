@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.profile.GenderTranslator
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
+import org.ole.planet.myplanet.lite.util.DateUtils
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
@@ -295,38 +296,10 @@ class DashboardTeamMemberProfileActivity : AppCompatActivity() {
     }
 
     private fun formatBirthDate(value: String?): String {
-        if (value.isNullOrBlank()) {
-            return getString(R.string.dashboard_team_member_profile_not_available)
-        }
-
-        val targetPattern = "yyyy-MM-dd"
-
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val date = runCatching { Instant.parse(value).atZone(ZoneOffset.UTC).toLocalDate() }.getOrNull()
-                ?: runCatching { LocalDate.parse(value) }.getOrNull()
-
-            date?.format(java.time.format.DateTimeFormatter.ofPattern(targetPattern, Locale.getDefault()))
-                ?: value
-        } else {
-            val inputPatterns = listOf(
-                "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                "yyyy-MM-dd'T'HH:mm:ss'Z'",
-                "yyyy-MM-dd"
-            )
-            val outputFormat = SimpleDateFormat(targetPattern, Locale.getDefault()).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-            }
-
-            inputPatterns.firstNotNullOfOrNull { pattern ->
-                runCatching {
-                    SimpleDateFormat(pattern, Locale.US).apply {
-                        timeZone = TimeZone.getTimeZone("UTC")
-                    }.parse(value)
-                }.getOrNull()?.let { date ->
-                    outputFormat.format(date)
-                }
-            } ?: value
-        }
+        return DateUtils.formatBirthDate(
+            value = value,
+            fallback = getString(R.string.dashboard_team_member_profile_not_available)
+        )
     }
 
     private fun showLoading(loading: Boolean) {
