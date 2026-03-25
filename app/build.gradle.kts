@@ -15,8 +15,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 18
-        versionName = "0.0.18"
+        versionCode = 19
+        versionName = "0.0.19"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -32,6 +32,9 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
     testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
         unitTests.isIncludeAndroidResources = true
     }
 }
@@ -80,8 +83,8 @@ dependencies {
     testImplementation(libs.mockwebserver)
     testImplementation(libs.json)
     testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
     testImplementation(libs.core.ktx)
-    testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
