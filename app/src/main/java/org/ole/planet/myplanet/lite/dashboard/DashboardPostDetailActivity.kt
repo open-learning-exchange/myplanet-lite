@@ -1148,12 +1148,10 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         if (comment.imagePaths.isEmpty()) {
             return
         }
-        val loaded = mutableListOf<PendingVoiceImage>()
-        for (path in comment.imagePaths) {
-            val pending = withContext(Dispatchers.IO) { fetchExistingCommentImage(base, path) }
-            if (pending != null) {
-                loaded += pending
-            }
+        val loaded = coroutineScope {
+            comment.imagePaths.map { path ->
+                async(Dispatchers.IO) { fetchExistingCommentImage(base, path) }
+            }.awaitAll().filterNotNull().toMutableList()
         }
         if (loaded.isEmpty()) {
             return

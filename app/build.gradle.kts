@@ -39,7 +39,10 @@ kotlin {
     }
 }
 
+val mockitoAgent by configurations.creating
+
 dependencies {
+    mockitoAgent(libs.mockito.core) { isTransitive = false }
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -68,8 +71,16 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.json)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.core.ktx)
+}
+
+tasks.withType<Test>().configureEach {
+    doFirst {
+        jvmArgs("-javaagent:${mockitoAgent.asPath}")
+    }
 }
