@@ -29,7 +29,7 @@ worldcountrydata = "1.5.3"
 ucrop = "2.2.8"
 swiperefreshlayout = "1.2.0"
 json = "20251224"
-mockito = "4.11.0"
+mockito = "5.2.0"
 robolectric = "4.16.1"
 
 [libraries]
@@ -69,7 +69,6 @@ retrofit = { module = "com.squareup.retrofit2:retrofit", version.ref = "retrofit
 worldcountrydata = { module = "com.github.blongho:worldCountryData", version.ref = "worldcountrydata" }
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 json = { group = "org.json", name = "json", version.ref = "json" }
-mockito-core = { group = "org.mockito", name = "mockito-core", version.ref = "mockito" }
 mockito-inline = { group = "org.mockito", name = "mockito-inline", version.ref = "mockito" }
 robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
