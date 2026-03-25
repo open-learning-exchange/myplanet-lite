@@ -35,6 +35,7 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -43,8 +44,16 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_11)
     }
 }
+val mockitoAgent by configurations.creating
+
+tasks.withType<Test> {
+    doFirst {
+        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
+    }
+}
 
 dependencies {
+    mockitoAgent(libs.mockito.core) { isTransitive = false }
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -75,6 +84,9 @@ dependencies {
     testImplementation(libs.json)
     testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
+    testImplementation(libs.core.ktx)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.kotlin)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
