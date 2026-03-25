@@ -5,6 +5,8 @@ core = "4.6.2"
 coreKtxVersion = "1.7.0"
 fragmentKtx = "1.8.9"
 glide = "5.0.5"
+mockitoCore = "5.23.0"
+mockitoKotlin = "6.3.0"
 securityCrypto = "1.1.0"
 kotlin = "2.3.20"
 coreKtx = "1.18.0"
@@ -56,6 +58,8 @@ androidx-activity = { group = "androidx.activity", name = "activity", version.re
 androidx-security-crypto = { group = "androidx.security", name = "security-crypto", version.ref = "securityCrypto" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "mockwebserver" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
 photoview = { module = "com.github.chrisbanes:PhotoView", version.ref = "photoview" }
