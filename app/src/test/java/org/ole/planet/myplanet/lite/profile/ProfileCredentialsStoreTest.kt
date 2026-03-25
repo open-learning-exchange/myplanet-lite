@@ -1,9 +1,8 @@
+@file:Suppress("DEPRECATION")
 package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -24,8 +23,8 @@ class ProfileCredentialsStoreTest {
     private lateinit var mockAppContext: Context
     private lateinit var mockPrefs: SharedPreferences
 
-    private lateinit var encryptedSharedPreferencesMockStatic: MockedStatic<EncryptedSharedPreferences>
-    private lateinit var masterKeyBuilderMockedConstruction: MockedConstruction<MasterKey.Builder>
+    private lateinit var encryptedSharedPreferencesMockStatic: MockedStatic<androidx.security.crypto.EncryptedSharedPreferences>
+    private lateinit var masterKeyBuilderMockedConstruction: MockedConstruction<androidx.security.crypto.MasterKey.Builder>
 
     @Before
     fun setup() {
@@ -36,15 +35,15 @@ class ProfileCredentialsStoreTest {
         whenever(mockContext.applicationContext).thenReturn(mockAppContext)
 
         // Mock MasterKey Builder via mockConstruction since we invoke the constructor
-        masterKeyBuilderMockedConstruction = mockConstruction(MasterKey.Builder::class.java) { mock, _ ->
+        masterKeyBuilderMockedConstruction = mockConstruction(androidx.security.crypto.MasterKey.Builder::class.java) { mock, _ ->
             whenever(mock.setKeyScheme(any())).thenReturn(mock)
-            whenever(mock.build()).thenReturn(mock(MasterKey::class.java))
+            whenever(mock.build()).thenReturn(mock(androidx.security.crypto.MasterKey::class.java))
         }
 
         // Mock EncryptedSharedPreferences
-        encryptedSharedPreferencesMockStatic = mockStatic(EncryptedSharedPreferences::class.java)
+        encryptedSharedPreferencesMockStatic = mockStatic(androidx.security.crypto.EncryptedSharedPreferences::class.java)
         encryptedSharedPreferencesMockStatic.`when`<SharedPreferences> {
-            EncryptedSharedPreferences.create(
+            androidx.security.crypto.EncryptedSharedPreferences.create(
                 eq(mockAppContext),
                 any(),
                 any(),
