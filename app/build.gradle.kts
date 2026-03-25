@@ -46,8 +46,6 @@ tasks.withType<Test> {
     }
 }
 
-val mockitoAgent by configurations.creating
-
 dependencies {
     mockitoAgent(libs.mockito.core) { isTransitive = false }
     implementation(libs.androidx.core.ktx)
@@ -84,10 +82,4 @@ dependencies {
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.core.ktx)
-}
-
-tasks.withType<Test>().configureEach {
-    doFirst {
-        jvmArgs("-javaagent:${mockitoAgent.asPath}")
-    }
 }
