@@ -70,7 +70,7 @@ class PostShareHelperTest {
         `when`(context.getString(R.string.dashboard_share_post_title, "fallback server")).thenReturn("Shared from fallback server")
         `when`(context.getString(R.string.dashboard_share_post_chooser_title)).thenReturn("Share post")
         `when`(context.packageName).thenReturn("org.ole.planet.myplanet.lite")
-        `when`(context.cacheDir).thenReturn(File(System.getProperty("java.io.tmpdir")))
+        `when`(context.cacheDir).thenReturn(File(System.getProperty("java.io.tmpdir") ?: "."))
 
         helper = PostShareHelper(
             context = context,
