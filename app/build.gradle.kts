@@ -4,8 +4,10 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+val mockitoAgent by configurations.creating {
+    isTransitive = false
+}
 val mockkAgent: Configuration by configurations.creating
-val mockitoAgent by configurations.creating
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
@@ -18,11 +20,18 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 22
-        versionName = "0.0.22"
+        versionCode = 23
+        versionName = "0.0.23"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
+    }
+
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = false
+        }
     }
 
     buildTypes {
@@ -33,11 +42,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-        }
     }
 }
 
@@ -66,7 +70,7 @@ kotlin {
 dependencies {
     mockkAgent(libs.byte.buddy)
     mockkAgent(libs.byte.buddy.agent)
-    mockitoAgent(libs.mockito.core) { isTransitive = false }
+    mockitoAgent(libs.mockito.core)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -103,8 +107,11 @@ dependencies {
     testImplementation(libs.mockito.inline)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.core.ktx)
+    androidTestImplementation(libs.mockwebserver)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
 }
