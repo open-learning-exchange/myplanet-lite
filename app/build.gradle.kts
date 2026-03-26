@@ -51,6 +51,7 @@ tasks.withType<Test>().configureEach {
             jvmArgs("-XX:+EnableDynamicAgentLoading")
         }
         jvmArgs("-javaagent:${mockitoAgent.singleFile}")
+        systemProperty("robolectric.logging", "stdout")
     }
 }
 
