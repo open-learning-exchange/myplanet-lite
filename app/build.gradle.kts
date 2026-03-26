@@ -5,6 +5,7 @@ plugins {
 }
 
 val mockkAgent: Configuration by configurations.creating
+val mockitoAgent by configurations.creating
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
@@ -49,19 +50,13 @@ tasks.withType<Test>().configureEach {
         if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
             jvmArgs("-XX:+EnableDynamicAgentLoading")
         }
+        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
     }
 }
 
 kotlin {
     compilerOptions {
         jvmTarget.set(JvmTarget.JVM_11)
-    }
-}
-val mockitoAgent by configurations.creating
-
-tasks.withType<Test> {
-    doFirst {
-        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
     }
 }
 
@@ -103,9 +98,7 @@ dependencies {
     testImplementation(libs.core.ktx)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.inline)
-    testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
-    testImplementation(libs.core.ktx)
     testImplementation(libs.mockito.kotlin)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

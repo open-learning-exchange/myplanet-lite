@@ -58,6 +58,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
+import org.ole.planet.myplanet.lite.model.LanguageOption
 
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
@@ -1272,8 +1273,6 @@ class MyPlanetLite : AppCompatActivity() {
     }
 
     private data class RememberedCredentials(val username: String, val password: String)
-
-    private data class LanguageOption(val languageTag: String, val labelRes: Int)
 
     private inner class ServerOptionAdapter(context: Context) : ArrayAdapter<ServerOption>(context, 0, mutableListOf()) {
 

@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.model.LanguageOption
 import com.yalantis.ucrop.UCrop
 
 import okhttp3.MediaType.Companion.toMediaType
@@ -128,12 +129,6 @@ class ProfileActivity : AppCompatActivity() {
     private val userProfileSync: UserProfileSync by lazy {
         UserProfileSync(httpClient, userProfileDatabase)
     }
-
-    private data class LanguageOption(
-        val languageTag: String,
-        val labelRes: Int,
-        val levelArrayRes: Int
-    )
 
     private data class ProfileFormValues(
         val firstName: String?,
@@ -510,7 +505,7 @@ class ProfileActivity : AppCompatActivity() {
         storedProfile: UserProfile?,
         avatarUploadBytes: ByteArray?
     ): JSONObject? {
-        val baseDocument = storedProfile?.rawDocument?.nullIfBlank()?.let { JSONObject(it) }
+        val baseDocument = storedProfile?.rawDocument.nullIfBlank()?.let { JSONObject(it) }
             ?: fetchRemoteProfileDocument(serverBaseUrl, username, sessionCookie)
             ?: return null
 
