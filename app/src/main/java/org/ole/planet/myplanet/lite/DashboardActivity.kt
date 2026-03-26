@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.model.LanguageOption
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -691,8 +692,6 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     private data class Padding(val left: Int, val top: Int, val right: Int, val bottom: Int)
-
-    private data class LanguageOption(val languageTag: String, val labelRes: Int)
 
     private enum class DashboardSection {
         HOME,
