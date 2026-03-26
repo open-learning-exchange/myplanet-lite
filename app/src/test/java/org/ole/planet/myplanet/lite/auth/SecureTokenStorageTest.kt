@@ -33,7 +33,6 @@ class SecureTokenStorageTest {
 
     @Before
     fun setUp() {
-        ShadowLog.stream = System.out
         context = ApplicationProvider.getApplicationContext()
 
         mockkStatic(KeyStore::class)
