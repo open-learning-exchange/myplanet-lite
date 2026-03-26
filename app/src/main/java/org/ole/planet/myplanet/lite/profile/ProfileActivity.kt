@@ -505,7 +505,7 @@ class ProfileActivity : AppCompatActivity() {
         storedProfile: UserProfile?,
         avatarUploadBytes: ByteArray?
     ): JSONObject? {
-        val baseDocument = storedProfile?.rawDocument.nullIfBlank()?.let { JSONObject(it) }
+        val baseDocument = storedProfile?.rawDocument?.nullIfBlank()?.let { JSONObject(it) }
             ?: fetchRemoteProfileDocument(serverBaseUrl, username, sessionCookie)
             ?: return null
 

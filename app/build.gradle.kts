@@ -42,6 +42,9 @@ android {
 }
 
 tasks.withType<Test>().configureEach {
+    systemProperty("robolectric.logging", "none")
+    systemProperty("robolectric.logging.enabled", "false")
+
     doFirst {
         val agentFile = mockkAgent.find { it.name.startsWith("byte-buddy-agent") }
         if (agentFile != null) {
@@ -51,7 +54,6 @@ tasks.withType<Test>().configureEach {
             jvmArgs("-XX:+EnableDynamicAgentLoading")
         }
         jvmArgs("-javaagent:${mockitoAgent.singleFile}")
-        systemProperty("robolectric.logging", "stdout")
     }
 }
 
