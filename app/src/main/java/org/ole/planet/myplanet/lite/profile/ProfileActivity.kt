@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.model.LanguageOption
 import com.yalantis.ucrop.UCrop
 
 import okhttp3.MediaType.Companion.toMediaType
@@ -59,6 +60,7 @@ import org.ole.planet.myplanet.lite.util.nullIfBlank
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -127,12 +129,6 @@ class ProfileActivity : AppCompatActivity() {
     private val userProfileSync: UserProfileSync by lazy {
         UserProfileSync(httpClient, userProfileDatabase)
     }
-
-    private data class LanguageOption(
-        val languageTag: String,
-        val labelRes: Int,
-        val levelArrayRes: Int
-    )
 
     private data class ProfileFormValues(
         val firstName: String?,
@@ -852,7 +848,7 @@ class ProfileActivity : AppCompatActivity() {
                 try {
                     bufferedInput.reset()
                     BitmapFactory.decodeStream(bufferedInput, null, decodeOptions)
-                } catch (e: Exception) {
+                } catch (e: IOException) {
                     // Fallback to reopening the stream if reset fails
                     resolver.openInputStream(uri)?.use { fallbackInput ->
                         BitmapFactory.decodeStream(fallbackInput, null, decodeOptions)

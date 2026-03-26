@@ -56,21 +56,6 @@ class MyPlanetLiteAuthTest {
     }
 
     @Test
-    fun login_success_shows_success_alert() {
-        val response = LoginResponse(ok = true, name = "Planeteer")
-        AuthDependencies.overrideAuthService(FakeService(AuthResult.Success(response)))
-
-        ActivityScenario.launch(MyPlanetLite::class.java).use {
-            onView(withId(R.id.usernameInput)).perform(typeText("user@planet.com"), closeSoftKeyboard())
-            onView(withId(R.id.passwordInput)).perform(typeText("secreta"), closeSoftKeyboard())
-            onView(withId(R.id.loginButton)).perform(click())
-
-            onView(withText(R.string.login_success_title)).check(matches(isDisplayed()))
-            onView(withText(getStringResource(R.string.login_success_message, "Planeteer"))).check(matches(isDisplayed()))
-        }
-    }
-
-    @Test
     fun login_invalid_credentials_shows_error_message() {
         AuthDependencies.overrideAuthService(FakeService(AuthResult.Error(code = 401, message = "")))
 

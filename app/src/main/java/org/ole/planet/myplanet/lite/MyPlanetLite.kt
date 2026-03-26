@@ -50,6 +50,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.model.ServerMetadataResponse
@@ -57,6 +58,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
+import org.ole.planet.myplanet.lite.model.LanguageOption
 
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
@@ -139,7 +141,6 @@ class MyPlanetLite : AppCompatActivity() {
         )
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
-    private val serverMetadataAdapter by lazy { moshi.adapter(ServerMetadataResponse::class.java) }
 
     private val signupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -1273,8 +1274,6 @@ class MyPlanetLite : AppCompatActivity() {
 
     private data class RememberedCredentials(val username: String, val password: String)
 
-    private data class LanguageOption(val languageTag: String, val labelRes: Int)
-
     private inner class ServerOptionAdapter(context: Context) : ArrayAdapter<ServerOption>(context, 0, mutableListOf()) {
 
         private val allItems = mutableListOf<ServerOption>()
@@ -1417,7 +1416,7 @@ class MyPlanetLite : AppCompatActivity() {
                 if (body.isBlank()) {
                     return@use ServerConnectivityResult(true)
                 }
-                val metadata = extractServerMetadata(body)
+                val metadata = ServerMetadataExtractor.extract(body, moshi)
                 ServerConnectivityResult(true, metadata?.first, metadata?.second)
             }
         }.getOrDefault(ServerConnectivityResult(false))
@@ -1429,22 +1428,6 @@ class MyPlanetLite : AppCompatActivity() {
             ?.addQueryParameter("include_docs", "true")
             ?.build()
             ?.toString()
-    }
-
-    private fun extractServerMetadata(payload: String): Pair<String?, String?>? {
-        return runCatching {
-            val response = serverMetadataAdapter.fromJson(payload)
-            val rows = response?.rows ?: return@runCatching null
-            for (row in rows) {
-                val doc = row.doc ?: continue
-                val parentCode = doc.parentCode?.takeIf { it.isNotBlank() }
-                val code = doc.code?.takeIf { it.isNotBlank() }
-                if (parentCode != null || code != null) {
-                    return@runCatching Pair(parentCode, code)
-                }
-            }
-            null
-        }.getOrNull()
     }
 
     private fun persistServerMetadata(baseUrl: String, parentCode: String?, code: String?) {

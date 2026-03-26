@@ -10,6 +10,8 @@
     <string name="login_password_error">La contraseña debe tener al menos 4 caracteres</string>
     <string name="login_invalid_credentials">Usuario o contraseña incorrectos</string>
     <string name="login_generic_error">No se pudo iniciar sesión. Intenta nuevamente.</string>
+    <string name="login_success_title">Inicio de sesión exitoso</string>
+    <string name="login_success_message">¡Bienvenido, %1$s!</string>
     <string name="logo">Logo</string>
     <string name="login_signup_prompt">¿No tienes una cuenta?</string>
     <string name="login_signup_action">Regístrate</string>
