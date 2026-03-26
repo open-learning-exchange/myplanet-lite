@@ -59,4 +59,8 @@ public class Log {
     public static boolean isLoggable(String tag, int level) {
         return false;
     }
+
+    public static String getStackTraceString(Throwable tr) {
+        return "";
+    }
 }

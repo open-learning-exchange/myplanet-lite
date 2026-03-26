@@ -4,6 +4,9 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
+val mockkAgent: Configuration by configurations.creating
+val mockitoAgent by configurations.creating
+
 android {
     namespace = "org.ole.planet.myplanet.lite"
     compileSdk = 36
@@ -15,8 +18,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 21
-        versionName = "0.0.21"
+        versionCode = 22
+        versionName = "0.0.22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -35,7 +38,22 @@ android {
         unitTests {
             isIncludeAndroidResources = true
         }
-        unitTests.isIncludeAndroidResources = true
+    }
+}
+
+tasks.withType<Test>().configureEach {
+    systemProperty("robolectric.logging", "none")
+    systemProperty("robolectric.logging.enabled", "false")
+
+    doFirst {
+        val agentFile = mockkAgent.find { it.name.startsWith("byte-buddy-agent") }
+        if (agentFile != null) {
+            jvmArgs("-javaagent:$agentFile")
+        }
+        if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
+            jvmArgs("-XX:+EnableDynamicAgentLoading")
+        }
+        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
     }
 }
 
@@ -44,15 +62,10 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_11)
     }
 }
-val mockitoAgent by configurations.creating
-
-tasks.withType<Test> {
-    doFirst {
-        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
-    }
-}
 
 dependencies {
+    mockkAgent(libs.byte.buddy)
+    mockkAgent(libs.byte.buddy.agent)
     mockitoAgent(libs.mockito.core) { isTransitive = false }
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
@@ -82,11 +95,13 @@ dependencies {
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.json)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.mockk)
+    testImplementation(libs.androidx.core)
+    testImplementation(libs.core.ktx)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.inline)
-    testImplementation(libs.robolectric)
     testImplementation(libs.androidx.test.core)
-    testImplementation(libs.core.ktx)
     testImplementation(libs.mockito.kotlin)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
