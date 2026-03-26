@@ -78,7 +78,6 @@ worldcountrydata = { module = "com.github.blongho:worldCountryData", version.ref
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 json = { group = "org.json", name = "json", version.ref = "json" }
 byte-buddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "bytebuddy" }
-mockito-inline = { group = "org.mockito", name = "mockito-inline", version.ref = "mockito" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
