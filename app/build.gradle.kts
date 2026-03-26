@@ -8,7 +8,6 @@ val mockitoAgent by configurations.creating {
     isTransitive = false
 }
 val mockkAgent: Configuration by configurations.creating
-val mockitoAgent by configurations.creating
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
@@ -29,8 +28,10 @@ android {
     }
 
     testOptions {
-        unitTests.isIncludeAndroidResources = true
-        unitTests.isReturnDefaultValues = false
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = false
+        }
     }
 
     buildTypes {
@@ -41,11 +42,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-        }
     }
 }
 
@@ -108,7 +104,6 @@ dependencies {
     testImplementation(libs.androidx.core)
     testImplementation(libs.core.ktx)
     testImplementation(libs.mockito.core)
-    testImplementation(libs.mockito.inline)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.mockito.kotlin)
     androidTestImplementation(libs.androidx.junit)
@@ -117,14 +112,5 @@ dependencies {
     androidTestImplementation(libs.core.ktx)
     androidTestImplementation(libs.mockwebserver)
     androidTestImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.robolectric)
     testImplementation(libs.androidx.junit)
-    testImplementation(libs.core.ktx)
-    mockitoAgent(libs.mockito.core)
-}
-
-tasks.withType<Test>().configureEach {
-    doFirst {
-        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
-    }
 }

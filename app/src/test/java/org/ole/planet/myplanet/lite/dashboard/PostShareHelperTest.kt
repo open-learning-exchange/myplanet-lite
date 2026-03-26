@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
+import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -30,7 +31,7 @@ import org.ole.planet.myplanet.lite.R
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@org.junit.runner.RunWith(androidx.test.ext.junit.runners.AndroidJUnit4::class)
+@org.junit.runner.RunWith(AndroidJUnit4::class)
 @org.robolectric.annotation.Config(sdk = [28])
 class PostShareHelperTest {
 
