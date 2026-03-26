@@ -17,8 +17,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 5
-        versionName = "0.0.5"
+        versionCode = 21
+        versionName = "0.0.21"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -49,6 +49,7 @@ tasks.withType<Test>().configureEach {
         if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
             jvmArgs("-XX:+EnableDynamicAgentLoading")
         }
+        unitTests.isIncludeAndroidResources = true
     }
 }
 
@@ -57,10 +58,18 @@ kotlin {
         jvmTarget.set(JvmTarget.JVM_11)
     }
 }
+val mockitoAgent by configurations.creating
+
+tasks.withType<Test> {
+    doFirst {
+        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
+    }
+}
 
 dependencies {
     mockkAgent(libs.byte.buddy)
     mockkAgent(libs.byte.buddy.agent)
+    mockitoAgent(libs.mockito.core) { isTransitive = false }
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -93,6 +102,12 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.androidx.core)
     testImplementation(libs.core.ktx)
+    testImplementation(libs.mockito.core)
+    testImplementation(libs.mockito.inline)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.core.ktx)
+    testImplementation(libs.mockito.kotlin)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)

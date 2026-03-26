@@ -7,6 +7,8 @@ fragmentKtx = "1.8.9"
 glide = "5.0.5"
 mockk = "1.14.9"
 robolectric = "4.16.1"
+mockitoCore = "5.23.0"
+mockitoKotlin = "6.3.0"
 securityCrypto = "1.1.0"
 kotlin = "2.3.20"
 coreKtx = "1.18.0"
@@ -30,11 +32,14 @@ ucrop = "2.2.8"
 swiperefreshlayout = "1.2.0"
 json = "20251224"
 bytebuddy = "1.18.2"
+mockito = "5.2.0"
+robolectric = "4.16.1"
 
 [libraries]
 byte-buddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "bytebuddy" }
 androidx-core = { module = "androidx.test:core", version.ref = "coreKtxVersion" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
+androidx-test-core = { group = "androidx.test", name = "core", version.ref = "coreKtxVersion" }
 androidx-espresso-intents = { module = "androidx.test.espresso:espresso-intents", version.ref = "espressoCore" }
 androidx-fragment-ktx = { module = "androidx.fragment:fragment-ktx", version.ref = "fragmentKtx" }
 androidx-lifecycle-runtime-ktx = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
@@ -62,6 +67,8 @@ androidx-constraintlayout = { group = "androidx.constraintlayout", name = "const
 androidx-swiperefreshlayout = { module = "androidx.swiperefreshlayout:swiperefreshlayout", version.ref = "swiperefreshlayout" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 mockk-agent-jvm = { module = "io.mockk:mockk-agent-jvm", version.ref = "mockk" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "mockwebserver" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
 photoview = { module = "com.github.chrisbanes:PhotoView", version.ref = "photoview" }
@@ -71,6 +78,8 @@ worldcountrydata = { module = "com.github.blongho:worldCountryData", version.ref
 ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 json = { group = "org.json", name = "json", version.ref = "json" }
 byte-buddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "bytebuddy" }
+mockito-inline = { group = "org.mockito", name = "mockito-inline", version.ref = "mockito" }
+robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
