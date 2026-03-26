@@ -8,7 +8,6 @@ val mockitoAgent by configurations.creating {
     isTransitive = false
 }
 val mockkAgent: Configuration by configurations.creating
-val mockitoAgent by configurations.creating
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
@@ -29,8 +28,10 @@ android {
     }
 
     testOptions {
-        unitTests.isIncludeAndroidResources = true
-        unitTests.isReturnDefaultValues = false
+        unitTests {
+            isIncludeAndroidResources = true
+            isReturnDefaultValues = false
+        }
     }
 
     buildTypes {
@@ -41,11 +42,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
-    }
-    testOptions {
-        unitTests {
-            isIncludeAndroidResources = true
-        }
     }
 }
 
@@ -74,7 +70,7 @@ kotlin {
 dependencies {
     mockkAgent(libs.byte.buddy)
     mockkAgent(libs.byte.buddy.agent)
-    mockitoAgent(libs.mockito.core) { isTransitive = false }
+    mockitoAgent(libs.mockito.core)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
@@ -111,20 +107,11 @@ dependencies {
     testImplementation(libs.mockito.inline)
     testImplementation(libs.androidx.test.core)
     testImplementation(libs.mockito.kotlin)
+    testImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.core.ktx)
     androidTestImplementation(libs.mockwebserver)
     androidTestImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.androidx.junit)
-    testImplementation(libs.core.ktx)
-    mockitoAgent(libs.mockito.core)
-}
-
-tasks.withType<Test>().configureEach {
-    doFirst {
-        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
-    }
 }

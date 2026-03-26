@@ -17,6 +17,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
 import org.mockito.Mock
 import org.mockito.MockedStatic
 import org.mockito.Mockito.any
@@ -27,11 +28,13 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.ole.planet.myplanet.lite.R
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.File
 
 @OptIn(ExperimentalCoroutinesApi::class)
-@org.junit.runner.RunWith(androidx.test.ext.junit.runners.AndroidJUnit4::class)
-@org.robolectric.annotation.Config(sdk = [28])
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [28])
 class PostShareHelperTest {
 
     private lateinit var mockWebServer: MockWebServer
