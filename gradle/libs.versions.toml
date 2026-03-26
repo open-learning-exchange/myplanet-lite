@@ -31,9 +31,8 @@ worldcountrydata = "1.5.3"
 ucrop = "2.2.8"
 swiperefreshlayout = "1.2.0"
 json = "20251224"
-bytebuddy = "1.18.2"
+bytebuddy = "1.18.7"
 mockito = "5.2.0"
-robolectric = "4.16.1"
 
 [libraries]
 byte-buddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "bytebuddy" }
@@ -79,7 +78,6 @@ ucrop = { module = "com.github.yalantis:ucrop", version.ref = "ucrop" }
 json = { group = "org.json", name = "json", version.ref = "json" }
 byte-buddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "bytebuddy" }
 mockito-inline = { group = "org.mockito", name = "mockito-inline", version.ref = "mockito" }
-robolectric = { group = "org.robolectric", name = "robolectric", version.ref = "robolectric" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

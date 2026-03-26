@@ -17,8 +17,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 21
-        versionName = "0.0.21"
+        versionCode = 22
+        versionName = "0.0.22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -49,7 +49,6 @@ tasks.withType<Test>().configureEach {
         if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
             jvmArgs("-XX:+EnableDynamicAgentLoading")
         }
-        unitTests.isIncludeAndroidResources = true
     }
 }
 
