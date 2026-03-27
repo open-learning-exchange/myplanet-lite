@@ -53,7 +53,6 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
-import org.ole.planet.myplanet.lite.model.ServerMetadataResponse
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
