@@ -68,35 +68,48 @@ kotlin {
 }
 
 dependencies {
-    mockkAgent(libs.byte.buddy)
-    mockkAgent(libs.byte.buddy.agent)
-    mockitoAgent(libs.mockito.core)
-
+    // implementation
+    // AndroidX
     implementation(libs.androidx.activity)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.constraintlayout)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.fragment.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
     implementation(libs.androidx.security.crypto)
     implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.circleimageview)
+
+    // Google
+    implementation(libs.language.id)
+    implementation(libs.material)
+
+    // Networking
     implementation(libs.converter.moshi)
+    implementation(libs.logging.interceptor)
+    implementation(libs.moshi.kotlin)
+    implementation(libs.retrofit)
+
+    // UI/Media
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.circleimageview)
     implementation(libs.core)
     implementation(libs.ext.tables)
     implementation(libs.glide)
-    implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.language.id)
-    implementation(libs.logging.interceptor)
-    implementation(libs.material)
-    implementation(libs.moshi.kotlin)
     implementation(libs.photoview)
-    implementation(libs.retrofit)
     implementation(libs.ucrop)
+
+    // Utilities
+    implementation(libs.kotlinx.coroutines.android)
     implementation(libs.worldcountrydata)
 
+    // Special Agents
+    mockkAgent(libs.byte.buddy)
+    mockkAgent(libs.byte.buddy.agent)
+    mockitoAgent(libs.mockito.core)
+
+    // testImplementation
+    // Testing
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
@@ -111,6 +124,8 @@ dependencies {
     testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
 
+    // androidTestImplementation
+    // Testing
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.androidx.junit)
