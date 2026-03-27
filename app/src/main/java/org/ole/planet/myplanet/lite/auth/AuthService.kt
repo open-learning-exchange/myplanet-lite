@@ -4,6 +4,7 @@
  * Creation date: 2025-11-07
  */
 package org.ole.planet.myplanet.lite.auth
+
 import java.io.IOException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -12,6 +13,7 @@ import kotlinx.coroutines.withContext
 import org.json.JSONException
 import org.json.JSONObject
 import retrofit2.HttpException
+
 sealed class AuthResult {
     data class Success(val response: LoginResponse) : AuthResult()
     data class Error(val code: Int?, val message: String) : AuthResult()
