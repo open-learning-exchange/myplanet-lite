@@ -35,7 +35,6 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 import kotlinx.coroutines.launch
 
-import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
