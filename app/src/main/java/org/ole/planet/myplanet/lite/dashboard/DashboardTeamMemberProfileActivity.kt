@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.DateUtils
+
 class DashboardTeamMemberProfileActivity : AppCompatActivity() {
     private lateinit var avatarView: ImageView
     private lateinit var nameView: TextView
