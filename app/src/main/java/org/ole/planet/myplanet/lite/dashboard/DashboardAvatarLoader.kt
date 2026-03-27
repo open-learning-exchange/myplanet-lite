@@ -21,6 +21,7 @@ import okhttp3.Request
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+
 class DashboardAvatarLoader(
     private val baseUrl: String,
     private val sessionCookie: String?,
