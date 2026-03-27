@@ -22,6 +22,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 import java.io.IOException
@@ -407,37 +410,38 @@ class DashboardCoursesRepository {
                 val sanitizedIds = courseIds.filter { it.isNotBlank() }
                 if (sanitizedIds.isEmpty()) return@runCatching emptyMap()
 
-                val docs = ArrayList<CourseProgressDocument>()
-                sanitizedIds.chunked(10).forEach { courseChunk ->
-                    val requestUrl = "$normalizedBase/db/courses_progress/_find"
-                    val payload = coursesProgressRequestAdapter.toJson(
-                        CoursesProgressFindRequest(
-                            selector = CoursesProgressSelector(
-                                userId = "org.couchdb.user:${credentials.username}",
-                                courseId = CourseInSelector(included = courseChunk),
-                                stepNum = stepNum
-                            ),
-                            limit = stepNum?.let { 1 }
-                        )
-                    )
-                    val mediaType = "application/json; charset=utf-8".toMediaType()
-                    val request = Request.Builder()
-                        .url(requestUrl)
-                        .post(payload.toRequestBody(mediaType))
-                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                        .build()
+                val docs = coroutineScope {
+                    sanitizedIds.chunked(10).map { courseChunk ->
+                        async {
+                            val requestUrl = "$normalizedBase/db/courses_progress/_find"
+                            val payload = coursesProgressRequestAdapter.toJson(
+                                CoursesProgressFindRequest(
+                                    selector = CoursesProgressSelector(
+                                        userId = "org.couchdb.user:${credentials.username}",
+                                        courseId = CourseInSelector(included = courseChunk),
+                                        stepNum = stepNum
+                                    ),
+                                    limit = stepNum?.let { 1 }
+                                )
+                            )
+                            val mediaType = "application/json; charset=utf-8".toMediaType()
+                            val request = Request.Builder()
+                                .url(requestUrl)
+                                .post(payload.toRequestBody(mediaType))
+                                .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
+                                .build()
 
-                    client.newCall(request).execute().use { response ->
-                        if (!response.isSuccessful) {
-                            response.body.string()
-                            throw IOException("Unexpected response ${response.code}")
+                            client.newCall(request).execute().use { response ->
+                                if (!response.isSuccessful) {
+                                    response.body.string()
+                                    throw IOException("Unexpected response ${response.code}")
+                                }
+                                val parsed = coursesProgressResponseAdapter.fromJson(response.body.string())
+                                    ?: throw IOException("Invalid response body")
+                                parsed.docs.filter { !it.courseId.isNullOrBlank() && it.stepNum != null }
+                            }
                         }
-                        val parsed = coursesProgressResponseAdapter.fromJson(response.body.string())
-                            ?: throw IOException("Invalid response body")
-                        docs.addAll(
-                            parsed.docs.filter { !it.courseId.isNullOrBlank() && it.stepNum != null }
-                        )
-                    }
+                    }.awaitAll().flatten()
                 }
                 val maxStep = docs.maxOfOrNull { it.stepNum ?: 0 }
                 if (stepNum != null) {
