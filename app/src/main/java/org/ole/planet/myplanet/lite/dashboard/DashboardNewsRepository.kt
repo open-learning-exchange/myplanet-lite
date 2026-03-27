@@ -86,7 +86,7 @@ class DashboardNewsRepository {
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
                     val parsed = responseAdapter.fromJson(body)
@@ -169,7 +169,7 @@ class DashboardNewsRepository {
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
                     val parsed = responseAdapter.fromJson(body)
