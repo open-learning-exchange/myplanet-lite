@@ -83,13 +83,13 @@ dependencies {
     implementation(libs.language.id)
     implementation(libs.material)
 
-    // Networking
+    // networking
     implementation(libs.converter.moshi)
     implementation(libs.logging.interceptor)
     implementation(libs.moshi.kotlin)
     implementation(libs.retrofit)
 
-    // UI/Media
+    // UI/media
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
     implementation(libs.circleimageview)
@@ -99,17 +99,17 @@ dependencies {
     implementation(libs.photoview)
     implementation(libs.ucrop)
 
-    // Utilities
+    // utilidades
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.worldcountrydata)
 
-    // Special Agents
+    // agentes especiales
     mockkAgent(libs.byte.buddy)
     mockkAgent(libs.byte.buddy.agent)
     mockitoAgent(libs.mockito.core)
 
     // testImplementation
-    // Testing
+    // testing
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
@@ -125,7 +125,7 @@ dependencies {
     testImplementation(libs.robolectric)
 
     // androidTestImplementation
-    // Testing
+    // testing
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
     androidTestImplementation(libs.androidx.junit)
