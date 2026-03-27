@@ -99,11 +99,11 @@ dependencies {
     implementation(libs.photoview)
     implementation(libs.ucrop)
 
-    // utilidades
+    // utilities
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.worldcountrydata)
 
-    // agentes especiales
+    // special agents
     mockkAgent(libs.byte.buddy)
     mockkAgent(libs.byte.buddy.agent)
     mockitoAgent(libs.mockito.core)
