@@ -3,38 +3,29 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-07
  */
-
 package org.ole.planet.myplanet.lite.auth
-
-import retrofit2.HttpException
-
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withContext
-
 import org.json.JSONException
 import org.json.JSONObject
-
-import java.io.IOException
-
+import retrofit2.HttpException
 sealed class AuthResult {
     data class Success(val response: LoginResponse) : AuthResult()
     data class Error(val code: Int?, val message: String) : AuthResult()
 }
-
 interface AuthService {
     suspend fun login(usernameOrEmail: String, password: String): AuthResult
     suspend fun logout()
     suspend fun getStoredToken(): String?
 }
-
 class NetworkAuthService(
     private val api: AuthApi,
     private val tokenStorage: TokenStorage,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : AuthService {
-
     override suspend fun login(usernameOrEmail: String, password: String): AuthResult {
         return try {
             val response = withContext(ioDispatcher) {
@@ -74,13 +65,10 @@ class NetworkAuthService(
             AuthResult.Error(null, "Error inesperado: ${e.localizedMessage ?: e.message}")
         }
     }
-
     override suspend fun logout() {
         tokenStorage.clearToken()
     }
-
     override suspend fun getStoredToken(): String? = tokenStorage.getToken()
-
     private fun parseErrorMessage(rawBody: String): String {
         return try {
             val json = JSONObject(rawBody)
