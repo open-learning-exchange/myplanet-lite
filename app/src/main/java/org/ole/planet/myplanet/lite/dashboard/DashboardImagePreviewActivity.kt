@@ -17,6 +17,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewAdapter
+
 class DashboardImagePreviewActivity : AppCompatActivity() {
     private lateinit var viewPager: ViewPager2
     private lateinit var progressBar: ProgressBar
