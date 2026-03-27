@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+
 class DashboardOutboxDetailActivity : AppCompatActivity() {
     private lateinit var toolbar: MaterialToolbar
     private lateinit var teamView: TextView
