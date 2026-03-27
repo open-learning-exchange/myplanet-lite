@@ -14,6 +14,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+
 class DashboardOfflineSurveyStore(
     context: Context,
     moshi: Moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
