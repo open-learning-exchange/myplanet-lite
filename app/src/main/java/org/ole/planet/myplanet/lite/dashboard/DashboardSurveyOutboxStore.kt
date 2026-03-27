@@ -3,29 +3,22 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-19
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 class DashboardSurveyOutboxStore(
     context: Context,
     moshi: Moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
-
     private val submissionAdapter = moshi.adapter(SurveySubmission::class.java)
-
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -42,14 +35,12 @@ class DashboardSurveyOutboxStore(
         )
         db.execSQL("CREATE INDEX idx_outbox_team_id ON $TABLE_SUBMISSIONS($COLUMN_TEAM_ID)")
     }
-
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < DATABASE_VERSION) {
             db.execSQL("DROP TABLE IF EXISTS $TABLE_SUBMISSIONS")
             onCreate(db)
         }
     }
-
     suspend fun saveSubmission(
         submission: SurveySubmission,
         surveyId: String?,
@@ -70,7 +61,6 @@ class DashboardSurveyOutboxStore(
             writableDatabase.insert(TABLE_SUBMISSIONS, null, values) != -1L
         }
     }
-
     suspend fun getPendingForTeam(teamId: String?): List<OutboxEntry> = withContext(Dispatchers.IO) {
         readableDatabase.query(
             TABLE_SUBMISSIONS,
@@ -96,7 +86,6 @@ class DashboardSurveyOutboxStore(
             val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
             val createdAtIdx = cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)
             val payloadIdx = cursor.getColumnIndexOrThrow(COLUMN_PAYLOAD)
-
             buildList {
                 while (cursor.moveToNext()) {
                     val payload = cursor.getStringOrNull(payloadIdx) ?: continue
@@ -116,7 +105,6 @@ class DashboardSurveyOutboxStore(
             }
         }
     }
-
     suspend fun getEntry(id: Long): OutboxEntry? = withContext(Dispatchers.IO) {
         readableDatabase.query(
             TABLE_SUBMISSIONS,
@@ -143,7 +131,6 @@ class DashboardSurveyOutboxStore(
             val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
             val createdAtIdx = cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)
             val payloadIdx = cursor.getColumnIndexOrThrow(COLUMN_PAYLOAD)
-
             if (cursor.moveToFirst()) {
                 val payload = cursor.getStringOrNull(payloadIdx) ?: return@use null
                 val parsed = runCatching { submissionAdapter.fromJson(payload) }.getOrNull() ?: return@use null
@@ -161,11 +148,9 @@ class DashboardSurveyOutboxStore(
             }
         }
     }
-
     suspend fun deleteEntry(id: Long): Boolean = withContext(Dispatchers.IO) {
         writableDatabase.delete(TABLE_SUBMISSIONS, "$COLUMN_ID = ?", arrayOf(id.toString())) > 0
     }
-
     data class OutboxEntry(
         val id: Long,
         val surveyId: String?,
@@ -175,15 +160,12 @@ class DashboardSurveyOutboxStore(
         val createdAt: Long,
         val submission: SurveySubmission,
     )
-
     private fun Cursor.getStringOrNull(columnName: String): String? {
         return getStringOrNull(getColumnIndexOrThrow(columnName))
     }
-
     private fun Cursor.getStringOrNull(index: Int): String? {
         return if (isNull(index)) null else getString(index)
     }
-
     private companion object {
         private const val DATABASE_NAME = "dashboard_survey_outbox.db"
         private const val DATABASE_VERSION = 1

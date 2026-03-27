@@ -3,28 +3,21 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-24
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
+import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-import java.io.IOException
-
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 class DashboardSurveysRepository {
-
     private val client: OkHttpClient = OkHttpClient.Builder().build()
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
@@ -33,7 +26,6 @@ class DashboardSurveysRepository {
     private val findResponseAdapter = moshi.adapter(SurveysFindResponse::class.java)
     private val completionsRequestAdapter = moshi.adapter(SurveyCompletionsRequest::class.java)
     private val completionsResponseAdapter = moshi.adapter(SurveyCompletionsResponse::class.java)
-
     suspend fun fetchTeamSurveys(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -74,24 +66,20 @@ class DashboardSurveysRepository {
             }
         }
     }
-
     @JsonClass(generateAdapter = true)
     data class SurveysFindRequest(
         @param:Json(name = "selector") val selector: SurveySelector,
     )
-
     @JsonClass(generateAdapter = true)
     data class SurveySelector(
         @param:Json(name = "type") val type: String,
         @param:Json(name = "teamId") val teamId: String,
         @param:Json(name = "isArchived") val isArchived: Map<String, Boolean>,
     )
-
     @JsonClass(generateAdapter = true)
     data class SurveysFindResponse(
         @param:Json(name = "docs") val docs: List<SurveyDocument> = emptyList(),
     )
-
     @JsonClass(generateAdapter = true)
     data class SurveyDocument(
         @param:Json(name = "_id") val id: String? = null,
@@ -105,7 +93,6 @@ class DashboardSurveysRepository {
         @param:Json(name = "questions") val questions: List<SurveyQuestion>? = null,
         @param:Json(name = "totalMarks") val totalMarks: Int? = null,
     ) : java.io.Serializable
-
     @JsonClass(generateAdapter = true)
     data class SurveyQuestion(
         @param:Json(name = "body") val body: String? = null,
@@ -115,13 +102,11 @@ class DashboardSurveysRepository {
         @param:Json(name = "choices") val choices: List<SurveyChoice>? = null,
         @param:Json(name = "hasOtherOption") val hasOtherOption: Boolean = false,
     ) : java.io.Serializable
-
     @JsonClass(generateAdapter = true)
     data class SurveyChoice(
         @param:Json(name = "text") val text: String? = null,
         @param:Json(name = "id") val id: String? = null,
     ) : java.io.Serializable
-
     suspend fun fetchSurveyCompletionCount(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -171,14 +156,12 @@ class DashboardSurveysRepository {
             }
         }
     }
-
     @JsonClass(generateAdapter = true)
     data class SurveyCompletionsRequest(
         @param:Json(name = "selector") val selector: SurveyCompletionsSelector,
         @param:Json(name = "limit") val limit: Int = 5000,
         @param:Json(name = "fields") val fields: List<String> = listOf("_id"),
     )
-
     @JsonClass(generateAdapter = true)
     data class SurveyCompletionsSelector(
         @param:Json(name = "type") val type: String,
@@ -186,12 +169,10 @@ class DashboardSurveysRepository {
         @param:Json(name = "team._id") val teamId: String,
         @param:Json(name = "${'$'}or") val parentMatches: List<Map<String, Any>>,
     )
-
     @JsonClass(generateAdapter = true)
     data class SurveyCompletionsResponse(
         @param:Json(name = "docs") val docs: List<Map<String, Any?>> = emptyList(),
     )
-
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
     }

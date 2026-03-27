@@ -3,38 +3,30 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-15
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
 import android.view.View
 import android.widget.ImageView
-
-import okhttp3.OkHttpClient
-import okhttp3.Request
-
+import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-import java.io.IOException
-
+import okhttp3.OkHttpClient
+import okhttp3.Request
 class DashboardPostImageLoader(
     private val baseUrl: String,
     private val sessionCookie: String?,
     private val scope: CoroutineScope
 ) {
-
     private val client: OkHttpClient = OkHttpClient.Builder().build()
     private val cache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
         override fun sizeOf(key: String, value: Bitmap): Int {
             return value.byteCount
         }
     }
-
     fun bind(imageView: ImageView, imagePath: String, onResult: ((Boolean) -> Unit)? = null) {
         imageView.setImageDrawable(null)
         val cacheKey = imagePath
@@ -65,7 +57,6 @@ class DashboardPostImageLoader(
             }
         }
     }
-
     private fun fetchImageBitmap(imagePath: String): Bitmap? {
         val requestUrl = resolveUrl(imagePath) ?: return null
         val requestBuilder = Request.Builder()
@@ -86,7 +77,6 @@ class DashboardPostImageLoader(
             null
         }
     }
-
     private fun resolveUrl(path: String): String? {
         val normalizedBase = baseUrl.trim().trimEnd('/')
         if (normalizedBase.isEmpty()) {
@@ -106,7 +96,6 @@ class DashboardPostImageLoader(
         }
         return "$normalizedBase/$finalPath"
     }
-
     private companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
     }
