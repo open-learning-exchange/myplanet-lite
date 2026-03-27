@@ -58,7 +58,7 @@ class DashboardSurveySubmissionsRepository {
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
                 }
             }
@@ -106,10 +106,14 @@ class DashboardSurveySubmissionsRepository {
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
-                    val body = response.body.string()
-                    lookupResponseAdapter.fromJson(body)?.docs?.firstOrNull()
+                    val body = response.body?.string() ?: ""
+                    if (body.isEmpty()) {
+                        null
+                    } else {
+                        lookupResponseAdapter.fromJson(body)?.docs?.firstOrNull()
+                    }
                 }
             }
         }
