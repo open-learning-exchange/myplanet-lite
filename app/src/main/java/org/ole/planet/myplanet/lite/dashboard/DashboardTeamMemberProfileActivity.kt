@@ -10,7 +10,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
@@ -35,12 +34,7 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 import kotlinx.coroutines.launch
 
-import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
 import java.util.Locale
-import java.util.TimeZone
 
 class DashboardTeamMemberProfileActivity : AppCompatActivity() {
 
