@@ -3,9 +3,7 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-17
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
 import android.app.Activity
 import android.content.Context.MODE_PRIVATE
 import android.content.pm.ActivityInfo
@@ -23,7 +21,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -31,13 +28,36 @@ import androidx.core.os.BundleCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
-
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import io.noties.markwon.Markwon
+import java.io.BufferedInputStream
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.FileOutputStream
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.LinkedHashMap
+import java.util.LinkedHashSet
+import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
+import kotlin.math.roundToInt
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.json.JSONObject
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsActionsRepository
@@ -48,38 +68,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-
-import io.noties.markwon.Markwon
-import okhttp3.OkHttpClient
-import okhttp3.Request
-
-import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToInt
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
-import org.json.JSONObject
-
-import java.io.BufferedInputStream
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.LinkedHashMap
-import java.util.LinkedHashSet
-import java.util.Locale
-
 class CreateVoiceActivity : AppCompatActivity() {
-
     private lateinit var toolbar: MaterialToolbar
     private lateinit var markwon: Markwon
     private lateinit var createVoiceInput: TextInputEditText
@@ -89,7 +78,6 @@ class CreateVoiceActivity : AppCompatActivity() {
     private lateinit var createVoicePreviewImages: LinearLayout
     private lateinit var createVoiceEditorLabel: TextView
     private lateinit var markdownToolbar: LinearLayout
-
     private val repository = VoicesComposerRepository()
     private val newsActionsRepository = DashboardNewsActionsRepository()
     private val httpClient = OkHttpClient.Builder().build()
@@ -101,12 +89,10 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
         }
     }
-
     private var baseUrl: String? = null
     private var sessionCookie: String? = null
     private var serverCode: String? = null
     private var cachedProfile: UserProfile? = null
-
     private var isPosting = false
     private var isSessionReady = false
     private var previewJob: Job? = null
@@ -120,12 +106,10 @@ class CreateVoiceActivity : AppCompatActivity() {
     private var editDocument: DashboardNewsRepository.NewsDocument? = null
     private var targetTeamId: String? = null
     private var targetTeamName: String? = null
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
         setContentView(R.layout.activity_create_voice)
-
         toolbar = findViewById(R.id.createVoiceToolbar)
         createVoiceEditorLabel = findViewById(R.id.createVoiceEditorLabel)
         createVoiceInput = findViewById(R.id.createVoiceInput)
@@ -155,21 +139,16 @@ class CreateVoiceActivity : AppCompatActivity() {
                 false
             }
         }
-
         markwon = Markwon.builder(this).build()
-
         createVoiceInput.doAfterTextChanged { text ->
             handleTextChanged(text)
         }
         createVoiceInput.addTextChangedListener(listContinuationWatcher)
-
         createVoiceSubmitButton.setOnClickListener {
             attemptPost()
         }
-
         targetTeamId = intent.getStringExtra(EXTRA_TARGET_TEAM_ID)
         targetTeamName = intent.getStringExtra(EXTRA_TARGET_TEAM_NAME)
-
         boldButton.setOnClickListener {
             applyWrappedFormatting("**", "**", "", placeCursorInsideWhenNoSelection = true)
         }
@@ -194,19 +173,15 @@ class CreateVoiceActivity : AppCompatActivity() {
         imageButton.setOnClickListener {
             handleInsertImageClick()
         }
-
         lifecycleScope.launch {
             initializeSession()
         }
-
         setupEditModeIfNeeded()
-
         val initialText = createVoiceInput.text?.toString().orEmpty()
         updatePreview(initialText)
         updateActionAvailability()
         renderPreviewImages()
     }
-
     override fun onDestroy() {
         previewJob?.cancel()
         pendingImages.values.forEach { pending ->
@@ -217,17 +192,14 @@ class CreateVoiceActivity : AppCompatActivity() {
         pendingImages.clear()
         super.onDestroy()
     }
-
     private fun handleInsertImageClick() {
         launchImagePicker()
     }
-
     private fun setupEditModeIfNeeded() {
         isEditMode = intent.getBooleanExtra(EXTRA_IS_EDIT_MODE, false)
         if (!isEditMode) {
             return
         }
-
         editPostId = intent.getStringExtra(EXTRA_EDIT_POST_ID)
         editInitialMessage = intent.getStringExtra(EXTRA_EDIT_INITIAL_MESSAGE)
         editDocument = intent.extras?.let { bundle ->
@@ -249,30 +221,25 @@ class CreateVoiceActivity : AppCompatActivity() {
             )
             .plus(documentImagePaths)
         editInitialImagePaths = mergeImagePaths(combinedImagePaths)
-
         supportActionBar?.setTitle(R.string.edit_voice_title)
         createVoiceEditorLabel.setText(R.string.edit_voice_editor_label)
         toolbar.menu?.findItem(R.id.action_post_voice)?.title =
             getString(R.string.edit_voice_menu_update)
         createVoiceSubmitButton.setText(R.string.edit_voice_primary_action)
-
         editInitialMessage?.let { message ->
             createVoiceInput.setText(message)
             createVoiceInput.setSelection(createVoiceInput.text?.length ?: 0)
             updatePreview(message)
         }
-
         if (editInitialImagePaths.isNotEmpty()) {
             lifecycleScope.launch {
                 loadEditInitialImages()
             }
         }
     }
-
     private fun launchImagePicker() {
         imagePickerLauncher.launch("image/*")
     }
-
     private fun handleTextChanged(text: Editable?) {
         previewJob?.cancel()
         previewJob = lifecycleScope.launch {
@@ -281,10 +248,8 @@ class CreateVoiceActivity : AppCompatActivity() {
             updateActionAvailability()
         }
     }
-
     private val listContinuationWatcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             if (isHandlingListContinuation) {
                 return
@@ -298,7 +263,6 @@ class CreateVoiceActivity : AppCompatActivity() {
                 pendingNewlineIndex = start + newlineOffset
             }
         }
-
         override fun afterTextChanged(s: Editable?) {
             if (isHandlingListContinuation) {
                 return
@@ -309,7 +273,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             handleListContinuation(s, newlineIndex)
         }
     }
-
     private suspend fun initializeSession() {
         val context = applicationContext
         baseUrl = getServerBaseUrl(context)
@@ -328,7 +291,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             finish()
         }
     }
-
     private fun attemptPost() {
         val message = createVoiceInput.text?.toString()?.trim().orEmpty()
         if (message.isBlank()) {
@@ -376,7 +338,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             .setNegativeButton(R.string.create_voice_confirm_negative, null)
             .show()
     }
-
     private fun postVoice(message: String, base: String, credentials: StoredCredentials) {
         setPosting(true)
         lifecycleScope.launch {
@@ -414,7 +375,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun updateVoice(message: String, base: String, credentials: StoredCredentials) {
         setPosting(true)
         lifecycleScope.launch {
@@ -457,7 +417,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun setPosting(posting: Boolean) {
         isPosting = posting
         createVoiceProgress.isVisible = posting
@@ -466,7 +425,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         createVoiceSubmitButton.isEnabled = !posting
         updateActionAvailability()
     }
-
     private fun updatePreview(text: String) {
         val trimmed = text.trim()
         val content = if (trimmed.isEmpty()) {
@@ -479,7 +437,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         val previewSource = transformMarkdownForPreview(content)
         markwon.setMarkdown(createVoicePreviewText, previewSource)
     }
-
     private fun transformMarkdownForPreview(markdown: String): String {
         var processed = markdown
         if (pendingImages.isNotEmpty()) {
@@ -502,7 +459,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             "![]($base/db/resources/$path)"
         }
     }
-
     private fun renderPreviewImages() {
         val wrapper = createVoicePreviewImages
         wrapper.removeAllViews()
@@ -510,14 +466,11 @@ class CreateVoiceActivity : AppCompatActivity() {
             wrapper.isVisible = false
             return
         }
-
         val displayPendings = buildUniquePendingList(includeUploaded = true)
-
         if (displayPendings.isEmpty()) {
             wrapper.isVisible = false
             return
         }
-
         wrapper.isVisible = true
         val spacing = resources.getDimensionPixelSize(R.dimen.create_voice_preview_image_spacing)
         val thumbnailSize = resources.getDimensionPixelSize(R.dimen.create_voice_preview_image_thumbnail_size)
@@ -541,7 +494,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             wrapper.addView(preview)
         }
     }
-
     private fun showImageOptionsDialog(pending: PendingVoiceImage) {
         val optionItems = arrayOf(
             getString(R.string.create_voice_image_option_view),
@@ -563,7 +515,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             .setNegativeButton(android.R.string.cancel, null)
             .show()
     }
-
     private fun showImagePreviewDialog(pending: PendingVoiceImage) {
         val imageView = ImageView(this).apply {
             layoutParams = ViewGroup.LayoutParams(
@@ -584,13 +535,11 @@ class CreateVoiceActivity : AppCompatActivity() {
             .setPositiveButton(android.R.string.ok, null)
             .show()
     }
-
     private fun deletePendingImage(pending: PendingVoiceImage) {
         val normalizedKey = derivePendingNormalizedKey(pending)
         val idsToRemove = pendingImages.values
             .filter { derivePendingNormalizedKey(it) == normalizedKey }
             .map { it.id }
-
         idsToRemove.forEach { id ->
             val removed = pendingImages.remove(id) ?: return@forEach
             removeImageMarkdownReferences(removed)
@@ -598,11 +547,9 @@ class CreateVoiceActivity : AppCompatActivity() {
                 removed.file.delete()
             }
         }
-
         updatePreview(createVoiceInput.text?.toString().orEmpty())
         renderPreviewImages()
     }
-
     private fun removeImageMarkdownReferences(pending: PendingVoiceImage) {
         val editable = createVoiceInput.text ?: return
         val current = editable.toString()
@@ -611,23 +558,19 @@ class CreateVoiceActivity : AppCompatActivity() {
             pending.fileName.takeIf { it.isNotBlank() },
             extractPathFromMarkdown(pending.uploadedMarkdown).takeIf { !it.isNullOrBlank() }
         ).distinct()
-
         candidates.forEach { candidate ->
             val escaped = Regex.escape(candidate.trim())
             val pattern = Regex("(?:^|\\n)!\\[[^\\]]*\\]\\((?:https?://[^)]+/)?(?:/?db/)?/?$escaped\\)\\n?")
             updated = pattern.replace(updated, "\n")
         }
-
         updated = updated
             .replace(Regex("\\n{3,}"), "\n\n")
             .trimEnd()
-
         if (updated != current) {
             editable.replace(0, editable.length, updated)
             createVoiceInput.setSelection(updated.length.coerceAtLeast(0))
         }
     }
-
     private class ImageOptionAdapter(
         context: CreateVoiceActivity,
         private val items: Array<String>,
@@ -649,7 +592,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             return view
         }
     }
-
     private fun buildUniquePendingList(includeUploaded: Boolean = false): List<PendingVoiceImage> {
         val uniquePendingMap = LinkedHashMap<String, PendingVoiceImage>()
         pendingImages.values.forEach { pending ->
@@ -663,14 +605,12 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return uniquePendingMap.values.toList()
     }
-
     private fun updateActionAvailability() {
         val hasContent = !createVoiceInput.text.isNullOrBlank()
         val enabled = hasContent && !isPosting && isSessionReady
         toolbar.menu?.findItem(R.id.action_post_voice)?.isEnabled = enabled
         createVoiceSubmitButton.isEnabled = enabled
     }
-
     private fun applyWrappedFormatting(
         prefix: String,
         suffix: String,
@@ -698,7 +638,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         editText.setSelection(cursorPosition.coerceIn(0, editable.length))
     }
-
     private fun applyHeadingFormatting() {
         val editText = createVoiceInput
         val editable = editText.text ?: return
@@ -731,7 +670,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         val selection = (lineStart + replacement.length).coerceAtMost(editable.length)
         editText.setSelection(selection)
     }
-
     private fun applyBulletFormatting() {
         val editText = createVoiceInput
         val editable = editText.text ?: return
@@ -753,7 +691,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         editable.replace(rangeStart, rangeEnd, formatted)
         editText.setSelection((rangeStart + formatted.length).coerceAtMost(editable.length))
     }
-
     private fun applyNumberedListFormatting() {
         val editText = createVoiceInput
         val editable = editText.text ?: return
@@ -777,7 +714,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         editable.replace(rangeStart, rangeEnd, formatted)
         editText.setSelection((rangeStart + formatted.length).coerceAtMost(editable.length))
     }
-
     private fun applyQuoteFormatting() {
         val editText = createVoiceInput
         val editable = editText.text ?: return
@@ -801,7 +737,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         editable.replace(rangeStart, rangeEnd, formatted)
         editText.setSelection((rangeStart + formatted.length).coerceAtMost(editable.length))
     }
-
     private fun applyLinkFormatting() {
         val editText = createVoiceInput
         val editable = editText.text ?: return
@@ -814,14 +749,12 @@ class CreateVoiceActivity : AppCompatActivity() {
             ?: ""
         showInsertLinkDialog(rangeStart, rangeEnd, selected)
     }
-
     private fun showInsertLinkDialog(rangeStart: Int, rangeEnd: Int, selectedTitle: String) {
         val container = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             val spacing = (12 * resources.displayMetrics.density).roundToInt()
             setPadding(spacing, spacing, spacing, spacing)
         }
-
         val titleInputLayout = TextInputLayout(this).apply {
             hint = getString(R.string.create_voice_link_title_hint)
         }
@@ -837,7 +770,6 @@ class CreateVoiceActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
-
         val urlInputLayout = TextInputLayout(this).apply {
             hint = getString(R.string.create_voice_link_url_hint)
         }
@@ -851,17 +783,14 @@ class CreateVoiceActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
         )
-
         container.addView(titleInputLayout)
         container.addView(urlInputLayout)
-
         val dialog = MaterialAlertDialogBuilder(this)
             .setTitle(R.string.create_voice_link_dialog_title)
             .setView(container)
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(R.string.create_voice_link_insert_button, null)
             .create()
-
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
                 val linkTitle = titleInput.text?.toString()?.trim().orEmpty()
@@ -878,10 +807,8 @@ class CreateVoiceActivity : AppCompatActivity() {
                 dialog.dismiss()
             }
         }
-
         dialog.show()
     }
-
     private fun insertLinkMarkdown(rangeStart: Int, rangeEnd: Int, title: String, url: String) {
         val editText = createVoiceInput
         val editable = editText.text ?: return
@@ -892,7 +819,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         val cursorPosition = (safeStart + replacement.length).coerceAtMost(editable.length)
         editText.setSelection(cursorPosition)
     }
-
     private fun handleListContinuation(editable: Editable, newlineIndex: Int) {
         if (newlineIndex <= 0 || newlineIndex > editable.length) {
             return
@@ -908,7 +834,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         if (contentAfterIndent.isBlank()) {
             return
         }
-
         if (contentAfterIndent.startsWith("- ") || contentAfterIndent.startsWith("* ")) {
             val marker = contentAfterIndent.substring(0, 2)
             val hasText = contentAfterIndent.substring(2).isNotBlank()
@@ -919,7 +844,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
             return
         }
-
         val numberMatch = NUMBERED_LIST_REGEX.matchEntire(contentAfterIndent)
         if (numberMatch != null) {
             val number = numberMatch.groupValues.getOrNull(1)?.toIntOrNull() ?: return
@@ -933,7 +857,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun insertListPrefix(editable: Editable, newlineIndex: Int, prefix: String) {
         val insertPosition = (newlineIndex + 1).coerceAtMost(editable.length)
         isHandlingListContinuation = true
@@ -941,7 +864,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         createVoiceInput.setSelection((insertPosition + prefix.length).coerceAtMost(editable.length))
         isHandlingListContinuation = false
     }
-
     private fun removeListPrefix(editable: Editable, start: Int, markerLength: Int) {
         val end = (start + markerLength).coerceAtMost(editable.length)
         isHandlingListContinuation = true
@@ -949,7 +871,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         createVoiceInput.setSelection(start.coerceAtMost(editable.length))
         isHandlingListContinuation = false
     }
-
     private fun findIndentLength(line: String): Int {
         for (index in line.indices) {
             if (!line[index].isWhitespace()) {
@@ -958,7 +879,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return line.length
     }
-
     private suspend fun handleImageSelection(uri: Uri) {
         val pendingResult = withContext(Dispatchers.IO) {
             runCatching { createPendingVoiceImage(uri) }
@@ -974,7 +894,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.create_voice_image_processing_error, Toast.LENGTH_SHORT).show()
         }
     }
-
     private suspend fun loadEditInitialImages() {
         if (!isEditMode || editInitialImagePaths.isEmpty() || editImagesLoaded) {
             return
@@ -996,7 +915,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         renderPreviewImages()
     }
-
     private fun fetchExistingVoiceImage(baseUrl: String, imagePath: String): PendingVoiceImage? {
         val requestUrl = resolveImageUrl(baseUrl, imagePath) ?: return null
         val requestBuilder = Request.Builder()
@@ -1033,7 +951,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
         }.getOrNull()
     }
-
     private fun resolveImageUrl(baseUrl: String, path: String): String? {
         val normalizedBase = baseUrl.trim().trimEnd('/')
         if (normalizedBase.isEmpty()) {
@@ -1050,7 +967,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
         return "$normalizedBase/$finalPath"
     }
-
     private fun buildExistingImageMarkdown(baseUrl: String, path: String): String {
         val trimmedPath = path.trim().trimStart('/')
         if (trimmedPath.isEmpty()) {
@@ -1067,7 +983,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             "![](resources/${normalizedPath.trim()})"
         }
     }
-
     private fun extractPathFromMarkdown(markdown: String?): String? {
         if (markdown.isNullOrBlank()) {
             return null
@@ -1076,14 +991,12 @@ class CreateVoiceActivity : AppCompatActivity() {
         val match = pattern.find(markdown)
         return match?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
     }
-
     private fun buildResourcePath(resourceId: String?, fileName: String?): String? {
         if (resourceId.isNullOrBlank() || fileName.isNullOrBlank()) {
             return null
         }
         return "resources/${resourceId.trim()}/${fileName.trim()}"
     }
-
     private fun parseResourceFromPath(path: String): Pair<String?, String?> {
         val parts = path.split('/')
         if (parts.size < 3) {
@@ -1097,7 +1010,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         val fileName = parts[resourcesIndex + 2].takeIf { it.isNotBlank() }
         return resourceId to fileName
     }
-
     private fun extractFileName(path: String): String? {
         val trimmed = path.trim().trimEnd('/')
         val lastSlash = trimmed.lastIndexOf('/')
@@ -1106,7 +1018,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return trimmed.substring(lastSlash + 1).takeIf { it.isNotEmpty() }
     }
-
     private fun derivePendingNormalizedKey(pending: PendingVoiceImage): String {
         val candidates = listOfNotNull(
             pending.uploadedMarkdown?.let { extractPathFromMarkdown(it) },
@@ -1118,7 +1029,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             .firstOrNull { candidate -> candidate.isNotBlank() }
         return (normalized ?: normalizeImagePath(pending.fileName)).trim()
     }
-
     private fun mergeImagePaths(paths: List<String>): List<String> {
         val seen = LinkedHashSet<String>()
         val result = mutableListOf<String>()
@@ -1130,7 +1040,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return result
     }
-
     private fun normalizeImagePath(path: String): String {
         val extracted = extractPathFromMarkdown(path) ?: path
         val trimmed = extracted.trim()
@@ -1143,7 +1052,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return reduced.lowercase(Locale.US)
     }
-
     private fun deduplicateMessageImages(markdown: String): Pair<String, Set<String>> {
         if (markdown.isBlank()) {
             return "" to emptySet()
@@ -1167,7 +1075,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return builder.toString() to seen
     }
-
     private fun createPendingVoiceImage(uri: Uri): PendingVoiceImage {
         val original = contentResolver.openInputStream(uri)?.use { input ->
             BitmapFactory.decodeStream(input)
@@ -1188,7 +1095,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         val id = generatePendingImageId(fileName)
         return PendingVoiceImage(id, fileName, tempFile, jpegBytes)
     }
-
     private fun insertTemporaryImagePlaceholder(fileName: String) {
         val editable = createVoiceInput.text ?: return
         val placeholder = "![]($fileName)"
@@ -1205,7 +1111,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         editable.replace(0, editable.length, updated)
         createVoiceInput.setSelection(updated.length)
     }
-
     private fun prepareBitmapForWeb(source: Bitmap): Bitmap {
         val maxSide = max(source.width, source.height)
         if (maxSide <= MAX_IMAGE_DIMENSION) {
@@ -1216,18 +1121,15 @@ class CreateVoiceActivity : AppCompatActivity() {
         val height = (source.height * scale).roundToInt().coerceAtLeast(1)
         return Bitmap.createScaledBitmap(source, width, height, true)
     }
-
     private fun compressBitmapToJpeg(bitmap: Bitmap): ByteArray {
         val output = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output)
         return output.toByteArray()
     }
-
     private fun generateImageFileName(): String {
         val formatter = SimpleDateFormat("'post'yyyyMMddHHmmssSSS", Locale.US)
         return formatter.format(Date()) + ".jpg"
     }
-
     private fun generatePendingImageId(baseName: String): String {
         var candidate = baseName
         var counter = 1
@@ -1237,7 +1139,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return candidate
     }
-
     private fun findLineStart(editable: Editable, position: Int): Int {
         var index = position - 1
         while (index >= 0) {
@@ -1248,14 +1149,12 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return 0
     }
-
     private fun setMarkdownToolbarEnabled(enabled: Boolean) {
         markdownToolbar.isEnabled = enabled
         for (index in 0 until markdownToolbar.childCount) {
             markdownToolbar.getChildAt(index)?.isEnabled = enabled
         }
     }
-
     private suspend fun prepareImagesForPosting(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -1296,7 +1195,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return PreparedVoicePost(updatedMessage, preparedImages.values.toList())
     }
-
     private fun shouldUploadPending(pending: PendingVoiceImage): Boolean {
         pending.uploadedMarkdown?.let { existing ->
             val path = extractPathFromMarkdown(existing)
@@ -1313,7 +1211,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return true
     }
-
     private fun resolveExistingMarkdown(pending: PendingVoiceImage): String? {
         pending.uploadedMarkdown?.let { existing ->
             val path = extractPathFromMarkdown(existing)
@@ -1333,7 +1230,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         pending.uploadedMarkdown = markdown
         return markdown
     }
-
     private suspend fun ensureImageUpload(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -1390,7 +1286,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         pending.uploadedMarkdown = normalizedMarkdown
         return normalizedMarkdown
     }
-
     private fun ensureMarkdownPresent(message: String, markdown: String): String {
         if (message.contains(markdown)) {
             return message
@@ -1409,7 +1304,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         builder.append(markdown)
         return builder.toString()
     }
-
     private fun extractResourcePath(markdown: String): String? {
         val matcher = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)").find(markdown) ?: return null
         val rawPath = matcher.groupValues.getOrNull(1)?.trim('/') ?: return null
@@ -1420,7 +1314,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return trimmed
     }
-
     private fun buildResourceMetadata(
         context: VoiceImageResourceContext,
         fileName: String
@@ -1441,7 +1334,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             privateFor = PRIVATE_FOR_COMMUNITY
         )
     }
-
     private suspend fun buildImageResourceContext(credentials: StoredCredentials): VoiceImageResourceContext {
         val preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)?.takeIf { it.isNotBlank() }
@@ -1463,7 +1355,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             customDeviceName = customDeviceName
         )
     }
-
     private fun parseCodesFromProfile(rawDocument: String?): ProfileCodes? {
         if (rawDocument.isNullOrBlank()) {
             return null
@@ -1475,7 +1366,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             ProfileCodes(planetCode, parentCode)
         }.getOrNull()
     }
-
     private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
         val escapedName = Regex.escape(fileName)
         val pattern = Regex("!\\[([^\\]]*)\\]\\($escapedName\\)")
@@ -1502,7 +1392,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         builder.append(replacement)
         return builder.toString()
     }
-
     private fun applyAltTextToMarkdown(markdown: String, altText: String): String {
         val trimmedAlt = altText.trim()
         if (trimmedAlt.isEmpty()) {
@@ -1519,7 +1408,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             append(markdown.substring(closeBracket))
         }
     }
-
     private suspend fun loadCachedProfile(): UserProfile? {
         val existing = cachedProfile
         if (existing != null) {
@@ -1531,7 +1419,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         cachedProfile = profile
         return profile
     }
-
     private fun resolvePostingCodes(profile: UserProfile?): ProfileCodes? {
         val preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
         val storedParentCode = preferences.getString(KEY_SERVER_PARENT_CODE, null)?.takeIf { it.isNotBlank() }
@@ -1546,7 +1433,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return ProfileCodes(resolvedPlanet, resolvedParent)
     }
-
     private fun buildUserPayload(
         profile: UserProfile?,
         credentials: StoredCredentials,
@@ -1598,7 +1484,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             attachments = attachments
         )
     }
-
     private fun parseAttachmentPayloads(
         attachmentsObject: JSONObject?
     ): Map<String, VoicesComposerRepository.AttachmentPayload>? {
@@ -1628,7 +1513,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         return result.takeIf { it.isNotEmpty() }
     }
-
     private fun resolveDeviceName(): String {
         val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
         val model = Build.MODEL?.trim().orEmpty()
@@ -1643,7 +1527,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             else -> "$manufacturer $model"
         }
     }
-
     companion object {
         private const val PREVIEW_DEBOUNCE_MS = 150L
         private const val MAX_HEADING_LEVEL = 6
@@ -1657,7 +1540,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         private const val KEY_SERVER_CODE = "server_code"
         private const val PRIVATE_FOR_COMMUNITY = "community"
         private const val DEFAULT_DEVICE_NAME = "Android"
-
         const val EXTRA_IS_EDIT_MODE = "extra_is_edit_mode"
         const val EXTRA_EDIT_POST_ID = "extra_edit_post_id"
         const val EXTRA_EDIT_INITIAL_MESSAGE = "extra_edit_initial_message"
@@ -1666,7 +1548,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         const val EXTRA_TARGET_TEAM_ID = "extra_target_team_id"
         const val EXTRA_TARGET_TEAM_NAME = "extra_target_team_name"
     }
-
     private fun applyDeviceOrientationLock() {
         val isTablet = resources.configuration.smallestScreenWidthDp >= 600
         requestedOrientation = if (isTablet) {
@@ -1676,8 +1557,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
     }
 }
-
-
 data class PendingVoiceImage(
     val id: String,
     val fileName: String,
@@ -1687,12 +1566,10 @@ data class PendingVoiceImage(
     var resourceRevision: String? = null,
     var uploadedMarkdown: String? = null
 )
-
 data class PreparedVoicePost(
     val message: String,
     val images: List<VoicesComposerRepository.ImagePayload>
 )
-
 data class VoiceImageResourceContext(
     val username: String,
     val resideOn: String?,
@@ -1701,7 +1578,6 @@ data class VoiceImageResourceContext(
     val deviceName: String,
     val customDeviceName: String?
 )
-
 data class ProfileCodes(
     val planetCode: String?,
     val parentCode: String?

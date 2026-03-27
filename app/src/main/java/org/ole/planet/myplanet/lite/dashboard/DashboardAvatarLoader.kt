@@ -3,39 +3,30 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
 import android.widget.ImageView
-
 import androidx.core.widget.ImageViewCompat
-
-import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
-
-import okhttp3.Credentials
-import okhttp3.OkHttpClient
-import okhttp3.Request
-
+import java.io.IOException
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-import java.io.IOException
-import java.util.Locale
-
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.ole.planet.myplanet.lite.R
+import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 class DashboardAvatarLoader(
     private val baseUrl: String,
     private val sessionCookie: String?,
     private val credentials: StoredCredentials?,
     private val scope: CoroutineScope
 ) {
-
     private val client: OkHttpClient = OkHttpClient.Builder().build()
     private val cache = sharedCache
     private val avatarUpdateListener = AvatarUpdateNotifier.register(
@@ -45,13 +36,11 @@ class DashboardAvatarLoader(
             synchronized(missingAvatars) { missingAvatars.remove(cacheKey) }
         }
     )
-
     init {
         // Clear "missing" skips whenever a loader is created so fresh base URLs or fixed
         // endpoints can attempt avatar fetches again.
         synchronized(missingAvatars) { missingAvatars.clear() }
     }
-
     fun bind(imageView: ImageView, username: String?, hasAvatar: Boolean) {
         imageView.setImageResource(R.drawable.ic_person_placeholder_24)
         if (username.isNullOrBlank()) {
@@ -83,11 +72,9 @@ class DashboardAvatarLoader(
             }
         }
     }
-
     fun destroy() {
         AvatarUpdateNotifier.unregister(avatarUpdateListener)
     }
-
     private fun fetchAvatarBitmap(username: String): Bitmap? {
         val normalizedBase = baseUrl.trim().trimEnd('/')
         if (normalizedBase.isEmpty()) {
@@ -116,7 +103,6 @@ class DashboardAvatarLoader(
             null
         }
     }
-
     private companion object {
         private const val CACHE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB cache for avatars
         private val missingAvatars = mutableSetOf<String>()

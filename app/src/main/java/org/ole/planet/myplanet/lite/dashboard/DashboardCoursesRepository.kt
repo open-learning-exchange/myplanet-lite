@@ -3,30 +3,24 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
-import org.ole.planet.myplanet.lite.BuildConfig
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
+import java.io.IOException
+import java.util.ArrayList
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-import java.io.IOException
-import java.util.ArrayList
-
+import org.ole.planet.myplanet.lite.BuildConfig
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 class DashboardCoursesRepository {
     private val client: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(
@@ -61,7 +55,6 @@ class DashboardCoursesRepository {
     private val tagLinksFindResponseAdapter = moshi.adapter(TagLinksFindResponse::class.java)
     private val courseCache = mutableMapOf<String, CourseDocument>()
     private var shelfCache: ShelfDocument? = null
-
     suspend fun fetchUserCourseIds(
         baseUrl: String,
         credentials: StoredCredentials
@@ -100,7 +93,6 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     suspend fun fetchShelfDocument(
         baseUrl: String,
         credentials: StoredCredentials
@@ -111,14 +103,12 @@ class DashboardCoursesRepository {
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
-
                 val requestUrl = "$normalizedBase/db/shelf/org.couchdb.user:${credentials.username}"
                 val request = Request.Builder()
                     .url(requestUrl)
                     .get()
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
-
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         val responseBody = response.body.string()
@@ -144,7 +134,6 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     suspend fun joinCourse(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -158,24 +147,19 @@ class DashboardCoursesRepository {
                 }
                 val sanitizedCourseId = courseId.takeIf { it.isNotBlank() }
                     ?: throw IOException("Missing course id")
-
                 var shelfDocument = shelfCache ?: fetchShelfDocument(baseUrl, credentials)
                     .getOrElse { throw it }
-
                 repeat(2) { attempt ->
                     val shelfId = shelfDocument.id
                         ?: "org.couchdb.user:${credentials.username}"
-
                     val updatedCourseIds = (shelfDocument.courseIds + sanitizedCourseId)
                         .filter { it.isNotBlank() }
                         .distinct()
-
                     val updatedDocument = shelfDocument.copy(
                         id = shelfId,
                         rev = shelfDocument.rev,
                         courseIds = updatedCourseIds
                     )
-
                     val requestUrl = "$normalizedBase/db/shelf/$shelfId"
                     val payload = shelfDocumentAdapter.toJson(updatedDocument)
                     val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -184,32 +168,27 @@ class DashboardCoursesRepository {
                         .put(payload.toRequestBody(mediaType))
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
-
                     client.newCall(request).execute().use { response ->
                         val responseBody = response.body.string()
                         if (response.isSuccessful) {
                             val updatedRev = runCatching {
                                 org.json.JSONObject(responseBody).optString("rev").takeIf { it.isNotBlank() }
                             }.getOrNull()
-
                             val cached = updatedDocument.copy(rev = updatedRev ?: shelfDocument.rev)
                             shelfCache = cached
                             return@runCatching
                         }
-
                         if (response.code == 409 && attempt == 0) {
                             shelfDocument = fetchShelfDocument(baseUrl, credentials)
                                 .getOrElse { throw it }
                             return@use
                         }
-
                         throw IOException("Unexpected response ${response.code}")
                     }
                 }
             }
         }
     }
-
     suspend fun leaveCourse(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -223,25 +202,20 @@ class DashboardCoursesRepository {
                 }
                 val sanitizedCourseId = courseId.takeIf { it.isNotBlank() }
                     ?: throw IOException("Missing course id")
-
                 var shelfDocument = shelfCache ?: fetchShelfDocument(baseUrl, credentials)
                     .getOrElse { throw it }
-
                 repeat(2) { attempt ->
                     val shelfId = shelfDocument.id
                         ?: "org.couchdb.user:${credentials.username}"
                     val shelfRev = shelfDocument.rev
                         ?: throw IOException("Missing shelf revision")
-
                     val updatedCourseIds = shelfDocument.courseIds
                         .filter { it.isNotBlank() && it != sanitizedCourseId }
-
                     val updatedDocument = shelfDocument.copy(
                         id = shelfId,
                         rev = shelfRev,
                         courseIds = updatedCourseIds
                     )
-
                     val requestUrl = "$normalizedBase/db/shelf/$shelfId"
                     val payload = shelfDocumentAdapter.toJson(updatedDocument)
                     val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -250,32 +224,27 @@ class DashboardCoursesRepository {
                         .put(payload.toRequestBody(mediaType))
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
-
                     client.newCall(request).execute().use { response ->
                         val responseBody = response.body.string()
                         if (response.isSuccessful) {
                             val updatedRev = runCatching {
                                 org.json.JSONObject(responseBody).optString("rev").takeIf { it.isNotBlank() }
                             }.getOrNull()
-
                             val cached = updatedDocument.copy(rev = updatedRev ?: shelfRev)
                             shelfCache = cached
                             return@runCatching
                         }
-
                         if (response.code == 409 && attempt == 0) {
                             shelfDocument = fetchShelfDocument(baseUrl, credentials)
                                 .getOrElse { throw it }
                             return@use
                         }
-
                         throw IOException("Unexpected response ${response.code}")
                     }
                 }
             }
         }
     }
-
     suspend fun fetchCourses(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -289,13 +258,11 @@ class DashboardCoursesRepository {
                 }
                 val sanitizedIds = courseIds.filter { it.isNotBlank() }
                 if (sanitizedIds.isEmpty()) return@runCatching emptyList()
-
                 val uniqueIds = sanitizedIds.distinct()
                 val cachedDocuments = mutableMapOf<String, CourseDocument>()
                 uniqueIds.forEach { id ->
                     courseCache[id]?.let { cachedDocuments[id] = it }
                 }
-
                 val remainingIds = uniqueIds.filterNot { cachedDocuments.containsKey(it) }
                 remainingIds.chunked(50).forEach { chunk ->
                     val requestUrl = "$normalizedBase/db/courses/_find"
@@ -312,7 +279,6 @@ class DashboardCoursesRepository {
                         .post(payload.toRequestBody(mediaType))
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
-
                     client.newCall(request).execute().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
@@ -327,7 +293,6 @@ class DashboardCoursesRepository {
                         }
                     }
                 }
-
                 val orderedResults = uniqueIds.mapNotNull { id ->
                     cachedDocuments[id]
                 }
@@ -335,7 +300,6 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     suspend fun fetchCoursesProgress(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -349,7 +313,6 @@ class DashboardCoursesRepository {
                 }
                 val sanitizedIds = courseIds.filter { it.isNotBlank() }
                 if (sanitizedIds.isEmpty()) return@runCatching emptyMap()
-
                 val progressByCourse = mutableMapOf<String, Int>()
                 sanitizedIds.chunked(10).forEach { courseChunk ->
                     val requestUrl = "$normalizedBase/db/courses_progress/_find"
@@ -367,7 +330,6 @@ class DashboardCoursesRepository {
                         .post(payload.toRequestBody(mediaType))
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
-
                     client.newCall(request).execute().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
@@ -391,7 +353,6 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     suspend fun fetchCoursesProgressDocuments(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -406,7 +367,6 @@ class DashboardCoursesRepository {
                 }
                 val sanitizedIds = courseIds.filter { it.isNotBlank() }
                 if (sanitizedIds.isEmpty()) return@runCatching emptyMap()
-
                 val docs = ArrayList<CourseProgressDocument>()
                 sanitizedIds.chunked(10).forEach { courseChunk ->
                     val requestUrl = "$normalizedBase/db/courses_progress/_find"
@@ -426,7 +386,6 @@ class DashboardCoursesRepository {
                         .post(payload.toRequestBody(mediaType))
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
-
                     client.newCall(request).execute().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
@@ -452,7 +411,6 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     suspend fun saveCourseProgress(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -464,7 +422,6 @@ class DashboardCoursesRepository {
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
-
                 val requestUrl = "$normalizedBase/db/courses_progress/_bulk_docs"
                 val payload = coursesProgressBulkAdapter.toJson(CoursesProgressBulkRequest(docs = listOf(document)))
                 val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -473,7 +430,6 @@ class DashboardCoursesRepository {
                     .post(payload.toRequestBody(mediaType))
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
-
                 client.newCall(request).execute().use { response ->
                     val responseBody = response.body.string()
                     if (!response.isSuccessful) {
@@ -485,7 +441,6 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     suspend fun fetchCoursesByParent(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -499,10 +454,8 @@ class DashboardCoursesRepository {
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
-
                 val courseIdFilter = excludedCourseIds.takeIf { it.isNotEmpty() }
                     ?.let { CourseIdFilter(gt = null, notIn = it) }
-
                 val requestUrl = "$normalizedBase/db/courses/_find"
                 val payload = coursesFindRequestAdapter.toJson(
                     CoursesFindRequest(
@@ -517,7 +470,6 @@ class DashboardCoursesRepository {
                     .post(payload.toRequestBody(mediaType))
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
-
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
@@ -536,7 +488,6 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     suspend fun fetchTeamCourses(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -550,7 +501,6 @@ class DashboardCoursesRepository {
                 }
                 val sanitizedId = teamId.takeIf { it.isNotBlank() }
                     ?: throw IOException("Missing team id")
-
                 val requestUrl = "$normalizedBase/db/teams/_find"
                 val payload = teamCoursesRequestAdapter.toJson(
                     TeamCoursesFindRequest(
@@ -568,7 +518,6 @@ class DashboardCoursesRepository {
                     .post(payload.toRequestBody(mediaType))
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
-
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
@@ -580,7 +529,6 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     suspend fun fetchCourseTags(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -622,7 +570,6 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     suspend fun fetchTagLinks(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -666,13 +613,10 @@ class DashboardCoursesRepository {
             }
         }
     }
-
     @JsonClass(generateAdapter = true)
     data class ShelfFindRequest(val selector: Map<String, Any>)
-
     @JsonClass(generateAdapter = true)
     data class ShelfFindResponse(val docs: List<ShelfDocument> = emptyList())
-
     @JsonClass(generateAdapter = true)
     data class ShelfDocument(
         @param:Json(name = "_id") val id: String?,
@@ -682,7 +626,6 @@ class DashboardCoursesRepository {
         val courseIds: List<String> = emptyList(),
         val myTeamIds: List<String> = emptyList()
     )
-
     @JsonClass(generateAdapter = true)
     data class CourseDocument(
         @param:Json(name = "_id") val id: String?,
@@ -691,7 +634,6 @@ class DashboardCoursesRepository {
         val cover: String? = null,
         val steps: List<CourseStep> = emptyList()
     )
-
     @JsonClass(generateAdapter = true)
     data class CourseStep(
         val stepTitle: String?,
@@ -700,7 +642,6 @@ class DashboardCoursesRepository {
         val survey: SurveyDocument? = null,
         val exam: SurveyDocument? = null
     )
-
     @JsonClass(generateAdapter = true)
     data class CourseResource(
         @param:Json(name = "_id") val id: String? = null,
@@ -708,28 +649,22 @@ class DashboardCoursesRepository {
         val filename: String? = null,
         val mediaType: String?
     )
-
     @JsonClass(generateAdapter = true)
     data class Attachment(val contentType: String? = null)
-
     @JsonClass(generateAdapter = true)
     data class CoursesProgressFindRequest(val selector: CoursesProgressSelector, val limit: Int? = null)
-
     @JsonClass(generateAdapter = true)
     data class CoursesProgressSelector(
         val userId: String,
         val courseId: CourseInSelector,
         val stepNum: Int? = null
     )
-
     @JsonClass(generateAdapter = true)
     data class CourseInSelector(
         @param:Json(name = "\$in") val included: List<String>
     )
-
     @JsonClass(generateAdapter = true)
     data class CoursesProgressResponse(val docs: List<CourseProgressDocument> = emptyList())
-
     @JsonClass(generateAdapter = true)
     data class CourseProgressDocument(
         @param:Json(name = "_id") val id: String? = null,
@@ -742,10 +677,8 @@ class DashboardCoursesRepository {
         val createdOn: String? = null,
         val parentCode: String? = null
     )
-
     @JsonClass(generateAdapter = true)
     data class CoursesProgressBulkRequest(val docs: List<CourseProgressUpdateDocument>)
-
     @JsonClass(generateAdapter = true)
     data class CourseProgressUpdateDocument(
         @param:Json(name = "_id") val id: String? = null,
@@ -759,9 +692,7 @@ class DashboardCoursesRepository {
         val createdDate: Long,
         val updatedDate: Long
     )
-
     class CoursesProgressBulkResponse : ArrayList<BulkDocResult>()
-
     @JsonClass(generateAdapter = true)
     data class BulkDocResult(
         val ok: Boolean? = null,
@@ -770,32 +701,26 @@ class DashboardCoursesRepository {
         val error: String? = null,
         val reason: String? = null
     )
-
     @JsonClass(generateAdapter = true)
     data class CoursesFindRequest(
         val selector: CoursesSelector,
         val limit: Int,
         val skip: Int
     )
-
     @JsonClass(generateAdapter = true)
     data class CoursesSelector(
         @param:Json(name = "_id") val id: CourseIdFilter? = null
     )
-
     @JsonClass(generateAdapter = true)
     data class CourseIdFilter(
         @param:Json(name = "\$gt") val gt: Any? = null,
         @param:Json(name = "\$nin") val notIn: List<String>? = null,
         @param:Json(name = "\$in") val inList: List<String>? = null
     )
-
     @JsonClass(generateAdapter = true)
     data class CourseFindResponse(val docs: List<CourseDocument> = emptyList())
-
     @JsonClass(generateAdapter = true)
     data class TeamCoursesFindRequest(val selector: TeamCoursesSelector)
-
     @JsonClass(generateAdapter = true)
     data class TeamCoursesSelector(
         val status: String,
@@ -803,57 +728,44 @@ class DashboardCoursesRepository {
         val teamType: String,
         @param:Json(name = "_id") val id: TeamIdsSelector
     )
-
     @JsonClass(generateAdapter = true)
     data class TeamIdsSelector(@param:Json(name = "\$in") val ids: List<String>)
-
     @JsonClass(generateAdapter = true)
     data class TeamCoursesResponse(val docs: List<TeamDocument> = emptyList())
-
     @JsonClass(generateAdapter = true)
     data class TeamDocument(val courses: List<CourseDocument>? = null)
-
     @JsonClass(generateAdapter = true)
     data class TagsFindRequest(val selector: TagsSelector)
-
     @JsonClass(generateAdapter = true)
     data class TagsSelector(
         val db: String,
         val docType: String
     )
-
     @JsonClass(generateAdapter = true)
     data class TagsFindResponse(val docs: List<TagDocument>?)
-
     @JsonClass(generateAdapter = true)
     data class TagDocument(
         @param:Json(name = "_id") val id: String?,
         val name: String?
     )
-
     @JsonClass(generateAdapter = true)
     data class TagLinksFindRequest(val selector: TagLinksSelector)
-
     @JsonClass(generateAdapter = true)
     data class TagLinksSelector(
         val db: String,
         val docType: String,
         val tagId: String
     )
-
     @JsonClass(generateAdapter = true)
     data class TagLinksFindResponse(val docs: List<TagLinkDocument>?)
-
     @JsonClass(generateAdapter = true)
     data class TagLinkDocument(
         @param:Json(name = "_id") val id: String?,
         val linkId: String?
     )
-
     data class PagedCourses(
         val courses: List<CourseDocument>,
         val fetchedCount: Int,
         val hasMore: Boolean
     )
-
 }
