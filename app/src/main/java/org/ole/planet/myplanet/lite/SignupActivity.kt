@@ -39,7 +39,6 @@ import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
-import org.ole.planet.myplanet.lite.model.ServerMetadataResponse
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
