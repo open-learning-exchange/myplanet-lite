@@ -3,29 +3,22 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-24
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
+import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-import java.io.IOException
-
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 class DashboardSurveySubmissionsRepository {
-
     private val client: OkHttpClient = OkHttpClient.Builder().build()
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
@@ -33,7 +26,6 @@ class DashboardSurveySubmissionsRepository {
     private val submissionAdapter = moshi.adapter(SurveySubmission::class.java)
     private val lookupRequestAdapter = moshi.adapter(SubmissionLookupRequest::class.java)
     private val lookupResponseAdapter = moshi.adapter(SubmissionLookupResponse::class.java)
-
     suspend fun submitSurvey(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -64,7 +56,6 @@ class DashboardSurveySubmissionsRepository {
             }
         }
     }
-
     suspend fun fetchExistingSubmission(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -114,7 +105,6 @@ class DashboardSurveySubmissionsRepository {
             }
         }
     }
-
     @JsonClass(generateAdapter = true)
     data class SurveySubmission(
         @param:Json(name = "_id") val id: String? = null,
@@ -134,7 +124,6 @@ class DashboardSurveySubmissionsRepository {
         @param:Json(name = "deviceName") val deviceName: String? = null,
         @param:Json(name = "customDeviceName") val customDeviceName: String? = null,
     )
-
     @JsonClass(generateAdapter = true)
     data class SubmissionParent(
         @param:Json(name = "_id") val id: String?,
@@ -144,7 +133,6 @@ class DashboardSurveySubmissionsRepository {
         @param:Json(name = "questions") val questions: List<SurveyQuestion>?,
         @param:Json(name = "description") val description: String?,
     )
-
     @JsonClass(generateAdapter = true)
     data class SubmissionUser(
         @param:Json(name = "_id") val id: String?,
@@ -163,14 +151,12 @@ class DashboardSurveySubmissionsRepository {
         @param:Json(name = "level") val level: String? = null,
         @param:Json(name = "betaEnabled") val betaEnabled: Boolean = false,
     )
-
     @JsonClass(generateAdapter = true)
     data class SubmissionTeam(
         @param:Json(name = "_id") val id: String?,
         @param:Json(name = "name") val name: String?,
         @param:Json(name = "type") val type: String?,
     )
-
     @JsonClass(generateAdapter = true)
     data class SubmissionAnswer(
         @param:Json(name = "value") val value: Any?,
@@ -178,13 +164,11 @@ class DashboardSurveySubmissionsRepository {
         @param:Json(name = "passed") val passed: Boolean = true,
         @param:Json(name = "grade") val grade: Int = 0,
     )
-
     @JsonClass(generateAdapter = true)
     data class SubmissionLookupRequest(
         @param:Json(name = "selector") val selector: SubmissionLookupSelector,
         @param:Json(name = "limit") val limit: Int = 1,
     )
-
     @JsonClass(generateAdapter = true)
     data class SubmissionLookupSelector(
         @param:Json(name = "type") val type: String = "survey",
@@ -193,18 +177,15 @@ class DashboardSurveySubmissionsRepository {
         @param:Json(name = "user.name") val userName: String? = null,
         @param:Json(name = "parent._rev") val parentRev: String? = null,
     )
-
     @JsonClass(generateAdapter = true)
     data class SubmissionLookupResponse(
         @param:Json(name = "docs") val docs: List<SubmissionLookup> = emptyList(),
     )
-
     @JsonClass(generateAdapter = true)
     data class SubmissionLookup(
         @param:Json(name = "_id") val id: String? = null,
         @param:Json(name = "_rev") val rev: String? = null,
     )
-
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
     }

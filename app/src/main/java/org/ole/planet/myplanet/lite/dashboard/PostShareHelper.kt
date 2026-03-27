@@ -3,36 +3,26 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-19
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
 import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-
 import androidx.core.content.FileProvider
-
-import org.ole.planet.myplanet.lite.R
-
-import okhttp3.OkHttpClient
-import okhttp3.Request
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
 import java.io.File
 import java.io.IOException
-
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.ole.planet.myplanet.lite.R
 class PostShareHelper(
     private val context: Context,
     private val baseUrlProvider: () -> String?,
     private val sessionCookieProvider: () -> String?,
     private val serverNameProvider: () -> String?,
 ) {
-
     private val client = OkHttpClient()
-
     suspend fun sharePost(
         _postId: String?,
         author: String?,
@@ -83,7 +73,6 @@ class PostShareHelper(
             context.startActivity(chooser)
         }
     }
-
     private fun buildShareText(author: String?, message: String?): String {
         val trimmedMessage = message?.trim().orEmpty()
         val combined = buildString {
@@ -97,13 +86,11 @@ class PostShareHelper(
         }.trim()
         return combined.ifBlank { context.getString(R.string.dashboard_share_post_fallback) }
     }
-
     private fun buildShareTitle(serverName: String?): String {
         val resolvedServer = serverName?.trim().takeUnless { it.isNullOrEmpty() }
             ?: context.getString(R.string.dashboard_share_post_server_fallback)
         return context.getString(R.string.dashboard_share_post_title, resolvedServer)
     }
-
     private suspend fun downloadImages(imagePaths: List<String>): List<Uri> {
         val baseUrl = baseUrlProvider()
         val cookie = sessionCookieProvider()
@@ -120,7 +107,6 @@ class PostShareHelper(
         }
         return uris
     }
-
     private suspend fun downloadImageToCache(url: String, cookie: String?): File? = withContext(Dispatchers.IO) {
         try {
             val requestBuilder = Request.Builder().url(url)
@@ -145,14 +131,12 @@ class PostShareHelper(
             null
         }
     }
-
     companion object {
         private val IMAGE_MARKDOWN_REGEX = Regex("!?\\[[^\\]]*\\]\\([^)]*\\.(?:jpe?g|png)\\)", RegexOption.IGNORE_CASE)
         private val IMAGE_URL_REGEX = Regex("\\b\\S+\\.(?:jpe?g|png)(?:\\?\\S*)?(?=\\s|$)", RegexOption.IGNORE_CASE)
         private val LINK_MARKDOWN_REGEX = Regex("\\[([^\\]]+)\\]\\(([^\\s)]+)\\)")
         private val BOLD_REGEX = Regex("\\*\\*(.+?)\\*\\*|__(.+?)__")
         private val ITALIC_REGEX = Regex("(?<!\\*)\\*(?!\\*)(.+?)(?<!\\*)\\*(?!\\*)|(?<!_)_(?!_)(.+?)(?<!_)_(?!_)")
-
         fun sanitizeMessage(raw: String?): String? {
             if (raw.isNullOrBlank()) {
                 return null
@@ -171,7 +155,6 @@ class PostShareHelper(
             val cleaned = withoutItalics.replace("\\s+".toRegex(), " ").trim()
             return cleaned.ifBlank { null }
         }
-
         fun sanitizeForHtml(raw: String?): String? {
             if (raw.isNullOrBlank()) {
                 return null
@@ -180,7 +163,6 @@ class PostShareHelper(
             val withoutImageUrls = IMAGE_URL_REGEX.replace(withoutImages, " ")
             return withoutImageUrls.trim().ifBlank { null }
         }
-
         fun toHtml(text: String): String {
             val escapedSource = android.text.Html.escapeHtml(text)
             var html = LINK_MARKDOWN_REGEX.replace(escapedSource) { match ->
@@ -199,7 +181,6 @@ class PostShareHelper(
             }
             return html.replace("\n", "<br/>")
         }
-
         private fun resolveUrl(path: String, baseUrl: String?): String? {
             val base = baseUrl?.trim()?.trimEnd('/') ?: return null
             if (base.isEmpty()) {
