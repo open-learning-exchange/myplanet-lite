@@ -79,6 +79,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+
 private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
 }
