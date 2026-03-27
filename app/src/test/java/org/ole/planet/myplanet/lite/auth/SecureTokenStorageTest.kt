@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.lite.auth
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.every
 import io.mockk.mockk
