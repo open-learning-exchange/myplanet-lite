@@ -1002,8 +1002,16 @@ class SignupActivity : AppCompatActivity() {
         val payload = buildSignupPayload(username) ?: return SignupSubmissionResult.FAILED
         val mediaType = "application/json; charset=utf-8".toMediaType()
 
+        return executeSignupRequest(requestUrl, payload, mediaType)
+    }
+
+    private suspend fun executeSignupRequest(
+        requestUrl: String,
+        payload: JSONObject,
+        mediaType: okhttp3.MediaType
+    ): SignupSubmissionResult {
         return withContext(Dispatchers.IO) {
-            runCatching {
+            try {
                 val body = payload.toString().toRequestBody(mediaType)
                 val request = Request.Builder()
                     .url(requestUrl)
@@ -1016,7 +1024,11 @@ class SignupActivity : AppCompatActivity() {
                         else -> SignupSubmissionResult.FAILED
                     }
                 }
-            }.getOrElse { SignupSubmissionResult.FAILED }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                SignupSubmissionResult.FAILED
+            }
         }
     }
 
