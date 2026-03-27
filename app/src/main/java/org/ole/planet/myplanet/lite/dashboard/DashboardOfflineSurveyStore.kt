@@ -3,29 +3,22 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-19
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
 import android.content.ContentValues
 import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 class DashboardOfflineSurveyStore(
     context: Context,
     moshi: Moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
-
     private val documentAdapter = moshi.adapter(SurveyDocument::class.java)
-
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -39,14 +32,12 @@ class DashboardOfflineSurveyStore(
         )
         db.execSQL("CREATE INDEX idx_surveys_team_id ON $TABLE_SURVEYS($COLUMN_TEAM_ID)")
     }
-
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < DATABASE_VERSION) {
             db.execSQL("DROP TABLE IF EXISTS $TABLE_SURVEYS")
             onCreate(db)
         }
     }
-
     suspend fun saveSurvey(document: SurveyDocument, fallbackTeamId: String?): Boolean {
         val id = document.id?.trim().orEmpty()
         if (id.isEmpty()) {
@@ -70,7 +61,6 @@ class DashboardOfflineSurveyStore(
             ) != -1L
         }
     }
-
     suspend fun getSavedSurveyIds(): Set<String> = withContext(Dispatchers.IO) {
         readableDatabase.query(
             TABLE_SURVEYS,
@@ -89,7 +79,6 @@ class DashboardOfflineSurveyStore(
             }
         }
     }
-
     suspend fun getSavedSurveysForTeam(teamId: String): List<SurveyDocument> = withContext(Dispatchers.IO) {
         readableDatabase.query(
             TABLE_SURVEYS,
@@ -109,7 +98,6 @@ class DashboardOfflineSurveyStore(
             }
         }
     }
-
     suspend fun getSavedSurveyRevisions(): Map<String, String?> = withContext(Dispatchers.IO) {
         readableDatabase.query(
             TABLE_SURVEYS,
@@ -130,12 +118,10 @@ class DashboardOfflineSurveyStore(
             }
         }
     }
-
     private fun Cursor.getStringOrNull(columnName: String): String? {
         val index = getColumnIndexOrThrow(columnName)
         return if (isNull(index)) null else getString(index)
     }
-
     private companion object {
         private const val DATABASE_NAME = "dashboard_offline_surveys.db"
         private const val DATABASE_VERSION = 1

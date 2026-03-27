@@ -3,9 +3,7 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Bundle
@@ -15,38 +13,30 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
-
+import java.text.DateFormat
+import java.util.Date
+import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
 import org.json.JSONArray
 import org.json.JSONObject
-
-import java.text.DateFormat
-import java.util.Date
-import java.util.Locale
-
+import org.ole.planet.myplanet.lite.R
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 class DashboardOutboxDetailActivity : AppCompatActivity() {
-
     private lateinit var toolbar: MaterialToolbar
     private lateinit var teamView: TextView
     private lateinit var savedAtView: TextView
@@ -58,7 +48,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
     private val outboxStore by lazy { DashboardSurveyOutboxStore(applicationContext) }
     private val connectivityManager by lazy { getSystemService(ConnectivityManager::class.java) }
     private val httpClient by lazy { OkHttpClient.Builder().build() }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard_outbox_detail)
@@ -72,16 +61,13 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
         emptyView = findViewById(R.id.outboxDetailEmptyAnswers)
         toolbar.setNavigationIcon(R.drawable.ic_arrow_back_24)
         toolbar.setNavigationOnClickListener { finish() }
-
         val entryId = intent?.getLongExtra(EXTRA_OUTBOX_ID, -1L) ?: -1L
         if (entryId <= 0) {
             finish()
             return
         }
-
         loadEntry(entryId)
     }
-
     private fun loadEntry(entryId: Long) {
         lifecycleScope.launch {
             val entry = outboxStore.getEntry(entryId)
@@ -97,7 +83,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
                     .format(Date(entry.createdAt))
             }.getOrNull().orEmpty()
             savedAtView.text = getString(R.string.dashboard_outbox_saved_at, formattedDate)
-
             introView.text = getString(R.string.dashboard_outbox_detail_intro)
             answersContainer.removeAllViews()
             val questions = entry.submission.parent.questions.orEmpty()
@@ -125,7 +110,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
                     answersContainer.addView(itemView)
                 }
             }
-
             sendButton.setOnClickListener {
                 attemptSend(entry)
             }
@@ -135,13 +119,11 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun isOnline(): Boolean {
         val network = connectivityManager?.activeNetwork ?: return false
         val capabilities = connectivityManager?.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
-
     private fun formatAnswerValue(value: Any?): String {
         return when (value) {
             null -> getString(R.string.dashboard_outbox_no_answer)
@@ -152,7 +134,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
             else -> value.toString()
         }
     }
-
     private fun renderBasicDetails(entry: DashboardSurveyOutboxStore.OutboxEntry): Boolean {
         val user = entry.submission.user
         val details = listOfNotNull(
@@ -175,7 +156,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
         }
         return false
     }
-
     private fun renderAnswer(
         questionType: String,
         choices: List<DashboardSurveysRepository.SurveyChoice>,
@@ -240,7 +220,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
             answerView.text = formatAnswerValue(rawValue)
         }
     }
-
     private fun parseSelectedOptions(rawValue: Any?): List<SubmissionOptionValue> {
         return when (rawValue) {
             null -> emptyList()
@@ -256,14 +235,12 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
             else -> listOf(SubmissionOptionValue(id = null, text = rawValue.toString(), isOther = false))
         }
     }
-
     private fun mapToOption(map: Map<*, *>): SubmissionOptionValue {
         val id = map["id"] as? String
         val text = map["text"] as? String ?: id
         val isOther = (map["isOther"] as? Boolean) ?: false
         return SubmissionOptionValue(id = id, text = text, isOther = isOther)
     }
-
     private data class SubmissionOptionValue(
         val id: String?,
         val text: String?,
@@ -274,12 +251,10 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
                 (!text.isNullOrBlank() && text.equals(choice.text, ignoreCase = true))
         }
     }
-
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
         const val EXTRA_OUTBOX_ID = "extra_outbox_id"
     }
-
     private fun attemptSend(entry: DashboardSurveyOutboxStore.OutboxEntry) {
         if (!isOnline()) {
             Toast.makeText(this, R.string.dashboard_outbox_offline_cannot_send, Toast.LENGTH_SHORT).show()
@@ -309,7 +284,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
             submitEntry(entry, baseUrl, credentials?.username, credentials?.password, sessionCookie)
         }
     }
-
     private suspend fun fetchServerRevision(
         baseUrl: String?,
         surveyId: String?,
@@ -351,7 +325,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
             }
         }.getOrNull()
     }
-
     private fun confirmDelete(entry: DashboardSurveyOutboxStore.OutboxEntry) {
         MaterialAlertDialogBuilder(this)
             .setTitle(R.string.dashboard_outbox_delete_submission)
@@ -378,7 +351,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
             }
             .show()
     }
-
     private suspend fun submitEntry(
         entry: DashboardSurveyOutboxStore.OutboxEntry,
         baseUrl: String?,
@@ -409,7 +381,6 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.dashboard_outbox_send_failed, Toast.LENGTH_SHORT).show()
         }
     }
-
     private fun showRevMismatchDialog(entry: DashboardSurveyOutboxStore.OutboxEntry) {
         androidx.appcompat.app.AlertDialog.Builder(this)
             .setTitle(R.string.dashboard_outbox_rev_mismatch_title)

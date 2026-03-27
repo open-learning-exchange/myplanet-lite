@@ -3,26 +3,19 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-19
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
+import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-import java.io.IOException
-
 class DashboardNewsActionsRepository {
-
     private val client: OkHttpClient = OkHttpClient.Builder().build()
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
@@ -30,7 +23,6 @@ class DashboardNewsActionsRepository {
     private val deleteRequestAdapter = moshi.adapter(DeleteNewsRequest::class.java)
     private val updateRequestAdapter = moshi.adapter(UpdateNewsRequest::class.java)
     private val responseAdapter = moshi.adapter(DeleteNewsResponse::class.java)
-
     suspend fun deleteNews(
         baseUrl: String,
         sessionCookie: String?,
@@ -82,7 +74,6 @@ class DashboardNewsActionsRepository {
             }
         }
     }
-
     suspend fun updateNews(
         baseUrl: String,
         sessionCookie: String?,
@@ -136,7 +127,6 @@ class DashboardNewsActionsRepository {
             }
         }
     }
-
     @JsonClass(generateAdapter = true)
     data class DeleteNewsRequest(
         @param:Json(name = "_id") val id: String,
@@ -154,7 +144,6 @@ class DashboardNewsActionsRepository {
         val updatedDate: Long?,
         @param:Json(name = "_deleted") val deleted: Boolean
     )
-
     @JsonClass(generateAdapter = true)
     data class UpdateNewsRequest(
         @param:Json(name = "_id") val id: String,
@@ -172,17 +161,14 @@ class DashboardNewsActionsRepository {
         val images: List<DashboardNewsRepository.NewsImage>?,
         val updatedDate: Long?
     )
-
     @JsonClass(generateAdapter = true)
     data class DeleteNewsResponse(
         val ok: Boolean?,
         @param:Json(name = "id") val id: String?,
         @param:Json(name = "rev") val revision: String?
     )
-
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
-
         private fun resolveViewInEntries(
             document: DashboardNewsRepository.NewsDocument,
             teamId: String?,
@@ -204,7 +190,6 @@ class DashboardNewsActionsRepository {
             }
             return buildViewInEntries(document.createdOn, document.parentCode, teamId, teamName)
         }
-
         private fun buildViewInEntries(
             createdOn: String?,
             parentCode: String?,
@@ -224,7 +209,6 @@ class DashboardNewsActionsRepository {
                     )
                 )
             }
-
             val planet = createdOn?.takeIf { it.isNotBlank() }
             val parent = parentCode?.takeIf { it.isNotBlank() }
             if (planet == null || parent == null) {

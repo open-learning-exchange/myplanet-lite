@@ -3,34 +3,26 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-15
  */
-
 package org.ole.planet.myplanet.lite.dashboard
-
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
+import java.io.IOException
+import java.io.Serializable
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-import java.io.IOException
-import java.io.Serializable
-
 class DashboardNewsRepository {
-
     private val client: OkHttpClient = OkHttpClient.Builder().build()
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
         .build()
     private val requestAdapter = moshi.adapter(NewsFindRequest::class.java)
     private val responseAdapter = moshi.adapter(NewsFindResponse::class.java)
-
     suspend fun fetchNews(
         baseUrl: String,
         sessionCookie: String?,
@@ -113,7 +105,6 @@ class DashboardNewsRepository {
             }
         }
     }
-
     suspend fun fetchComments(
         baseUrl: String,
         sessionCookie: String?,
@@ -180,7 +171,6 @@ class DashboardNewsRepository {
             }
         }
     }
-
     @JsonClass(generateAdapter = true)
     data class NewsFindRequest(
         val selector: Map<String, Any>,
@@ -189,13 +179,11 @@ class DashboardNewsRepository {
         val skip: Int? = null,
         val bookmark: String? = null
     )
-
     @JsonClass(generateAdapter = true)
     data class NewsFindResponse(
         val docs: List<NewsDocument>?,
         val bookmark: String?
     )
-
     @JsonClass(generateAdapter = true)
     data class NewsDocument(
         @param:Json(name = "_id") val id: String?,
@@ -214,7 +202,6 @@ class DashboardNewsRepository {
         val updatedDate: Long?,
         @param:Json(name = "_deleted") val isDeleted: Boolean?
     ) : Serializable
-
     @JsonClass(generateAdapter = true)
     data class NewsUser(
         val name: String?,
@@ -223,19 +210,16 @@ class DashboardNewsRepository {
         val lastName: String?,
         @param:Json(name = "_attachments") val attachments: Map<String, NewsAttachment>?
     ) : Serializable
-
     @JsonClass(generateAdapter = true)
     data class NewsAttachment(
         @param:Json(name = "content_type") val contentType: String?
     ) : Serializable
-
     @JsonClass(generateAdapter = true)
     data class NewsImage(
         val resourceId: String?,
         val filename: String?,
         val markdown: String?
     ) : Serializable
-
     @JsonClass(generateAdapter = true)
     data class ViewInEntry(
         val section: String?,
@@ -244,7 +228,6 @@ class DashboardNewsRepository {
         val name: String? = null,
         val mode: String? = null
     ) : Serializable
-
     data class NewsPage(
         val items: List<NewsDocument>,
         val consumed: Int,
