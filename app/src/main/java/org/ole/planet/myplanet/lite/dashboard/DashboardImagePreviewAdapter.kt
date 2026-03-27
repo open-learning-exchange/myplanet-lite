@@ -12,6 +12,7 @@ import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.github.chrisbanes.photoview.PhotoView
 import org.ole.planet.myplanet.lite.R
+
 class DashboardImagePreviewAdapter(
     private val imagePaths: List<String>,
     private val imageLoader: DashboardPostImageLoader,
