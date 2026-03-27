@@ -959,21 +959,21 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             )
             private val defaultScaleType = imageView.scaleType
 
-            fun bind(course: CourseItem) {
-                fun showDefaultIcon() {
-                    imageView.visibility = View.VISIBLE
-                    imageView.setImageResource(R.drawable.ic_courses_24)
-                    val primary = MaterialColors.getColor(itemView, androidx.appcompat.R.attr.colorPrimary)
-                    imageView.imageTintList = android.content.res.ColorStateList.valueOf(primary)
-                    imageView.setPadding(
-                        defaultPadding[0],
-                        defaultPadding[1],
-                        defaultPadding[2],
-                        defaultPadding[3]
-                    )
-                    imageView.scaleType = defaultScaleType
-                }
+            private fun showDefaultIcon() {
+                imageView.visibility = View.VISIBLE
+                imageView.setImageResource(R.drawable.ic_courses_24)
+                val primary = MaterialColors.getColor(itemView, androidx.appcompat.R.attr.colorPrimary)
+                imageView.imageTintList = android.content.res.ColorStateList.valueOf(primary)
+                imageView.setPadding(
+                    defaultPadding[0],
+                    defaultPadding[1],
+                    defaultPadding[2],
+                    defaultPadding[3]
+                )
+                imageView.scaleType = defaultScaleType
+            }
 
+            fun bind(course: CourseItem) {
                 val coverPath = course.coverPath
                 val loader = imageLoaderProvider()
                 if (!coverPath.isNullOrBlank()) {
