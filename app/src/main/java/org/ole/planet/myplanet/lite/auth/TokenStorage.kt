@@ -18,6 +18,7 @@ import kotlin.text.Charsets
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
 interface TokenStorage {
     suspend fun saveToken(token: String)
     suspend fun getToken(): String?
