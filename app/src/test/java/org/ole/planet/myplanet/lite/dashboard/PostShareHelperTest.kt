@@ -15,6 +15,8 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,6 +27,7 @@ import org.mockito.Mockito.anyString
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.verify
+import org.mockito.ArgumentCaptor
 import org.mockito.Mockito.`when`
 import org.mockito.MockitoAnnotations
 import org.ole.planet.myplanet.lite.R
@@ -150,7 +153,23 @@ class PostShareHelperTest {
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify(context).startActivity(any(Intent::class.java))
+        val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
+        verify(context).startActivity(intentCaptor.capture())
+
+        val chooserIntent = intentCaptor.value
+        assertEquals("Share post", chooserIntent.getStringExtra(Intent.EXTRA_TITLE))
+
+        val targetIntent = chooserIntent.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+        assertNotNull(targetIntent)
+        assertEquals(Intent.ACTION_SEND, targetIntent?.action)
+        assertEquals("text/plain", targetIntent?.type)
+
+        val expectedText = "Shared from my server\n\nJohn Doe\n\nHello world!"
+        assertEquals(expectedText, targetIntent?.getStringExtra(Intent.EXTRA_TEXT))
+        val expectedHtml = "Shared from my server<br/><br/>Hello world!"
+        assertEquals(expectedHtml, targetIntent?.getStringExtra(Intent.EXTRA_HTML_TEXT))
+        assertEquals("Shared from my server", targetIntent?.getStringExtra(Intent.EXTRA_SUBJECT))
+        assertEquals("Shared from my server", targetIntent?.getStringExtra(Intent.EXTRA_TITLE))
     }
 
     @Test
@@ -161,20 +180,30 @@ class PostShareHelperTest {
         `when`(context.contentResolver).thenReturn(mockContentResolver)
 
         val clipDataStaticMock = mockStatic(android.content.ClipData::class.java)
-        val mockClipData = mock(android.content.ClipData::class.java)
-        clipDataStaticMock.`when`<android.content.ClipData> { android.content.ClipData.newUri(any(), anyString(), any()) }.thenReturn(mockClipData)
+        try {
+            val mockClipData = mock(android.content.ClipData::class.java)
+            clipDataStaticMock.`when`<android.content.ClipData> { android.content.ClipData.newUri(any(), anyString(), any()) }.thenReturn(mockClipData)
 
-        helper.sharePost(
-            _postId = "123",
-            author = "John Doe",
-            message = "Hello world!",
-            imagePaths = listOf("image1.jpg")
-        )
-        testDispatcher.scheduler.advanceUntilIdle()
+            helper.sharePost(
+                _postId = "123",
+                author = "John Doe",
+                message = "Hello world!",
+                imagePaths = listOf("image1.jpg")
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
 
-        verify(context).startActivity(any(Intent::class.java))
+            val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
+            verify(context).startActivity(intentCaptor.capture())
 
-        clipDataStaticMock.close()
+            val targetIntent = intentCaptor.value.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+            assertNotNull(targetIntent)
+            assertEquals(Intent.ACTION_SEND, targetIntent?.action)
+            assertEquals("image/*", targetIntent?.type)
+            assertTrue((targetIntent?.flags ?: 0) and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
+            assertNotNull(targetIntent?.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+        } finally {
+            clipDataStaticMock.close()
+        }
     }
 
     @Test
@@ -186,19 +215,124 @@ class PostShareHelperTest {
         `when`(context.contentResolver).thenReturn(mockContentResolver)
 
         val clipDataStaticMock = mockStatic(android.content.ClipData::class.java)
-        val mockClipData = mock(android.content.ClipData::class.java)
-        clipDataStaticMock.`when`<android.content.ClipData> { android.content.ClipData.newUri(any(), anyString(), any()) }.thenReturn(mockClipData)
+        try {
+            val mockClipData = mock(android.content.ClipData::class.java)
+            clipDataStaticMock.`when`<android.content.ClipData> { android.content.ClipData.newUri(any(), anyString(), any()) }.thenReturn(mockClipData)
+
+            helper.sharePost(
+                _postId = "123",
+                author = "John Doe",
+                message = "Hello world!",
+                imagePaths = listOf("image1.jpg", "image2.jpg")
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
+            verify(context).startActivity(intentCaptor.capture())
+
+            val targetIntent = intentCaptor.value.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+            assertNotNull(targetIntent)
+            assertEquals(Intent.ACTION_SEND_MULTIPLE, targetIntent?.action)
+            assertEquals("image/*", targetIntent?.type)
+            assertTrue((targetIntent?.flags ?: 0) and Intent.FLAG_GRANT_READ_URI_PERMISSION != 0)
+
+            val streams = targetIntent?.getParcelableArrayListExtra<Uri>(Intent.EXTRA_STREAM)
+            assertNotNull(streams)
+            assertEquals(2, streams?.size)
+        } finally {
+            clipDataStaticMock.close()
+        }
+    }
+
+    @Test
+    fun testSharePostMissingBaseUrl() = runTest {
+        val helperNoUrl = PostShareHelper(
+            context = context,
+            baseUrlProvider = { null },
+            sessionCookieProvider = { "session=1234" },
+            serverNameProvider = { "my server" }
+        )
+
+        helperNoUrl.sharePost(
+            _postId = "123",
+            author = "John Doe",
+            message = "Hello world!",
+            imagePaths = listOf("image1.jpg")
+        )
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
+        verify(context).startActivity(intentCaptor.capture())
+
+        val targetIntent = intentCaptor.value.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+        assertNotNull(targetIntent)
+        // Since URL is missing, images aren't downloaded, and it falls back to text/plain
+        assertEquals(Intent.ACTION_SEND, targetIntent?.action)
+        assertEquals("text/plain", targetIntent?.type)
+        assertNull(targetIntent?.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+    }
+
+    @Test
+    fun testSharePostMissingCookie() = runTest {
+        mockWebServer.enqueue(MockResponse().setBody("image content").setResponseCode(200))
+        val mockContentResolver = mock(android.content.ContentResolver::class.java)
+        `when`(context.contentResolver).thenReturn(mockContentResolver)
+
+        val clipDataStaticMock = mockStatic(android.content.ClipData::class.java)
+        try {
+            val mockClipData = mock(android.content.ClipData::class.java)
+            clipDataStaticMock.`when`<android.content.ClipData> { android.content.ClipData.newUri(any(), anyString(), any()) }.thenReturn(mockClipData)
+
+            val helperNoCookie = PostShareHelper(
+                context = context,
+                baseUrlProvider = { mockWebServer.url("/").toString() },
+                sessionCookieProvider = { null },
+                serverNameProvider = { "my server" }
+            )
+
+            helperNoCookie.sharePost(
+                _postId = "123",
+                author = "John Doe",
+                message = "Hello world!",
+                imagePaths = listOf("image1.jpg")
+            )
+            testDispatcher.scheduler.advanceUntilIdle()
+
+            val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
+            verify(context).startActivity(intentCaptor.capture())
+
+            val targetIntent = intentCaptor.value.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+            assertNotNull(targetIntent)
+            // Image still downloads even without a cookie header if server doesn't reject it
+            assertEquals(Intent.ACTION_SEND, targetIntent?.action)
+            assertEquals("image/*", targetIntent?.type)
+            assertNotNull(targetIntent?.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
+        } finally {
+            clipDataStaticMock.close()
+        }
+    }
+
+    @Test
+    fun testSharePostNetworkError() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
 
         helper.sharePost(
             _postId = "123",
             author = "John Doe",
             message = "Hello world!",
-            imagePaths = listOf("image1.jpg", "image2.jpg")
+            imagePaths = listOf("image1.jpg")
         )
         testDispatcher.scheduler.advanceUntilIdle()
 
-        verify(context).startActivity(any(Intent::class.java))
+        val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
+        verify(context).startActivity(intentCaptor.capture())
 
-        clipDataStaticMock.close()
+        val targetIntent = intentCaptor.value.getParcelableExtra<Intent>(Intent.EXTRA_INTENT)
+        assertNotNull(targetIntent)
+        // Server returned 500, so image download failed. Falls back to text/plain.
+        assertEquals(Intent.ACTION_SEND, targetIntent?.action)
+        assertEquals("text/plain", targetIntent?.type)
+        assertNull(targetIntent?.getParcelableExtra<Uri>(Intent.EXTRA_STREAM))
     }
+
 }
