@@ -22,6 +22,9 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 
 import java.io.IOException
@@ -297,34 +300,38 @@ class DashboardCoursesRepository {
                 }
 
                 val remainingIds = uniqueIds.filterNot { cachedDocuments.containsKey(it) }
-                remainingIds.chunked(50).forEach { chunk ->
-                    val requestUrl = "$normalizedBase/db/courses/_find"
-                    val payload = coursesFindRequestAdapter.toJson(
-                        CoursesFindRequest(
-                            selector = CoursesSelector(id = CourseIdFilter(inList = chunk)),
-                            limit = chunk.size,
-                            skip = 0
-                        )
-                    )
-                    val mediaType = "application/json; charset=utf-8".toMediaType()
-                    val request = Request.Builder()
-                        .url(requestUrl)
-                        .post(payload.toRequestBody(mediaType))
-                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                        .build()
+                coroutineScope {
+                    remainingIds.chunked(50).map { chunk ->
+                        async {
+                            val requestUrl = "$normalizedBase/db/courses/_find"
+                            val payload = coursesFindRequestAdapter.toJson(
+                                CoursesFindRequest(
+                                    selector = CoursesSelector(id = CourseIdFilter(inList = chunk)),
+                                    limit = chunk.size,
+                                    skip = 0
+                                )
+                            )
+                            val mediaType = "application/json; charset=utf-8".toMediaType()
+                            val request = Request.Builder()
+                                .url(requestUrl)
+                                .post(payload.toRequestBody(mediaType))
+                                .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
+                                .build()
 
-                    client.newCall(request).execute().use { response ->
-                        if (!response.isSuccessful) {
-                            response.body.string()
-                            throw IOException("Unexpected response ${response.code}")
+                            client.newCall(request).execute().use { response ->
+                                if (!response.isSuccessful) {
+                                    response.body.string()
+                                    throw IOException("Unexpected response ${response.code}")
+                                }
+                                val parsed = coursesFindResponseAdapter.fromJson(response.body.string())
+                                    ?: throw IOException("Invalid response body")
+                                parsed.docs
+                            }
                         }
-                        val parsed = coursesFindResponseAdapter.fromJson(response.body.string())
-                            ?: throw IOException("Invalid response body")
-                        parsed.docs.forEach { document ->
-                            val id = document.id ?: return@forEach
-                            courseCache[id] = document
-                            cachedDocuments[id] = document
-                        }
+                    }.awaitAll().flatten().forEach { document ->
+                        val id = document.id ?: return@forEach
+                        courseCache[id] = document
+                        cachedDocuments[id] = document
                     }
                 }
 
