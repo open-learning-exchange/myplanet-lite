@@ -3,63 +3,52 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-17
  */
-
 package org.ole.planet.myplanet.lite.auth
 
 import android.content.Context
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Base64
-
-import kotlin.text.Charsets
-
-import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
 import java.nio.ByteBuffer
 import java.security.KeyStore
-
 import javax.crypto.Cipher
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.GCMParameterSpec
+import kotlin.text.Charsets
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 interface TokenStorage {
     suspend fun saveToken(token: String)
     suspend fun getToken(): String?
     suspend fun clearToken()
 }
-
 class SecureTokenStorage @JvmOverloads constructor(
     context: Context,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : TokenStorage {
-
     private val keyStore: KeyStore = KeyStore.getInstance(ANDROID_KEYSTORE).apply {
         load(null)
     }
     private val sharedPreferences =
         context.getSharedPreferences(PREF_FILE_NAME, Context.MODE_PRIVATE)
-
     override suspend fun saveToken(token: String) {
         withContext(dispatcher) {
             val encoded = encryptToken(token) ?: return@withContext
             sharedPreferences.edit().putString(KEY_TOKEN, encoded).apply()
         }
     }
-
     override suspend fun getToken(): String? = withContext(dispatcher) {
         val stored = sharedPreferences.getString(KEY_TOKEN, null) ?: return@withContext null
         decryptToken(stored)
     }
-
     override suspend fun clearToken() {
         withContext(dispatcher) {
             sharedPreferences.edit().remove(KEY_TOKEN).apply()
         }
     }
-
     private fun encryptToken(token: String): String? = runCatching {
         val cipher = Cipher.getInstance(AES_MODE).apply {
             init(Cipher.ENCRYPT_MODE, getOrCreateSecretKey())
@@ -73,7 +62,6 @@ class SecureTokenStorage @JvmOverloads constructor(
             .array()
         Base64.encodeToString(payload, Base64.NO_WRAP)
     }.getOrNull()
-
     private fun decryptToken(payload: String): String? = runCatching {
         val decoded = Base64.decode(payload, Base64.NO_WRAP)
         if (decoded.size <= Int.SIZE_BYTES) return@runCatching null
@@ -92,7 +80,6 @@ class SecureTokenStorage @JvmOverloads constructor(
         val plainBytes = cipher.doFinal(cipherText)
         String(plainBytes, Charsets.UTF_8)
     }.getOrNull()
-
     private fun getOrCreateSecretKey(): SecretKey {
         val existing = keyStore.getEntry(KEY_ALIAS, null) as? KeyStore.SecretKeyEntry
         if (existing != null) {
@@ -110,7 +97,6 @@ class SecureTokenStorage @JvmOverloads constructor(
         keyGenerator.init(parameterSpec)
         return keyGenerator.generateKey()
     }
-
     private companion object {
         const val PREF_FILE_NAME = "auth_secure_prefs"
         const val KEY_TOKEN = "planet_token"
