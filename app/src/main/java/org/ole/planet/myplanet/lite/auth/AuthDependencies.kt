@@ -4,6 +4,7 @@
  * Creation date: 2025-11-07
  */
 package org.ole.planet.myplanet.lite.auth
+
 import android.content.Context
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -12,6 +13,7 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.ole.planet.myplanet.lite.BuildConfig
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
+
 object AuthDependencies {
     @Volatile
     private var authServiceOverride: AuthService? = null
