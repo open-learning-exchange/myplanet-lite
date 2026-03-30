@@ -3,7 +3,6 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-07
  */
-
 package org.ole.planet.myplanet.lite.auth
 
 import retrofit2.Response

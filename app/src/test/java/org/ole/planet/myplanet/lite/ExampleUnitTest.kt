@@ -6,7 +6,7 @@
 
 package org.ole.planet.myplanet.lite
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
 import org.junit.Test
 
 /**
