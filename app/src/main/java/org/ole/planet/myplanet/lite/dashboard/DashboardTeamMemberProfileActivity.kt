@@ -10,18 +10,17 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-
 import com.google.android.material.appbar.MaterialToolbar
+import java.util.Locale
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
@@ -29,17 +28,9 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.profile.GenderTranslator
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
-import org.ole.planet.myplanet.lite.util.DateUtils
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-
-import kotlinx.coroutines.launch
-
-import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.ZoneOffset
-import java.util.Locale
-import java.util.TimeZone
+import org.ole.planet.myplanet.lite.util.DateUtils
 
 class DashboardTeamMemberProfileActivity : AppCompatActivity() {
 

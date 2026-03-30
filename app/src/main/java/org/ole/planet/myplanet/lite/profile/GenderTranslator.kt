@@ -7,12 +7,9 @@
 package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
-
 import androidx.annotation.ArrayRes
-
-import org.ole.planet.myplanet.lite.R
-
 import java.util.Locale
+import org.ole.planet.myplanet.lite.R
 
 object GenderTranslator {
     private val SUPPORTED_ARRAYS = intArrayOf(
