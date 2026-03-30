@@ -7,29 +7,24 @@
 package org.ole.planet.myplanet.lite.surveys
 
 import android.content.Context
-
 import com.google.mlkit.nl.languageid.LanguageIdentification
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
-import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
+import java.io.IOException
+import java.util.Locale
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlinx.coroutines.withContext
-
-import java.io.IOException
-import java.util.Locale
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository
 
 class SurveyTranslationManager(
     private val appContext: Context,

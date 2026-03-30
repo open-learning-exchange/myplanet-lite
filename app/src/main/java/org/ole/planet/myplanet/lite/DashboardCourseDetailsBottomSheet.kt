@@ -13,22 +13,18 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-
 import androidx.core.view.isVisible
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
-
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-
 import io.noties.markwon.Markwon
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
+import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 
 class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
 

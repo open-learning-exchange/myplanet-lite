@@ -15,35 +15,29 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
-
+import java.text.DateFormat
+import java.util.Date
+import java.util.Locale
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
 import org.json.JSONArray
 import org.json.JSONObject
-
-import java.text.DateFormat
-import java.util.Date
-import java.util.Locale
+import org.ole.planet.myplanet.lite.R
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 class DashboardOutboxDetailActivity : AppCompatActivity() {
 
