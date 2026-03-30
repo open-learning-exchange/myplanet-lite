@@ -6,16 +6,13 @@
 
 package org.ole.planet.myplanet.lite.profile
 
-import okhttp3.OkHttpClient
-import okhttp3.Request
-
+import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.util.nullIfBlank
-
-import java.io.IOException
 
 class UserProfileSync(
     private val client: OkHttpClient,

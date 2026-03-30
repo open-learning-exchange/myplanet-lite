@@ -10,15 +10,12 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
+import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
-import java.io.IOException
 
 class ServerConfigurationRepository(
     private val client: OkHttpClient = OkHttpClient(),
