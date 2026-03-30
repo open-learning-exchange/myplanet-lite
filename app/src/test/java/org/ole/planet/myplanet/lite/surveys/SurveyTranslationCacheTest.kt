@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.lite.surveys
 
-import org.junit.Test
 import kotlin.system.measureTimeMillis
+import org.junit.Test
 
 class SurveyTranslationCacheTest {
 
