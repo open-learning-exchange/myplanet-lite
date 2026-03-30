@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.lite.profile
 
+import java.util.concurrent.CopyOnWriteArraySet
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import java.util.concurrent.CopyOnWriteArraySet
 
 class AvatarUpdateNotifierTest {
 
