@@ -4,6 +4,7 @@
  * Creation date: 2025-12-28
  */
 package org.ole.planet.myplanet.lite.dashboard
+
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
