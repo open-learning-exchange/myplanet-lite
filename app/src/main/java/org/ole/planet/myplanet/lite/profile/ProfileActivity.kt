@@ -20,7 +20,6 @@ import android.widget.ImageView
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -29,34 +28,12 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
-
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
-import org.ole.planet.myplanet.lite.BuildConfig
-import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.auth.AuthResult
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.model.LanguageOption
 import com.yalantis.ucrop.UCrop
-
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-
-import kotlin.math.min
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
-import org.json.JSONObject
-import org.ole.planet.myplanet.lite.util.nullIfBlank
-
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -72,6 +49,22 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.math.min
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import org.ole.planet.myplanet.lite.BuildConfig
+import org.ole.planet.myplanet.lite.R
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.auth.AuthResult
+import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.model.LanguageOption
+import org.ole.planet.myplanet.lite.util.nullIfBlank
 
 class ProfileActivity : AppCompatActivity() {
 

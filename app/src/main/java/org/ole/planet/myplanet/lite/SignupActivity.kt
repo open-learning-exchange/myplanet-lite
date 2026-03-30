@@ -20,7 +20,6 @@ import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
@@ -29,7 +28,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
-
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.datepicker.MaterialDatePicker
@@ -38,31 +36,26 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
-import org.ole.planet.myplanet.lite.model.ServerMetadataResponse
-import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_FEMALE
-import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_MALE
-import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
-
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
+import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_FEMALE
+import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_MALE
+import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
+import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
 class SignupActivity : AppCompatActivity() {
 

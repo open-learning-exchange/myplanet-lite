@@ -29,7 +29,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
@@ -48,35 +47,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputLayout
-import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsActionsRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import org.ole.planet.myplanet.lite.profile.UserProfile
-import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-
 import io.noties.markwon.Markwon
-import okhttp3.OkHttpClient
-import okhttp3.Request
-
-import kotlin.math.max
-import kotlin.math.min
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
 import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -87,6 +61,26 @@ import java.util.Date
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.ole.planet.myplanet.lite.R
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.dashboard.DashboardNewsActionsRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
+import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
+import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.profile.UserProfile
+import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 
 private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
