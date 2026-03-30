@@ -10,19 +10,14 @@ import android.content.ClipData
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
-
 import androidx.core.content.FileProvider
-
-import org.ole.planet.myplanet.lite.R
-
-import okhttp3.OkHttpClient
-import okhttp3.Request
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-
 import java.io.File
 import java.io.IOException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.ole.planet.myplanet.lite.R
 
 class PostShareHelper(
     private val context: Context,
