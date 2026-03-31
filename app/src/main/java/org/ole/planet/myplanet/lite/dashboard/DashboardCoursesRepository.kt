@@ -27,15 +27,6 @@ import org.ole.planet.myplanet.lite.BuildConfig
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-
-import java.io.IOException
-import java.util.ArrayList
-
 class DashboardCoursesRepository {
     private val client: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(
