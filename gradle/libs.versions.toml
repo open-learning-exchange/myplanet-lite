@@ -19,8 +19,7 @@ kotlinxCoroutinesTest = "1.10.2"
 languageId = "17.0.6"
 lifecycleRuntimeKtx = "2.10.0"
 material = "1.13.0"
-media3Exoplayer = "1.9.3"
-mockito = "5.2.0"
+media3Exoplayer = "1.10.0"
 mockitoCore = "5.23.0"
 mockitoInline = "5.2.0"
 mockitoKotlin = "6.3.0"
@@ -54,7 +53,6 @@ androidx-test-core = { group = "androidx.test", name = "core", version.ref = "co
 byte-buddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "bytebuddy" }
 byte-buddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "bytebuddy" }
 circleimageview = { module = "de.hdodenhof:circleimageview", version.ref = "circleimageview" }
-compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "glide" }
 converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.ref = "retrofit" }
 core = { module = "io.noties.markwon:core", version.ref = "core" }
 core-ktx = { module = "androidx.test:core-ktx", version.ref = "coreKtxVersion" }
@@ -71,7 +69,6 @@ mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockitoCore
 mockito-inline = { module = "org.mockito:mockito-inline", version.ref = "mockitoInline" }
 mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockitoKotlin" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
-mockk-agent-jvm = { module = "io.mockk:mockk-agent-jvm", version.ref = "mockk" }
 mockwebserver = { module = "com.squareup.okhttp3:mockwebserver", version.ref = "mockwebserver" }
 moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version.ref = "moshiKotlin" }
 photoview = { module = "com.github.chrisbanes:PhotoView", version.ref = "photoview" }
