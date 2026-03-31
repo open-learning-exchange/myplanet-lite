@@ -105,7 +105,7 @@ class DashboardSurveySubmissionsRepository {
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
-                    val body = response.body?.string() ?: ""
+                    val body = response.body.string()
                     if (body.isEmpty()) {
                         null
                     } else {
