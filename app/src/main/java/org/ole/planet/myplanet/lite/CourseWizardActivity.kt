@@ -108,6 +108,32 @@ class CourseWizardActivity : AppCompatActivity() {
             .usePlugin(TablePlugin.create(this))
             .build()
 
+        val (courseTitle, startIndex) = parseIntentData(savedInstanceState)
+
+        if (steps.isEmpty()) {
+            finish()
+            return
+        }
+
+        setupViews(courseTitle)
+
+        lifecycleScope.launch {
+            currentIndex = resolveInitialStepIndex(startIndex)
+            bindStep(
+                stepPositionView,
+                stepTitleView,
+                descriptionView,
+                attachmentsContainer,
+                attachmentsTitle,
+                attachmentsList,
+                previousButton,
+                nextButton
+            )
+            maybeAutoCompleteFirstStep()
+        }
+    }
+
+    private fun parseIntentData(savedInstanceState: Bundle?): Pair<String, Int> {
         val courseTitle = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         courseId = intent.getStringExtra(EXTRA_COURSE_ID)
         val startIndex = intent.getIntExtra(EXTRA_START_STEP, 0)
@@ -140,16 +166,16 @@ class CourseWizardActivity : AppCompatActivity() {
             )
         }.orEmpty()
 
-        if (steps.isEmpty()) {
-            finish()
-            return
-        }
+        return Pair(courseTitle, startIndex)
+    }
 
+    private fun setupViews(courseTitle: String) {
         val toolbar: MaterialToolbar = findViewById(R.id.courseWizardToolbar)
 
         val root: View = findViewById(R.id.courseWizardRoot)
         WindowInsetsControllerCompat(window, root).isAppearanceLightStatusBars = true
         val titleView: TextView = findViewById(R.id.courseWizardTitle)
+
         stepPositionView = findViewById(R.id.courseWizardStepPosition)
         stepTitleView = findViewById(R.id.courseWizardStepTitle)
         descriptionView = findViewById(R.id.courseWizardDescription)
@@ -176,21 +202,6 @@ class CourseWizardActivity : AppCompatActivity() {
         }
 
         titleView.text = courseTitle
-
-        lifecycleScope.launch {
-            currentIndex = resolveInitialStepIndex(startIndex)
-            bindStep(
-                stepPositionView,
-                stepTitleView,
-                descriptionView,
-                attachmentsContainer,
-                attachmentsTitle,
-                attachmentsList,
-                previousButton,
-                nextButton
-            )
-            maybeAutoCompleteFirstStep()
-        }
     }
 
     override fun onDestroy() {
