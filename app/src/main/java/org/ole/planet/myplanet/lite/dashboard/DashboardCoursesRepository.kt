@@ -23,15 +23,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.logging.HttpLoggingInterceptor
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withContext
-
-import java.io.IOException
-import java.util.ArrayList
 import org.ole.planet.myplanet.lite.BuildConfig
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
@@ -741,7 +732,7 @@ class DashboardCoursesRepository {
 
     @JsonClass(generateAdapter = true)
     data class CourseInSelector(
-        @param:Json(name = "\$in") val included: List<String>
+        @param:Json(name = $$"$in") val included: List<String>
     )
 
     @JsonClass(generateAdapter = true)
@@ -802,9 +793,9 @@ class DashboardCoursesRepository {
 
     @JsonClass(generateAdapter = true)
     data class CourseIdFilter(
-        @param:Json(name = "\$gt") val gt: Any? = null,
-        @param:Json(name = "\$nin") val notIn: List<String>? = null,
-        @param:Json(name = "\$in") val inList: List<String>? = null
+        @param:Json(name = $$"$gt") val gt: Any? = null,
+        @param:Json(name = $$"$nin") val notIn: List<String>? = null,
+        @param:Json(name = $$"$in") val inList: List<String>? = null
     )
 
     @JsonClass(generateAdapter = true)
@@ -822,7 +813,7 @@ class DashboardCoursesRepository {
     )
 
     @JsonClass(generateAdapter = true)
-    data class TeamIdsSelector(@param:Json(name = "\$in") val ids: List<String>)
+    data class TeamIdsSelector(@param:Json(name = $$"$in") val ids: List<String>)
 
     @JsonClass(generateAdapter = true)
     data class TeamCoursesResponse(val docs: List<TeamDocument> = emptyList())
