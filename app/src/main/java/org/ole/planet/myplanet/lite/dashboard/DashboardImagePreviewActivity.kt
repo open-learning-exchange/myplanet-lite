@@ -9,19 +9,16 @@ package org.ole.planet.myplanet.lite.dashboard
 import android.os.Bundle
 import android.view.View
 import android.widget.ProgressBar
-
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.repeatOnLifecycle
 import androidx.viewpager2.widget.ViewPager2
-
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewAdapter
-
-import kotlinx.coroutines.launch
 
 class DashboardImagePreviewActivity : AppCompatActivity() {
 
