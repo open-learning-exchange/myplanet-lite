@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.lite.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.util.TimeZone
 
 class DateUtilsTest {
 
