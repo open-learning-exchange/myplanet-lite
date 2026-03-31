@@ -415,10 +415,9 @@ class DashboardCoursesRepository {
                 val sanitizedIds = courseIds.filter { it.isNotBlank() }
                 if (sanitizedIds.isEmpty()) return@runCatching emptyMap()
 
-                val docs = ArrayList<CourseProgressDocument>()
-                coroutineScope {
+                val docs = coroutineScope {
                     sanitizedIds.chunked(10).map { courseChunk ->
-                        async(Dispatchers.IO) {
+                        async {
                             val requestUrl = "$normalizedBase/db/courses_progress/_find"
                             val payload = coursesProgressRequestAdapter.toJson(
                                 CoursesProgressFindRequest(
@@ -447,9 +446,7 @@ class DashboardCoursesRepository {
                                 parsed.docs.filter { !it.courseId.isNullOrBlank() && it.stepNum != null }
                             }
                         }
-                    }.awaitAll().forEach { chunkDocs ->
-                        docs.addAll(chunkDocs)
-                    }
+                    }.awaitAll().flatten()
                 }
                 if (stepNum != null) {
                     docs.associateBy { it.courseId!! }
@@ -735,7 +732,7 @@ class DashboardCoursesRepository {
 
     @JsonClass(generateAdapter = true)
     data class CourseInSelector(
-        @param:Json(name = "\$in") val included: List<String>
+        @param:Json(name = $$"$in") val included: List<String>
     )
 
     @JsonClass(generateAdapter = true)
@@ -796,9 +793,9 @@ class DashboardCoursesRepository {
 
     @JsonClass(generateAdapter = true)
     data class CourseIdFilter(
-        @param:Json(name = "\$gt") val gt: Any? = null,
-        @param:Json(name = "\$nin") val notIn: List<String>? = null,
-        @param:Json(name = "\$in") val inList: List<String>? = null
+        @param:Json(name = $$"$gt") val gt: Any? = null,
+        @param:Json(name = $$"$nin") val notIn: List<String>? = null,
+        @param:Json(name = $$"$in") val inList: List<String>? = null
     )
 
     @JsonClass(generateAdapter = true)
@@ -816,7 +813,7 @@ class DashboardCoursesRepository {
     )
 
     @JsonClass(generateAdapter = true)
-    data class TeamIdsSelector(@param:Json(name = "\$in") val ids: List<String>)
+    data class TeamIdsSelector(@param:Json(name = $$"$in") val ids: List<String>)
 
     @JsonClass(generateAdapter = true)
     data class TeamCoursesResponse(val docs: List<TeamDocument> = emptyList())
