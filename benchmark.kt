@@ -1,7 +1,7 @@
-import org.json.JSONObject
-import com.squareup.moshi.Moshi
 import com.squareup.moshi.JsonAdapter
+import com.squareup.moshi.Moshi
 import kotlin.system.measureTimeMillis
+import org.json.JSONObject
 
 val jsonPayload = """
 {
