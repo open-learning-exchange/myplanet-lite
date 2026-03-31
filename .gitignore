@@ -149,3 +149,5 @@ hs_err_pid*
 .idea/vcs.xml
 
 app/release/app-release.aab
+
+app/none

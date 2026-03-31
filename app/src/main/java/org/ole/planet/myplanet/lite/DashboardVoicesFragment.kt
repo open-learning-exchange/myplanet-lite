@@ -19,7 +19,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.isVisible
@@ -28,8 +27,14 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import io.noties.markwon.Markwon
+import java.text.DecimalFormat
+import java.util.ArrayList
+import kotlin.math.max
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.CreateVoiceActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
@@ -49,17 +54,6 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.enableDrag
-
-import io.noties.markwon.Markwon
-
-import kotlin.math.max
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-
-import java.text.DecimalFormat
-import java.util.ArrayList
 
 class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
