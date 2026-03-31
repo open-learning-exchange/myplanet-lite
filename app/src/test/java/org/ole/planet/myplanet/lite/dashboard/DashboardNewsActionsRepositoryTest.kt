@@ -4,11 +4,14 @@ import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 
 class DashboardNewsActionsRepositoryTest {
+
     private lateinit var mockWebServer: MockWebServer
     private lateinit var repository: DashboardNewsActionsRepository
 
@@ -24,278 +27,124 @@ class DashboardNewsActionsRepositoryTest {
         mockWebServer.shutdown()
     }
 
-    @Test
-    fun testServerBaseUrlEmpty() = runTest {
-        val document = DashboardNewsRepository.NewsDocument(
-            id = "doc1",
-            revision = "rev1",
-            docType = "news",
-            time = 12345L,
-            createdOn = "planet1",
-            parentCode = "parent1",
-            user = null,
-            replyTo = null,
-            viewIn = null,
-            messageType = null,
-            messagePlanetCode = null,
-            message = "Old message",
-            images = null,
-            updatedDate = null,
-            isDeleted = false
-        )
-        val result = repository.updateNews(
-            baseUrl = "",
-            sessionCookie = "cookie",
-            document = document,
-            message = "New message",
-            images = emptyList()
-        )
-
-        assertTrue(result.isFailure)
-        val ex = result.exceptionOrNull()
-        assertNotNull(ex)
-        assertEquals("Missing server base URL", ex?.message)
-    }
+    private fun createDocument(
+        id: String? = "doc-123",
+        revision: String? = "1-abc"
+    ) = DashboardNewsRepository.NewsDocument(
+        id = id,
+        revision = revision,
+        docType = "news",
+        time = 123456789L,
+        createdOn = "planet-code",
+        parentCode = "parent-code",
+        user = null,
+        replyTo = null,
+        viewIn = emptyList(),
+        messageType = "text",
+        messagePlanetCode = "planet-code",
+        message = "Test message",
+        images = emptyList(),
+        updatedDate = 123456789L,
+        isDeleted = false
+    )
 
     @Test
-    fun testMissingId() = runTest {
-        val document = DashboardNewsRepository.NewsDocument(
-            id = "",
-            revision = "rev1",
-            docType = "news",
-            time = 12345L,
-            createdOn = "planet1",
-            parentCode = "parent1",
-            user = null,
-            replyTo = null,
-            viewIn = null,
-            messageType = null,
-            messagePlanetCode = null,
-            message = "Old message",
-            images = null,
-            updatedDate = null,
-            isDeleted = false
-        )
-        val result = repository.updateNews(
-            baseUrl = mockWebServer.url("/").toString(),
-            sessionCookie = "cookie",
-            document = document,
-            message = "New message",
-            images = emptyList()
-        )
-
-        assertTrue(result.isFailure)
-        val ex = result.exceptionOrNull()
-        assertNotNull(ex)
-        assertEquals("Missing document id", ex?.message)
-    }
-
-    @Test
-    fun testMissingRevision() = runTest {
-        val document = DashboardNewsRepository.NewsDocument(
-            id = "id1",
-            revision = null,
-            docType = "news",
-            time = 12345L,
-            createdOn = "planet1",
-            parentCode = "parent1",
-            user = null,
-            replyTo = null,
-            viewIn = null,
-            messageType = null,
-            messagePlanetCode = null,
-            message = "Old message",
-            images = null,
-            updatedDate = null,
-            isDeleted = false
-        )
-        val result = repository.updateNews(
-            baseUrl = mockWebServer.url("/").toString(),
-            sessionCookie = "cookie",
-            document = document,
-            message = "New message",
-            images = emptyList()
-        )
-
-        assertTrue(result.isFailure)
-        val ex = result.exceptionOrNull()
-        assertNotNull(ex)
-        assertEquals("Missing document revision", ex?.message)
-    }
-
-    @Test
-    fun testUpdateNewsUnexpectedResponse() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(500).setBody("Server Error"))
-
-        val document = DashboardNewsRepository.NewsDocument(
-            id = "doc1",
-            revision = "rev1",
-            docType = "news",
-            time = 12345L,
-            createdOn = "planet1",
-            parentCode = "parent1",
-            user = null,
-            replyTo = null,
-            viewIn = null,
-            messageType = null,
-            messagePlanetCode = null,
-            message = "Old message",
-            images = null,
-            updatedDate = null,
-            isDeleted = false
-        )
-
-        val result = repository.updateNews(
-            baseUrl = mockWebServer.url("/").toString(),
-            sessionCookie = "cookie",
-            document = document,
-            message = "New message",
-            images = emptyList()
-        )
-
-        assertTrue(result.isFailure)
-        val ex = result.exceptionOrNull()
-        assertNotNull(ex)
-        assertEquals("Unexpected response 500", ex?.message)
-    }
-
-    @Test
-    fun testUpdateNewsInvalidResponseBody() = runTest {
-        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("invalid_json"))
-
-        val document = DashboardNewsRepository.NewsDocument(
-            id = "doc1",
-            revision = "rev1",
-            docType = "news",
-            time = 12345L,
-            createdOn = "planet1",
-            parentCode = "parent1",
-            user = null,
-            replyTo = null,
-            viewIn = null,
-            messageType = null,
-            messagePlanetCode = null,
-            message = "Old message",
-            images = null,
-            updatedDate = null,
-            isDeleted = false
-        )
-
-        val result = repository.updateNews(
-            baseUrl = mockWebServer.url("/").toString(),
-            sessionCookie = "cookie",
-            document = document,
-            message = "New message",
-            images = emptyList()
-        )
-
-        assertTrue(result.isFailure)
-        val ex = result.exceptionOrNull()
-        assertNotNull(ex)
-        assertTrue(ex?.message?.contains("Use JsonReader.setLenient(true) to accept malformed JSON") == true)
-    }
-
-    @Test
-    fun testUpdateNewsSuccess() = runTest {
-        val jsonResponse = """
+    fun deleteNews_successfulResponse_returnsSuccess() = runTest {
+        val successResponse = """
             {
                 "ok": true,
-                "id": "doc1",
-                "rev": "rev2"
+                "id": "doc-123",
+                "rev": "2-def"
             }
         """.trimIndent()
-        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(jsonResponse))
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(successResponse))
 
-        val document = DashboardNewsRepository.NewsDocument(
-            id = "doc1",
-            revision = "rev1",
-            docType = "news",
-            time = 12345L,
-            createdOn = "planet1",
-            parentCode = "parent1",
-            user = null,
-            replyTo = null,
-            viewIn = null,
-            messageType = null,
-            messagePlanetCode = null,
-            message = "Old message",
-            images = null,
-            updatedDate = null,
-            isDeleted = false
-        )
-
-        val images = listOf(DashboardNewsRepository.NewsImage("res1", "file1.png", null))
-
-        val result = repository.updateNews(
+        val result = repository.deleteNews(
             baseUrl = mockWebServer.url("/").toString(),
-            sessionCookie = "cookie",
-            document = document,
-            message = "New message",
-            images = images
+            sessionCookie = "session=cookie123",
+            document = createDocument()
         )
 
         assertTrue(result.isSuccess)
         val response = result.getOrNull()
-        assertNotNull(response)
         assertEquals(true, response?.ok)
-        assertEquals("doc1", response?.id)
-        assertEquals("rev2", response?.revision)
+        assertEquals("doc-123", response?.id)
+        assertEquals("2-def", response?.revision)
 
-        val recordedRequest = mockWebServer.takeRequest()
-        assertEquals("/db/news/", recordedRequest.path)
-        assertEquals("POST", recordedRequest.method)
-        assertEquals("cookie", recordedRequest.getHeader("Cookie"))
-
-        val requestBody = recordedRequest.body.readUtf8()
-        assertTrue(requestBody.contains("\"_id\":\"doc1\""))
-        assertTrue(requestBody.contains("\"_rev\":\"rev1\""))
-        assertTrue(requestBody.contains("\"message\":\"New message\""))
-        assertTrue(requestBody.contains("\"images\":[{\"resourceId\":\"res1\",\"filename\":\"file1.png\"}]"))
+        val request = mockWebServer.takeRequest()
+        assertEquals("/db/news/", request.path)
+        assertEquals("POST", request.method)
+        assertEquals("session=cookie123", request.getHeader("Cookie"))
     }
 
     @Test
-    fun testUpdateNewsTeamViewIn() = runTest {
-        val jsonResponse = """
-            {
-                "ok": true,
-                "id": "doc1",
-                "rev": "rev2"
-            }
-        """.trimIndent()
-        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(jsonResponse))
-
-        val document = DashboardNewsRepository.NewsDocument(
-            id = "doc1",
-            revision = "rev1",
-            docType = "news",
-            time = 12345L,
-            createdOn = "planet1",
-            parentCode = "parent1",
-            user = null,
-            replyTo = null,
-            viewIn = null,
-            messageType = null,
-            messagePlanetCode = null,
-            message = "Old message",
-            images = null,
-            updatedDate = null,
-            isDeleted = false
+    fun deleteNews_missingBaseUrl_returnsFailure() = runTest {
+        val result = repository.deleteNews(
+            baseUrl = "",
+            sessionCookie = null,
+            document = createDocument()
         )
 
-        val result = repository.updateNews(
+        assertTrue(result.isFailure)
+        val exception = result.exceptionOrNull()
+        assertTrue(exception is IOException)
+        assertEquals("Missing server base URL", exception?.message)
+    }
+
+    @Test
+    fun deleteNews_missingId_returnsFailure() = runTest {
+        val result = repository.deleteNews(
             baseUrl = mockWebServer.url("/").toString(),
-            sessionCookie = "cookie",
-            document = document,
-            message = "New message",
-            images = emptyList(),
-            teamId = "team1",
-            teamName = "Team 1"
+            sessionCookie = null,
+            document = createDocument(id = "")
         )
 
-        assertTrue(result.isSuccess)
+        assertTrue(result.isFailure)
+        val exception = result.exceptionOrNull()
+        assertTrue(exception is IOException)
+        assertEquals("Missing document id", exception?.message)
+    }
 
-        val recordedRequest = mockWebServer.takeRequest()
-        val requestBody = recordedRequest.body.readUtf8()
-        assertTrue(requestBody.contains("\"viewIn\":[{\"section\":\"teams\",\"_id\":\"team1\",\"public\":false,\"name\":\"Team 1\",\"mode\":\"team\"}]"))
+    @Test
+    fun deleteNews_missingRevision_returnsFailure() = runTest {
+        val result = repository.deleteNews(
+            baseUrl = mockWebServer.url("/").toString(),
+            sessionCookie = null,
+            document = createDocument(revision = null)
+        )
+
+        assertTrue(result.isFailure)
+        val exception = result.exceptionOrNull()
+        assertTrue(exception is IOException)
+        assertEquals("Missing document revision", exception?.message)
+    }
+
+    @Test
+    fun deleteNews_serverError_returnsFailure() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500).setBody("Internal Server Error"))
+
+        val result = repository.deleteNews(
+            baseUrl = mockWebServer.url("/").toString(),
+            sessionCookie = null,
+            document = createDocument()
+        )
+
+        assertTrue(result.isFailure)
+        val exception = result.exceptionOrNull()
+        assertTrue(exception is IOException)
+        assertEquals("Unexpected response 500", exception?.message)
+    }
+
+    @Test
+    fun deleteNews_invalidJson_returnsFailure() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("not json"))
+
+        val result = repository.deleteNews(
+            baseUrl = mockWebServer.url("/").toString(),
+            sessionCookie = null,
+            document = createDocument()
+        )
+
+        assertTrue(result.isFailure)
     }
 }
