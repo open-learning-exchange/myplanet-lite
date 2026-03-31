@@ -17,7 +17,6 @@ import android.view.View
 import android.widget.ImageButton
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -25,20 +24,16 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
-
 import com.github.chrisbanes.photoview.PhotoView
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
-
-import okhttp3.Credentials
-import okhttp3.OkHttpClient
-import okhttp3.Request
-
+import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-import java.io.File
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 class FullscreenPdfActivity : AppCompatActivity() {
 
