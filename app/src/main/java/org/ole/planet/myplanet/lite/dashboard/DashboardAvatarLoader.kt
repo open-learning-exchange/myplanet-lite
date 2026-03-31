@@ -10,24 +10,19 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.util.LruCache
 import android.widget.ImageView
-
 import androidx.core.widget.ImageViewCompat
-
-import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
-
-import okhttp3.Credentials
-import okhttp3.OkHttpClient
-import okhttp3.Request
-
+import java.io.IOException
+import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-
-import java.io.IOException
-import java.util.Locale
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import org.ole.planet.myplanet.lite.R
+import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 class DashboardAvatarLoader(
     private val baseUrl: String,
