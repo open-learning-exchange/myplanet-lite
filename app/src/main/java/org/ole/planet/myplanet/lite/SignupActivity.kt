@@ -23,6 +23,7 @@ import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.updateLayoutParams
@@ -36,10 +37,6 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -56,6 +53,10 @@ import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 class SignupActivity : AppCompatActivity() {
 
@@ -162,7 +163,7 @@ class SignupActivity : AppCompatActivity() {
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
 
-    private val steps = SignupStep.values().toList()
+    private val steps = SignupStep.entries
     private var currentStepIndex = 0
 
     companion object {
@@ -817,7 +818,7 @@ class SignupActivity : AppCompatActivity() {
         return job
     }
 
-    private suspend fun performServerConnectivityCheck(baseUrl: String): ServerConnectivityResult {
+    private fun performServerConnectivityCheck(baseUrl: String): ServerConnectivityResult {
         val requestUrl = buildConfigurationRequestUrl(baseUrl) ?: return ServerConnectivityResult(false)
         return runCatching {
             val request = Request.Builder()
@@ -841,7 +842,7 @@ class SignupActivity : AppCompatActivity() {
     private fun persistServerMetadata(baseUrl: String, parentCode: String?, code: String?) {
         serverParentCode = parentCode
         serverCode = code
-        serverPreferences.edit().apply {
+        serverPreferences.edit {
             putString(KEY_SERVER_URL, baseUrl)
             if (parentCode != null) {
                 putString(KEY_SERVER_PARENT_CODE, parentCode)
@@ -853,7 +854,7 @@ class SignupActivity : AppCompatActivity() {
             } else {
                 remove(KEY_SERVER_CODE)
             }
-        }.apply()
+        }
     }
 
     private fun applyConnectivityState(step: SignupStep, reachable: Boolean, checking: Boolean) {
@@ -995,8 +996,16 @@ class SignupActivity : AppCompatActivity() {
         val payload = buildSignupPayload(username) ?: return SignupSubmissionResult.FAILED
         val mediaType = "application/json; charset=utf-8".toMediaType()
 
+        return executeSignupRequest(requestUrl, payload, mediaType)
+    }
+
+    private suspend fun executeSignupRequest(
+        requestUrl: String,
+        payload: JSONObject,
+        mediaType: okhttp3.MediaType
+    ): SignupSubmissionResult {
         return withContext(Dispatchers.IO) {
-            runCatching {
+            try {
                 val body = payload.toString().toRequestBody(mediaType)
                 val request = Request.Builder()
                     .url(requestUrl)
@@ -1009,7 +1018,11 @@ class SignupActivity : AppCompatActivity() {
                         else -> SignupSubmissionResult.FAILED
                     }
                 }
-            }.getOrElse { SignupSubmissionResult.FAILED }
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                SignupSubmissionResult.FAILED
+            }
         }
     }
 
@@ -1289,11 +1302,7 @@ class SignupActivity : AppCompatActivity() {
         var current: View? = child
         while (current != null && current != parent) {
             val currentParent = current.parent
-            current = if (currentParent is View) {
-                currentParent
-            } else {
-                null
-            }
+            current = currentParent as? View
         }
         return current == parent
     }
