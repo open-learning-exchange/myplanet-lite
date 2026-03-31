@@ -32,8 +32,10 @@ import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import androidx.core.graphics.createBitmap
 
 class FullscreenPdfActivity : AppCompatActivity() {
 
@@ -122,10 +124,20 @@ class FullscreenPdfActivity : AppCompatActivity() {
         WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
     }
 
+    private fun saveToTempFile(response: Response): File? {
+        val body = response.body
+        val file = File.createTempFile("course_resource_", ".pdf", cacheDir)
+        body.byteStream().use { input ->
+            file.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        return file
+    }
+
     private suspend fun downloadPdf(url: String, authHeader: String?): File? {
         return withContext(Dispatchers.IO) {
             runCatching {
-                val file = File.createTempFile("course_resource_", ".pdf", cacheDir)
                 val request = Request.Builder()
                     .url(url)
                     .apply {
@@ -136,14 +148,8 @@ class FullscreenPdfActivity : AppCompatActivity() {
                     .build()
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@withContext null
-                    val body = response.body
-                    body.byteStream().use { input ->
-                        file.outputStream().use { output ->
-                            input.copyTo(output)
-                        }
-                    }
+                    saveToTempFile(response)
                 }
-                file
             }.getOrNull()
         }
     }
@@ -189,7 +195,7 @@ class FullscreenPdfActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: PdfPageViewHolder, position: Int) {
             val page = renderer.openPage(position)
-            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+            val bitmap = createBitmap(page.width, page.height)
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
             holder.bind(bitmap)
