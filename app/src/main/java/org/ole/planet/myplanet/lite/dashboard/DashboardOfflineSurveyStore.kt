@@ -11,13 +11,11 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
-
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 
 class DashboardOfflineSurveyStore(
     context: Context,
