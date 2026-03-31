@@ -13,6 +13,9 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
 import java.util.ArrayList
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
@@ -23,15 +26,6 @@ import okhttp3.logging.HttpLoggingInterceptor
 import org.ole.planet.myplanet.lite.BuildConfig
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.withContext
-
-import java.io.IOException
-import java.util.ArrayList
 
 class DashboardCoursesRepository {
     private val client: OkHttpClient = OkHttpClient.Builder()
@@ -52,7 +46,6 @@ class DashboardCoursesRepository {
     private val findRequestAdapter = moshi.adapter(ShelfFindRequest::class.java)
     private val findResponseAdapter = moshi.adapter(ShelfFindResponse::class.java)
     private val shelfDocumentAdapter = moshi.adapter(ShelfDocument::class.java)
-    private val courseResponseAdapter = moshi.adapter(CourseDocument::class.java)
     private val coursesProgressRequestAdapter = moshi.adapter(CoursesProgressFindRequest::class.java)
     private val coursesProgressResponseAdapter = moshi.adapter(CoursesProgressResponse::class.java)
     private val coursesProgressBulkAdapter = moshi.adapter(CoursesProgressBulkRequest::class.java)
@@ -449,7 +442,6 @@ class DashboardCoursesRepository {
                         )
                     }
                 }
-                val maxStep = docs.maxOfOrNull { it.stepNum ?: 0 }
                 if (stepNum != null) {
                     docs.associateBy { it.courseId!! }
                 } else {
