@@ -35,6 +35,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import androidx.core.graphics.createBitmap
 
 class FullscreenPdfActivity : AppCompatActivity() {
 
@@ -194,7 +195,7 @@ class FullscreenPdfActivity : AppCompatActivity() {
 
         override fun onBindViewHolder(holder: PdfPageViewHolder, position: Int) {
             val page = renderer.openPage(position)
-            val bitmap = Bitmap.createBitmap(page.width, page.height, Bitmap.Config.ARGB_8888)
+            val bitmap = createBitmap(page.width, page.height)
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
             holder.bind(bitmap)
