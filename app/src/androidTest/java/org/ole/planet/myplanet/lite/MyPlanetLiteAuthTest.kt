@@ -7,29 +7,25 @@
 package org.ole.planet.myplanet.lite
 
 import android.view.View
-
 import androidx.test.core.app.ActivityScenario
 import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.action.ViewActions.click
 import androidx.test.espresso.action.ViewActions.closeSoftKeyboard
 import androidx.test.espresso.action.ViewActions.typeText
 import androidx.test.espresso.assertion.ViewAssertions.matches
-import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
-
 import com.google.android.material.textfield.TextInputLayout
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.auth.AuthResult
-import org.ole.planet.myplanet.lite.auth.AuthService
-import org.ole.planet.myplanet.lite.auth.LoginResponse
-
 import org.hamcrest.Description
 import org.hamcrest.Matcher
 import org.junit.After
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.auth.AuthResult
+import org.ole.planet.myplanet.lite.auth.AuthService
+import org.ole.planet.myplanet.lite.auth.LoginResponse
 
 @RunWith(AndroidJUnit4::class)
 class MyPlanetLiteAuthTest {
