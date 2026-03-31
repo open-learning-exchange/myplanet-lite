@@ -17,7 +17,6 @@ import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.ProgressBar
 import android.widget.Toast
-
 import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
@@ -28,8 +27,11 @@ import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
-
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import kotlin.math.abs
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
@@ -38,18 +40,13 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamMemberDetails
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.UserDocument
+import org.ole.planet.myplanet.lite.util.enableDrag
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.ole.planet.myplanet.lite.databinding.FragmentDashboardTeamMembersBinding
 import org.ole.planet.myplanet.lite.databinding.ItemInviteMemberBinding
 import org.ole.planet.myplanet.lite.databinding.ItemTeamMemberBinding
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-
-import kotlin.math.abs
-
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class DashboardTeamMembersFragment : Fragment() {
 
@@ -113,7 +110,7 @@ class DashboardTeamMembersFragment : Fragment() {
             showInviteMembersDialog()
         }
         updateLeaderActionsVisibility()
-        enableFabDrag(binding.fabAddMember)
+        binding.fabAddMember.enableDrag()
 
         viewLifecycleOwner.lifecycleScope.launch {
             loadConnectionInfo()
@@ -615,66 +612,12 @@ class DashboardTeamMembersFragment : Fragment() {
         )
     }
 
-    private fun enableFabDrag(fab: View) {
-        var downRawX = 0f
-        var downRawY = 0f
-        var dX = 0f
-        var dY = 0f
-
-        fab.setOnTouchListener { view, event ->
-            val parentView = view.parent as? ViewGroup ?: return@setOnTouchListener false
-            when (event.action) {
-                MotionEvent.ACTION_DOWN -> {
-                    downRawX = event.rawX
-                    downRawY = event.rawY
-                    dX = view.x - event.rawX
-                    dY = view.y - event.rawY
-                    parentView.requestDisallowInterceptTouchEvent(true)
-                    true
-                }
-
-                MotionEvent.ACTION_MOVE -> {
-                    var newX = event.rawX + dX
-                    var newY = event.rawY + dY
-                    val maxX = (parentView.width - view.width).toFloat()
-                    val maxY = (parentView.height - view.height).toFloat()
-                    newX = newX.coerceIn(0f, maxX)
-                    newY = newY.coerceIn(0f, maxY)
-                    view.x = newX
-                    view.y = newY
-                    true
-                }
-
-                MotionEvent.ACTION_UP -> {
-                    val upDX = event.rawX - downRawX
-                    val upDY = event.rawY - downRawY
-                    parentView.requestDisallowInterceptTouchEvent(false)
-                    if (kotlin.math.abs(upDX) < CLICK_DRAG_TOLERANCE && kotlin.math.abs(upDY) < CLICK_DRAG_TOLERANCE) {
-                        view.performClick()
-                    }
-                    true
-                }
-
-                MotionEvent.ACTION_CANCEL -> {
-                    parentView.requestDisallowInterceptTouchEvent(false)
-                    true
-                }
-
-                else -> false
-            }
-        }
-    }
-
     private fun animateFabClick(fab: FloatingActionButton) {
         fab.animate()
             .rotationBy(360f)
             .setDuration(250)
             .withEndAction { fab.rotation = 0f }
             .start()
-    }
-
-    companion object {
-        private const val CLICK_DRAG_TOLERANCE = 10
     }
 }
 

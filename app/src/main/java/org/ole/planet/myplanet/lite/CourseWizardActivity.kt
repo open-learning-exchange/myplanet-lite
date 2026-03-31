@@ -17,7 +17,6 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -30,23 +29,19 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
-
 import com.google.android.material.appbar.MaterialToolbar
+import io.noties.markwon.Markwon
+import io.noties.markwon.ext.tables.TablePlugin
+import java.util.ArrayList
+import java.util.Locale
+import kotlinx.coroutines.launch
+import okhttp3.Credentials
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-
-import io.noties.markwon.Markwon
-import io.noties.markwon.ext.tables.TablePlugin
-import okhttp3.Credentials
-
-import kotlinx.coroutines.launch
-
-import java.util.ArrayList
-import java.util.Locale
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : AppCompatActivity() {
@@ -113,6 +108,32 @@ class CourseWizardActivity : AppCompatActivity() {
             .usePlugin(TablePlugin.create(this))
             .build()
 
+        val (courseTitle, startIndex) = parseIntentData(savedInstanceState)
+
+        if (steps.isEmpty()) {
+            finish()
+            return
+        }
+
+        setupViews(courseTitle)
+
+        lifecycleScope.launch {
+            currentIndex = resolveInitialStepIndex(startIndex)
+            bindStep(
+                stepPositionView,
+                stepTitleView,
+                descriptionView,
+                attachmentsContainer,
+                attachmentsTitle,
+                attachmentsList,
+                previousButton,
+                nextButton
+            )
+            maybeAutoCompleteFirstStep()
+        }
+    }
+
+    private fun parseIntentData(savedInstanceState: Bundle?): Pair<String, Int> {
         val courseTitle = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         courseId = intent.getStringExtra(EXTRA_COURSE_ID)
         val startIndex = intent.getIntExtra(EXTRA_START_STEP, 0)
@@ -145,16 +166,16 @@ class CourseWizardActivity : AppCompatActivity() {
             )
         }.orEmpty()
 
-        if (steps.isEmpty()) {
-            finish()
-            return
-        }
+        return Pair(courseTitle, startIndex)
+    }
 
+    private fun setupViews(courseTitle: String) {
         val toolbar: MaterialToolbar = findViewById(R.id.courseWizardToolbar)
 
         val root: View = findViewById(R.id.courseWizardRoot)
         WindowInsetsControllerCompat(window, root).isAppearanceLightStatusBars = true
         val titleView: TextView = findViewById(R.id.courseWizardTitle)
+
         stepPositionView = findViewById(R.id.courseWizardStepPosition)
         stepTitleView = findViewById(R.id.courseWizardStepTitle)
         descriptionView = findViewById(R.id.courseWizardDescription)
@@ -181,21 +202,6 @@ class CourseWizardActivity : AppCompatActivity() {
         }
 
         titleView.text = courseTitle
-
-        lifecycleScope.launch {
-            currentIndex = resolveInitialStepIndex(startIndex)
-            bindStep(
-                stepPositionView,
-                stepTitleView,
-                descriptionView,
-                attachmentsContainer,
-                attachmentsTitle,
-                attachmentsList,
-                previousButton,
-                nextButton
-            )
-            maybeAutoCompleteFirstStep()
-        }
     }
 
     override fun onDestroy() {

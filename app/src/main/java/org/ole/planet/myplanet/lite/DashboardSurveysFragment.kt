@@ -10,10 +10,8 @@ import android.os.Bundle
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
-
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
-
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 
 class DashboardSurveysFragment : Fragment(R.layout.fragment_dashboard_surveys) {

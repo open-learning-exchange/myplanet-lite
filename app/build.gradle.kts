@@ -20,8 +20,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 23
-        versionName = "0.0.23"
+        versionCode = 44
+        versionName = "0.0.44"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -68,50 +68,68 @@ kotlin {
 }
 
 dependencies {
+    // implementation
+    // AndroidX
+    implementation(libs.androidx.activity)
+    implementation(libs.androidx.appcompat)
+    implementation(libs.androidx.constraintlayout)
+    implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.fragment.ktx)
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.security.crypto)
+    implementation(libs.androidx.swiperefreshlayout)
+
+    // Google
+    implementation(libs.language.id)
+    implementation(libs.material)
+
+    // networking
+    implementation(libs.converter.moshi)
+    implementation(libs.logging.interceptor)
+    implementation(libs.moshi.kotlin)
+    implementation(libs.retrofit)
+
+    // UI/media
+    implementation(libs.androidx.media3.exoplayer)
+    implementation(libs.androidx.media3.ui)
+    implementation(libs.circleimageview)
+    implementation(libs.core)
+    implementation(libs.ext.tables)
+    implementation(libs.glide)
+    implementation(libs.photoview)
+    implementation(libs.ucrop)
+
+    // utilities
+    implementation(libs.kotlinx.coroutines.android)
+    implementation(libs.worldcountrydata)
+
+    // special agents
     mockkAgent(libs.byte.buddy)
     mockkAgent(libs.byte.buddy.agent)
     mockitoAgent(libs.mockito.core)
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
-    implementation(libs.material)
-    implementation(libs.androidx.swiperefreshlayout)
-    implementation(libs.androidx.activity)
-    implementation(libs.androidx.fragment.ktx)
-    implementation(libs.androidx.constraintlayout)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.androidx.security.crypto)
-    implementation(libs.androidx.media3.exoplayer)
-    implementation(libs.androidx.media3.ui)
-    implementation(libs.retrofit)
-    implementation(libs.converter.moshi)
-    implementation(libs.moshi.kotlin)
-    implementation(libs.logging.interceptor)
-    implementation(libs.core)
-    implementation(libs.photoview)
-    implementation(libs.worldcountrydata)
-    implementation(libs.ucrop)
-    implementation(libs.circleimageview)
-    implementation(libs.glide)
-    implementation(libs.language.id)
-    implementation(libs.ext.tables)
+
+    // testImplementation
+    // testing
+    testImplementation(libs.androidx.core)
+    testImplementation(libs.androidx.junit)
+    testImplementation(libs.androidx.test.core)
+    testImplementation(libs.core.ktx)
+    testImplementation(libs.json)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.mockwebserver)
-    testImplementation(libs.json)
-    testImplementation(libs.robolectric)
-    testImplementation(libs.mockk)
-    testImplementation(libs.androidx.core)
-    testImplementation(libs.core.ktx)
     testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.inline)
-    testImplementation(libs.androidx.test.core)
     testImplementation(libs.mockito.kotlin)
-    testImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.junit)
+    testImplementation(libs.mockk)
+    testImplementation(libs.mockwebserver)
+    testImplementation(libs.robolectric)
+
+    // androidTestImplementation
+    // testing
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
+    androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.core.ktx)
-    androidTestImplementation(libs.mockwebserver)
     androidTestImplementation(libs.kotlinx.coroutines.test)
+    androidTestImplementation(libs.mockwebserver)
 }
