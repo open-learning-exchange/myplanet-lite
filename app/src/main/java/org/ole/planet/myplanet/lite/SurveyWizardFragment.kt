@@ -28,7 +28,6 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.content.ContextCompat
@@ -38,11 +37,19 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.squareup.moshi.Json
+import java.text.ParseException
+import java.text.SimpleDateFormat
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
+import kotlin.math.roundToInt
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
@@ -61,18 +68,6 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
-import com.squareup.moshi.Json
-
-import kotlin.math.roundToInt
-
-import kotlinx.coroutines.launch
-
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
@@ -530,102 +525,133 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
         viewLifecycleOwner.lifecycleScope.launch {
             setSubmitting(true)
-            val existingSubmission = courseId?.let {
-                submissionRepository.fetchExistingSubmission(
-                    base,
-                    credentials,
-                    sessionCookie,
-                    parentId,
-                    userId = if (isExam) null else "org.couchdb.user:$username",
-                    userName = if (isExam) username else null,
-                    parentRev = if (isExam) survey.rev else null,
-                    type = if (isExam) "exam" else "survey",
-                ).getOrNull()
-            }
-
-            val submission = SurveySubmission(
-                id = existingSubmission?.id,
-                rev = existingSubmission?.rev,
-                type = if (isExam) "exam" else "survey",
-                parentId = parentId,
-                parent = SubmissionParent(
-                    id = survey.id,
-                    rev = survey.rev,
-                    name = survey.name,
-                    type = if (isExam) "courses" else null,
-                    questions = survey.questions,
-                    description = survey.description,
-                ),
-                user = DashboardSurveySubmissionsRepository.SubmissionUser(
-                    id = "org.couchdb.user:$username",
-                    name = listOfNotNull(respondent.firstName, respondent.middleName, respondent.lastName)
-                        .joinToString(" ")
-                        .trim()
-                        .takeIf { it.isNotBlank() }
-                        ?: fullName,
-                    planetCode = serverCode,
-                    parentCode = parentCode,
-                    firstName = respondent.firstName,
-                    middleName = respondent.middleName,
-                    lastName = respondent.lastName,
-                    email = respondent.email,
-                    language = respondent.language,
-                    phoneNumber = respondent.phoneNumber,
-                    birthDate = respondent.birthDate,
-                    age = respondent.age,
-                    gender = respondent.gender,
-                    level = respondent.level,
-                ),
-                team = (teamId ?: survey.teamId)?.let { id ->
-                    SubmissionTeam(
-                        id = id,
-                        name = teamName,
-                        type = "local",
-                    )
-                },
-                answers = answersPayload,
-                grade = totalGrade,
-                status = if (isExam) resolveExamStatus(survey) else "complete",
-                startTime = startTimeMillis,
-                lastUpdateTime = System.currentTimeMillis(),
-                source = serverCode,
-                parentCode = parentCode,
-                deviceName = resolveDeviceName(),
-                customDeviceName = resolveCustomDeviceName(),
+            val existingSubmission = fetchExistingSubmissionOrNull(base, username, parentId, survey)
+            val submission = buildSurveySubmission(
+                survey, existingSubmission, username, fullName,
+                parentId, answersPayload, totalGrade
             )
+            processSubmission(base, submission, survey, username)
+        }
+    }
 
-            val isOnline = isDeviceOnline()
-            if (!isOnline) {
-                setSubmitting(false)
-                queueSubmissionForOutbox(submission, survey)
-                return@launch
-            }
+    private suspend fun fetchExistingSubmissionOrNull(
+        base: String,
+        username: String,
+        parentId: String,
+        survey: SurveyDocument
+    ): DashboardSurveySubmissionsRepository.SubmissionLookup? {
+        return courseId?.let {
+            submissionRepository.fetchExistingSubmission(
+                base,
+                credentials,
+                sessionCookie,
+                parentId,
+                userId = if (isExam) null else "org.couchdb.user:$username",
+                userName = if (isExam) username else null,
+                parentRev = if (isExam) survey.rev else null,
+                type = if (isExam) "exam" else "survey",
+            ).getOrNull()
+        }
+    }
 
-            val result = submissionRepository.submitSurvey(base, credentials, sessionCookie, submission)
+    private fun buildSurveySubmission(
+        survey: SurveyDocument,
+        existingSubmission: DashboardSurveySubmissionsRepository.SubmissionLookup?,
+        username: String,
+        fullName: String,
+        parentId: String,
+        answersPayload: List<SubmissionAnswer>,
+        totalGrade: Int
+    ): SurveySubmission {
+        return SurveySubmission(
+            id = existingSubmission?.id,
+            rev = existingSubmission?.rev,
+            type = if (isExam) "exam" else "survey",
+            parentId = parentId,
+            parent = SubmissionParent(
+                id = survey.id,
+                rev = survey.rev,
+                name = survey.name,
+                type = if (isExam) "courses" else null,
+                questions = survey.questions,
+                description = survey.description,
+            ),
+            user = DashboardSurveySubmissionsRepository.SubmissionUser(
+                id = "org.couchdb.user:$username",
+                name = listOfNotNull(respondent.firstName, respondent.middleName, respondent.lastName)
+                    .joinToString(" ")
+                    .trim()
+                    .takeIf { it.isNotBlank() }
+                    ?: fullName,
+                planetCode = serverCode,
+                parentCode = parentCode,
+                firstName = respondent.firstName,
+                middleName = respondent.middleName,
+                lastName = respondent.lastName,
+                email = respondent.email,
+                language = respondent.language,
+                phoneNumber = respondent.phoneNumber,
+                birthDate = respondent.birthDate,
+                age = respondent.age,
+                gender = respondent.gender,
+                level = respondent.level,
+            ),
+            team = (teamId ?: survey.teamId)?.let { id ->
+                SubmissionTeam(
+                    id = id,
+                    name = teamName,
+                    type = "local",
+                )
+            },
+            answers = answersPayload,
+            grade = totalGrade,
+            status = if (isExam) resolveExamStatus(survey) else "complete",
+            startTime = startTimeMillis,
+            lastUpdateTime = System.currentTimeMillis(),
+            source = serverCode,
+            parentCode = parentCode,
+            deviceName = resolveDeviceName(),
+            customDeviceName = resolveCustomDeviceName(),
+        )
+    }
+
+    private suspend fun processSubmission(
+        base: String,
+        submission: SurveySubmission,
+        survey: SurveyDocument,
+        username: String
+    ) {
+        val isOnline = isDeviceOnline()
+        if (!isOnline) {
             setSubmitting(false)
-            if (result.isSuccess) {
-                DashboardSurveyStatusStore(
-                    requireContext().applicationContext,
-                    username,
-                ).markCompleted(survey.id)
-                Toast.makeText(
-                    requireContext(),
-                    getString(
-                        if (isExam) {
-                            R.string.dashboard_exam_completed
-                        } else {
-                            R.string.dashboard_survey_wizard_completed
-                        }
-                    ),
-                    Toast.LENGTH_SHORT
-                ).show()
-                finishWithResult()
+            queueSubmissionForOutbox(submission, survey)
+            return
+        }
+
+        val result = submissionRepository.submitSurvey(base, credentials, sessionCookie, submission)
+        setSubmitting(false)
+        if (result.isSuccess) {
+            DashboardSurveyStatusStore(
+                requireContext().applicationContext,
+                username,
+            ).markCompleted(survey.id)
+            Toast.makeText(
+                requireContext(),
+                getString(
+                    if (isExam) {
+                        R.string.dashboard_exam_completed
+                    } else {
+                        R.string.dashboard_survey_wizard_completed
+                    }
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+            finishWithResult()
+        } else {
+            if (!isDeviceOnline()) {
+                queueSubmissionForOutbox(submission, survey)
             } else {
-                if (!isDeviceOnline()) {
-                    queueSubmissionForOutbox(submission, survey)
-                } else {
-                    showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
-                }
+                showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
             }
         }
     }
