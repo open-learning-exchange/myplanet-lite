@@ -1,7 +1,7 @@
 package org.ole.planet.myplanet.lite.util
 
-import org.ole.planet.myplanet.lite.model.ServerMetadataResponse
 import com.squareup.moshi.Moshi
+import org.ole.planet.myplanet.lite.model.ServerMetadataResponse
 
 object ServerMetadataExtractor {
     fun extract(payload: String, moshi: Moshi): Pair<String?, String?>? {

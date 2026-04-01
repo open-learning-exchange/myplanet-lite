@@ -22,7 +22,6 @@ import android.widget.ImageButton
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
-
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -37,23 +36,21 @@ import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
-
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.navigation.NavigationView
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
-import org.ole.planet.myplanet.lite.profile.ProfileActivity
-import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-import org.ole.planet.myplanet.lite.model.LanguageOption
-
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity
+import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.model.LanguageOption
+import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
+import org.ole.planet.myplanet.lite.profile.ProfileActivity
+import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 
 class DashboardActivity : AppCompatActivity() {
 
@@ -103,6 +100,13 @@ class DashboardActivity : AppCompatActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_dashboard)
 
+        setupViews()
+        setupViewPagerAndTabs()
+        setupBottomNavigation()
+        setupProfileAndNetwork()
+    }
+
+    private fun setupViews() {
         drawerLayout = findViewById(R.id.dashboardDrawerLayout)
         val root: View = findViewById(R.id.dashboardRoot)
         val appBar: AppBarLayout = findViewById(R.id.dashboardAppBar)
@@ -128,6 +132,12 @@ class DashboardActivity : AppCompatActivity() {
         coursesIcon = findViewById(R.id.dashboardCoursesIcon)
         teamMembersIcon = findViewById(R.id.dashboardTeamMembersIcon)
 
+        setupWindowInsets(root, appBar, bottomNavigation)
+        setupDrawers(settingsButton, profileDrawer, settingsDrawer, surveyTranslationMenuItem)
+        setupAppBarBehavior(appBar, topBar)
+    }
+
+    private fun setupWindowInsets(root: View, appBar: AppBarLayout, bottomNavigation: View) {
         val appBarInitialPadding = Padding(appBar.paddingLeft, appBar.paddingTop, appBar.paddingRight, appBar.paddingBottom)
         val bottomInitialPadding = Padding(
             bottomNavigation.paddingLeft,
@@ -164,7 +174,9 @@ class DashboardActivity : AppCompatActivity() {
             )
             insets
         }
+    }
 
+    private fun setupViewPagerAndTabs() {
         viewPager.adapter = DashboardPagerAdapter(this)
 
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
@@ -173,7 +185,9 @@ class DashboardActivity : AppCompatActivity() {
                 else -> getString(R.string.dashboard_teams_title)
             }
         }.attach()
+    }
 
+    private fun setupBottomNavigation() {
         homeIcon.setOnClickListener {
             if (isOfflineMode) {
                 showOfflineModeMessage()
@@ -203,7 +217,14 @@ class DashboardActivity : AppCompatActivity() {
         }
 
         updateBottomNavigationState()
+    }
 
+    private fun setupDrawers(
+        settingsButton: ImageButton,
+        profileDrawer: NavigationView,
+        settingsDrawer: NavigationView,
+        surveyTranslationMenuItem: MenuItem
+    ) {
         settingsButton.setOnClickListener {
             if (drawerLayout.isDrawerOpen(GravityCompat.START)) {
                 drawerLayout.closeDrawer(GravityCompat.START)
@@ -301,12 +322,9 @@ class DashboardActivity : AppCompatActivity() {
                 else -> false
             }
         }
+    }
 
-        refreshProfileSummary()
-        avatarUpdateListener = AvatarUpdateNotifier.register(AvatarUpdateNotifier.Listener {
-            refreshProfileSummary()
-        })
-
+    private fun setupAppBarBehavior(appBar: AppBarLayout, topBar: View) {
         val hideOvershoot = resources.getDimensionPixelOffset(R.dimen.dashboard_top_bar_hide_overshoot)
         val tabsHideBuffer = resources.getDimensionPixelOffset(R.dimen.dashboard_tabs_hide_buffer)
 
@@ -321,14 +339,20 @@ class DashboardActivity : AppCompatActivity() {
             val pinnedUntilTabs = totalScroll.coerceAtMost(hideThreshold)
             val extraScroll = (totalScroll - hideThreshold).coerceAtLeast(0)
             val overshoot = extraScroll.coerceAtMost(hideOvershoot)
-                topBar.translationY = (pinnedUntilTabs - overshoot).toFloat()
+            topBar.translationY = (pinnedUntilTabs - overshoot).toFloat()
+        })
+    }
+
+    private fun setupProfileAndNetwork() {
+        refreshProfileSummary()
+        avatarUpdateListener = AvatarUpdateNotifier.register(AvatarUpdateNotifier.Listener {
+            refreshProfileSummary()
         })
 
         handleDeepLinkNavigation()
         val initialConnectivity = isDeviceOnline()
         applyConnectivityState(isConnected = initialConnectivity, showMessages = intent?.getBooleanExtra(EXTRA_OFFLINE_MODE, false) == true || !initialConnectivity)
         registerConnectivityCallback()
-
     }
 
     override fun onDestroy() {
