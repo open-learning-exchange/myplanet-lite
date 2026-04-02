@@ -5,6 +5,7 @@
  * Creation date: 2025-11-17
  */
 package org.ole.planet.myplanet.lite.auth
+
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
@@ -12,6 +13,7 @@ import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+
 interface TokenStorage {
     suspend fun saveToken(token: String)
     suspend fun getToken(): String?
