@@ -31,6 +31,9 @@ android {
         unitTests {
             isIncludeAndroidResources = true
             isReturnDefaultValues = false
+            all {
+                it.jvmArgs("--add-opens=java.base/java.util=ALL-UNNAMED")
+            }
         }
     }
 
