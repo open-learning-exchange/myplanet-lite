@@ -73,6 +73,8 @@ class DashboardTeamsRepository {
     private val teamMembershipRequestAdapter = moshi.adapter(TeamMembershipFindRequest::class.java)
     private val memberCountRequestAdapter = moshi.adapter(MemberCountFindRequest::class.java)
     private val memberCountResponseAdapter = moshi.adapter(MemberCountFindResponse::class.java)
+    private val multipleMemberCountRequestAdapter = moshi.adapter(MultipleMemberCountFindRequest::class.java)
+    private val multipleMemberCountResponseAdapter = moshi.adapter(MultipleMemberCountFindResponse::class.java)
     private val teamsRequestAdapter = moshi.adapter(TeamsFindRequest::class.java)
     private val teamsResponseAdapter = moshi.adapter(TeamsFindResponse::class.java)
     private val availableTeamsRequestAdapter = moshi.adapter(NonMemberTeamsFindRequest::class.java)
@@ -662,6 +664,65 @@ class DashboardTeamsRepository {
         }
     }
 
+    suspend fun fetchMemberCounts(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamIds: List<String>
+    ): Result<Map<String, Int>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val normalizedBase = baseUrl.trim().trimEnd('/')
+                if (normalizedBase.isEmpty()) {
+                    throw IOException("Missing server base URL")
+                }
+
+                val results = mutableMapOf<String, Int>()
+                if (teamIds.isEmpty()) return@runCatching results
+
+                teamIds.chunked(50).forEach { chunk ->
+                    val selector = MultipleMemberCountSelector(
+                        teamId = IdsInClause(ids = chunk),
+                        docType = "membership",
+                        status = StatusClause(
+                            or = listOf(
+                                StatusCondition(exists = false),
+                                StatusCondition(notEquals = "archived")
+                            )
+                        )
+                    )
+                    val payload = multipleMemberCountRequestAdapter.toJson(
+                        MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"))
+                    )
+                    val requestBuilder = Request.Builder()
+                        .url("$normalizedBase/db/teams/_find")
+                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                    credentials?.let {
+                        requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
+                    }
+                    sessionCookie.nullIfBlank()?.let { cookie ->
+                        requestBuilder.addHeader("Cookie", cookie)
+                    }
+
+                    client.newCall(requestBuilder.build()).execute().use { response ->
+                        if (!response.isSuccessful) {
+                            throw IOException("Unexpected response ${response.code}")
+                        }
+                        val body = response.body.string()
+                        val docs = multipleMemberCountResponseAdapter.fromJson(body)?.docs ?: emptyList()
+
+                        docs.forEach { doc ->
+                            doc.teamId?.let { tId ->
+                                results[tId] = (results[tId] ?: 0) + 1
+                            }
+                        }
+                    }
+                }
+                results
+            }
+        }
+    }
+
     suspend fun requestTeamMembership(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -902,6 +963,28 @@ class DashboardTeamsRepository {
 
     @JsonClass(generateAdapter = true)
     data class MemberCountFindResponse(val docs: List<MemberIdDocument>?)
+
+    @JsonClass(generateAdapter = true)
+    data class MultipleMemberCountFindRequest(
+        val selector: MultipleMemberCountSelector,
+        val fields: List<String>
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class MultipleMemberCountSelector(
+        val teamId: IdsInClause,
+        val docType: String,
+        val status: StatusClause
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class MemberTeamIdDocument(
+        @param:Json(name = "_id") val id: String?,
+        val teamId: String?
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class MultipleMemberCountFindResponse(val docs: List<MemberTeamIdDocument>?)
 
     @JsonClass(generateAdapter = true)
     data class MembershipDocument(
