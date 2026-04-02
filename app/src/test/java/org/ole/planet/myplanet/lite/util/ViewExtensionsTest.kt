@@ -44,10 +44,11 @@ class ViewExtensionsTest {
         view.enableDrag()
     }
 
-    private fun createMotionEvent(action: Int, x: Float, y: Float): MotionEvent {
-        val event = MotionEvent.obtain(0, 0, action, x, y, 0)
-        shadowOf(event).setRawX(x)
-        shadowOf(event).setRawY(y)
+    private fun mockEvent(action: Int, x: Float, y: Float): MotionEvent {
+        val event = mock(MotionEvent::class.java)
+        `when`(event.action).thenReturn(action)
+        `when`(event.rawX).thenReturn(x)
+        `when`(event.rawY).thenReturn(y)
         return event
     }
 
@@ -57,22 +58,24 @@ class ViewExtensionsTest {
 
     @Test
     fun testActionDown() {
-        val event = createMotionEvent(MotionEvent.ACTION_DOWN, 50f, 50f)
+        val event = mockEvent(MotionEvent.ACTION_DOWN, 50f, 50f)
         val handled = getListener().onTouch(view, event)
 
-        assertTrue(handled)
+        assertTrue("Action Down should be handled", handled)
         verify(parent).requestDisallowInterceptTouchEvent(true)
     }
 
     @Test
     fun testActionMove() {
         val listener = getListener()
-        listener.onTouch(view, createMotionEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
 
-        val moveEvent = createMotionEvent(MotionEvent.ACTION_MOVE, 70f, 80f)
+        val moveEvent = mockEvent(MotionEvent.ACTION_MOVE, 70f, 80f)
         val handled = listener.onTouch(view, moveEvent)
 
-        assertTrue(handled)
+        assertTrue("Action Move should be handled", handled)
+        // dX = view.x(0) - rawX(50) = -50
+        // newX = rawX(70) + dX(-50) = 20
         assertEquals(20f, view.x, 0.01f)
         assertEquals(30f, view.y, 0.01f)
     }
@@ -80,15 +83,15 @@ class ViewExtensionsTest {
     @Test
     fun testActionMoveBoundaryConstraints() {
         val listener = getListener()
-        listener.onTouch(view, createMotionEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
 
         // Negative out of bounds
-        listener.onTouch(view, createMotionEvent(MotionEvent.ACTION_MOVE, -100f, -100f))
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_MOVE, -100f, -100f))
         assertEquals(0f, view.x, 0.01f)
         assertEquals(0f, view.y, 0.01f)
 
         // Positive out of bounds (1000 - 100 = 900)
-        listener.onTouch(view, createMotionEvent(MotionEvent.ACTION_MOVE, 2000f, 2000f))
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_MOVE, 2000f, 2000f))
         assertEquals(900f, view.x, 0.01f)
         assertEquals(900f, view.y, 0.01f)
     }
@@ -96,39 +99,39 @@ class ViewExtensionsTest {
     @Test
     fun testActionUpPerformsClick() {
         val listener = getListener()
-        listener.onTouch(view, createMotionEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
 
-        val upEvent = createMotionEvent(MotionEvent.ACTION_UP, 55f, 55f)
+        val upEvent = mockEvent(MotionEvent.ACTION_UP, 55f, 55f)
         val handled = listener.onTouch(view, upEvent)
 
-        assertTrue(handled)
+        assertTrue("Action Up should be handled", handled)
         verify(parent).requestDisallowInterceptTouchEvent(false)
-        assertTrue(clickPerformed)
+        assertTrue("Click should be performed", clickPerformed)
     }
 
     @Test
     fun testActionUpNoClickIfDragged() {
         val listener = getListener()
-        listener.onTouch(view, createMotionEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
-        listener.onTouch(view, createMotionEvent(MotionEvent.ACTION_MOVE, 70f, 70f))
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_MOVE, 70f, 70f))
 
-        val upEvent = createMotionEvent(MotionEvent.ACTION_UP, 70f, 70f)
+        val upEvent = mockEvent(MotionEvent.ACTION_UP, 70f, 70f)
         val handled = listener.onTouch(view, upEvent)
 
-        assertTrue(handled)
+        assertTrue("Action Up should be handled", handled)
         verify(parent).requestDisallowInterceptTouchEvent(false)
-        assertFalse(clickPerformed)
+        assertFalse("Click should NOT be performed", clickPerformed)
     }
 
     @Test
     fun testActionCancel() {
         val listener = getListener()
-        listener.onTouch(view, createMotionEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
 
-        val cancelEvent = createMotionEvent(MotionEvent.ACTION_CANCEL, 50f, 50f)
+        val cancelEvent = mockEvent(MotionEvent.ACTION_CANCEL, 50f, 50f)
         val handled = listener.onTouch(view, cancelEvent)
 
-        assertTrue(handled)
+        assertTrue("Action Cancel should be handled", handled)
         verify(parent).requestDisallowInterceptTouchEvent(false)
     }
 
@@ -138,9 +141,9 @@ class ViewExtensionsTest {
         viewNoParent.enableDrag()
         val listener = shadowOf(viewNoParent).onTouchListener!!
 
-        val event = createMotionEvent(MotionEvent.ACTION_DOWN, 50f, 50f)
+        val event = mockEvent(MotionEvent.ACTION_DOWN, 50f, 50f)
         val handled = listener.onTouch(viewNoParent, event)
 
-        assertFalse(handled)
+        assertFalse("Should not handle touch if no parent", handled)
     }
 }
