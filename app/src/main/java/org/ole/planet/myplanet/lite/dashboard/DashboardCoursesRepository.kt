@@ -49,7 +49,9 @@ class DashboardCoursesRepository {
     private val coursesProgressRequestAdapter = moshi.adapter(CoursesProgressFindRequest::class.java)
     private val coursesProgressResponseAdapter = moshi.adapter(CoursesProgressResponse::class.java)
     private val coursesProgressBulkAdapter = moshi.adapter(CoursesProgressBulkRequest::class.java)
-    private val bulkDocsResultAdapter = moshi.adapter(CoursesProgressBulkResponse::class.java)
+    private val bulkDocsResultAdapter = moshi.adapter<List<BulkDocResult>>(
+        com.squareup.moshi.Types.newParameterizedType(List::class.java, BulkDocResult::class.java)
+    )
     private val coursesFindRequestAdapter = moshi.adapter(CoursesFindRequest::class.java)
     private val coursesFindResponseAdapter = moshi.adapter(CourseFindResponse::class.java)
     private val teamCoursesRequestAdapter = moshi.adapter(TeamCoursesFindRequest::class.java)
@@ -768,7 +770,7 @@ class DashboardCoursesRepository {
         val updatedDate: Long
     )
 
-    class CoursesProgressBulkResponse : ArrayList<BulkDocResult>()
+    typealias CoursesProgressBulkResponse = List<BulkDocResult>
 
     @JsonClass(generateAdapter = true)
     data class BulkDocResult(
