@@ -6,6 +6,8 @@
 
 package org.ole.planet.myplanet.lite
 
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.graphics.Rect
@@ -159,7 +161,7 @@ class SignupActivity : AppCompatActivity() {
     private var serverParentCode: String? = null
     private var serverCode: String? = null
     private val serverPreferences by lazy {
-        applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
 

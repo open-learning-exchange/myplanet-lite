@@ -23,6 +23,12 @@ class DashboardTeamSelectionPreferencesTest {
     fun setUp() {
         mockPrefs = FakeSharedPreferences()
         mockContext = FakeContext(mockPrefs)
+        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = mockPrefs
+    }
+
+    @org.junit.After
+    fun tearDown() {
+        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = null
     }
 
     @Test

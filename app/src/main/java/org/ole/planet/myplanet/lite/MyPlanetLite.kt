@@ -7,6 +7,8 @@
 
 package org.ole.planet.myplanet.lite
 
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -117,7 +119,7 @@ class MyPlanetLite : AppCompatActivity() {
         UserProfileSync(connectivityClient, userProfileDatabase)
     }
     private val serverPreferences: SharedPreferences by lazy {
-        applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
 
     private val securePreferences: SharedPreferences by lazy {
