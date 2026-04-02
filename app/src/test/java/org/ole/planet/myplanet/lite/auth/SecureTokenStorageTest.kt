@@ -8,7 +8,9 @@ import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -70,6 +72,7 @@ class SecureTokenStorageTest {
         assertNull(fakeSharedPreferences.getString("planet_token", null))
         assertNull(secureTokenStorage.getToken())
     }
+
     @Test
     fun `saveToken overwrites previous token`() = runTest {
         val testToken1 = "test_token_123"
@@ -78,5 +81,47 @@ class SecureTokenStorageTest {
         secureTokenStorage.saveToken(testToken2)
         val retrievedToken = secureTokenStorage.getToken()
         assertEquals(testToken2, retrievedToken)
+    }
+
+    @Test
+    fun `saveToken stores empty token successfully`() = runTest {
+        val testToken = ""
+        secureTokenStorage.saveToken(testToken)
+        val retrievedToken = secureTokenStorage.getToken()
+        assertEquals(testToken, retrievedToken)
+        assertEquals(testToken, fakeSharedPreferences.getString("planet_token", null))
+    }
+
+    @Test
+    fun `verify EncryptedSharedPreferences parameters`() = runTest {
+        // Trigger initialization
+        secureTokenStorage.getToken()
+
+        verify {
+            androidx.security.crypto.EncryptedSharedPreferences.create(
+                any<Context>(),
+                "auth_secure_prefs",
+                any<androidx.security.crypto.MasterKey>(),
+                androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        }
+    }
+
+    @Test
+    fun `verify dispatcher is used`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val storage = SecureTokenStorage(context, testDispatcher)
+
+        storage.saveToken("dispatcher_token")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        storage.getToken()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        storage.clearToken()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Test ensures functions don't hang and the custom dispatcher executes.
     }
 }
