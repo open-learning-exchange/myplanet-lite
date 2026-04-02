@@ -109,5 +109,4 @@ class UserProfileSync(
         }
     }
 
-    private companion object {}
 }
