@@ -402,8 +402,69 @@ class DashboardTeamMembersFragment : Fragment() {
         }
 
         val dialogBinding = DialogInviteMembersBinding.inflate(layoutInflater)
-        lateinit var inviteAdapter: InviteMembersAdapter
-        inviteAdapter = InviteMembersAdapter(avatarLoader) { candidate ->
+        InviteDialogController(dialogBinding, base, creds, teamId, teamPlanetCode, teamType).show()
+    }
+
+    private inner class InviteDialogController(
+        val dialogBinding: DialogInviteMembersBinding,
+        val base: String,
+        val creds: StoredCredentials,
+        val teamId: String,
+        val teamPlanetCode: String,
+        val teamType: String
+    ) {
+        private var isLoadingPage = false
+        private var hasMorePages = true
+        private var nextSkip = 0
+        private var currentSearchTerm = ""
+        private var pendingReset = false
+        private var pagingDialog: AlertDialog? = null
+        private lateinit var inviteAdapter: InviteMembersAdapter
+
+        fun show() {
+            inviteAdapter = InviteMembersAdapter(avatarLoader) { candidate ->
+                addMember(candidate)
+            }
+
+            val layoutManager = LinearLayoutManager(requireContext())
+            dialogBinding.inviteMembersList.adapter = inviteAdapter
+            dialogBinding.inviteMembersList.layoutManager = layoutManager
+            dialogBinding.inviteMembersList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+                    super.onScrolled(recyclerView, dx, dy)
+                    if (dy <= 0) return
+                    val lastVisible = layoutManager.findLastVisibleItemPosition()
+                    if (hasMorePages && !isLoadingPage && lastVisible >= inviteAdapter.itemCount - 5) {
+                        loadInvitePage()
+                    }
+                }
+            })
+
+            dialogBinding.inviteMembersSearchInput.addTextChangedListener { editable ->
+                val newQuery = editable?.toString()?.trim().orEmpty()
+                if (newQuery != currentSearchTerm) {
+                    currentSearchTerm = newQuery
+                    loadInvitePage(reset = true)
+                }
+            }
+
+            val dialog = AlertDialog.Builder(requireContext())
+                .setView(dialogBinding.root)
+                .create()
+
+            dialogBinding.inviteMembersCancel.setOnClickListener { dialog.dismiss() }
+
+            dialog.setOnDismissListener {
+                pagingDialog?.dismiss()
+                pagingDialog = null
+                currentTeamId?.let { id -> loadTeamMembers(id) }
+            }
+
+            dialog.show()
+            loadInvitePage(reset = true)
+        }
+
+        private fun addMember(candidate: InviteCandidate) {
             val userPlanet = candidate.planetCode ?: serverPlanetCode
             if (userPlanet.isNullOrBlank()) {
                 Toast.makeText(
@@ -411,7 +472,7 @@ class DashboardTeamMembersFragment : Fragment() {
                     getString(R.string.dashboard_invite_members_add_error_generic),
                     Toast.LENGTH_SHORT
                 ).show()
-                return@InviteMembersAdapter
+                return
             }
             inviteAdapter.disableCandidate(candidate.username)
             viewLifecycleOwner.lifecycleScope.launch {
@@ -448,14 +509,7 @@ class DashboardTeamMembersFragment : Fragment() {
             }
         }
 
-        var isLoadingPage = false
-        var hasMorePages = true
-        var nextSkip = 0
-        var currentSearchTerm = ""
-        var pendingReset = false
-        var pagingDialog: AlertDialog? = null
-
-        fun showPagingDialog() {
+        private fun showPagingDialog() {
             if (pagingDialog == null) {
                 val progressBar = ProgressBar(requireContext())
                 val padding = resources.getDimensionPixelSize(R.dimen.padding_small)
@@ -470,18 +524,18 @@ class DashboardTeamMembersFragment : Fragment() {
             pagingDialog?.show()
         }
 
-        fun hidePagingDialog() {
+        private fun hidePagingDialog() {
             pagingDialog?.dismiss()
         }
 
-        fun loadInvitePage(reset: Boolean = false) {
+        private fun prepareForLoad(reset: Boolean): Boolean {
             if (isLoadingPage) {
                 if (reset) {
                     pendingReset = true
                 }
-                return
+                return false
             }
-            if (!hasMorePages && !reset) return
+            if (!hasMorePages && !reset) return false
             isLoadingPage = true
             if (reset) {
                 nextSkip = 0
@@ -495,16 +549,51 @@ class DashboardTeamMembersFragment : Fragment() {
             } else {
                 showPagingDialog()
             }
+            return true
+        }
+
+        private fun getExcludedIds(): List<String> {
+            return currentMembers.mapNotNull { member ->
+                val userId = member.membership?.userId
+                when {
+                    userId.isNullOrBlank() -> null
+                    userId.startsWith("org.couchdb.user:") -> userId
+                    else -> "org.couchdb.user:$userId"
+                }
+            }
+        }
+
+        private fun handleFetchSuccess(users: List<UserDocument>, reset: Boolean) {
+            val candidates = users.mapNotNull { user ->
+                toInviteCandidate(user)
+            }
+            if (reset) {
+                inviteAdapter.replaceCandidates(candidates)
+            } else {
+                inviteAdapter.appendCandidates(candidates)
+            }
+            if (candidates.size < INVITE_PAGE_SIZE) {
+                hasMorePages = false
+            } else {
+                nextSkip += INVITE_PAGE_SIZE
+            }
+        }
+
+        private fun finishLoad(reset: Boolean) {
+            dialogBinding.inviteMembersLoading.isVisible = false
+            dialogBinding.inviteMembersList.isVisible = true
+            isLoadingPage = false
+            hidePagingDialog()
+            if (pendingReset) {
+                pendingReset = false
+                loadInvitePage(reset = true)
+            }
+        }
+
+        private fun loadInvitePage(reset: Boolean = false) {
+            if (!prepareForLoad(reset)) return
 
             viewLifecycleOwner.lifecycleScope.launch {
-                val excludedIds = currentMembers.mapNotNull { member ->
-                    val userId = member.membership?.userId
-                    when {
-                        userId.isNullOrBlank() -> null
-                        userId.startsWith("org.couchdb.user:") -> userId
-                        else -> "org.couchdb.user:$userId"
-                    }
-                }
                 val result = repository.fetchAllUsers(
                     baseUrl = base,
                     credentials = creds,
@@ -514,22 +603,10 @@ class DashboardTeamMembersFragment : Fragment() {
                     pageSize = INVITE_PAGE_SIZE,
                     skip = nextSkip,
                     searchTerm = currentSearchTerm.takeIf { it.isNotBlank() },
-                    excludedUserIds = excludedIds,
+                    excludedUserIds = getExcludedIds(),
                 )
                 result.onSuccess { users ->
-                    val candidates = users.mapNotNull { user ->
-                        toInviteCandidate(user)
-                    }
-                    if (reset) {
-                        inviteAdapter.replaceCandidates(candidates)
-                    } else {
-                        inviteAdapter.appendCandidates(candidates)
-                    }
-                    if (candidates.size < INVITE_PAGE_SIZE) {
-                        hasMorePages = false
-                    } else {
-                        nextSkip += INVITE_PAGE_SIZE
-                    }
+                    handleFetchSuccess(users, reset)
                 }.onFailure {
                     Toast.makeText(
                         requireContext(),
@@ -537,53 +614,9 @@ class DashboardTeamMembersFragment : Fragment() {
                         Toast.LENGTH_SHORT
                     ).show()
                 }
-                dialogBinding.inviteMembersLoading.isVisible = false
-                dialogBinding.inviteMembersList.isVisible = true
-                isLoadingPage = false
-                hidePagingDialog()
-                if (pendingReset) {
-                    pendingReset = false
-                    loadInvitePage(reset = true)
-                }
+                finishLoad(reset)
             }
         }
-
-        val layoutManager = LinearLayoutManager(requireContext())
-        dialogBinding.inviteMembersList.adapter = inviteAdapter
-        dialogBinding.inviteMembersList.layoutManager = layoutManager
-        dialogBinding.inviteMembersList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                if (dy <= 0) return
-                val lastVisible = layoutManager.findLastVisibleItemPosition()
-                if (hasMorePages && !isLoadingPage && lastVisible >= inviteAdapter.itemCount - 5) {
-                    loadInvitePage()
-                }
-            }
-        })
-
-        dialogBinding.inviteMembersSearchInput.addTextChangedListener { editable ->
-            val newQuery = editable?.toString()?.trim().orEmpty()
-            if (newQuery != currentSearchTerm) {
-                currentSearchTerm = newQuery
-                loadInvitePage(reset = true)
-            }
-        }
-
-        val dialog = AlertDialog.Builder(requireContext())
-            .setView(dialogBinding.root)
-            .create()
-
-        dialogBinding.inviteMembersCancel.setOnClickListener { dialog.dismiss() }
-
-        dialog.setOnDismissListener {
-            pagingDialog?.dismiss()
-            pagingDialog = null
-            currentTeamId?.let { teamId -> loadTeamMembers(teamId) }
-        }
-
-        dialog.show()
-        loadInvitePage(reset = true)
     }
 
     private fun toInviteCandidate(user: UserDocument): InviteCandidate? {
