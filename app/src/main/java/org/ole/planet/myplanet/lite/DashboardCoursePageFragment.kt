@@ -970,6 +970,13 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             }
 
             fun bind(course: CourseItem) {
+                bindImage(course)
+                bindText(course)
+                bindProgress(course)
+                bindClickListeners(course)
+            }
+
+            private fun bindImage(course: CourseItem) {
                 val coverPath = course.coverPath
                 val loader = imageLoaderProvider()
                 if (!coverPath.isNullOrBlank()) {
@@ -989,7 +996,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 } else {
                     showDefaultIcon()
                 }
+            }
 
+            private fun bindText(course: CourseItem) {
                 titleView.text = course.title
                 descriptionView.visibility = View.GONE
                 lessonsView.text = itemView.context.getString(
@@ -1001,6 +1010,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                     R.string.dashboard_courses_rating_format,
                     course.rating
                 )
+            }
+
+            private fun bindProgress(course: CourseItem) {
                 if (showProgress) {
                     progressContainer.visibility = View.VISIBLE
                     progressView.visibility = View.VISIBLE
@@ -1015,7 +1027,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                     progressView.visibility = View.GONE
                     progressIndicator.visibility = View.GONE
                 }
+            }
 
+            private fun bindClickListeners(course: CourseItem) {
                 itemView.setOnClickListener {
                     onCourseClick?.invoke(course)
                 }
