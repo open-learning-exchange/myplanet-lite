@@ -2,7 +2,7 @@
 activity = "1.13.0"
 agp = "9.1.0"
 appcompat = "1.7.1"
-bytebuddy = "1.18.7"
+bytebuddy = "1.18.8"
 circleimageview = "3.1.0"
 constraintlayout = "2.2.1"
 core = "4.6.2"

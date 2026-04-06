@@ -1,5 +1,6 @@
 @file:Suppress("DEPRECATION")
 package org.ole.planet.myplanet.lite.auth
+
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
@@ -20,6 +21,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class SecureTokenStorageTest {
