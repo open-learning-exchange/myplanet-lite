@@ -1,22 +1,21 @@
 package org.ole.planet.myplanet.lite.dashboard
 
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.*
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
-
+import java.io.IOException
+import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
-
-import kotlinx.coroutines.test.runTest
-
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-
-import java.io.IOException
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionParent
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionTeam
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionUser
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 class DashboardSurveySubmissionsRepositoryTest {
 

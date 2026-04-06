@@ -40,13 +40,13 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamMemberDetails
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.UserDocument
-import org.ole.planet.myplanet.lite.util.enableDrag
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.ole.planet.myplanet.lite.databinding.FragmentDashboardTeamMembersBinding
 import org.ole.planet.myplanet.lite.databinding.ItemInviteMemberBinding
 import org.ole.planet.myplanet.lite.databinding.ItemTeamMemberBinding
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.enableDrag
 
 class DashboardTeamMembersFragment : Fragment() {
 
