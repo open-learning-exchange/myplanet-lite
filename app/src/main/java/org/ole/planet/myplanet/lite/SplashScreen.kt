@@ -6,6 +6,8 @@
 
 package org.ole.planet.myplanet.lite
 
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -132,7 +134,7 @@ class SplashScreen : AppCompatActivity() {
     }
 
     private suspend fun attemptDirectDashboardLaunch(): DashboardLaunchMode {
-        val preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
         val baseUrl = preferences.getString(KEY_SERVER_URL, null)?.trim()?.takeIf { it.isNotEmpty() }
             ?: return DashboardLaunchMode.NONE
         val authService = AuthDependencies.provideAuthService(this, baseUrl)
@@ -172,7 +174,7 @@ class SplashScreen : AppCompatActivity() {
 
     @SuppressLint("HardwareIds")
     private fun cacheDeviceIdentifiers() {
-        val preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
 
         val androidId = runCatching {
             Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
