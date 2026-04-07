@@ -44,7 +44,7 @@ class DateStringAdapter {
         } else {
             try {
                 dateFormat.parse(dateString)?.time
-            } catch (e: ParseException) {
+            } catch (_: ParseException) {
                 // It might already be a long
                 dateString.toLongOrNull()
             }
@@ -71,10 +71,8 @@ class DashboardTeamsRepository {
     private val membershipRequestAdapter = moshi.adapter(MembershipFindRequest::class.java)
     private val membershipResponseAdapter = moshi.adapter(MembershipFindResponse::class.java)
     private val teamMembershipRequestAdapter = moshi.adapter(TeamMembershipFindRequest::class.java)
-    private val memberCountRequestAdapter = moshi.adapter(MemberCountFindRequest::class.java)
-    private val memberCountResponseAdapter = moshi.adapter(MemberCountFindResponse::class.java)
-    private val memberCountsRequestAdapter = moshi.adapter(MemberCountsFindRequest::class.java)
-    private val memberCountsResponseAdapter = moshi.adapter(MemberCountsFindResponse::class.java)
+    private val multipleMemberCountRequestAdapter = moshi.adapter(MultipleMemberCountFindRequest::class.java)
+    private val multipleMemberCountResponseAdapter = moshi.adapter(MultipleMemberCountFindResponse::class.java)
     private val teamsRequestAdapter = moshi.adapter(TeamsFindRequest::class.java)
     private val teamsResponseAdapter = moshi.adapter(TeamsFindResponse::class.java)
     private val availableTeamsRequestAdapter = moshi.adapter(NonMemberTeamsFindRequest::class.java)
@@ -86,44 +84,6 @@ class DashboardTeamsRepository {
     private val membershipBulkDeleteAdapter = moshi.adapter(BulkMembershipDeleteRequest::class.java)
     private val membershipBulkAddAdapter = moshi.adapter(BulkMembershipAddRequest::class.java)
     private val usersFindResponseAdapter = moshi.adapter(UsersFindResponse::class.java)
-
-    suspend fun fetchUserProfile(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        userId: String
-    ): Result<UserDocument> {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                if (userId.isBlank()) {
-                    throw IOException("Missing user id")
-                }
-                val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/_users/$userId")
-                credentials?.let {
-                    requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
-                }
-                sessionCookie.nullIfBlank()?.let { cookie ->
-                    requestBuilder.addHeader("Cookie", cookie)
-                }
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val body = response.body.string()
-                    val users = usersFindResponseAdapter.fromJson(body)?.docs ?: emptyList()
-                    if (users.isEmpty()) {
-                        throw IOException("User not found")
-                    }
-                    users.first()
-                }
-            }
-        }
-    }
 
     suspend fun addTeamMember(
         baseUrl: String,
@@ -205,17 +165,17 @@ class DashboardTeamsRepository {
         if (filteredExcludedIds.isNotEmpty()) {
             val excludedArray = JSONArray()
             filteredExcludedIds.forEach { excludedArray.put(it) }
-            selector.put("_id", JSONObject().put("\$nin", excludedArray))
+            selector.put("_id", JSONObject().put($$"$nin", excludedArray))
         }
 
         if (!searchTerm.isNullOrBlank()) {
             val regexValue = "(?i)${searchTerm.trim()}"
             val orArray = JSONArray()
             listOf("name", "firstName", "middleName", "lastName").forEach { field ->
-                val regexObject = JSONObject().put("\$regex", regexValue)
+                val regexObject = JSONObject().put($$"$regex", regexValue)
                 orArray.put(JSONObject().put(field, regexObject))
             }
-            selector.put("\$or", orArray)
+            selector.put($$"$or", orArray)
         }
 
         return JSONObject()
@@ -613,57 +573,6 @@ class DashboardTeamsRepository {
         }
     }
 
-    suspend fun fetchMemberCount(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        teamId: String
-    ): Result<Int> {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                if (teamId.isBlank()) {
-                    throw IOException("Missing team id")
-                }
-
-                val selector = MemberCountSelector(
-                    teamId = teamId,
-                    docType = "membership",
-                    status = StatusClause(
-                        or = listOf(
-                            StatusCondition(exists = false),
-                            StatusCondition(notEquals = "archived")
-                        )
-                    )
-                )
-                val payload = memberCountRequestAdapter.toJson(
-                    MemberCountFindRequest(selector = selector, fields = listOf("_id"))
-                )
-                val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/teams/_find")
-                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-                credentials?.let {
-                    requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
-                }
-                sessionCookie.nullIfBlank()?.let { cookie ->
-                    requestBuilder.addHeader("Cookie", cookie)
-                }
-
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val body = response.body.string()
-                    val docs = memberCountResponseAdapter.fromJson(body)?.docs
-                    docs?.size ?: 0
-                }
-            }
-        }
-    }
-
     suspend fun fetchMemberCounts(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -676,16 +585,12 @@ class DashboardTeamsRepository {
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
-                if (teamIds.isEmpty()) {
-                    return@runCatching emptyMap()
-                }
 
                 val results = mutableMapOf<String, Int>()
-                teamIds.forEach { results[it] = 0 }
+                if (teamIds.isEmpty()) return@runCatching results
 
-                // Chunk to prevent overly large request payloads
                 teamIds.chunked(50).forEach { chunk ->
-                    val selector = MemberCountsSelector(
+                    val selector = MultipleMemberCountSelector(
                         teamId = IdsInClause(ids = chunk),
                         docType = "membership",
                         status = StatusClause(
@@ -695,8 +600,8 @@ class DashboardTeamsRepository {
                             )
                         )
                     )
-                    val payload = memberCountsRequestAdapter.toJson(
-                        MemberCountsFindRequest(selector = selector, fields = listOf("_id", "teamId"), limit = 1000000)
+                    val payload = multipleMemberCountRequestAdapter.toJson(
+                        MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"))
                     )
                     val requestBuilder = Request.Builder()
                         .url("$normalizedBase/db/teams/_find")
@@ -713,12 +618,11 @@ class DashboardTeamsRepository {
                             throw IOException("Unexpected response ${response.code}")
                         }
                         val body = response.body.string()
-                        val docs = memberCountsResponseAdapter.fromJson(body)?.docs ?: emptyList()
+                        val docs = multipleMemberCountResponseAdapter.fromJson(body)?.docs ?: emptyList()
 
                         docs.forEach { doc ->
-                            val tId = doc.teamId
-                            if (tId != null) {
-                                results[tId] = results.getOrDefault(tId, 0) + 1
+                            doc.teamId?.let { tId ->
+                                results[tId] = (results[tId] ?: 0) + 1
                             }
                         }
                     }
@@ -808,7 +712,7 @@ class DashboardTeamsRepository {
                     hasAvatar = attachments?.optJSONObject("img") != null,
                 )
             }
-        } catch (error: IOException) {
+        } catch (_: IOException) {
             null
         }
     }
@@ -938,40 +842,26 @@ class DashboardTeamsRepository {
 
     @JsonClass(generateAdapter = true)
     data class StatusClause(
-        @param:Json(name = "\$or") val or: List<StatusCondition>
+        @param:Json(name = $$"$or") val or: List<StatusCondition>
     )
 
     @JsonClass(generateAdapter = true)
     data class StatusCondition(
-        @param:Json(name = "\$exists") val exists: Boolean? = null,
-        @param:Json(name = "\$ne") val notEquals: String? = null
+        @param:Json(name = $$"$exists") val exists: Boolean? = null,
+        @param:Json(name = $$"$ne") val notEquals: String? = null
     )
 
     @JsonClass(generateAdapter = true)
     data class MembershipFindResponse(val docs: List<MembershipDocument>?)
 
     @JsonClass(generateAdapter = true)
-    data class MemberCountFindRequest(
-        val selector: MemberCountSelector,
+    data class MultipleMemberCountFindRequest(
+        val selector: MultipleMemberCountSelector,
         val fields: List<String>
     )
 
     @JsonClass(generateAdapter = true)
-    data class MemberCountSelector(
-        val teamId: String,
-        val docType: String,
-        val status: StatusClause
-    )
-
-    @JsonClass(generateAdapter = true)
-    data class MemberCountsFindRequest(
-        val selector: MemberCountsSelector,
-        val fields: List<String>,
-        val limit: Int? = null
-    )
-
-    @JsonClass(generateAdapter = true)
-    data class MemberCountsSelector(
+    data class MultipleMemberCountSelector(
         val teamId: IdsInClause,
         val docType: String,
         val status: StatusClause
@@ -984,13 +874,7 @@ class DashboardTeamsRepository {
     )
 
     @JsonClass(generateAdapter = true)
-    data class MemberCountsFindResponse(val docs: List<MemberTeamIdDocument>?)
-
-    @JsonClass(generateAdapter = true)
-    data class MemberIdDocument(@param:Json(name = "_id") val id: String?)
-
-    @JsonClass(generateAdapter = true)
-    data class MemberCountFindResponse(val docs: List<MemberIdDocument>?)
+    data class MultipleMemberCountFindResponse(val docs: List<MemberTeamIdDocument>?)
 
     @JsonClass(generateAdapter = true)
     data class MembershipDocument(
@@ -1048,7 +932,7 @@ class DashboardTeamsRepository {
 
     @JsonClass(generateAdapter = true)
     data class IdsInClause(
-        @param:Json(name = "\$in") val ids: List<String>
+        @param:Json(name = $$"$in") val ids: List<String>
     )
 
     @JsonClass(generateAdapter = true)
@@ -1068,7 +952,7 @@ class DashboardTeamsRepository {
 
     @JsonClass(generateAdapter = true)
     data class IdsNotInClause(
-        @param:Json(name = "\$nin") val ids: List<String>
+        @param:Json(name = $$"$nin") val ids: List<String>
     )
 
     @JsonClass(generateAdapter = true)

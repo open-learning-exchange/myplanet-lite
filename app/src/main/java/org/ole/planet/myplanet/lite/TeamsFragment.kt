@@ -185,11 +185,19 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
                 return@launch
             }
 
-            val validTeamIds = memberTeams.mapNotNull { it.id }.filter { it.isNotBlank() }
-            if (validTeamIds.isNotEmpty()) {
-                val countsResult = repository.fetchMemberCounts(base, credentials, sessionCookie, validTeamIds)
+            val currentTeamIds = memberTeams.mapNotNull { it.id }.filter { it.isNotBlank() }
+            if (currentTeamIds.isNotEmpty()) {
+                val countsResult = repository.fetchMemberCounts(base, credentials, sessionCookie, currentTeamIds)
                 countsResult.getOrNull()?.let { counts ->
-                    memberCounts.putAll(counts)
+                    counts.forEach { (id, count) ->
+                        memberCounts[id] = count
+                    }
+                    // For teams with 0 members that were in the query but not in results
+                    currentTeamIds.forEach { id ->
+                        if (!memberCounts.containsKey(id)) {
+                            memberCounts[id] = 0
+                        }
+                    }
                 }
             }
 
@@ -254,11 +262,19 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
 
         availableTeams.addAll(newTeams)
 
-        val validNewTeamIds = newTeams.mapNotNull { it.id }.filter { it.isNotBlank() }
-        if (validNewTeamIds.isNotEmpty()) {
-            val countsResult = repository.fetchMemberCounts(base, credentials, sessionCookie, validNewTeamIds)
+        val newTeamIds = newTeams.mapNotNull { it.id }.filter { it.isNotBlank() }
+        if (newTeamIds.isNotEmpty()) {
+            val countsResult = repository.fetchMemberCounts(base, credentials, sessionCookie, newTeamIds)
             countsResult.getOrNull()?.let { counts ->
-                memberCounts.putAll(counts)
+                counts.forEach { (id, count) ->
+                    memberCounts[id] = count
+                }
+                // For teams with 0 members that were in the query but not in results
+                newTeamIds.forEach { id ->
+                    if (!memberCounts.containsKey(id)) {
+                        memberCounts[id] = 0
+                    }
+                }
             }
         }
 
