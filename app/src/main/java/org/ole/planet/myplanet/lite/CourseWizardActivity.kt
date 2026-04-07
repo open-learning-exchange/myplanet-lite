@@ -134,6 +134,7 @@ class CourseWizardActivity : AppCompatActivity() {
             completedExamSteps.clear()
             completedExamSteps.addAll(restored)
         }
+        @Suppress("UNCHECKED_CAST")
         val stepPayload: ArrayList<DashboardCoursePageFragment.CourseItem.LessonStep>? =
             IntentCompat.getSerializableExtra(
                 intent,
