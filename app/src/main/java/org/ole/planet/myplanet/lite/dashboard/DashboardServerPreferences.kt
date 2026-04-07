@@ -6,6 +6,8 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+
 import android.content.Context
 
 object DashboardServerPreferences {
@@ -15,17 +17,17 @@ object DashboardServerPreferences {
     private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
 
     fun getServerBaseUrl(context: Context): String? {
-        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
         return prefs.getString(KEY_SERVER_URL, null)?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     fun getServerCode(context: Context): String? {
-        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
         return prefs.getString(KEY_SERVER_CODE, null)?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     fun getServerParentCode(context: Context): String? {
-        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
         return prefs.getString(KEY_SERVER_PARENT_CODE, null)?.trim()?.takeIf { it.isNotEmpty() }
     }
 }

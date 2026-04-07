@@ -6,6 +6,8 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+
 import android.content.Context
 
 class DashboardSurveyStatusStore(
@@ -13,7 +15,7 @@ class DashboardSurveyStatusStore(
     private val username: String? = null,
 ) {
 
-    private val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+    private val prefs = SecurePreferencesProvider.getServerPreferences(context)
 
     fun getStatus(id: String?): SurveyStatus? {
         val key = namespacedKey(id) ?: return null

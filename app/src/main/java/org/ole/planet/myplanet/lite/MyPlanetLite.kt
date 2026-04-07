@@ -7,6 +7,8 @@
 
 package org.ole.planet.myplanet.lite
 
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -30,6 +32,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import androidx.core.view.ViewCompat
@@ -72,6 +76,7 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
+import org.ole.planet.myplanet.lite.util.IntentUtils
 
 class MyPlanetLite : AppCompatActivity() {
 
@@ -117,19 +122,19 @@ class MyPlanetLite : AppCompatActivity() {
         UserProfileSync(connectivityClient, userProfileDatabase)
     }
     private val serverPreferences: SharedPreferences by lazy {
-        applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
 
     private val securePreferences: SharedPreferences by lazy {
-        val masterKey = androidx.security.crypto.MasterKey.Builder(applicationContext)
-            .setKeyScheme(androidx.security.crypto.MasterKey.KeyScheme.AES256_GCM)
+        val masterKey = MasterKey.Builder(applicationContext)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-        androidx.security.crypto.EncryptedSharedPreferences.create(
+        EncryptedSharedPreferences.create(
             applicationContext,
             SECURE_PREFS_NAME,
             masterKey,
-            androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
@@ -169,7 +174,7 @@ class MyPlanetLite : AppCompatActivity() {
         ProfileCredentialsStore.setSessionCredentials(null)
         clearStoredSessionIfNotRemembered()
         autoLoginEnabled = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
-        deepLinkPostId = extractDeepLinkPostId(intent)
+        deepLinkPostId = IntentUtils.extractDeepLinkPostId(intent)
 
         if (savedInstanceState != null) {
             val contentRoot: View? = findViewById(android.R.id.content)
@@ -1155,29 +1160,6 @@ class MyPlanetLite : AppCompatActivity() {
         serverPreferences.edit()
             .putBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, accepted)
             .apply()
-    }
-
-    private fun extractDeepLinkPostId(intent: Intent?): String? {
-        if (intent?.action != Intent.ACTION_VIEW) {
-            return null
-        }
-        val data = intent.data ?: return null
-        val queryPostId = data.getQueryParameter("postId")
-        if (!queryPostId.isNullOrBlank()) {
-            return queryPostId
-        }
-        val segments = data.pathSegments
-        if (segments.isEmpty()) {
-            return null
-        }
-        val postIndex = segments.indexOfFirst { segment ->
-            segment.equals("post", ignoreCase = true)
-        }
-        val candidate = when {
-            postIndex >= 0 && postIndex + 1 < segments.size -> segments[postIndex + 1]
-            else -> segments.last()
-        }
-        return candidate.takeIf { it.isNotBlank() }
     }
 
     override fun onDestroy() {

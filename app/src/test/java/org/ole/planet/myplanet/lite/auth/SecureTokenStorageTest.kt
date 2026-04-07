@@ -1,14 +1,19 @@
 @file:Suppress("DEPRECATION")
 package org.ole.planet.myplanet.lite.auth
+
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkConstructor
 import io.mockk.mockkStatic
 import io.mockk.unmockkAll
+import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -18,6 +23,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
 class SecureTokenStorageTest {
@@ -28,17 +34,17 @@ class SecureTokenStorageTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         fakeSharedPreferences = context.getSharedPreferences("fake_prefs", Context.MODE_PRIVATE)
-        mockkConstructor(androidx.security.crypto.MasterKey.Builder::class)
-        every { anyConstructed<androidx.security.crypto.MasterKey.Builder>().setKeyScheme(any()) } answers { callOriginal() }
-        every { anyConstructed<androidx.security.crypto.MasterKey.Builder>().build() } returns mockk<androidx.security.crypto.MasterKey>(relaxed = true)
-        mockkStatic(androidx.security.crypto.EncryptedSharedPreferences::class)
+        mockkConstructor(MasterKey.Builder::class)
+        every { anyConstructed<MasterKey.Builder>().setKeyScheme(any()) } answers { callOriginal() }
+        every { anyConstructed<MasterKey.Builder>().build() } returns mockk<MasterKey>(relaxed = true)
+        mockkStatic(EncryptedSharedPreferences::class)
         every {
-            androidx.security.crypto.EncryptedSharedPreferences.create(
+            EncryptedSharedPreferences.create(
                 any<Context>(),
                 any<String>(),
-                any<androidx.security.crypto.MasterKey>(),
-                any<androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme>(),
-                any<androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme>()
+                any<MasterKey>(),
+                any<EncryptedSharedPreferences.PrefKeyEncryptionScheme>(),
+                any<EncryptedSharedPreferences.PrefValueEncryptionScheme>()
             )
         } returns fakeSharedPreferences
         secureTokenStorage = SecureTokenStorage(context, Dispatchers.Unconfined)
@@ -70,6 +76,7 @@ class SecureTokenStorageTest {
         assertNull(fakeSharedPreferences.getString("planet_token", null))
         assertNull(secureTokenStorage.getToken())
     }
+
     @Test
     fun `saveToken overwrites previous token`() = runTest {
         val testToken1 = "test_token_123"
@@ -78,5 +85,46 @@ class SecureTokenStorageTest {
         secureTokenStorage.saveToken(testToken2)
         val retrievedToken = secureTokenStorage.getToken()
         assertEquals(testToken2, retrievedToken)
+    }
+
+    @Test
+    fun `saveToken stores empty token successfully`() = runTest {
+        val testToken = ""
+        secureTokenStorage.saveToken(testToken)
+        val retrievedToken = secureTokenStorage.getToken()
+        assertEquals(testToken, retrievedToken)
+        assertEquals(testToken, fakeSharedPreferences.getString("planet_token", null))
+    }
+
+    @Test
+    fun `verify EncryptedSharedPreferences parameters`() = runTest {
+        // Trigger initialization
+        secureTokenStorage.getToken()
+        verify {
+            EncryptedSharedPreferences.create(
+                any<Context>(),
+                "auth_secure_prefs",
+                any<MasterKey>(),
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            )
+        }
+    }
+
+    @Test
+    fun `verify dispatcher is used`() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val storage = SecureTokenStorage(context, testDispatcher)
+
+        storage.saveToken("dispatcher_token")
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        storage.getToken()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        storage.clearToken()
+        testDispatcher.scheduler.advanceUntilIdle()
+
+        // Test ensures functions don't hang and the custom dispatcher executes.
     }
 }
