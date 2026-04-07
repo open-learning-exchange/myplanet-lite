@@ -6,6 +6,8 @@
 
 package org.ole.planet.myplanet.lite
 
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.graphics.Rect
@@ -37,6 +39,10 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -53,10 +59,6 @@ import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
 
 class SignupActivity : AppCompatActivity() {
 
@@ -159,7 +161,7 @@ class SignupActivity : AppCompatActivity() {
     private var serverParentCode: String? = null
     private var serverCode: String? = null
     private val serverPreferences by lazy {
-        applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
 
@@ -193,13 +195,25 @@ class SignupActivity : AppCompatActivity() {
         birthDateSelection = savedInstanceState?.getLong(STATE_BIRTH_DATE_SELECTION)
         currentStepIndex = savedInstanceState?.getInt(STATE_STEP_INDEX) ?: 0
 
-        val root = findViewById<View>(R.id.signupRoot)
-        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        initializeViews()
+        setupWindowInsets()
+        setupStepViews()
+        setupUsernameFilter()
+        setupLanguageOptions()
+        setupFocusAndValidationListeners()
+        setupClickListeners()
+        setupServerConfiguration()
 
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                navigateBack()
+            }
+        })
+
+        updateStepVisibility()
+    }
+
+    private fun initializeViews() {
         scrollView = findViewById(R.id.signupScroll)
         imeSpacer = findViewById(R.id.signupImeSpacer)
         backIcon = findViewById(R.id.signupBackIcon)
@@ -233,6 +247,10 @@ class SignupActivity : AppCompatActivity() {
         levelInput = findViewById(R.id.signupLevelInput)
         autoLoginCheck = findViewById(R.id.signupAutoLoginCheck)
 
+        setupLanguageAndLevelInputs()
+    }
+
+    private fun setupLanguageAndLevelInputs() {
         languageInput.keyListener = null
         languageInput.setTextIsSelectable(false)
         languageInput.isLongClickable = false
@@ -250,7 +268,49 @@ class SignupActivity : AppCompatActivity() {
                 levelInput.showDropDown()
             }
         }
+    }
 
+    private fun setupWindowInsets() {
+        val root = findViewById<View>(R.id.signupRoot)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { v, insets ->
+            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+            insets
+        }
+
+        val originalPaddingStart = scrollView.paddingStart
+        val originalPaddingTop = scrollView.paddingTop
+        val originalPaddingEnd = scrollView.paddingEnd
+        val originalPaddingBottom = scrollView.paddingBottom
+
+        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { v, insets ->
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val bottomPadding = originalPaddingBottom + systemInsets.bottom
+
+            imeSpacer.updateLayoutParams<android.widget.LinearLayout.LayoutParams> {
+                height = imeInsets.bottom
+            }
+
+            imeInsetBottom = imeInsets.bottom
+
+            v.setPaddingRelative(
+                originalPaddingStart,
+                originalPaddingTop,
+                originalPaddingEnd,
+                bottomPadding
+            )
+
+            currentFocus?.let { focused ->
+                ensureVisible(scrollView, focused)
+            }
+            insets
+        }
+
+        ViewCompat.requestApplyInsets(scrollView)
+    }
+
+    private fun setupStepViews() {
         val usernameStep = findViewById<View>(R.id.signupStepUsername)
         val namesStep = findViewById<View>(R.id.signupStepNames)
         val birthDateStep = findViewById<View>(R.id.signupStepBirthDate)
@@ -270,7 +330,9 @@ class SignupActivity : AppCompatActivity() {
             SignupStep.LANGUAGE to languageStep,
             SignupStep.LICENSE to licenseStep
         )
+    }
 
+    private fun setupUsernameFilter() {
         val usernameFilter = InputFilter { source, start, end, dest, dstart, dend ->
             if (start == end) {
                 return@InputFilter null
@@ -286,7 +348,9 @@ class SignupActivity : AppCompatActivity() {
             }
         }
         usernameInput.filters = arrayOf(usernameFilter)
+    }
 
+    private fun setupLanguageOptions() {
         languageOptions = listOf(
             SignupLanguageOption(
                 languageTag = "en",
@@ -349,7 +413,9 @@ class SignupActivity : AppCompatActivity() {
         }
 
         initializeLanguageSelection()
+    }
 
+    private fun setupFocusAndValidationListeners() {
         levelInput.doAfterTextChanged {
             levelLayout.error = null
         }
@@ -437,38 +503,9 @@ class SignupActivity : AppCompatActivity() {
                 updatePasswordErrorState()
             }
         }
+    }
 
-        val originalPaddingStart = scrollView.paddingStart
-        val originalPaddingTop = scrollView.paddingTop
-        val originalPaddingEnd = scrollView.paddingEnd
-        val originalPaddingBottom = scrollView.paddingBottom
-
-        ViewCompat.setOnApplyWindowInsetsListener(scrollView) { v, insets ->
-            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
-            val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val bottomPadding = originalPaddingBottom + systemInsets.bottom
-
-            imeSpacer.updateLayoutParams<android.widget.LinearLayout.LayoutParams> {
-                height = imeInsets.bottom
-            }
-
-            imeInsetBottom = imeInsets.bottom
-
-            v.setPaddingRelative(
-                originalPaddingStart,
-                originalPaddingTop,
-                originalPaddingEnd,
-                bottomPadding
-            )
-
-            currentFocus?.let { focused ->
-                ensureVisible(scrollView, focused)
-            }
-            insets
-        }
-
-        ViewCompat.requestApplyInsets(scrollView)
-
+    private fun setupClickListeners() {
         backIcon.setOnClickListener {
             navigateBack()
         }
@@ -480,21 +517,15 @@ class SignupActivity : AppCompatActivity() {
         nextButton.setOnClickListener {
             handleNextButtonClick()
         }
+    }
 
+    private fun setupServerConfiguration() {
         serverBaseUrl = intent.getStringExtra(EXTRA_SERVER_BASE_URL)?.trim().orEmpty()
         if (serverBaseUrl.isEmpty()) {
             serverBaseUrl = loadStoredServerBaseUrl()
         }
         serverParentCode = serverPreferences.getString(KEY_SERVER_PARENT_CODE, null)
         serverCode = serverPreferences.getString(KEY_SERVER_CODE, null)
-
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                navigateBack()
-            }
-        })
-
-        updateStepVisibility()
     }
 
     private fun initializeLanguageSelection() {

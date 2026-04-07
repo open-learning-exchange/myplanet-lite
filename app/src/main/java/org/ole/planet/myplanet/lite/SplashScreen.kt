@@ -6,6 +6,8 @@
 
 package org.ole.planet.myplanet.lite
 
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -35,6 +37,7 @@ import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
+import org.ole.planet.myplanet.lite.util.IntentUtils
 
 class SplashScreen : AppCompatActivity() {
 
@@ -118,7 +121,7 @@ class SplashScreen : AppCompatActivity() {
                     nextIntent.action = intent.action
                     nextIntent.data = intent.data
                 } else {
-                    val postId = extractDeepLinkPostId(intent)
+                    val postId = IntentUtils.extractDeepLinkPostId(intent)
                     if (postId != null) {
                         nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
                     }
@@ -130,31 +133,8 @@ class SplashScreen : AppCompatActivity() {
         }
     }
 
-    private fun extractDeepLinkPostId(intent: Intent?): String? {
-        if (intent?.action != Intent.ACTION_VIEW) {
-            return null
-        }
-        val data = intent.data ?: return null
-        val queryPostId = data.getQueryParameter("postId")
-        if (!queryPostId.isNullOrBlank()) {
-            return queryPostId
-        }
-        val segments = data.pathSegments
-        if (segments.isEmpty()) {
-            return null
-        }
-        val postIndex = segments.indexOfFirst { segment ->
-            segment.equals("post", ignoreCase = true)
-        }
-        val candidate = when {
-            postIndex >= 0 && postIndex + 1 < segments.size -> segments[postIndex + 1]
-            else -> segments.last()
-        }
-        return candidate.takeIf { it.isNotBlank() }
-    }
-
     private suspend fun attemptDirectDashboardLaunch(): DashboardLaunchMode {
-        val preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
         val baseUrl = preferences.getString(KEY_SERVER_URL, null)?.trim()?.takeIf { it.isNotEmpty() }
             ?: return DashboardLaunchMode.NONE
         val authService = AuthDependencies.provideAuthService(this, baseUrl)
@@ -194,7 +174,7 @@ class SplashScreen : AppCompatActivity() {
 
     @SuppressLint("HardwareIds")
     private fun cacheDeviceIdentifiers() {
-        val preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
 
         val androidId = runCatching {
             Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
