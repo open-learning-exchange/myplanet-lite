@@ -35,6 +35,7 @@ import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
+import org.ole.planet.myplanet.lite.util.IntentUtils
 
 class SplashScreen : AppCompatActivity() {
 
@@ -118,7 +119,7 @@ class SplashScreen : AppCompatActivity() {
                     nextIntent.action = intent.action
                     nextIntent.data = intent.data
                 } else {
-                    val postId = extractDeepLinkPostId(intent)
+                    val postId = IntentUtils.extractDeepLinkPostId(intent)
                     if (postId != null) {
                         nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
                     }
@@ -128,29 +129,6 @@ class SplashScreen : AppCompatActivity() {
             startActivity(nextIntent)
             finish()
         }
-    }
-
-    private fun extractDeepLinkPostId(intent: Intent?): String? {
-        if (intent?.action != Intent.ACTION_VIEW) {
-            return null
-        }
-        val data = intent.data ?: return null
-        val queryPostId = data.getQueryParameter("postId")
-        if (!queryPostId.isNullOrBlank()) {
-            return queryPostId
-        }
-        val segments = data.pathSegments
-        if (segments.isEmpty()) {
-            return null
-        }
-        val postIndex = segments.indexOfFirst { segment ->
-            segment.equals("post", ignoreCase = true)
-        }
-        val candidate = when {
-            postIndex >= 0 && postIndex + 1 < segments.size -> segments[postIndex + 1]
-            else -> segments.last()
-        }
-        return candidate.takeIf { it.isNotBlank() }
     }
 
     private suspend fun attemptDirectDashboardLaunch(): DashboardLaunchMode {
