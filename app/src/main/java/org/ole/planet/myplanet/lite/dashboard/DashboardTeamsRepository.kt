@@ -75,6 +75,8 @@ class DashboardTeamsRepository {
     private val memberCountResponseAdapter = moshi.adapter(MemberCountFindResponse::class.java)
     private val multipleMemberCountRequestAdapter = moshi.adapter(MultipleMemberCountFindRequest::class.java)
     private val multipleMemberCountResponseAdapter = moshi.adapter(MultipleMemberCountFindResponse::class.java)
+    private val memberCountsRequestAdapter = moshi.adapter(MemberCountsFindRequest::class.java)
+    private val memberCountsResponseAdapter = moshi.adapter(MemberCountsFindResponse::class.java)
     private val teamsRequestAdapter = moshi.adapter(TeamsFindRequest::class.java)
     private val teamsResponseAdapter = moshi.adapter(TeamsFindResponse::class.java)
     private val availableTeamsRequestAdapter = moshi.adapter(NonMemberTeamsFindRequest::class.java)
@@ -957,6 +959,29 @@ class DashboardTeamsRepository {
         val docType: String,
         val status: StatusClause
     )
+
+    @JsonClass(generateAdapter = true)
+    data class MemberCountsFindRequest(
+        val selector: MemberCountsSelector,
+        val fields: List<String>,
+        val limit: Int? = null
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class MemberCountsSelector(
+        val teamId: IdsInClause,
+        val docType: String,
+        val status: StatusClause
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class MemberTeamIdDocument(
+        @param:Json(name = "_id") val id: String?,
+        val teamId: String?
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class MemberCountsFindResponse(val docs: List<MemberTeamIdDocument>?)
 
     @JsonClass(generateAdapter = true)
     data class MemberIdDocument(@param:Json(name = "_id") val id: String?)
