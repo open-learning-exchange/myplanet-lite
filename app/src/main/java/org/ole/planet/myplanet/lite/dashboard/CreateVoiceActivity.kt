@@ -526,14 +526,18 @@ class CreateVoiceActivity : AppCompatActivity() {
                 }
                 adjustViewBounds = false
                 scaleType = ImageView.ScaleType.CENTER_CROP
-                val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
-                setImageBitmap(bitmap)
                 contentDescription = pending.fileName
                 setOnClickListener {
                     showImageOptionsDialog(pending)
                 }
             }
             wrapper.addView(preview)
+            lifecycleScope.launch(Dispatchers.Default) {
+                val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+                withContext(Dispatchers.Main) {
+                    preview.setImageBitmap(bitmap)
+                }
+            }
         }
     }
 
@@ -567,11 +571,15 @@ class CreateVoiceActivity : AppCompatActivity() {
             )
             adjustViewBounds = true
             scaleType = ImageView.ScaleType.FIT_CENTER
-            val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
-            setImageBitmap(bitmap)
             contentDescription = pending.fileName
             val padding = resources.getDimensionPixelSize(R.dimen.create_voice_image_preview_dialog_padding)
             setPadding(padding, padding, padding, padding)
+        }
+        lifecycleScope.launch(Dispatchers.Default) {
+            val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+            withContext(Dispatchers.Main) {
+                imageView.setImageBitmap(bitmap)
+            }
         }
         MaterialAlertDialogBuilder(this)
             .setTitle(pending.fileName)
