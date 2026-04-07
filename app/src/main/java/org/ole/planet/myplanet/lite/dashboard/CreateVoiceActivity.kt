@@ -976,7 +976,7 @@ class CreateVoiceActivity : AppCompatActivity() {
         val loaded = coroutineScope {
             editInitialImagePaths.map { path ->
                 async(Dispatchers.IO) {
-                    runCatching { fetchExistingVoiceImage(base, path) }.getOrNull()
+                    runCatching { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { generateImageFileName() }, { generatePendingImageId(it) }) }.getOrNull()
                 }
             }.awaitAll().filterNotNull()
         }
@@ -988,77 +988,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             pendingImages[pending.id] = pending
         }
         renderPreviewImages()
-    }
-
-    private fun fetchExistingVoiceImage(baseUrl: String, imagePath: String): PendingVoiceImage? {
-        val requestUrl = resolveImageUrl(baseUrl, imagePath) ?: return null
-        val requestBuilder = Request.Builder()
-            .url(requestUrl)
-            .get()
-        sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-            requestBuilder.addHeader("Cookie", cookie)
-        }
-        return runCatching {
-            httpClient.newCall(requestBuilder.build()).execute().use { response ->
-                if (!response.isSuccessful) {
-                    return null
-                }
-                val body = response.body
-                val bytes = body.byteStream().use { stream ->
-                    BufferedInputStream(stream).readBytes()
-                }
-                val fileName = extractFileName(imagePath) ?: generateImageFileName()
-                val tempFile = File(cacheDir, fileName)
-                FileOutputStream(tempFile).use { output ->
-                    output.write(bytes)
-                }
-                val (resourceId, resourceFileName) = parseResourceFromPath(imagePath)
-                val resolvedFileName = resourceFileName ?: fileName
-                val markdown = buildExistingImageMarkdown(baseUrl, imagePath)
-                PendingVoiceImage(
-                    id = generatePendingImageId(resolvedFileName),
-                    fileName = resolvedFileName,
-                    file = tempFile,
-                    jpegBytes = bytes,
-                    resourceId = resourceId,
-                    uploadedMarkdown = markdown
-                )
-            }
-        }.getOrNull()
-    }
-
-    private fun resolveImageUrl(baseUrl: String, path: String): String? {
-        val normalizedBase = baseUrl.trim().trimEnd('/')
-        if (normalizedBase.isEmpty()) {
-            return null
-        }
-        val trimmedPath = path.trim()
-        if (trimmedPath.isEmpty()) {
-            return null
-        }
-        if (trimmedPath.startsWith("http://") || trimmedPath.startsWith("https://")) {
-            return trimmedPath
-        }
-        val normalizedPath = trimmedPath.trimStart('/')
-        val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
-        return "$normalizedBase/$finalPath"
-    }
-
-    private fun buildExistingImageMarkdown(baseUrl: String, path: String): String {
-        val trimmedPath = path.trim().trimStart('/')
-        if (trimmedPath.isEmpty()) {
-            return "![]($path)"
-        }
-        val normalizedPath = if (trimmedPath.startsWith("db/")) {
-            trimmedPath.removePrefix("db/")
-        } else {
-            trimmedPath
-        }
-        return if (normalizedPath.startsWith("resources/")) {
-            "![](${normalizedPath.trim()})"
-        } else {
-            "![](resources/${normalizedPath.trim()})"
-        }
     }
 
     private fun extractPathFromMarkdown(markdown: String?): String? {
@@ -1089,15 +1018,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         val resourceId = parts[resourcesIndex + 1].takeIf { it.isNotBlank() }
         val fileName = parts[resourcesIndex + 2].takeIf { it.isNotBlank() }
         return resourceId to fileName
-    }
-
-    private fun extractFileName(path: String): String? {
-        val trimmed = path.trim().trimEnd('/')
-        val lastSlash = trimmed.lastIndexOf('/')
-        if (lastSlash == -1 || lastSlash == trimmed.lastIndex) {
-            return trimmed.takeIf { it.isNotEmpty() }
-        }
-        return trimmed.substring(lastSlash + 1).takeIf { it.isNotEmpty() }
     }
 
     private fun derivePendingNormalizedKey(pending: PendingVoiceImage): String {
@@ -1671,15 +1591,7 @@ class CreateVoiceActivity : AppCompatActivity() {
 }
 
 
-data class PendingVoiceImage(
-    val id: String,
-    val fileName: String,
-    val file: File,
-    val jpegBytes: ByteArray,
-    var resourceId: String? = null,
-    var resourceRevision: String? = null,
-    var uploadedMarkdown: String? = null
-)
+
 
 data class PreparedVoicePost(
     val message: String,
