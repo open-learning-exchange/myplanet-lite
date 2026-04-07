@@ -7,6 +7,7 @@
 package org.ole.planet.myplanet.lite
 
 import android.os.Bundle
+import android.net.Uri
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -18,6 +19,7 @@ import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
+import com.bumptech.glide.Glide
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -48,6 +50,7 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         super.onViewCreated(view, savedInstanceState)
         val args = requireArguments()
         val courseTitle = args.getString(ARG_TITLE).orEmpty()
+        val courseId = args.getString(ARG_COURSE_ID).orEmpty()
         val courseDescription = args.getString(ARG_DESCRIPTION).orEmpty()
         val stepTitles = args.getStringArrayList(ARG_STEP_TITLES) ?: arrayListOf()
         val stepMediaTypes = args.getStringArrayList(ARG_STEP_MEDIA_TYPES) ?: arrayListOf()
@@ -80,7 +83,7 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         progressView.visibility = View.GONE
         progressBar.visibility = View.GONE
 
-        bindDescription(courseDescription, descriptionView, imagesContainer)
+        bindDescription(courseId, courseDescription, descriptionView, imagesContainer)
 
         bindSteps(steps, currentStep, stepsContainer)
 
@@ -118,6 +121,7 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
     }
 
     private fun bindDescription(
+        courseId: String,
         description: String,
         descriptionView: TextView,
         imagesContainer: LinearLayout
@@ -134,10 +138,10 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         val textOnly = removeImageMarkdown(trimmed)
         val rendered = transformMarkdownForDisplay(textOnly)
         markwon.setMarkdown(descriptionView, rendered)
-        bindImages(imagePaths, imagesContainer)
+        bindImages(courseId, imagePaths, imagesContainer)
     }
 
-    private fun bindImages(imagePaths: List<String>, container: LinearLayout) {
+    private fun bindImages(courseId: String, imagePaths: List<String>, container: LinearLayout) {
         container.removeAllViews()
         if (imagePaths.isEmpty()) {
             container.isVisible = false
@@ -170,10 +174,17 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
                 }
                 imageView.layoutParams = params
                 imageView.adjustViewBounds = true
-                imageView.scaleType = ImageView.ScaleType.CENTER_CROP
+                imageView.scaleType = ImageView.ScaleType.FIT_CENTER
                 container.addView(imageView)
-                imageLoader?.bind(imageView, path) { success ->
-                    imageView.isVisible = success
+                val localUri = courseId.takeIf { it.isNotBlank() }?.let {
+                    OfflineCourseStorage.localMarkdownImageUri(requireContext(), it, path)
+                }
+                if (!localUri.isNullOrBlank()) {
+                    Glide.with(imageView).load(Uri.parse(localUri)).into(imageView)
+                } else {
+                    imageLoader?.bind(imageView, path) { success ->
+                        imageView.isVisible = success
+                    }
                 }
             }
         }
@@ -254,6 +265,7 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
 
     companion object {
         private const val ARG_TITLE = "arg_title"
+        private const val ARG_COURSE_ID = "arg_course_id"
         private const val ARG_DESCRIPTION = "arg_description"
         private const val ARG_STEP_TITLES = "arg_step_titles"
         private const val ARG_STEP_MEDIA_TYPES = "arg_step_media_types"
@@ -275,6 +287,7 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
             sheet.onOpenCourse = onOpenCourse
             sheet.arguments = Bundle().apply {
                 putString(ARG_TITLE, course.title)
+                putString(ARG_COURSE_ID, course.id)
                 putString(ARG_DESCRIPTION, course.description)
                 putStringArrayList(
                     ARG_STEP_TITLES,

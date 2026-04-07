@@ -8,9 +8,11 @@ package org.ole.planet.myplanet.lite.dashboard
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.util.LruCache
 import android.view.View
 import android.widget.ImageView
+import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -65,6 +67,12 @@ class DashboardPostImageLoader(
 
     private fun fetchImageBitmap(imagePath: String): Bitmap? {
         val requestUrl = resolveUrl(imagePath) ?: return null
+        if (Uri.parse(requestUrl).scheme.equals("file", ignoreCase = true)) {
+            val path = Uri.parse(requestUrl).path ?: return null
+            val file = File(path)
+            if (!file.exists()) return null
+            return BitmapFactory.decodeFile(file.absolutePath)
+        }
         val requestBuilder = Request.Builder()
             .url(requestUrl)
             .get()
@@ -85,16 +93,17 @@ class DashboardPostImageLoader(
     }
 
     private fun resolveUrl(path: String): String? {
-        val normalizedBase = baseUrl.trim().trimEnd('/')
-        if (normalizedBase.isEmpty()) {
-            return null
-        }
         val trimmedPath = path.trim()
         if (trimmedPath.isEmpty()) {
             return null
         }
-        if (trimmedPath.startsWith("http://") || trimmedPath.startsWith("https://")) {
+        val uriScheme = Uri.parse(trimmedPath).scheme?.lowercase()
+        if (uriScheme == "http" || uriScheme == "https" || uriScheme == "file") {
             return trimmedPath
+        }
+        val normalizedBase = baseUrl.trim().trimEnd('/')
+        if (normalizedBase.isEmpty()) {
+            return null
         }
         val normalizedPath = trimmedPath.trimStart('/')
         val finalPath = when {

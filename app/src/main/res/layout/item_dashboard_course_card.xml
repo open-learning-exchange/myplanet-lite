@@ -16,8 +16,7 @@
 
         <FrameLayout
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            >
+            android:layout_height="wrap_content">
 
             <ImageView
                 android:id="@+id/dashboardCourseImage"
@@ -28,6 +27,20 @@
                 android:padding="24dp"
                 android:scaleType="centerInside"
                 app:srcCompat="@drawable/ic_courses_24" />
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/dashboardCourseDownloadButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom|end"
+                android:layout_margin="2dp"
+                android:contentDescription="@string/dashboard_survey_download"
+                android:scaleX="0.50"
+                android:scaleY="0.50"
+                app:fabSize="mini"
+                app:backgroundTint="?attr/colorPrimary"
+                app:tint="@android:color/white"
+                app:srcCompat="@drawable/ic_survey_download_24" />
         </FrameLayout>
 
         <LinearLayout
@@ -99,6 +112,38 @@
                 <com.google.android.material.progressindicator.LinearProgressIndicator
                     style="?attr/linearProgressIndicatorStyle"
                     android:id="@+id/dashboardCourseProgressIndicator"
+                    android:layout_width="match_parent"
+                    android:layout_height="6dp"
+                    android:layout_marginTop="6dp"
+                    android:indeterminate="false"
+                    app:trackStopIndicatorSize="0dp"
+                    app:trackColor="@android:color/transparent"
+                    app:trackThickness="6dp"
+                    app:trackCornerRadius="3dp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/dashboardCourseDownloadProgressContainer"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="vertical"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/dashboardCourseDownloadProgressLabel"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingTop="3dp"
+                    android:drawablePadding="6dp"
+                    android:textAppearance="@style/TextAppearance.MaterialComponents.Body2"
+                    android:textColor="?android:attr/textColorSecondary"
+                    app:drawableStartCompat="@drawable/ic_survey_download_24"
+                    app:drawableTint="?attr/colorPrimary" />
+
+                <com.google.android.material.progressindicator.LinearProgressIndicator
+                    android:id="@+id/dashboardCourseDownloadProgressIndicator"
+                    style="?attr/linearProgressIndicatorStyle"
                     android:layout_width="match_parent"
                     android:layout_height="6dp"
                     android:layout_marginTop="6dp"

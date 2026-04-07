@@ -138,6 +138,13 @@ class FullscreenPdfActivity : AppCompatActivity() {
     private suspend fun downloadPdf(url: String, authHeader: String?): File? {
         return withContext(Dispatchers.IO) {
             runCatching {
+                val parsedUri = android.net.Uri.parse(url)
+                if (parsedUri.scheme == "file") {
+                    val localFile = File(parsedUri.path.orEmpty())
+                    if (localFile.exists()) {
+                        return@withContext localFile
+                    }
+                }
                 val request = Request.Builder()
                     .url(url)
                     .apply {

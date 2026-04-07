@@ -87,7 +87,7 @@
     <string name="signup_connection_error_input">सर्वर से जुड़ नहीं सके।</string>
     <string name="signup_username_checking">उपयोगकर्ता नाम उपलब्धता की जाँच हो रही है…</string>
     <string name="signup_username_error_taken">यह उपयोगकर्ता नाम पहले से उपयोग में है।</string>
-    <string name="dashboard_offline_mode_only_surveys">ऑफ़लाइन मोड: केवल सर्वे उपलब्ध हैं।</string>
+    <string name="dashboard_offline_mode_only_surveys">ऑफ़लाइन मोड: केवल सर्वे और डाउनलोड किए गए कोर्स उपलब्ध हैं।</string>
     <string name="dashboard_online_mode_restored">कनेक्शन पुनर्स्थापित: सभी पैनल सक्षम हैं।</string>
     <string name="dashboard_survey_download">डाउनलोड</string>
     <string name="dashboard_survey_downloaded">डाउनलोड हो गया</string>
@@ -577,6 +577,7 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="course_wizard_attachment_audio">ऑडियो</string>
     <string name="course_wizard_attachment_pdf">PDF</string>
     <string name="course_wizard_play_error">अटैचमेंट खोल नहीं सके</string>
+    <string name="fullscreen_player_unsupported_video">यह वीडियो फ़ॉर्मेट या रेज़ोल्यूशन इस डिवाइस पर समर्थित नहीं है।</string>
     <string name="course_wizard_open_image">छवि खोलें</string>
     <string name="course_wizard_open_pdf">PDF खोलें</string>
     <string name="course_wizard_open_exam">परीक्षा खोलें</string>
@@ -589,4 +590,6 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="create_voice_image_options_title">छवि विकल्प</string>
     <string name="create_voice_image_option_view">छवि देखें</string>
     <string name="create_voice_image_option_delete">छवि हटाएँ</string>
+    <string name="dashboard_course_insufficient_storage">इस कोर्स को डाउनलोड करने के लिए पर्याप्त स्टोरेज नहीं है।</string>
+    <string name="dashboard_course_delete_downloaded_confirm">डाउनलोड किए गए कोर्स और उसकी सभी ऑफलाइन फ़ाइलें हटाएँ?</string>
 </resources>

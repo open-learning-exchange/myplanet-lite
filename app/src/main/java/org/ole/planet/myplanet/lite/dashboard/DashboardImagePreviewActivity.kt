@@ -46,13 +46,25 @@ class DashboardImagePreviewActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 val baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
-                if (baseUrl.isNullOrEmpty()) {
+                val requiresServerBase = imagePaths.any { path ->
+                    val trimmed = path.trim()
+                    val scheme = android.net.Uri.parse(trimmed).scheme?.lowercase()
+                    trimmed.isNotEmpty() &&
+                        scheme != "http" &&
+                        scheme != "https" &&
+                        scheme != "file"
+                }
+                if (requiresServerBase && baseUrl.isNullOrEmpty()) {
                     finish()
                     return@repeatOnLifecycle
                 }
-                val authService = AuthDependencies.provideAuthService(applicationContext, baseUrl)
-                val sessionCookie = authService.getStoredToken()
-                imageLoader = DashboardPostImageLoader(baseUrl, sessionCookie, lifecycleScope)
+                val sessionCookie = if (!baseUrl.isNullOrEmpty()) {
+                    val authService = AuthDependencies.provideAuthService(applicationContext, baseUrl)
+                    authService.getStoredToken()
+                } else {
+                    null
+                }
+                imageLoader = DashboardPostImageLoader(baseUrl.orEmpty(), sessionCookie, lifecycleScope)
                 setupPager(imagePaths, startIndex)
             }
         }

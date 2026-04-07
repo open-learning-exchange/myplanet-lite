@@ -89,7 +89,7 @@
     <string name="signup_connection_error_input">Couldn\'t connect to the server.</string>
     <string name="signup_username_checking">Checking username availability…</string>
     <string name="signup_username_error_taken">This username is already in use.</string>
-    <string name="dashboard_offline_mode_only_surveys">Offline mode: only surveys are available.</string>
+    <string name="dashboard_offline_mode_only_surveys">Offline mode: only surveys and downloaded courses are available.</string>
     <string name="dashboard_online_mode_restored">Connection restored: all panels are enabled.</string>
     <string name="dashboard_survey_download">Download</string>
     <string name="dashboard_survey_downloaded">Downloaded</string>
@@ -594,6 +594,7 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="course_wizard_attachment_audio">Audio</string>
     <string name="course_wizard_attachment_pdf">PDF</string>
     <string name="course_wizard_play_error">Couldn\'t open the attachment</string>
+    <string name="fullscreen_player_unsupported_video">This video format or resolution is not supported on this device.</string>
     <string name="course_wizard_play_video">Play video</string>
     <string name="course_wizard_open_image">Open image</string>
     <string name="course_wizard_open_pdf">Open PDF</string>
@@ -606,4 +607,6 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="create_voice_image_options_title">Image options</string>
     <string name="create_voice_image_option_view">View image</string>
     <string name="create_voice_image_option_delete">Delete image</string>
+    <string name="dashboard_course_insufficient_storage">Insufficient storage space to download this course.</string>
+    <string name="dashboard_course_delete_downloaded_confirm">Delete the downloaded course and all its offline files?</string>
 </resources>

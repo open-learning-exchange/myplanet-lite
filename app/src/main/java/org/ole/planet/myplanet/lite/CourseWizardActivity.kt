@@ -10,6 +10,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -24,6 +25,8 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -31,19 +34,28 @@ import androidx.media3.ui.PlayerView
 import com.google.android.material.appbar.MaterialToolbar
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
+import io.noties.markwon.html.HtmlPlugin
+import io.noties.markwon.image.glide.GlideImagesPlugin
 import java.util.ArrayList
 import java.util.Locale
+import org.json.JSONArray
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : AppCompatActivity() {
+    private val courseLogTag = "CourseWizard"
+    private val pendingProgressPrefs by lazy {
+        getSharedPreferences(PREF_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
+    }
     private lateinit var markwon: Markwon
     private var steps: List<StepDisplay> = emptyList()
     private var baseUrl: String? = null
@@ -63,6 +75,8 @@ class CourseWizardActivity : AppCompatActivity() {
     private var lastPlaybackIndex = 0
     private var lastPlaybackPositionMs = 0L
     private val coursesRepository = DashboardCoursesRepository()
+    private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
+    private val surveyOutboxStore by lazy { DashboardSurveyOutboxStore(applicationContext) }
     private var hasAutoCompletedFirstStep = false
     private val audioPlayers = mutableListOf<ExoPlayer>()
     private val completedExamSteps = mutableSetOf<Int>()
@@ -102,6 +116,8 @@ class CourseWizardActivity : AppCompatActivity() {
         setContentView(R.layout.activity_course_wizard)
         markwon = Markwon.builder(this)
             .usePlugin(TablePlugin.create(this))
+            .usePlugin(HtmlPlugin.create())
+            .usePlugin(GlideImagesPlugin.create(this))
             .build()
         val (courseTitle, startIndex) = parseIntentData(savedInstanceState)
         if (steps.isEmpty()) {
@@ -110,6 +126,8 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         setupViews(courseTitle)
         lifecycleScope.launch {
+            flushPendingExamSubmissions()
+            flushPendingCourseProgress()
             currentIndex = resolveInitialStepIndex(startIndex)
             bindStep(
                 stepPositionView,
@@ -134,13 +152,12 @@ class CourseWizardActivity : AppCompatActivity() {
             completedExamSteps.clear()
             completedExamSteps.addAll(restored)
         }
-        @Suppress("UNCHECKED_CAST")
-        val stepPayload: ArrayList<DashboardCoursePageFragment.CourseItem.LessonStep>? =
-            IntentCompat.getSerializableExtra(
-                intent,
-                EXTRA_STEPS,
-                ArrayList::class.java
-            ) as? ArrayList<DashboardCoursePageFragment.CourseItem.LessonStep>
+        val rawSteps = IntentCompat.getSerializableExtra(
+            intent,
+            EXTRA_STEPS,
+            ArrayList::class.java
+        )
+        val stepPayload = rawSteps?.filterIsInstance<DashboardCoursePageFragment.CourseItem.LessonStep>()
         steps = stepPayload?.map { step ->
             StepDisplay(
                 title = step.title,
@@ -195,13 +212,19 @@ class CourseWizardActivity : AppCompatActivity() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return fallbackIndex
         val creds = credentials ?: return fallbackIndex
         val id = courseId?.takeIf { it.isNotBlank() } ?: return fallbackIndex
+        val pendingMaxStep = getPendingProgress(id).maxOrNull()
         val progressDocuments = coursesRepository.fetchCoursesProgressDocuments(
             normalizedBase,
             creds,
             listOf(id)
         ).getOrNull()
         val progressStep = progressDocuments?.get(id)?.stepNum
-        val resolvedIndex = progressStep?.minus(1) ?: fallbackIndex
+        val latestStep = maxOf(progressStep ?: 0, pendingMaxStep ?: 0)
+        val resolvedIndex = if (latestStep > 0) latestStep - 1 else fallbackIndex
+        Log.d(
+            courseLogTag,
+            "Resolved initial step index: $resolvedIndex (serverStep=$progressStep, pendingMax=$pendingMaxStep, fallback=$fallbackIndex)"
+        )
         return resolvedIndex.coerceIn(0, steps.lastIndex)
     }
     private fun maybeAutoCompleteFirstStep() {
@@ -222,13 +245,17 @@ class CourseWizardActivity : AppCompatActivity() {
         nextButton: View
     ) {
         val step = steps[currentIndex]
+        logStepMarkdownStatus(step)
         stepPositionView.text = getString(
             R.string.course_wizard_step_position,
             currentIndex + 1,
             steps.size
         )
         stepTitleView.text = step.title
-        markwon.setMarkdown(descriptionView, step.description.replace("\n", "  \n"))
+        markwon.setMarkdown(
+            descriptionView,
+            resolveOfflineMarkdownImages(step.description).replace("\n", "  \n")
+        )
         bindAttachments(
             step.resources,
             step.survey,
@@ -318,6 +345,11 @@ class CourseWizardActivity : AppCompatActivity() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
         val id = courseId?.takeIf { it.isNotBlank() } ?: return
+        if (!isDeviceOnline()) {
+            enqueuePendingProgress(id, targetStepNumber)
+            Log.d(courseLogTag, "Queued step progress (offline): course=$id step=$targetStepNumber")
+            return
+        }
         val existingDocuments = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
             .getOrNull()
         val existingDoc = existingDocuments?.get(id)
@@ -345,8 +377,121 @@ class CourseWizardActivity : AppCompatActivity() {
             createdDate = targetStepDoc?.createdDate ?: now,
             updatedDate = now
         )
-        coursesRepository.saveCourseProgress(normalizedBase, creds, document)
+        val saveResult = coursesRepository.saveCourseProgress(normalizedBase, creds, document)
+        if (saveResult.isFailure) {
+            enqueuePendingProgress(id, targetStepNumber)
+            Log.e(courseLogTag, "Failed to sync step progress, queued: course=$id step=$targetStepNumber")
+        } else {
+            Log.d(courseLogTag, "Synced step progress: course=$id step=$targetStepNumber")
+        }
     }
+
+    private suspend fun flushPendingCourseProgress() {
+        val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
+        val creds = credentials ?: return
+        val id = courseId?.takeIf { it.isNotBlank() } ?: return
+        if (!isDeviceOnline()) return
+        val pendingSteps = getPendingProgress(id)
+        if (pendingSteps.isEmpty()) return
+        Log.d(courseLogTag, "Flushing pending step progress for course=$id, steps=$pendingSteps")
+        pendingSteps.sorted().forEach { step ->
+            val existingDocuments = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
+                .getOrNull()
+            val existingDoc = existingDocuments?.get(id)
+            val existingStep = existingDoc?.stepNum ?: 0
+            if (existingStep >= step) {
+                removePendingProgress(id, step)
+                return@forEach
+            }
+            val now = System.currentTimeMillis()
+            val document = DashboardCoursesRepository.CourseProgressUpdateDocument(
+                id = existingDoc?.id,
+                rev = existingDoc?.rev,
+                userId = "org.couchdb.user:${creds.username}",
+                courseId = id,
+                stepNum = step,
+                passed = true,
+                createdOn = existingDoc?.createdOn
+                    ?: DashboardServerPreferences.getServerCode(applicationContext),
+                parentCode = existingDoc?.parentCode
+                    ?: DashboardServerPreferences.getServerParentCode(applicationContext),
+                createdDate = existingDoc?.createdDate ?: now,
+                updatedDate = now
+            )
+            val result = coursesRepository.saveCourseProgress(normalizedBase, creds, document)
+            if (result.isSuccess) {
+                removePendingProgress(id, step)
+                Log.d(courseLogTag, "Flushed pending step progress: course=$id step=$step")
+            } else {
+                Log.e(courseLogTag, "Failed flushing pending step progress: course=$id step=$step")
+            }
+        }
+    }
+
+    private suspend fun flushPendingExamSubmissions() {
+        val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
+        val creds = credentials ?: return
+        if (!isDeviceOnline()) return
+        val pendingEntries = surveyOutboxStore.getPendingForTeam(null)
+            .filter { it.submission.type.equals("exam", ignoreCase = true) }
+            .sortedBy { it.createdAt }
+        if (pendingEntries.isEmpty()) return
+        Log.d(courseLogTag, "Flushing pending exam submissions: count=${pendingEntries.size}")
+        pendingEntries.forEach { entry ->
+            val result = surveySubmissionRepository.submitSurvey(
+                normalizedBase,
+                creds,
+                null,
+                entry.submission
+            )
+            if (result.isSuccess) {
+                surveyOutboxStore.deleteEntry(entry.id)
+                Log.d(courseLogTag, "Flushed pending exam submission outboxId=${entry.id}")
+            } else {
+                Log.e(courseLogTag, "Failed to flush pending exam outboxId=${entry.id}")
+            }
+        }
+    }
+
+    private fun isDeviceOnline(): Boolean {
+        val manager = getSystemService(android.net.ConnectivityManager::class.java) ?: return false
+        val network = manager.activeNetwork ?: return false
+        val capabilities = manager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    private fun enqueuePendingProgress(courseId: String, stepNumber: Int) {
+        val updated = (getPendingProgress(courseId) + stepNumber).distinct().sorted()
+        val array = JSONArray()
+        updated.forEach { array.put(it) }
+        pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
+    }
+
+    private fun getPendingProgress(courseId: String): List<Int> {
+        val raw = pendingProgressPrefs.getString(progressKey(courseId), null) ?: return emptyList()
+        return runCatching {
+            val array = JSONArray(raw)
+            buildList {
+                for (index in 0 until array.length()) {
+                    val step = array.optInt(index)
+                    if (step > 0) add(step)
+                }
+            }
+        }.getOrDefault(emptyList())
+    }
+
+    private fun removePendingProgress(courseId: String, stepNumber: Int) {
+        val remaining = getPendingProgress(courseId).filterNot { it == stepNumber }
+        if (remaining.isEmpty()) {
+            pendingProgressPrefs.edit().remove(progressKey(courseId)).apply()
+            return
+        }
+        val array = JSONArray()
+        remaining.forEach { array.put(it) }
+        pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
+    }
+
+    private fun progressKey(courseId: String): String = "course_progress_$courseId"
     private fun bindAttachments(
         resources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
         survey: SurveyDocument?,
@@ -551,10 +696,10 @@ class CourseWizardActivity : AppCompatActivity() {
         player.playWhenReady = false
         audioPlayers.add(player)
     }
-    private fun buildAudioDataSourceFactory(authorizationHeader: String?): DefaultHttpDataSource.Factory {
-        val factory = DefaultHttpDataSource.Factory().setAllowCrossProtocolRedirects(true)
-        authorizationHeader?.let { factory.setDefaultRequestProperties(mapOf("Authorization" to it)) }
-        return factory
+    private fun buildAudioDataSourceFactory(authorizationHeader: String?): DataSource.Factory {
+        val httpFactory = DefaultHttpDataSource.Factory().setAllowCrossProtocolRedirects(true)
+        authorizationHeader?.let { httpFactory.setDefaultRequestProperties(mapOf("Authorization" to it)) }
+        return DefaultDataSource.Factory(this, httpFactory)
     }
     private fun releaseAudioPlayers() {
         audioPlayers.forEach { it.release() }
@@ -623,6 +768,16 @@ class CourseWizardActivity : AppCompatActivity() {
         startActivity(intent)
     }
     private fun buildResourceUrl(resource: DashboardCoursePageFragment.CourseItem.LessonResource): String? {
+        val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return null
+        val localFile = OfflineCourseStorage.findExistingResourceFile(
+            this,
+            safeCourseId,
+            resource.id,
+            resource.filename
+        )
+        if (localFile?.exists() == true) {
+            return localFile.toURI().toString()
+        }
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return null
         val parsed = Uri.parse(normalizedBase)
         val scheme = parsed.scheme ?: return null
@@ -638,9 +793,108 @@ class CourseWizardActivity : AppCompatActivity() {
             .toString()
     }
     private fun buildResourcePath(resource: DashboardCoursePageFragment.CourseItem.LessonResource): String? {
+        val safeCourseId = courseId?.takeIf { it.isNotBlank() }
+        if (safeCourseId != null) {
+            val localFile = OfflineCourseStorage.findExistingResourceFile(
+                this,
+                safeCourseId,
+                resource.id,
+                resource.filename
+            )
+            if (localFile?.exists() == true) {
+                return localFile.toURI().toString()
+            }
+        }
         val resourceId = resource.id.trim().takeIf { it.isNotEmpty() } ?: return null
         val filename = resource.filename.trim().takeIf { it.isNotEmpty() } ?: return null
         return "resources/$resourceId/$filename"
+    }
+    private fun resolveOfflineMarkdownImages(markdown: String): String {
+        val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return markdown
+        var resolved = markdown
+        val markdownPattern = Regex("""!\[([^\]]*)]\(([^)\s]+)(?:\s+"[^"]*")?\)""")
+        resolved = markdownPattern.replace(resolved) { match ->
+            val alt = match.groupValues[1]
+            val source = normalizeMarkdownImageSource(match.groupValues[2])
+            val local = OfflineCourseStorage.localMarkdownImageUri(this, safeCourseId, source)
+            val selected = local ?: resolveMarkdownSourceUrl(source) ?: source
+            "![$alt]($selected)"
+        }
+        val htmlPattern = Regex("""<img\b[^>]*>""", RegexOption.IGNORE_CASE)
+        val srcAttributePattern = Regex("""\bsrc\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+        val altAttributePattern = Regex("""\balt\s*=\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE)
+        resolved = htmlPattern.replace(resolved) { match ->
+            val imageTag = match.value
+            val source = normalizeMarkdownImageSource(
+                srcAttributePattern.find(imageTag)?.groupValues?.get(1).orEmpty()
+            )
+            if (source.isBlank()) {
+                return@replace imageTag
+            }
+            val alt = altAttributePattern.find(imageTag)?.groupValues?.get(1).orEmpty()
+            val local = OfflineCourseStorage.localMarkdownImageUri(this, safeCourseId, source)
+            val selected = local ?: resolveMarkdownSourceUrl(source) ?: source
+            "![$alt]($selected)"
+        }
+        return resolved
+    }
+
+    private fun resolveMarkdownSourceUrl(source: String): String? {
+        val trimmed = source.trim()
+        if (trimmed.isBlank()) return null
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
+        if (trimmed.startsWith("file://")) return trimmed
+        val normalizedBase = baseUrl?.trim()?.trimEnd('/').orEmpty()
+        if (normalizedBase.isBlank()) return null
+        val normalizedPath = trimmed.trimStart('/')
+        val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
+        return "$normalizedBase/$finalPath"
+    }
+    private fun normalizeMarkdownImageSource(rawSource: String): String {
+        var value = rawSource.trim()
+        if (value.startsWith("<") && value.endsWith(">")) {
+            value = value.removePrefix("<").removeSuffix(">")
+        }
+        if (value.contains(" ")) {
+            value = value.substringBefore(" ")
+        }
+        return value.trim()
+    }
+    private fun logStepMarkdownStatus(step: StepDisplay) {
+        logLongMessage("Step description markdown", step.description)
+        val safeCourseId = courseId?.takeIf { it.isNotBlank() }
+        val markdownPattern = Regex("""!\[[^\]]*]\(([^)]+)\)""")
+        val htmlPattern = Regex("""<img[^>]+src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+        val sources = buildList {
+            markdownPattern.findAll(step.description).forEach { add(it.groupValues[1]) }
+            htmlPattern.findAll(step.description).forEach { add(it.groupValues[1]) }
+        }.map { normalizeMarkdownImageSource(it) }
+            .distinct()
+        if (sources.isEmpty()) {
+            Log.d(courseLogTag, "No markdown images found in this step.")
+            return
+        }
+        sources.forEach { source ->
+            val hasLocal = if (safeCourseId == null) {
+                false
+            } else {
+                OfflineCourseStorage.localMarkdownImageUri(this, safeCourseId, source) != null
+            }
+            Log.d(
+                courseLogTag,
+                "Markdown image source: $source | downloaded_local=$hasLocal"
+            )
+        }
+    }
+    private fun logLongMessage(prefix: String, content: String) {
+        val chunkSize = 3500
+        if (content.length <= chunkSize) {
+            Log.d(courseLogTag, "$prefix: $content")
+            return
+        }
+        content.chunked(chunkSize).forEachIndexed { index, chunk ->
+            Log.d(courseLogTag, "$prefix [part ${index + 1}]: $chunk")
+        }
     }
     data class StepDisplay(
         val title: String,
@@ -650,6 +904,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val exam: SurveyDocument? = null
     )
     companion object {
+        private const val PREF_PENDING_COURSE_PROGRESS = "pref_pending_course_progress"
         private const val EXTRA_TITLE = "extra_title"
         private const val EXTRA_COURSE_ID = "extra_course_id"
         private const val EXTRA_STEPS = "extra_steps"

@@ -95,6 +95,8 @@ dependencies {
     implementation(libs.circleimageview)
     implementation(libs.core)
     implementation(libs.ext.tables)
+    implementation(libs.markwon.html)
+    implementation(libs.markwon.image.glide)
     implementation(libs.glide)
     implementation(libs.photoview)
     implementation(libs.ucrop)

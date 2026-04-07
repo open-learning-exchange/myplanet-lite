@@ -15,6 +15,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.fragment.app.Fragment
+import androidx.appcompat.app.AlertDialog
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -24,8 +25,12 @@ import com.google.android.material.chip.ChipGroup
 import com.google.android.material.color.MaterialColors
 import kotlin.random.Random
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.Credentials
+import okhttp3.OkHttpClient
+import okhttp3.Request
 import org.ole.planet.myplanet.lite.CourseWizardActivity
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
@@ -60,6 +65,8 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private var courseCategories: List<CourseCategory> = emptyList()
     private var selectedCategoryId: String? = null
     private val tagCourseIdsByTag = mutableMapOf<String, Set<String>>()
+    private val httpClient = OkHttpClient()
+    private val activeDownloads = mutableMapOf<String, Job>()
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -77,6 +84,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         )
         adapter = CourseAdapter(
             showProgress = tabPosition == 0,
+            showDownloadButton = tabPosition == 0,
             imageLoaderProvider = { courseImageLoader },
             ensureImageLoader = { ensureCourseImageLoader() },
             categoriesProvider = { courseCategories }
@@ -87,6 +95,16 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 adapter.updateTagFilter(null)
             } else {
                 loadTagLinks(categoryId)
+            }
+        }
+        adapter.onCourseDownloadClick = { course ->
+            if (tabPosition == 0) {
+                downloadCourse(course)
+            }
+        }
+        adapter.onCourseDeleteClick = { course ->
+            if (tabPosition == 0) {
+                confirmDeleteDownloadedCourse(course)
             }
         }
         val spanCount = 2
@@ -271,6 +289,15 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         viewLifecycleOwner.lifecycleScope.launch {
             val base = baseUrl
             val creds = credentials
+            val isOnline = isDeviceOnline()
+            if (!isOnline) {
+                val offlineCourses = OfflineCourseStorage.loadDownloadedCourses(requireContext())
+                adapter.submitCourses(offlineCourses)
+                adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
+                refreshLayout.isRefreshing = false
+                showLoadingOverlay(false)
+                return@launch
+            }
             if (base.isNullOrBlank() || creds == null) {
                 handleMissingCredentials(adapter, refreshLayout)
                 return@launch
@@ -319,6 +346,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 .distinctBy { it.id }
                 .map { toCourseItem(it, courseProgress[it.id], logProgress = true) }
             adapter.submitCourses(mapped)
+            adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
             refreshLayout.isRefreshing = false
             showLoadingOverlay(false)
         }
@@ -593,6 +621,267 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         CourseWizardActivity.start(requireContext(), course.id, course.title, course.steps, startStep)
     }
 
+    private fun downloadCourse(course: CourseItem) {
+        if (OfflineCourseStorage.isCourseDownloaded(requireContext(), course.id)) {
+            adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
+            return
+        }
+        if (activeDownloads.containsKey(course.id)) return
+
+        val base = baseUrl
+        val creds = credentials
+        if (base.isNullOrBlank() || creds == null) {
+            Toast.makeText(requireContext(), getString(R.string.dashboard_courses_loading_error), Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+        val resources = course.steps.flatMap { it.resources }
+            .distinctBy { "${it.id}/${it.filename}" }
+        val markdownImageSources = extractMarkdownImageSources(course)
+
+        val job = viewLifecycleOwner.lifecycleScope.launch {
+            val totalInventoryItems = resources.size + markdownImageSources.size
+            adapter.updateDownloadProgress(course.id, 0, totalInventoryItems)
+            val estimatedSize = estimateResourcesSize(base, creds, resources) +
+                estimateMarkdownImagesSize(base, creds, markdownImageSources)
+            val available = OfflineCourseStorage.availableStorageBytes(requireContext())
+            val required = estimatedSize + MIN_DOWNLOAD_BUFFER_BYTES
+            if (available <= required) {
+                adapter.updateDownloadProgress(course.id, null, null)
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.dashboard_course_insufficient_storage),
+                    Toast.LENGTH_SHORT
+                ).show()
+                activeDownloads.remove(course.id)
+                return@launch
+            }
+
+            val result = withContext(Dispatchers.IO) {
+                downloadCourseResources(
+                    base,
+                    creds,
+                    course,
+                    resources,
+                    markdownImageSources
+                ) { percent ->
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        adapter.updateDownloadProgress(course.id, percent.first, percent.second)
+                    }
+                }
+            }
+            if (result) {
+                OfflineCourseStorage.saveCourseManifest(requireContext(), course)
+                adapter.updateDownloadProgress(course.id, null, null)
+                adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
+            } else {
+                adapter.updateDownloadProgress(course.id, null, null)
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.dashboard_courses_loading_error),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+            activeDownloads.remove(course.id)
+        }
+        activeDownloads[course.id] = job
+    }
+
+    private fun confirmDeleteDownloadedCourse(course: CourseItem) {
+        AlertDialog.Builder(requireContext())
+            .setMessage(getString(R.string.dashboard_course_delete_downloaded_confirm))
+            .setNegativeButton(android.R.string.cancel, null)
+            .setPositiveButton(R.string.dashboard_post_action_delete) { _, _ ->
+                val deleted = OfflineCourseStorage.deleteCourse(requireContext(), course.id)
+                if (deleted) {
+                    adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
+                    if (!isDeviceOnline() && tabPosition == 0) {
+                        refreshUserCourses(adapter, refreshLayout)
+                    }
+                } else {
+                    Toast.makeText(
+                        requireContext(),
+                        getString(R.string.dashboard_courses_loading_error),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            }
+            .show()
+    }
+
+    private fun isDeviceOnline(): Boolean {
+        val manager = requireContext().getSystemService(android.net.ConnectivityManager::class.java) ?: return false
+        val network = manager.activeNetwork ?: return false
+        val capabilities = manager.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    private suspend fun estimateResourcesSize(
+        base: String,
+        creds: StoredCredentials,
+        resources: List<CourseItem.LessonResource>
+    ): Long = withContext(Dispatchers.IO) {
+        var total = 0L
+        resources.forEach { resource ->
+            val url = buildServerResourceUrl(base, resource) ?: return@forEach
+            val request = Request.Builder()
+                .url(url)
+                .head()
+                .header("Authorization", Credentials.basic(creds.username, creds.password))
+                .build()
+            runCatching {
+                httpClient.newCall(request).execute().use { response ->
+                    val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
+                    total += size.coerceAtLeast(0L)
+                }
+            }
+        }
+        total
+    }
+
+    private fun downloadCourseResources(
+        base: String,
+        creds: StoredCredentials,
+        course: CourseItem,
+        resources: List<CourseItem.LessonResource>,
+        markdownImageSources: List<String>,
+        onProgress: (Pair<Int, Int>) -> Unit
+    ): Boolean {
+        val totalItems = resources.size + markdownImageSources.size
+        if (totalItems == 0) {
+            onProgress(0 to 0)
+            return true
+        }
+        var downloaded = 0
+        val authHeader = Credentials.basic(creds.username, creds.password)
+        resources.forEach { resource ->
+            val url = buildServerResourceUrl(base, resource) ?: return false
+            val target = OfflineCourseStorage.resourceFile(requireContext(), course.id, resource.id, resource.filename)
+            target.parentFile?.mkdirs()
+            val request = Request.Builder()
+                .url(url)
+                .header("Authorization", authHeader)
+                .build()
+            val success = runCatching {
+                httpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use false
+                    val body = response.body
+                    body.byteStream().use { input ->
+                        target.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    true
+                }
+            }.getOrDefault(false)
+            if (!success) return false
+            downloaded += 1
+            onProgress(downloaded to totalItems)
+        }
+        markdownImageSources.forEach { source ->
+            val resolvedUrl = resolveMarkdownSourceUrl(base, source) ?: return@forEach
+            val target = OfflineCourseStorage.markdownImageFile(requireContext(), course.id, source)
+            target.parentFile?.mkdirs()
+            val request = Request.Builder()
+                .url(resolvedUrl)
+                .header("Authorization", authHeader)
+                .build()
+            runCatching {
+                httpClient.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@use false
+                    response.body.byteStream().use { input ->
+                        target.outputStream().use { output ->
+                            input.copyTo(output)
+                        }
+                    }
+                    true
+                }
+            }.getOrDefault(false)
+            downloaded += 1
+            onProgress(downloaded to totalItems)
+        }
+        return true
+    }
+
+    private suspend fun estimateMarkdownImagesSize(
+        base: String,
+        creds: StoredCredentials,
+        sources: List<String>
+    ): Long = withContext(Dispatchers.IO) {
+        var total = 0L
+        val authHeader = Credentials.basic(creds.username, creds.password)
+        sources.forEach { source ->
+            val url = resolveMarkdownSourceUrl(base, source) ?: return@forEach
+            val request = Request.Builder()
+                .url(url)
+                .head()
+                .header("Authorization", authHeader)
+                .build()
+            runCatching {
+                httpClient.newCall(request).execute().use { response ->
+                    val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
+                    total += size.coerceAtLeast(0L)
+                }
+            }
+        }
+        total
+    }
+
+    private fun extractMarkdownImageSources(course: CourseItem): List<String> {
+        val markdownPattern = Regex("""!\[[^\]]*]\(([^)]+)\)""")
+        val htmlPattern = Regex("""<img[^>]+src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+        fun extractFromText(text: String): List<String> {
+            val fromMarkdown = markdownPattern.findAll(text)
+                .map { normalizeMarkdownImageSource(it.groupValues[1]) }
+                .toList()
+            val fromHtml = htmlPattern.findAll(text)
+                .map { normalizeMarkdownImageSource(it.groupValues[1]) }
+                .toList()
+            return (fromMarkdown + fromHtml).filter { it.isNotBlank() }
+        }
+        val fromCourseDescription = extractFromText(course.description)
+        val fromSteps = course.steps.flatMap { step -> extractFromText(step.description) }
+        return (fromCourseDescription + fromSteps).distinct()
+    }
+
+    private fun normalizeMarkdownImageSource(rawSource: String): String {
+        var value = rawSource.trim()
+        if (value.startsWith("<") && value.endsWith(">")) {
+            value = value.removePrefix("<").removeSuffix(">")
+        }
+        if (value.contains(" ")) {
+            value = value.substringBefore(" ")
+        }
+        return value.trim()
+    }
+
+    private fun resolveMarkdownSourceUrl(base: String, source: String): String? {
+        val trimmed = source.trim()
+        if (trimmed.isBlank()) return null
+        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
+        val normalizedBase = base.trim().trimEnd('/')
+        if (normalizedBase.isBlank()) return null
+        val normalizedPath = trimmed.trimStart('/')
+        val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
+        return "$normalizedBase/$finalPath"
+    }
+
+    private fun buildServerResourceUrl(base: String, resource: CourseItem.LessonResource): String? {
+        val normalizedBase = base.trim().trimEnd('/').takeIf { it.isNotEmpty() } ?: return null
+        val parsed = android.net.Uri.parse(normalizedBase)
+        val scheme = parsed.scheme ?: return null
+        val authority = parsed.encodedAuthority ?: return null
+        return parsed.buildUpon()
+            .scheme(scheme)
+            .encodedAuthority(authority)
+            .appendPath("db")
+            .appendPath("resources")
+            .appendPath(resource.id)
+            .appendPath(resource.filename)
+            .build()
+            .toString()
+    }
+
     private suspend fun ensureUserCourseIds(): List<String> {
         if (myCourseIds.isNotEmpty() && !needsMyCourseIdsRefresh) return myCourseIds
 
@@ -736,6 +1025,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
 
     private class CourseAdapter(
         private val showProgress: Boolean,
+        private val showDownloadButton: Boolean,
         private val imageLoaderProvider: () -> DashboardPostImageLoader?,
         private val ensureImageLoader: () -> Unit,
         private val categoriesProvider: () -> List<CourseCategory>
@@ -744,10 +1034,15 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
 
         private val items = mutableListOf<CourseItem>()
         private val displayedItems = mutableListOf<CourseItem>()
+        private val downloadedCourseIds = mutableSetOf<String>()
+        private data class DownloadProgress(val completed: Int, val total: Int)
+        private val downloadProgressByCourse = mutableMapOf<String, DownloadProgress>()
         private var searchQuery: String = ""
         private var selectedCategory = 0
         private var activeTagCourseIds: Set<String>? = null
         var onCourseClick: ((CourseItem) -> Unit)? = null
+        var onCourseDownloadClick: ((CourseItem) -> Unit)? = null
+        var onCourseDeleteClick: ((CourseItem) -> Unit)? = null
         var onCategorySelected: ((String?) -> Unit)? = null
 
         override fun getItemViewType(position: Int): Int {
@@ -791,6 +1086,27 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         fun updateTagFilter(courseIds: Set<String>?) {
             activeTagCourseIds = courseIds
             applyFilter()
+        }
+
+        fun updateDownloadedCourses(courseIds: Set<String>) {
+            downloadedCourseIds.clear()
+            downloadedCourseIds.addAll(courseIds)
+            notifyItemRangeChanged(1, displayedItems.size)
+        }
+
+        fun updateDownloadProgress(courseId: String, completed: Int?, total: Int?) {
+            if (completed == null || total == null || total <= 0) {
+                downloadProgressByCourse.remove(courseId)
+            } else {
+                downloadProgressByCourse[courseId] = DownloadProgress(
+                    completed = completed.coerceAtLeast(0),
+                    total = total.coerceAtLeast(1)
+                )
+            }
+            val position = displayedItems.indexOfFirst { it.id == courseId }
+            if (position >= 0) {
+                notifyItemChanged(position + 1)
+            }
         }
 
         fun submitCourses(newItems: List<CourseItem>) {
@@ -945,6 +1261,14 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             private val progressView: TextView = itemView.findViewById(R.id.dashboardCourseProgress)
             private val progressContainer: View =
                 itemView.findViewById(R.id.dashboardCourseProgressContainer)
+            private val downloadButton: com.google.android.material.floatingactionbutton.FloatingActionButton =
+                itemView.findViewById(R.id.dashboardCourseDownloadButton)
+            private val downloadProgressContainer: View =
+                itemView.findViewById(R.id.dashboardCourseDownloadProgressContainer)
+            private val downloadProgressLabel: TextView =
+                itemView.findViewById(R.id.dashboardCourseDownloadProgressLabel)
+            private val downloadProgressIndicator: com.google.android.material.progressindicator.LinearProgressIndicator =
+                itemView.findViewById(R.id.dashboardCourseDownloadProgressIndicator)
             private val progressIndicator: com.google.android.material.progressindicator.LinearProgressIndicator =
                 itemView.findViewById(R.id.dashboardCourseProgressIndicator)
             private val defaultPadding = intArrayOf(
@@ -973,6 +1297,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 bindImage(course)
                 bindText(course)
                 bindProgress(course)
+                bindDownloadState(course)
                 bindClickListeners(course)
             }
 
@@ -1029,6 +1354,35 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 }
             }
 
+            private fun bindDownloadState(course: CourseItem) {
+                downloadButton.visibility = if (showDownloadButton) View.VISIBLE else View.GONE
+                val isDownloaded = downloadedCourseIds.contains(course.id)
+                val progress = downloadProgressByCourse[course.id]
+                downloadButton.setImageResource(
+                    if (isDownloaded) R.drawable.ic_dashboard_delete_24 else R.drawable.ic_survey_download_24
+                )
+                downloadButton.contentDescription = itemView.context.getString(
+                    if (isDownloaded) R.string.dashboard_post_action_delete else R.string.dashboard_survey_download
+                )
+                downloadButton.isEnabled = progress == null
+                downloadButton.alpha = if (downloadButton.isEnabled) 1f else 0.5f
+                downloadButton.setOnClickListener {
+                    if (isDownloaded) {
+                        onCourseDeleteClick?.invoke(course)
+                    } else {
+                        onCourseDownloadClick?.invoke(course)
+                    }
+                }
+                if (progress != null && !isDownloaded) {
+                    downloadProgressContainer.visibility = View.VISIBLE
+                    val percent = ((progress.completed * 100f) / progress.total).toInt().coerceIn(0, 100)
+                    downloadProgressIndicator.progress = percent
+                    downloadProgressLabel.text = "${progress.completed}/${progress.total} ($percent%)"
+                } else {
+                    downloadProgressContainer.visibility = View.GONE
+                }
+            }
+
             private fun bindClickListeners(course: CourseItem) {
                 itemView.setOnClickListener {
                     onCourseClick?.invoke(course)
@@ -1047,6 +1401,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         private const val RESULT_JOINED_COURSE = "dashboard_course_joined"
         private const val KEY_JOINED_COURSE_ID = "joined_course_id"
         private const val KEY_LEFT_COURSE = "left_course"
+        private const val MIN_DOWNLOAD_BUFFER_BYTES = 10L * 1024L * 1024L
 
         private val pendingRefreshTabs = mutableSetOf<Int>()
 

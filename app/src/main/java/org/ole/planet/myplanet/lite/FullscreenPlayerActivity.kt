@@ -10,14 +10,21 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import android.util.Log
 import android.widget.ImageButton
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.PlaybackException
+import androidx.media3.common.Player
+import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.DefaultRenderersFactory
+import androidx.media3.exoplayer.mediacodec.MediaCodecRenderer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import okhttp3.Credentials
@@ -27,6 +34,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class FullscreenPlayerActivity : AppCompatActivity() {
 
+    private val logTag = "FullscreenPlayer"
     private var player: ExoPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,11 +60,24 @@ class FullscreenPlayerActivity : AppCompatActivity() {
             showSystemBars()
             finish()
         }
-        player = ExoPlayer.Builder(this)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(buildHttpDataSourceFactory(authHeader)))
+        val renderersFactory = DefaultRenderersFactory(this)
+            .setEnableDecoderFallback(true)
+        player = ExoPlayer.Builder(this, renderersFactory)
+            .setMediaSourceFactory(DefaultMediaSourceFactory(buildDataSourceFactory(authHeader)))
             .build()
             .also { exo ->
                 playerView.player = exo
+                exo.addListener(object : Player.Listener {
+                    override fun onPlayerError(error: PlaybackException) {
+                        Log.e(logTag, "Playback error", error)
+                        val messageRes = if (isDecoderCapabilityError(error)) {
+                            R.string.fullscreen_player_unsupported_video
+                        } else {
+                            R.string.course_wizard_play_error
+                        }
+                        Toast.makeText(this@FullscreenPlayerActivity, getString(messageRes), Toast.LENGTH_SHORT).show()
+                    }
+                })
                 val items = mediaUrls.map { MediaItem.fromUri(it) }
                 exo.setMediaItems(items, startIndex, startPosition)
                 exo.prepare()
@@ -81,6 +102,10 @@ class FullscreenPlayerActivity : AppCompatActivity() {
         return factory
     }
 
+    private fun buildDataSourceFactory(authorizationHeader: String?): DefaultDataSource.Factory {
+        return DefaultDataSource.Factory(this, buildHttpDataSourceFactory(authorizationHeader))
+    }
+
     private fun resolveAuthHeader(): String? {
         val credentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
         val baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
@@ -89,6 +114,20 @@ class FullscreenPlayerActivity : AppCompatActivity() {
         } else {
             null
         }
+    }
+
+    private fun isDecoderCapabilityError(error: PlaybackException): Boolean {
+        if (error.errorCode == PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES) {
+            return true
+        }
+        var cause: Throwable? = error.cause
+        while (cause != null) {
+            if (cause is MediaCodecRenderer.DecoderInitializationException) {
+                return true
+            }
+            cause = cause.cause
+        }
+        return false
     }
 
     override fun finish() {

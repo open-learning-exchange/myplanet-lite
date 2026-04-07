@@ -89,7 +89,7 @@
     <string name="signup_connection_error_input">No se pudo conectar al servidor.</string>
     <string name="signup_username_checking">Verificando la disponibilidad del usuario…</string>
     <string name="signup_username_error_taken">Este usuario ya está en uso.</string>
-    <string name="dashboard_offline_mode_only_surveys">Modo sin conexión: solo las encuestas están disponibles.</string>
+    <string name="dashboard_offline_mode_only_surveys">Modo sin conexión: solo las encuestas y los cursos descargados están disponibles.</string>
     <string name="dashboard_online_mode_restored">Conexión restablecida: todos los paneles están habilitados.</string>
     <string name="dashboard_survey_download">Descargar</string>
     <string name="dashboard_survey_downloaded">Descargada</string>
@@ -565,6 +565,7 @@ Si no está de acuerdo, debe seleccionar "Cancelar" y dejar de usar la aplicaci�
     <string name="course_wizard_attachment_audio">Audio</string>
     <string name="course_wizard_attachment_pdf">PDF</string>
     <string name="course_wizard_play_error">No se pudo abrir el recurso</string>
+    <string name="fullscreen_player_unsupported_video">Este formato o resolución de video no es compatible con este dispositivo.</string>
     <string name="course_wizard_open_image">Abrir imagen</string>
     <string name="course_wizard_open_pdf">Abrir PDF</string>
     <string name="course_wizard_pdf_page_counter">Página %1$d/%2$d</string>
@@ -573,4 +574,6 @@ Si no está de acuerdo, debe seleccionar "Cancelar" y dejar de usar la aplicaci�
     <string name="create_voice_image_options_title">Opciones de imagen</string>
     <string name="create_voice_image_option_view">Ver imagen</string>
     <string name="create_voice_image_option_delete">Eliminar imagen</string>
+    <string name="dashboard_course_insufficient_storage">Espacio insuficiente para descargar este curso.</string>
+    <string name="dashboard_course_delete_downloaded_confirm">¿Eliminar el curso descargado y todos sus archivos sin conexión?</string>
 </resources>
