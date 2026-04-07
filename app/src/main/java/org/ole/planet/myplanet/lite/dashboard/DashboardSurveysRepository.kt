@@ -169,11 +169,78 @@ class DashboardSurveysRepository {
         }
     }
 
+
+    suspend fun fetchSurveyCompletionCountsBatched(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamId: String,
+        surveyIds: List<String>,
+    ): Result<Map<String, Int>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val normalizedBase = baseUrl.trim().trimEnd('/')
+                if (normalizedBase.isEmpty()) {
+                    throw IOException("Missing server base URL")
+                }
+                if (teamId.isBlank() || surveyIds.isEmpty()) {
+                    return@runCatching emptyMap<String, Int>()
+                }
+
+                val counts = mutableMapOf<String, Int>()
+
+                // Chunk IDs to avoid huge payloads
+                surveyIds.chunked(50).forEach { chunk ->
+                    val parentMatches = chunk.flatMap { surveyId ->
+                        listOf(
+                            mapOf("parentId" to surveyId),
+                            mapOf("parentId" to mapOf("\$regex" to "^${surveyId}@"))
+                        )
+                    }
+
+                    val selector = SurveyCompletionsSelector(
+                        type = "survey",
+                        status = "complete",
+                        teamId = teamId,
+                        parentMatches = parentMatches,
+                    )
+                    val payload = completionsRequestAdapter.toJson(
+                        SurveyCompletionsRequest(
+                            selector = selector,
+                            limit = 50000, // Increase limit for batched requests
+                        ),
+                    )
+                    val requestBuilder = Request.Builder()
+                        .url("$normalizedBase/db/submissions/_find")
+                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                    credentials?.let { creds ->
+                        requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
+                    }
+                    sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                        requestBuilder.addHeader("Cookie", cookie)
+                    }
+                    client.newCall(requestBuilder.build()).execute().use { response ->
+                        if (!response.isSuccessful) {
+                            throw IOException("Unexpected response ${response.code}")
+                        }
+                        val body = response.body.string()
+                        val docs = completionsResponseAdapter.fromJson(body)?.docs ?: emptyList()
+                        docs.forEach { doc ->
+                            val parentId = doc["parentId"] as? String ?: return@forEach
+                            val baseId = parentId.substringBefore("@")
+                            counts[baseId] = counts.getOrDefault(baseId, 0) + 1
+                        }
+                    }
+                }
+                counts
+            }
+        }
+    }
     @JsonClass(generateAdapter = true)
     data class SurveyCompletionsRequest(
         @param:Json(name = "selector") val selector: SurveyCompletionsSelector,
         @param:Json(name = "limit") val limit: Int = 5000,
-        @param:Json(name = "fields") val fields: List<String> = listOf("_id"),
+        @param:Json(name = "fields") val fields: List<String> = listOf("_id", "parentId"),
     )
 
     @JsonClass(generateAdapter = true)

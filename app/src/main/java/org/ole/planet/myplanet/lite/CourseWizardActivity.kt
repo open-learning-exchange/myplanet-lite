@@ -4,6 +4,7 @@
  * Creation date: 2026-01-04
  */
 package org.ole.planet.myplanet.lite
+
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -40,6 +41,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : AppCompatActivity() {
     private lateinit var markwon: Markwon
@@ -132,6 +134,7 @@ class CourseWizardActivity : AppCompatActivity() {
             completedExamSteps.clear()
             completedExamSteps.addAll(restored)
         }
+        @Suppress("UNCHECKED_CAST")
         val stepPayload: ArrayList<DashboardCoursePageFragment.CourseItem.LessonStep>? =
             IntentCompat.getSerializableExtra(
                 intent,
