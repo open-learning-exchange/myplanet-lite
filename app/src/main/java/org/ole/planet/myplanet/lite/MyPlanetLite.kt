@@ -7,8 +7,6 @@
 
 package org.ole.planet.myplanet.lite
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -32,8 +30,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import androidx.core.view.ViewCompat
@@ -45,6 +41,8 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.blongho.country_data.World
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -75,8 +73,9 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
-import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 import org.ole.planet.myplanet.lite.util.IntentUtils
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
 class MyPlanetLite : AppCompatActivity() {
 

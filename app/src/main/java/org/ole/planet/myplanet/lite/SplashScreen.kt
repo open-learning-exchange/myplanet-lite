@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
@@ -38,6 +36,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SplashScreen : AppCompatActivity() {
 

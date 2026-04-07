@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
@@ -70,6 +68,7 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 

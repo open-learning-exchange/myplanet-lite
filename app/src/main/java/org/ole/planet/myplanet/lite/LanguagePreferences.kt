@@ -6,12 +6,11 @@
 
 package org.ole.planet.myplanet.lite
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import java.util.Locale
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 object LanguagePreferences {
 

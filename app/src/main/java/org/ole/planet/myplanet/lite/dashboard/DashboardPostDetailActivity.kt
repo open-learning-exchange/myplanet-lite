@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
@@ -83,6 +81,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")

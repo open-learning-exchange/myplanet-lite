@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.graphics.Rect
@@ -58,6 +56,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
 class SignupActivity : AppCompatActivity() {
