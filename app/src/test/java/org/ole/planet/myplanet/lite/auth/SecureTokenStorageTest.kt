@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.lite.auth
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import androidx.test.core.app.ApplicationProvider
 import io.mockk.every
 import io.mockk.mockk
@@ -32,17 +34,17 @@ class SecureTokenStorageTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         fakeSharedPreferences = context.getSharedPreferences("fake_prefs", Context.MODE_PRIVATE)
-        mockkConstructor(androidx.security.crypto.MasterKey.Builder::class)
-        every { anyConstructed<androidx.security.crypto.MasterKey.Builder>().setKeyScheme(any()) } answers { callOriginal() }
-        every { anyConstructed<androidx.security.crypto.MasterKey.Builder>().build() } returns mockk<androidx.security.crypto.MasterKey>(relaxed = true)
-        mockkStatic(androidx.security.crypto.EncryptedSharedPreferences::class)
+        mockkConstructor(MasterKey.Builder::class)
+        every { anyConstructed<MasterKey.Builder>().setKeyScheme(any()) } answers { callOriginal() }
+        every { anyConstructed<MasterKey.Builder>().build() } returns mockk<MasterKey>(relaxed = true)
+        mockkStatic(EncryptedSharedPreferences::class)
         every {
-            androidx.security.crypto.EncryptedSharedPreferences.create(
+            EncryptedSharedPreferences.create(
                 any<Context>(),
                 any<String>(),
-                any<androidx.security.crypto.MasterKey>(),
-                any<androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme>(),
-                any<androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme>()
+                any<MasterKey>(),
+                any<EncryptedSharedPreferences.PrefKeyEncryptionScheme>(),
+                any<EncryptedSharedPreferences.PrefValueEncryptionScheme>()
             )
         } returns fakeSharedPreferences
         secureTokenStorage = SecureTokenStorage(context, Dispatchers.Unconfined)
@@ -98,14 +100,13 @@ class SecureTokenStorageTest {
     fun `verify EncryptedSharedPreferences parameters`() = runTest {
         // Trigger initialization
         secureTokenStorage.getToken()
-
         verify {
-            androidx.security.crypto.EncryptedSharedPreferences.create(
+            EncryptedSharedPreferences.create(
                 any<Context>(),
                 "auth_secure_prefs",
-                any<androidx.security.crypto.MasterKey>(),
-                androidx.security.crypto.EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                androidx.security.crypto.EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+                any<MasterKey>(),
+                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
             )
         }
     }
