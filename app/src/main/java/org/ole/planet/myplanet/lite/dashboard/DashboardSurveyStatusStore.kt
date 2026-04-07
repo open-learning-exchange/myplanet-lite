@@ -6,9 +6,8 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.content.Context
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class DashboardSurveyStatusStore(
     context: Context,

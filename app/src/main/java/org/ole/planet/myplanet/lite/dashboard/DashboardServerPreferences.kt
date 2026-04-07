@@ -6,9 +6,8 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.content.Context
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 object DashboardServerPreferences {
     private const val PREFS_NAME = "server_preferences"
