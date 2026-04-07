@@ -56,6 +56,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
 class SignupActivity : AppCompatActivity() {
@@ -159,7 +160,7 @@ class SignupActivity : AppCompatActivity() {
     private var serverParentCode: String? = null
     private var serverCode: String? = null
     private val serverPreferences by lazy {
-        applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
 

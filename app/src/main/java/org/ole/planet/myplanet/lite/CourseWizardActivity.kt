@@ -28,7 +28,6 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
-import com.google.android.material.appbar.MaterialToolbar
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 import java.util.ArrayList
@@ -134,6 +133,7 @@ class CourseWizardActivity : AppCompatActivity() {
             completedExamSteps.clear()
             completedExamSteps.addAll(restored)
         }
+        @Suppress("UNCHECKED_CAST")
         val stepPayload: ArrayList<DashboardCoursePageFragment.CourseItem.LessonStep>? =
             IntentCompat.getSerializableExtra(
                 intent,

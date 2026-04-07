@@ -81,6 +81,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
@@ -1288,7 +1289,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
     }
 
     private suspend fun buildReplyImageResourceContext(credentials: StoredCredentials): VoiceImageResourceContext {
-        val preferences = applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
         val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)?.takeIf { it.isNotBlank() }
         val customDeviceName = preferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)?.takeIf { it.isNotBlank() }
         val storedServerCode = preferences.getString(KEY_SERVER_CODE, null)?.takeIf { it.isNotBlank() }

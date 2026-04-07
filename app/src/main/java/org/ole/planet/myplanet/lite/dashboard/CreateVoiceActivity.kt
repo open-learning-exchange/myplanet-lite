@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.app.Activity
-import android.content.Context.MODE_PRIVATE
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -70,6 +69,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class CreateVoiceActivity : AppCompatActivity() {
 
@@ -1436,7 +1436,7 @@ class CreateVoiceActivity : AppCompatActivity() {
     }
 
     private suspend fun buildImageResourceContext(credentials: StoredCredentials): VoiceImageResourceContext {
-        val preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
         val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)?.takeIf { it.isNotBlank() }
         val customDeviceName = preferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)?.takeIf { it.isNotBlank() }
         val storedServerCode = preferences.getString(KEY_SERVER_CODE, null)?.takeIf { it.isNotBlank() }
@@ -1526,7 +1526,7 @@ class CreateVoiceActivity : AppCompatActivity() {
     }
 
     private fun resolvePostingCodes(profile: UserProfile?): ProfileCodes? {
-        val preferences = applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
         val storedParentCode = preferences.getString(KEY_SERVER_PARENT_CODE, null)?.takeIf { it.isNotBlank() }
         val storedServerCode = preferences.getString(KEY_SERVER_CODE, null)?.takeIf { it.isNotBlank() }
         val parsedCodes = parseCodesFromProfile(profile?.rawDocument)

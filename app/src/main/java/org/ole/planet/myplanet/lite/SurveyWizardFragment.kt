@@ -68,6 +68,7 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
@@ -814,7 +815,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     }
 
     private fun resolveCustomDeviceName(): String? {
-        val prefs = requireContext().applicationContext.getSharedPreferences(PREFS_NAME, 0)
+        val prefs = SecurePreferencesProvider.getServerPreferences(requireContext().applicationContext)
         return prefs.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)?.trim()?.takeIf { it.isNotBlank() }
     }
 
