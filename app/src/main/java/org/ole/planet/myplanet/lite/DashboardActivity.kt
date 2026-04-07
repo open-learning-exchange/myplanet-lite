@@ -51,6 +51,7 @@ import org.ole.planet.myplanet.lite.model.LanguageOption
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class DashboardActivity : AppCompatActivity() {
 
@@ -73,7 +74,7 @@ class DashboardActivity : AppCompatActivity() {
     private var currentSection = DashboardSection.HOME
     private val connectivityManager by lazy { getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager }
     private val serverPreferences by lazy {
-        applicationContext.getSharedPreferences(PREFS_NAME, MODE_PRIVATE)
+        SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
     private var isHandlingSurveyTranslationToggle = false
     private var surveyTranslationToggle: SwitchCompat? = null
@@ -748,18 +749,18 @@ class DashboardActivity : AppCompatActivity() {
         val VOICE_PAGE_SIZE_OPTIONS = listOf(10, 20, 40)
 
         fun getVoicePageSizePreference(context: Context): Int {
-            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
             val stored = prefs.getInt(KEY_VOICE_PAGE_SIZE, DEFAULT_VOICE_PAGE_SIZE)
             return VOICE_PAGE_SIZE_OPTIONS.firstOrNull { it == stored } ?: DEFAULT_VOICE_PAGE_SIZE
         }
 
         fun isSurveyTranslationEnabled(context: Context): Boolean {
-            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
             return prefs.getBoolean(KEY_SURVEY_TRANSLATIONS_ENABLED, DEFAULT_SURVEY_TRANSLATION_ENABLED)
         }
 
         fun isSurveyTranslationConsentAccepted(context: Context): Boolean {
-            val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
             return prefs.getBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
         }
 

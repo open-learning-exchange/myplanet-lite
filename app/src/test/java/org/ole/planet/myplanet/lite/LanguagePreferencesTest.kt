@@ -27,7 +27,13 @@ class LanguagePreferencesTest {
         context = ApplicationProvider.getApplicationContext()
         val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().clear().apply()
+        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = prefs
         AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+    }
+
+    @org.junit.After
+    fun tearDown() {
+        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = null
     }
 
     @Test

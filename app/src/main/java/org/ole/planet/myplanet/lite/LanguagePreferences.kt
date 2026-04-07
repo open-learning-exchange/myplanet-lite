@@ -10,6 +10,7 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import java.util.Locale
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 object LanguagePreferences {
 
@@ -26,7 +27,7 @@ object LanguagePreferences {
     }
 
     fun getSelectedLanguage(context: Context, supportedLanguageTags: List<String>): String {
-        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
         val savedLanguage = prefs.getString(KEY_SELECTED_LANGUAGE, null)?.takeIf { it.isNotBlank() }
         if (savedLanguage != null) {
             return savedLanguage
@@ -58,7 +59,7 @@ object LanguagePreferences {
         if (sanitized.equals(current, ignoreCase = true)) {
             return false
         }
-        val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
         prefs.edit()
             .putString(KEY_SELECTED_LANGUAGE, sanitized)
             .apply()
