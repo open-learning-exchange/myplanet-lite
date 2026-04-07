@@ -75,6 +75,8 @@ class DashboardTeamsRepository {
     private val memberCountResponseAdapter = moshi.adapter(MemberCountFindResponse::class.java)
     private val teamsRequestAdapter = moshi.adapter(TeamsFindRequest::class.java)
     private val teamsResponseAdapter = moshi.adapter(TeamsFindResponse::class.java)
+    private val bulkMemberCountRequestAdapter = moshi.adapter(BulkMemberCountFindRequest::class.java)
+    private val bulkMemberCountResponseAdapter = moshi.adapter(BulkMemberCountFindResponse::class.java)
     private val availableTeamsRequestAdapter = moshi.adapter(NonMemberTeamsFindRequest::class.java)
     private val joinRequestFindAdapter = moshi.adapter(JoinRequestFindRequest::class.java)
     private val joinRequestFindResponseAdapter = moshi.adapter(JoinRequestFindResponse::class.java)
@@ -118,6 +120,70 @@ class DashboardTeamsRepository {
                         throw IOException("User not found")
                     }
                     users.first()
+                }
+            }
+        }
+    }
+
+    suspend fun fetchMemberCounts(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamIds: List<String>
+    ): Result<Map<String, Int>> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val normalizedBase = baseUrl.trim().trimEnd('/')
+                if (normalizedBase.isEmpty()) {
+                    throw IOException("Missing server base URL")
+                }
+                if (teamIds.isEmpty()) {
+                    return@runCatching emptyMap()
+                }
+
+                val selector = BulkMemberCountSelector(
+                    teamId = TeamIdInClause(ids = teamIds),
+                    docType = "membership",
+                    status = StatusClause(
+                        or = listOf(
+                            StatusCondition(exists = false),
+                            StatusCondition(notEquals = "archived")
+                        )
+                    )
+                )
+                val payload = bulkMemberCountRequestAdapter.toJson(
+                    BulkMemberCountFindRequest(
+                        selector = selector,
+                        fields = listOf("_id", "teamId"),
+                        limit = 50000
+                    )
+                )
+                val requestBuilder = Request.Builder()
+                    .url("$normalizedBase/db/teams/_find")
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                credentials?.let {
+                    requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
+                }
+                sessionCookie.nullIfBlank()?.let { cookie ->
+                    requestBuilder.addHeader("Cookie", cookie)
+                }
+
+                client.newCall(requestBuilder.build()).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}")
+                    }
+                    val body = response.body?.string() ?: throw IOException("Empty response body")
+                    val docs = bulkMemberCountResponseAdapter.fromJson(body)?.docs ?: emptyList()
+
+                    val counts = mutableMapOf<String, Int>()
+                    teamIds.forEach { counts[it] = 0 }
+
+                    docs.forEach { doc ->
+                        doc.teamId?.let { tid ->
+                            counts[tid] = (counts[tid] ?: 0) + 1
+                        }
+                    }
+                    counts
                 }
             }
         }
@@ -902,6 +968,34 @@ class DashboardTeamsRepository {
 
     @JsonClass(generateAdapter = true)
     data class MemberCountFindResponse(val docs: List<MemberIdDocument>?)
+
+    @JsonClass(generateAdapter = true)
+    data class BulkMemberCountFindRequest(
+        val selector: BulkMemberCountSelector,
+        val fields: List<String>,
+        val limit: Int? = null
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class BulkMemberCountSelector(
+        @param:Json(name = "teamId") val teamId: TeamIdInClause,
+        val docType: String,
+        val status: StatusClause
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class TeamIdInClause(
+        @param:Json(name = "\$in") val ids: List<String>
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class MemberDocWithTeamId(
+        @param:Json(name = "_id") val id: String?,
+        val teamId: String?
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class BulkMemberCountFindResponse(val docs: List<MemberDocWithTeamId>?)
 
     @JsonClass(generateAdapter = true)
     data class MembershipDocument(

@@ -185,14 +185,10 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
                 return@launch
             }
 
-            memberTeams.forEach { team ->
-                val id = team.id
-                if (!id.isNullOrBlank()) {
-                    val countResult = repository.fetchMemberCount(base, credentials, sessionCookie, id)
-                    countResult.getOrNull()?.let { count ->
-                        memberCounts[id] = count
-                    }
-                }
+            val memberTeamIds = memberTeams.mapNotNull { it.id }.filter { it.isNotBlank() }
+            val memberCountsResult = repository.fetchMemberCounts(base, credentials, sessionCookie, memberTeamIds)
+            memberCountsResult.getOrNull()?.let { counts ->
+                memberCounts.putAll(counts)
             }
 
             val availableLoaded = fetchAvailableTeamsPage(reset = true)
@@ -256,14 +252,10 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
 
         availableTeams.addAll(newTeams)
 
-        newTeams.forEach { team ->
-            val id = team.id
-            if (!id.isNullOrBlank()) {
-                val countResult = repository.fetchMemberCount(base, credentials, sessionCookie, id)
-                countResult.getOrNull()?.let { count ->
-                    memberCounts[id] = count
-                }
-            }
+        val newTeamIds = newTeams.mapNotNull { it.id }.filter { it.isNotBlank() }
+        val newCountsResult = repository.fetchMemberCounts(base, credentials, sessionCookie, newTeamIds)
+        newCountsResult.getOrNull()?.let { counts ->
+            memberCounts.putAll(counts)
         }
 
         renderTeams(memberTeams, availableTeams, memberCounts)
