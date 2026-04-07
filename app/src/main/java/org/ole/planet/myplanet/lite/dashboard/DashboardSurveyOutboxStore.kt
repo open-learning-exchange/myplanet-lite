@@ -70,7 +70,7 @@ class DashboardSurveyOutboxStore(
     }
 
     suspend fun getPendingForTeam(teamId: String?): List<OutboxEntry> = withContext(Dispatchers.IO) {
-        readableDatabase.query(
+        val rawEntries = readableDatabase.query(
             TABLE_SUBMISSIONS,
             arrayOf(
                 COLUMN_ID,
@@ -98,25 +98,39 @@ class DashboardSurveyOutboxStore(
             buildList {
                 while (cursor.moveToNext()) {
                     val payload = cursor.getStringOrNull(payloadIdx) ?: continue
-                    val parsed = runCatching { submissionAdapter.fromJson(payload) }.getOrNull() ?: continue
                     add(
-                        OutboxEntry(
+                        RawEntry(
                             id = cursor.getLong(idIdx),
                             surveyId = cursor.getStringOrNull(surveyIdIdx),
                             teamId = cursor.getStringOrNull(teamIdIdx),
                             teamName = cursor.getStringOrNull(teamNameIdx),
                             surveyName = cursor.getStringOrNull(surveyNameIdx),
                             createdAt = cursor.getLong(createdAtIdx),
-                            submission = parsed,
-                        ),
+                            payload = payload,
+                        )
                     )
                 }
+            }
+        }
+
+        withContext(Dispatchers.Default) {
+            rawEntries.mapNotNull { raw ->
+                val parsed = try { submissionAdapter.fromJson(raw.payload) } catch(e: Exception) { null } ?: return@mapNotNull null
+                OutboxEntry(
+                    id = raw.id,
+                    surveyId = raw.surveyId,
+                    teamId = raw.teamId,
+                    teamName = raw.teamName,
+                    surveyName = raw.surveyName,
+                    createdAt = raw.createdAt,
+                    submission = parsed,
+                )
             }
         }
     }
 
     suspend fun getEntry(id: Long): OutboxEntry? = withContext(Dispatchers.IO) {
-        readableDatabase.query(
+        val rawEntry = readableDatabase.query(
             TABLE_SUBMISSIONS,
             arrayOf(
                 COLUMN_ID,
@@ -144,19 +158,35 @@ class DashboardSurveyOutboxStore(
 
             if (cursor.moveToFirst()) {
                 val payload = cursor.getStringOrNull(payloadIdx) ?: return@use null
-                val parsed = runCatching { submissionAdapter.fromJson(payload) }.getOrNull() ?: return@use null
-                OutboxEntry(
+                RawEntry(
                     id = cursor.getLong(idIdx),
                     surveyId = cursor.getStringOrNull(surveyIdIdx),
                     teamId = cursor.getStringOrNull(teamIdIdx),
                     teamName = cursor.getStringOrNull(teamNameIdx),
                     surveyName = cursor.getStringOrNull(surveyNameIdx),
                     createdAt = cursor.getLong(createdAtIdx),
-                    submission = parsed,
+                    payload = payload,
                 )
             } else {
                 null
             }
+        }
+
+        if (rawEntry != null) {
+            withContext(Dispatchers.Default) {
+                val parsed = try { submissionAdapter.fromJson(rawEntry.payload) } catch(e: Exception) { null } ?: return@withContext null
+                OutboxEntry(
+                    id = rawEntry.id,
+                    surveyId = rawEntry.surveyId,
+                    teamId = rawEntry.teamId,
+                    teamName = rawEntry.teamName,
+                    surveyName = rawEntry.surveyName,
+                    createdAt = rawEntry.createdAt,
+                    submission = parsed,
+                )
+            }
+        } else {
+            null
         }
     }
 
@@ -172,6 +202,16 @@ class DashboardSurveyOutboxStore(
         val surveyName: String?,
         val createdAt: Long,
         val submission: SurveySubmission,
+    )
+
+    private class RawEntry(
+        val id: Long,
+        val surveyId: String?,
+        val teamId: String?,
+        val teamName: String?,
+        val surveyName: String?,
+        val createdAt: Long,
+        val payload: String,
     )
 
     private fun Cursor.getStringOrNull(columnName: String): String? {
