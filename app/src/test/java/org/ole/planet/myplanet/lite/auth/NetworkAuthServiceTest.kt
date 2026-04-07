@@ -115,6 +115,23 @@ class NetworkAuthServiceTest {
         assertEquals(malformedJson, error.message)
     }
 
+    @Test
+    fun `login returns raw body when error JSON has unknown keys`() = runTest {
+        val unknownKeysJson = """{"unknown_key":"bad"}"""
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setBody(unknownKeysJson)
+        )
+
+        val result = service.login("user@planet.com", "secret")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(400, error.code)
+        assertEquals(unknownKeysJson, error.message)
+    }
+
     private class FakeTokenStorage : TokenStorage {
         var token: String? = null
 
