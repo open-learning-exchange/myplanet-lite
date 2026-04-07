@@ -14,6 +14,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.ImageView
@@ -394,7 +395,9 @@ class ProfileActivity : AppCompatActivity() {
                         username = loginResult.response.name ?: storedCredentials.username
                     }
                 }
-                is AuthResult.Error -> {}
+                is AuthResult.Error -> {
+                    Log.e("ProfileActivity", "Login error during profile refresh: ${loginResult.message}")
+                }
             }
         }
 
