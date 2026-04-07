@@ -1,9 +1,11 @@
 @file:Suppress("DEPRECATION")
 package org.ole.planet.myplanet.lite.util
+
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+
 object SecurePreferencesProvider {
     @androidx.annotation.VisibleForTesting
     var injectedPreferences: SharedPreferences? = null
