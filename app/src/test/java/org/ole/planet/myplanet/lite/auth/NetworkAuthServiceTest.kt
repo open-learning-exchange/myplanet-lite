@@ -10,6 +10,8 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.ResponseBody.Companion.toResponseBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
@@ -18,6 +20,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.mockito.kotlin.any
+import org.mockito.kotlin.mock
+import org.mockito.kotlin.whenever
+import retrofit2.HttpException
+import retrofit2.Response
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
 
@@ -115,6 +122,23 @@ class NetworkAuthServiceTest {
         assertEquals(malformedJson, error.message)
     }
 
+    @Test
+    fun `login returns raw body when error JSON has unknown keys`() = runTest {
+        val unknownKeysJson = """{"unknown_key":"bad"}"""
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(400)
+                .setBody(unknownKeysJson)
+        )
+
+        val result = service.login("user@planet.com", "secret")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(400, error.code)
+        assertEquals(unknownKeysJson, error.message)
+    }
+
     private class FakeTokenStorage : TokenStorage {
         var token: String? = null
 
@@ -127,5 +151,22 @@ class NetworkAuthServiceTest {
         override suspend fun clearToken() {
             token = null
         }
+    }
+
+    @Test
+    fun `login http exception returns error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val errorResponse = Response.error<LoginResponse>(
+            500,
+            "Internal Server Error".toResponseBody("text/plain".toMediaType())
+        )
+        whenever(mockApi.login(any())).thenThrow(HttpException(errorResponse))
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(500, error.code)
     }
 }
