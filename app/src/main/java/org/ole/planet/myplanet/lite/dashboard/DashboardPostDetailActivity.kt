@@ -1157,20 +1157,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         updateReplyPreview(replyPreview, replyInput.text?.toString())
     }
 
-    private fun parseResourceFromPath(path: String): Pair<String?, String?> {
-        val parts = path.split('/')
-        if (parts.size < 3) {
-            return null to null
-        }
-        val resourcesIndex = parts.indexOfFirst { it.equals("resources", ignoreCase = true) }
-        if (resourcesIndex == -1 || resourcesIndex + 2 >= parts.size) {
-            return null to null
-        }
-        val resourceId = parts.getOrNull(resourcesIndex + 1)?.takeIf { it.isNotBlank() }
-        val fileName = parts.getOrNull(resourcesIndex + 2)?.takeIf { it.isNotBlank() }
-        return resourceId to fileName
-    }
-
     private fun ensureMarkdownPresent(message: String, markdown: String): String {
         if (message.contains(markdown)) {
             return message
