@@ -382,7 +382,22 @@ class CourseWizardActivity : AppCompatActivity() {
             enqueuePendingProgress(id, targetStepNumber)
             Log.e(courseLogTag, "Failed to sync step progress, queued: course=$id step=$targetStepNumber")
         } else {
+            val persistedDoc = saveResult.getOrNull()
+                ?.firstOrNull { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
             Log.d(courseLogTag, "Synced step progress: course=$id step=$targetStepNumber")
+            val resolvedId = persistedDoc?.id ?: document.id
+            val resolvedRev = persistedDoc?.rev ?: document.rev
+            cachedProgressDocument = DashboardCoursesRepository.CourseProgressDocument(
+                id = resolvedId,
+                rev = resolvedRev,
+                courseId = document.courseId,
+                stepNum = document.stepNum,
+                passed = document.passed,
+                createdDate = document.createdDate,
+                updatedDate = document.updatedDate,
+                createdOn = document.createdOn,
+                parentCode = document.parentCode
+            )
         }
     }
 
