@@ -1014,20 +1014,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         return "resources/${resourceId.trim()}/${fileName.trim()}"
     }
 
-    private fun parseResourceFromPath(path: String): Pair<String?, String?> {
-        val parts = path.split('/')
-        if (parts.size < 3) {
-            return null to null
-        }
-        val resourcesIndex = parts.indexOfFirst { it.equals("resources", ignoreCase = true) }
-        if (resourcesIndex == -1 || resourcesIndex + 2 >= parts.size) {
-            return null to null
-        }
-        val resourceId = parts[resourcesIndex + 1].takeIf { it.isNotBlank() }
-        val fileName = parts[resourcesIndex + 2].takeIf { it.isNotBlank() }
-        return resourceId to fileName
-    }
-
     private fun derivePendingNormalizedKey(pending: PendingVoiceImage): String {
         val candidates = listOfNotNull(
             pending.uploadedMarkdown?.let { extractPathFromMarkdown(it) },
@@ -1183,13 +1169,21 @@ class CreateVoiceActivity : AppCompatActivity() {
         var updatedMessage = dedupedMessage
         val preparedImages = LinkedHashMap<String, VoicesComposerRepository.ImagePayload>()
         val normalizedMessageImages = dedupedExistingImages.toMutableSet()
-        for (pending in uniquePendings) {
-            val requiresUpload = shouldUploadPending(pending)
-            val markdown = if (requiresUpload) {
-                ensureImageUpload(baseUrl, credentials, context, pending)
-            } else {
-                resolveExistingMarkdown(pending) ?: ensureImageUpload(baseUrl, credentials, context, pending)
-            }
+        val uploadResults = coroutineScope {
+            uniquePendings.map { pending ->
+                async {
+                    val requiresUpload = shouldUploadPending(pending)
+                    val markdown = if (requiresUpload) {
+                        ensureImageUpload(baseUrl, credentials, context, pending)
+                    } else {
+                        resolveExistingMarkdown(pending) ?: ensureImageUpload(baseUrl, credentials, context, pending)
+                    }
+                    pending to markdown
+                }
+            }.awaitAll()
+        }
+
+        for ((pending, markdown) in uploadResults) {
             val normalizedPath = normalizeImagePath(markdown)
             val replaced = replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
             if (!normalizedMessageImages.contains(normalizedPath)) {
