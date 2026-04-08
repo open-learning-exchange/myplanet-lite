@@ -1041,15 +1041,7 @@ class CreateVoiceActivity : AppCompatActivity() {
     }
 
     private fun mergeImagePaths(paths: List<String>): List<String> {
-        val seen = LinkedHashSet<String>()
-        val result = mutableListOf<String>()
-        for (path in paths) {
-            val normalized = normalizeImagePath(path)
-            if (seen.add(normalized)) {
-                result += path
-            }
-        }
-        return result
+        return paths.distinctBy { normalizeImagePath(it) }
     }
 
     private fun normalizeImagePath(path: String): String {
