@@ -92,7 +92,7 @@ class DashboardSurveyStatusStoreTest {
         store.ensureNewDefaults(listOf("survey1", "survey2"))
 
         org.mockito.kotlin.verify(mockEditor).putString("survey1", "NEW")
-        org.mockito.kotlin.verify(mockEditor, org.mockito.kotlin.never()).putString("survey2", any())
+        org.mockito.kotlin.verify(mockEditor, org.mockito.kotlin.never()).putString(org.mockito.kotlin.eq("survey2"), any())
         org.mockito.kotlin.verify(mockEditor).apply()
     }
 
