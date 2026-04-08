@@ -1014,20 +1014,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         return "resources/${resourceId.trim()}/${fileName.trim()}"
     }
 
-    private fun parseResourceFromPath(path: String): Pair<String?, String?> {
-        val parts = path.split('/')
-        if (parts.size < 3) {
-            return null to null
-        }
-        val resourcesIndex = parts.indexOfFirst { it.equals("resources", ignoreCase = true) }
-        if (resourcesIndex == -1 || resourcesIndex + 2 >= parts.size) {
-            return null to null
-        }
-        val resourceId = parts[resourcesIndex + 1].takeIf { it.isNotBlank() }
-        val fileName = parts[resourcesIndex + 2].takeIf { it.isNotBlank() }
-        return resourceId to fileName
-    }
-
     private fun derivePendingNormalizedKey(pending: PendingVoiceImage): String {
         val candidates = listOfNotNull(
             pending.uploadedMarkdown?.let { extractPathFromMarkdown(it) },
