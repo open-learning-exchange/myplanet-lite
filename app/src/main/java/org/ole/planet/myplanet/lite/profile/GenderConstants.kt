@@ -6,5 +6,6 @@
 
 package org.ole.planet.myplanet.lite.profile
 
-const val GENDER_VALUE_MALE = "male"
-const val GENDER_VALUE_FEMALE = "female"
+const val GENDER_MALE = "male"
+const val GENDER_FEMALE = "female"
+const val GENDER_OTHER = "other"

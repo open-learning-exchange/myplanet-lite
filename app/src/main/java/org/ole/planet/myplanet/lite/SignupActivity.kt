@@ -53,8 +53,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
-import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_FEMALE
-import org.ole.planet.myplanet.lite.profile.GENDER_VALUE_MALE
+import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
+import org.ole.planet.myplanet.lite.profile.GENDER_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
@@ -1072,8 +1072,8 @@ class SignupActivity : AppCompatActivity() {
         val customDeviceName = serverPreferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)?.takeIf { it.isNotBlank() }
 
         val genderValue = when (genderGroup.checkedRadioButtonId) {
-            R.id.signupGenderMale -> GENDER_VALUE_MALE
-            R.id.signupGenderFemale -> GENDER_VALUE_FEMALE
+            R.id.signupGenderMale -> GENDER_MALE
+            R.id.signupGenderFemale -> GENDER_FEMALE
             else -> null
         } ?: return null
 
