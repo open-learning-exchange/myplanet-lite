@@ -1191,13 +1191,21 @@ class CreateVoiceActivity : AppCompatActivity() {
         var updatedMessage = dedupedMessage
         val preparedImages = LinkedHashMap<String, VoicesComposerRepository.ImagePayload>()
         val normalizedMessageImages = dedupedExistingImages.toMutableSet()
-        for (pending in uniquePendings) {
-            val requiresUpload = shouldUploadPending(pending)
-            val markdown = if (requiresUpload) {
-                ensureImageUpload(baseUrl, credentials, context, pending)
-            } else {
-                resolveExistingMarkdown(pending) ?: ensureImageUpload(baseUrl, credentials, context, pending)
-            }
+        val uploadResults = coroutineScope {
+            uniquePendings.map { pending ->
+                async {
+                    val requiresUpload = shouldUploadPending(pending)
+                    val markdown = if (requiresUpload) {
+                        ensureImageUpload(baseUrl, credentials, context, pending)
+                    } else {
+                        resolveExistingMarkdown(pending) ?: ensureImageUpload(baseUrl, credentials, context, pending)
+                    }
+                    pending to markdown
+                }
+            }.awaitAll()
+        }
+
+        for ((pending, markdown) in uploadResults) {
             val normalizedPath = normalizeImagePath(markdown)
             val replaced = replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
             if (!normalizedMessageImages.contains(normalizedPath)) {
