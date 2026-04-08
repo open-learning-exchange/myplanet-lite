@@ -39,7 +39,7 @@ class LanguagePreferencesTest {
     @Test
     fun testSetSelectedLanguage() {
         // Test that a new valid language is saved and returns true
-        val isChanged = LanguagePreferences.setSelectedLanguage(context, "es", supportedLanguageTags)
+        val isChanged = LanguagePreferences.setSelectedLanguage(context, "es")
         assertTrue(isChanged)
 
         val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
@@ -51,11 +51,11 @@ class LanguagePreferencesTest {
         // We verify that LanguagePreferences handles the logic correctly by checking the stored preference.
 
         // Test that setting the same language returns false
-        val isChangedAgain = LanguagePreferences.setSelectedLanguage(context, "es", supportedLanguageTags)
+        val isChangedAgain = LanguagePreferences.setSelectedLanguage(context, "es")
         assertFalse(isChangedAgain)
 
         // Test that a blank string results in the default language ("en")
-        val isBlankChanged = LanguagePreferences.setSelectedLanguage(context, "  ", supportedLanguageTags)
+        val isBlankChanged = LanguagePreferences.setSelectedLanguage(context, "  ")
         assertTrue(isBlankChanged)
         val defaultLang = prefs.getString(KEY_SELECTED_LANGUAGE, null)
         assertEquals("en", defaultLang)
@@ -64,14 +64,14 @@ class LanguagePreferencesTest {
     @Test
     fun testGetSelectedLanguage() {
         // Should use device default, but since Robolectric is configured, default is en
-        var selectedLang = LanguagePreferences.getSelectedLanguage(context, supportedLanguageTags)
+        var selectedLang = LanguagePreferences.getSelectedLanguage(context)
         assertEquals("en", selectedLang)
 
         // Save a language and then fetch it
         val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_SELECTED_LANGUAGE, "fr").apply()
 
-        selectedLang = LanguagePreferences.getSelectedLanguage(context, supportedLanguageTags)
+        selectedLang = LanguagePreferences.getSelectedLanguage(context)
         assertEquals("fr", selectedLang)
     }
 
@@ -85,7 +85,7 @@ class LanguagePreferencesTest {
         assertEquals("", AppCompatDelegate.getApplicationLocales().toLanguageTags())
 
         // Calling applySavedLocale should call AppCompatDelegate.setApplicationLocales
-        LanguagePreferences.applySavedLocale(context, supportedLanguageTags)
+        LanguagePreferences.applySavedLocale(context)
 
         // Since Robolectric doesn't properly persist getApplicationLocales statically in all configurations,
         // we mainly want to ensure no crash happens and the logic runs successfully.
