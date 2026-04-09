@@ -6,6 +6,7 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
+import android.util.Log
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -43,9 +44,11 @@ class DashboardSurveySubmissionsRepository {
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
+                val endpoint = "$normalizedBase/db/submissions"
                 val payload = submissionAdapter.toJson(submission)
+                Log.d(LOG_TAG, "Submitting course survey to endpoint=$endpoint payload=$payload")
                 val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/submissions")
+                    .url(endpoint)
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
@@ -54,8 +57,13 @@ class DashboardSurveySubmissionsRepository {
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
+                    val responseBody = response.body.string()
+                    Log.d(
+                        LOG_TAG,
+                        "Course survey submit response endpoint=$endpoint status=${response.code} body=$responseBody",
+                    )
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
+                        throw IOException("Unexpected response ${response.code}. body=$responseBody")
                     }
                 }
             }
@@ -92,8 +100,10 @@ class DashboardSurveySubmissionsRepository {
                         ),
                     ),
                 )
+                val endpoint = "$normalizedBase/db/submissions/_find"
+                Log.d(LOG_TAG, "Fetching existing course survey submission from endpoint=$endpoint payload=$payload")
                 val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/submissions/_find")
+                    .url(endpoint)
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
@@ -102,10 +112,14 @@ class DashboardSurveySubmissionsRepository {
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
                     val body = response.body.string()
+                    Log.d(
+                        LOG_TAG,
+                        "Course survey lookup response endpoint=$endpoint status=${response.code} body=$body",
+                    )
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}. body=$body")
+                    }
                     if (body.isEmpty()) {
                         null
                     } else {
@@ -142,6 +156,8 @@ class DashboardSurveySubmissionsRepository {
         @param:Json(name = "_rev") val rev: String?,
         @param:Json(name = "name") val name: String?,
         @param:Json(name = "type") val type: String? = null,
+        @param:Json(name = "passingPercentage") val passingPercentage: Int? = null,
+        @param:Json(name = "teamShareAllowed") val teamShareAllowed: Boolean? = null,
         @param:Json(name = "questions") val questions: List<SurveyQuestion>?,
         @param:Json(name = "description") val description: String?,
     )
@@ -207,6 +223,7 @@ class DashboardSurveySubmissionsRepository {
     )
 
     companion object {
+        private const val LOG_TAG = "DashboardSurveySubmit"
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
     }
 }

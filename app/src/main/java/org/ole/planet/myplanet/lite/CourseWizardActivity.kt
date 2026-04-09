@@ -346,14 +346,15 @@ class CourseWizardActivity : AppCompatActivity() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
         val id = courseId?.takeIf { it.isNotBlank() } ?: return
-
-        if (cachedProgressDocument == null) {
-            val existingDocuments = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
-                .getOrNull()
-            cachedProgressDocument = existingDocuments?.get(id)
+        if (!isDeviceOnline()) {
+            enqueuePendingProgress(id, targetStepNumber)
+            Log.d(courseLogTag, "Queued step progress (offline): course=$id step=$targetStepNumber")
+            return
         }
-
-        val existingStep = cachedProgressDocument?.stepNum ?: 0
+        val existingDocuments = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
+            .getOrNull()
+        val existingDoc = existingDocuments?.get(id)
+        val existingStep = existingDoc?.stepNum ?: 0
         if (existingStep >= targetStepNumber) return
 
         val now = System.currentTimeMillis()
@@ -371,23 +372,28 @@ class CourseWizardActivity : AppCompatActivity() {
             createdDate = cachedProgressDocument?.createdDate ?: now,
             updatedDate = now
         )
-
-        val saveResult = coursesRepository.saveCourseProgress(normalizedBase, creds, document).getOrNull()
-        val newId = saveResult?.firstOrNull()?.id ?: document.id
-        val newRev = saveResult?.firstOrNull()?.rev ?: document.rev
-
-        // Update cache with the new progress step
-        cachedProgressDocument = DashboardCoursesRepository.CourseProgressDocument(
-            id = newId,
-            rev = newRev,
-            courseId = document.courseId,
-            stepNum = document.stepNum,
-            passed = document.passed,
-            createdDate = document.createdDate,
-            updatedDate = document.updatedDate,
-            createdOn = document.createdOn,
-            parentCode = document.parentCode
-        )
+        val saveResult = coursesRepository.saveCourseProgress(normalizedBase, creds, document)
+        if (saveResult.isFailure) {
+            enqueuePendingProgress(id, targetStepNumber)
+            Log.e(courseLogTag, "Failed to sync step progress, queued: course=$id step=$targetStepNumber")
+        } else {
+            val persistedDoc = saveResult.getOrNull()
+                ?.firstOrNull { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
+            Log.d(courseLogTag, "Synced step progress: course=$id step=$targetStepNumber")
+            val resolvedId = persistedDoc?.id ?: document.id
+            val resolvedRev = persistedDoc?.rev ?: document.rev
+            cachedProgressDocument = DashboardCoursesRepository.CourseProgressDocument(
+                id = resolvedId,
+                rev = resolvedRev,
+                courseId = document.courseId,
+                stepNum = document.stepNum,
+                passed = document.passed,
+                createdDate = document.createdDate,
+                updatedDate = document.updatedDate,
+                createdOn = document.createdOn,
+                parentCode = document.parentCode
+            )
+        }
     }
 
     private suspend fun flushPendingCourseProgress() {

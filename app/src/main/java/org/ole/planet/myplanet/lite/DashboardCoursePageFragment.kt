@@ -9,6 +9,7 @@ package org.ole.planet.myplanet.lite
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
@@ -37,6 +38,8 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
@@ -67,6 +70,8 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private val tagCourseIdsByTag = mutableMapOf<String, Set<String>>()
     private val httpClient = OkHttpClient()
     private val activeDownloads = mutableMapOf<String, Job>()
+    private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
+    private var surveyOutboxStore: DashboardSurveyOutboxStore? = null
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -274,6 +279,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
 
     override fun onResume() {
         super.onResume()
+        viewLifecycleOwner.lifecycleScope.launch {
+            flushPendingSurveyOutbox()
+        }
         if (tabPosition == 2 && this::adapter.isInitialized) {
             refreshTeamCourses(adapter, refreshLayout, forceReload = false)
         }
@@ -714,6 +722,29 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         val network = manager.activeNetwork ?: return false
         val capabilities = manager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    private suspend fun flushPendingSurveyOutbox() {
+        val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
+        val creds = credentials ?: return
+        if (!isDeviceOnline()) return
+        val authService = AuthDependencies.provideAuthService(requireContext().applicationContext, base)
+        val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
+        val store = surveyOutboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext).also {
+            surveyOutboxStore = it
+        }
+        val pendingEntries = store.getPendingForTeam(null).sortedBy { it.createdAt }
+        if (pendingEntries.isEmpty()) return
+        Log.d(LOG_TAG, "Flushing pending survey outbox from courses: count=${pendingEntries.size}")
+        pendingEntries.forEach { entry ->
+            val result = surveySubmissionRepository.submitSurvey(base, creds, sessionCookie, entry.submission)
+            if (result.isSuccess) {
+                store.deleteEntry(entry.id)
+                Log.d(LOG_TAG, "Flushed pending outbox entry id=${entry.id}")
+            } else {
+                Log.e(LOG_TAG, "Failed to flush outbox entry id=${entry.id}")
+            }
+        }
     }
 
     private suspend fun estimateResourcesSize(
@@ -1402,6 +1433,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         private const val KEY_JOINED_COURSE_ID = "joined_course_id"
         private const val KEY_LEFT_COURSE = "left_course"
         private const val MIN_DOWNLOAD_BUFFER_BYTES = 10L * 1024L * 1024L
+        private const val LOG_TAG = "DashboardCourses"
 
         private val pendingRefreshTabs = mutableSetOf<Int>()
 

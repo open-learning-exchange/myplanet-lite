@@ -15,6 +15,7 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
 import android.text.InputType
+import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
@@ -50,6 +51,7 @@ import java.util.Locale
 import java.util.TimeZone
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
@@ -68,6 +70,7 @@ import org.ole.planet.myplanet.lite.profile.GENDER_OTHER
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
@@ -177,6 +180,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             initializeSession()
             attemptSurveyTranslation()
             outboxStore = DashboardSurveyOutboxStore(requireContext().applicationContext)
+            flushPendingSurveySubmissions()
         }
 
         val survey = document
@@ -213,6 +217,13 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                     submitSurvey()
                 }
             }
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        viewLifecycleOwner.lifecycleScope.launch {
+            flushPendingSurveySubmissions()
         }
     }
 
@@ -457,8 +468,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 val mistakes = if (correct) 0 else 1
                 val value = when (answer) {
                     is SurveyAnswer.Text -> answer.value
-                    is SurveyAnswer.SingleChoice -> answer.choice?.id
-                    is SurveyAnswer.MultipleChoice -> answer.choices.mapNotNull { it.id }
+                    is SurveyAnswer.SingleChoice -> answer.choice?.toSubmissionValue()
+                    is SurveyAnswer.MultipleChoice -> answer.choices.map { it.toSubmissionValue() }
                     is SurveyAnswer.Rating -> answer.score.toString()
                 }
                 SubmissionAnswer(
@@ -532,7 +543,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             val existingSubmission = fetchExistingSubmissionOrNull(base, username, parentId, survey)
             val submission = buildSurveySubmission(
                 survey, existingSubmission, username, fullName,
-                parentId, answersPayload, totalGrade
+                parentId, answersPayload, totalGrade, profile
             )
             processSubmission(base, submission, survey, username)
         }
@@ -565,8 +576,20 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         fullName: String,
         parentId: String,
         answersPayload: List<SubmissionAnswer>,
-        totalGrade: Int
+        totalGrade: Int,
+        profile: UserProfile?
     ): SurveySubmission {
+        val rawProfile = parseProfileRawDocument(profile?.rawDocument)
+        val fallbackUserId = "org.couchdb.user:$username"
+        val resolvedUserId = rawProfile?.optString("_id").takeIf { !it.isNullOrBlank() } ?: fallbackUserId
+        val resolvedUserName = rawProfile?.optString("name").takeIf { !it.isNullOrBlank() }
+            ?: listOfNotNull(respondent.firstName, respondent.middleName, respondent.lastName)
+                .joinToString(" ")
+                .trim()
+                .takeIf { it.isNotBlank() }
+            ?: fullName
+        val resolvedPlanetCode = rawProfile?.optString("planetCode").takeIf { !it.isNullOrBlank() } ?: serverCode
+        val resolvedParentCode = rawProfile?.optString("parentCode").takeIf { !it.isNullOrBlank() } ?: parentCode
         return SurveySubmission(
             id = existingSubmission?.id,
             rev = existingSubmission?.rev,
@@ -576,29 +599,27 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 id = survey.id,
                 rev = survey.rev,
                 name = survey.name,
-                type = if (isExam) "courses" else null,
+                type = if (isExam) "courses" else "surveys",
+                passingPercentage = survey.passingPercentage,
+                teamShareAllowed = if (isExam) null else false,
                 questions = survey.questions,
                 description = survey.description,
             ),
             user = DashboardSurveySubmissionsRepository.SubmissionUser(
-                id = "org.couchdb.user:$username",
-                name = listOfNotNull(respondent.firstName, respondent.middleName, respondent.lastName)
-                    .joinToString(" ")
-                    .trim()
-                    .takeIf { it.isNotBlank() }
-                    ?: fullName,
-                planetCode = serverCode,
-                parentCode = parentCode,
-                firstName = respondent.firstName,
-                middleName = respondent.middleName,
-                lastName = respondent.lastName,
-                email = respondent.email,
-                language = respondent.language,
-                phoneNumber = respondent.phoneNumber,
-                birthDate = respondent.birthDate,
-                age = respondent.age,
-                gender = respondent.gender,
-                level = respondent.level,
+                id = resolvedUserId,
+                name = resolvedUserName,
+                planetCode = resolvedPlanetCode,
+                parentCode = resolvedParentCode,
+                firstName = respondent.firstName ?: rawProfile?.optString("firstName").takeIf { !it.isNullOrBlank() },
+                middleName = respondent.middleName ?: rawProfile?.optString("middleName").takeIf { !it.isNullOrBlank() },
+                lastName = respondent.lastName ?: rawProfile?.optString("lastName").takeIf { !it.isNullOrBlank() },
+                email = respondent.email ?: rawProfile?.optString("email").takeIf { !it.isNullOrBlank() },
+                language = respondent.language ?: rawProfile?.optString("language").takeIf { !it.isNullOrBlank() },
+                phoneNumber = respondent.phoneNumber ?: rawProfile?.optString("phoneNumber").takeIf { !it.isNullOrBlank() },
+                birthDate = respondent.birthDate ?: rawProfile?.optString("birthDate").takeIf { !it.isNullOrBlank() },
+                age = respondent.age ?: rawProfile.optIntOrNull("age"),
+                gender = respondent.gender ?: rawProfile?.optString("gender").takeIf { !it.isNullOrBlank() },
+                level = respondent.level ?: rawProfile?.optString("level").takeIf { !it.isNullOrBlank() },
             ),
             team = (teamId ?: survey.teamId)?.let { id ->
                 SubmissionTeam(
@@ -617,6 +638,21 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             deviceName = resolveDeviceName(),
             customDeviceName = resolveCustomDeviceName(),
         )
+    }
+
+    private fun parseProfileRawDocument(rawDocument: String?): JSONObject? {
+        if (rawDocument.isNullOrBlank()) return null
+        return runCatching { JSONObject(rawDocument) }.getOrNull()
+    }
+
+    private fun JSONObject?.optIntOrNull(key: String): Int? {
+        this ?: return null
+        if (!has(key)) return null
+        return when (val value = opt(key)) {
+            is Number -> value.toInt()
+            is String -> value.toIntOrNull()
+            else -> null
+        }
     }
 
     private suspend fun processSubmission(
@@ -652,11 +688,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             ).show()
             finishWithResult()
         } else {
-            if (!isDeviceOnline()) {
-                queueSubmissionForOutbox(submission, survey)
-            } else {
-                showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
-            }
+            Log.e(LOG_TAG, "Survey submission failed, storing in outbox for retry")
+            queueSubmissionForOutbox(submission, survey)
         }
     }
 
@@ -671,6 +704,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 teamName = teamName,
             )
             if (saved) {
+                Log.d(LOG_TAG, "Saved survey submission in outbox surveyId=${survey.id}")
                 Toast.makeText(
                     requireContext(),
                     getString(R.string.dashboard_survey_submission_saved_offline),
@@ -679,6 +713,33 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 finishWithResult()
             } else {
                 showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
+            }
+        }
+    }
+
+    private suspend fun flushPendingSurveySubmissions() {
+        val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
+        if (!isDeviceOnline()) {
+            Log.d(LOG_TAG, "Skipping survey outbox flush because device is offline")
+            return
+        }
+        val store = outboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext)
+        outboxStore = store
+        val pendingEntries = store.getPendingForTeam(null).sortedBy { it.createdAt }
+        if (pendingEntries.isEmpty()) return
+        Log.d(LOG_TAG, "Flushing survey outbox entries count=${pendingEntries.size}")
+        pendingEntries.forEach { entry ->
+            val result = submissionRepository.submitSurvey(
+                normalizedBase,
+                credentials,
+                sessionCookie,
+                entry.submission,
+            )
+            if (result.isSuccess) {
+                store.deleteEntry(entry.id)
+                Log.d(LOG_TAG, "Flushed and removed survey outboxId=${entry.id}")
+            } else {
+                Log.e(LOG_TAG, "Failed to flush survey outboxId=${entry.id}")
             }
         }
     }
@@ -1583,6 +1644,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         private const val PREFS_NAME = "server_preferences"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
         private const val DEFAULT_DEVICE_NAME = "Android Device"
+        private const val LOG_TAG = "SurveyWizard"
 
         fun newInstance(
             document: SurveyDocument,
