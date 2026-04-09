@@ -5,7 +5,6 @@ import android.database.sqlite.SQLiteDatabase
 import androidx.test.core.app.ApplicationProvider
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -132,5 +131,44 @@ class UserProfileDatabaseTest {
 
         verify(mockDb).execSQL("ALTER TABLE user_profile ADD COLUMN raw_document TEXT")
         verify(mockDb).execSQL("ALTER TABLE user_profile ADD COLUMN is_user_admin INTEGER NOT NULL DEFAULT 0")
+    }
+
+    @Test
+    fun `test onUpgrade from v3 to v4`() {
+        val mockDb = mock(SQLiteDatabase::class.java)
+
+        // Upgrade from v3 to v4
+        database.onUpgrade(mockDb, 3, 4)
+
+        verify(mockDb).execSQL("ALTER TABLE user_profile ADD COLUMN is_user_admin INTEGER NOT NULL DEFAULT 0")
+    }
+
+    @Test
+    fun `test onCreate executes correct table creation`() {
+        val mockDb = mock(SQLiteDatabase::class.java)
+        database.onCreate(mockDb)
+
+        val createTableSql = """
+            CREATE TABLE user_profile (
+                id INTEGER PRIMARY KEY,
+                username TEXT NOT NULL,
+                first_name TEXT,
+                middle_name TEXT,
+                last_name TEXT,
+                email TEXT,
+                language TEXT,
+                phone_number TEXT,
+                birth_date TEXT,
+                gender TEXT,
+                level TEXT,
+                avatar BLOB,
+                revision TEXT,
+                derived_key TEXT,
+                raw_document TEXT,
+                is_user_admin INTEGER NOT NULL DEFAULT 0
+            )
+            """.trimIndent()
+
+        verify(mockDb).execSQL(createTableSql)
     }
 }

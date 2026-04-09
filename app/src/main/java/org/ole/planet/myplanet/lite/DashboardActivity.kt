@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -53,6 +51,7 @@ import org.ole.planet.myplanet.lite.model.LanguageOption
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class DashboardActivity : AppCompatActivity() {
 
@@ -95,7 +94,7 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        LanguagePreferences.applySavedLocale(this, SUPPORTED_LANGUAGES.map { it.languageTag })
+        LanguagePreferences.applySavedLocale(this)
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
         deepLinkHandled = savedInstanceState?.getBoolean(STATE_DEEP_LINK_HANDLED) ?: false
@@ -290,7 +289,7 @@ class DashboardActivity : AppCompatActivity() {
                 R.id.menu_settings_language -> {
                     drawerLayout.closeDrawer(GravityCompat.END)
                     drawerLayout.post {
-                        showLanguageSelectionDialog()
+                        LanguagePreferences.showLanguageSelectionDialog(this@DashboardActivity)
                     }
                     true
                 }
@@ -526,34 +525,6 @@ class DashboardActivity : AppCompatActivity() {
         deepLinkHandled = true
     }
 
-    private fun showLanguageSelectionDialog() {
-        val options = SUPPORTED_LANGUAGES
-        val optionLabels = options.map { getString(it.labelRes) }.toTypedArray()
-        val currentLanguage = LanguagePreferences.getSelectedLanguage(
-            this,
-            SUPPORTED_LANGUAGES.map { it.languageTag }
-        )
-        val currentIndex = options.indexOfFirst { it.languageTag.equals(currentLanguage, ignoreCase = true) }
-            .takeIf { it >= 0 } ?: 0
-
-        AlertDialog.Builder(this)
-            .setTitle(R.string.language_selector_title)
-            .setSingleChoiceItems(optionLabels, currentIndex) { dialog, which ->
-                val selectedOption = options[which]
-                val changed = LanguagePreferences.setSelectedLanguage(
-                    this,
-                    selectedOption.languageTag,
-                    SUPPORTED_LANGUAGES.map { it.languageTag }
-                )
-                dialog.dismiss()
-                if (changed) {
-                    restartWithLanguageAnimation()
-                }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
     private fun showVoiceBatchSizeDialog() {
         val options = VOICE_PAGE_SIZE_OPTIONS
         val optionLabels = options.map { getString(R.string.dashboard_settings_voice_batch_size_option, it) }
@@ -689,21 +660,6 @@ class DashboardActivity : AppCompatActivity() {
         return VOICE_PAGE_SIZE_OPTIONS.firstOrNull { it == value } ?: DEFAULT_VOICE_PAGE_SIZE
     }
 
-    private fun restartWithLanguageAnimation() {
-        val contentRoot: View? = findViewById(android.R.id.content)
-        if (contentRoot == null || isFinishing || isDestroyed) {
-            recreate()
-            return
-        }
-        contentRoot.animate().cancel()
-        contentRoot.animate()
-            .alpha(0f)
-            .setDuration(LANGUAGE_TRANSITION_DURATION_MS)
-            .setInterpolator(FastOutSlowInInterpolator())
-            .withEndAction { recreate() }
-            .start()
-    }
-
     private class DashboardPagerAdapter(activity: AppCompatActivity) : FragmentStateAdapter(activity) {
         override fun getItemCount(): Int = 2
 
@@ -731,18 +687,7 @@ class DashboardActivity : AppCompatActivity() {
         private const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
         private const val DEFAULT_VOICE_PAGE_SIZE = 20
         private const val DEFAULT_SURVEY_TRANSLATION_ENABLED = true
-        private const val LANGUAGE_TRANSITION_DURATION_MS = 250L
         const val EXTRA_OFFLINE_MODE = "extra_offline_mode"
-        private val SUPPORTED_LANGUAGES = listOf(
-            LanguageOption("en", R.string.language_name_english),
-            LanguageOption("es", R.string.language_name_spanish),
-            LanguageOption("fr", R.string.language_name_french),
-            LanguageOption("pt", R.string.language_name_portuguese),
-            LanguageOption("ne", R.string.language_name_nepali),
-            LanguageOption("ar", R.string.language_name_arabic),
-            LanguageOption("so", R.string.language_name_somali),
-            LanguageOption("hi", R.string.language_name_hindi)
-        )
         val VOICE_PAGE_SIZE_OPTIONS = listOf(10, 20, 40)
 
         fun getVoicePageSizePreference(context: Context): Int {

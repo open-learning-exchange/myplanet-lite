@@ -6,15 +6,14 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
+import android.content.Context
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
-import android.content.Context
-
 object DashboardServerPreferences {
-    private const val PREFS_NAME = "server_preferences"
-    private const val KEY_SERVER_URL = "server_url"
-    private const val KEY_SERVER_CODE = "server_code"
-    private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
+    internal const val PREFS_NAME = "server_preferences"
+    internal const val KEY_SERVER_URL = "server_url"
+    internal const val KEY_SERVER_CODE = "server_code"
+    internal const val KEY_SERVER_PARENT_CODE = "server_parent_code"
 
     fun getServerBaseUrl(context: Context): String? {
         val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)

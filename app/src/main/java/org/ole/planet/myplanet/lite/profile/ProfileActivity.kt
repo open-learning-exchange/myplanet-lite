@@ -299,11 +299,11 @@ class ProfileActivity : AppCompatActivity() {
             val normalizedGender = profile?.gender?.trim()?.lowercase(Locale.ROOT)
             when {
                 normalizedGender.isNullOrEmpty() -> genderGroup.clearCheck()
-                normalizedGender == GENDER_VALUE_FEMALE ||
+                normalizedGender == GENDER_FEMALE ||
                     normalizedGender == getString(R.string.signup_gender_option_female).lowercase(Locale.ROOT) -> {
                     genderGroup.check(R.id.profileGenderFemale)
                 }
-                normalizedGender == GENDER_VALUE_MALE ||
+                normalizedGender == GENDER_MALE ||
                     normalizedGender == getString(R.string.signup_gender_option_male).lowercase(Locale.ROOT) -> {
                     genderGroup.check(R.id.profileGenderMale)
                 }
@@ -344,8 +344,8 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun collectFormValues(): ProfileFormValues {
         val genderValue = when (genderGroup.checkedRadioButtonId) {
-            R.id.profileGenderMale -> GENDER_VALUE_MALE
-            R.id.profileGenderFemale -> GENDER_VALUE_FEMALE
+            R.id.profileGenderMale -> GENDER_MALE
+            R.id.profileGenderFemale -> GENDER_FEMALE
             else -> null
         }
 

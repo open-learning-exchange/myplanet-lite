@@ -7,8 +7,6 @@
 
 package org.ole.planet.myplanet.lite
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -32,8 +30,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import androidx.core.view.ViewCompat
@@ -45,6 +41,8 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import com.blongho.country_data.World
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -75,8 +73,9 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
-import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 import org.ole.planet.myplanet.lite.util.IntentUtils
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
 class MyPlanetLite : AppCompatActivity() {
 
@@ -163,7 +162,7 @@ class MyPlanetLite : AppCompatActivity() {
     private var deepLinkPostId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        LanguagePreferences.applySavedLocale(this, SUPPORTED_LANGUAGES.map { it.languageTag })
+        LanguagePreferences.applySavedLocale(this)
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
         enableEdgeToEdge()
@@ -183,7 +182,7 @@ class MyPlanetLite : AppCompatActivity() {
                 root.doOnPreDraw {
                     root.animate()
                         .alpha(1f)
-                        .setDuration(LANGUAGE_TRANSITION_DURATION_MS)
+                        .setDuration(250L)
                         .setInterpolator(FastOutSlowInInterpolator())
                         .start()
                 }
@@ -276,7 +275,7 @@ class MyPlanetLite : AppCompatActivity() {
         }
 
         languageSelectorIcon.setOnClickListener {
-            showLanguageSelectionDialog()
+            LanguagePreferences.showLanguageSelectionDialog(this)
         }
 
         World.init(applicationContext)
@@ -308,52 +307,6 @@ class MyPlanetLite : AppCompatActivity() {
         } else {
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
-    }
-
-    private fun showLanguageSelectionDialog() {
-        val options = SUPPORTED_LANGUAGES
-        val optionLabels = options.map { getString(it.labelRes) }.toTypedArray()
-        val currentLanguage = LanguagePreferences.getSelectedLanguage(
-            this,
-            SUPPORTED_LANGUAGES.map { it.languageTag }
-        )
-        val currentIndex = options.indexOfFirst { it.languageTag.equals(currentLanguage, ignoreCase = true) }
-            .takeIf { it >= 0 } ?: 0
-
-        AlertDialog.Builder(this)
-            .setTitle(R.string.language_selector_title)
-            .setSingleChoiceItems(optionLabels, currentIndex) { dialog, which ->
-                val selectedOption = options[which]
-                val changed = LanguagePreferences.setSelectedLanguage(
-                    this,
-                    selectedOption.languageTag,
-                    SUPPORTED_LANGUAGES.map { it.languageTag }
-                )
-                dialog.dismiss()
-                if (changed) {
-                    restartWithLanguageAnimation()
-                }
-            }
-            .setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun restartWithLanguageAnimation() {
-        val contentRoot: View? = findViewById(android.R.id.content)
-        if (contentRoot == null || isFinishing || isDestroyed) {
-            recreate()
-            return
-        }
-
-        contentRoot.animate().cancel()
-        contentRoot.animate()
-            .alpha(0f)
-            .setDuration(LANGUAGE_TRANSITION_DURATION_MS)
-            .setInterpolator(FastOutSlowInInterpolator())
-            .withEndAction {
-                recreate()
-            }
-            .start()
     }
 
     private fun configureLogin() {
@@ -1191,7 +1144,6 @@ class MyPlanetLite : AppCompatActivity() {
         private const val LOGO_SHRUNK_DP = 50f
         private const val APP_VERSION_SHRUNK_BOTTOM_MARGIN_DP = 5f
         private const val LOGIN_SCROLL_SHRUNK_PADDING_TOP_DP = 5f
-        private const val LANGUAGE_TRANSITION_DURATION_MS = 250L
         private const val LOGIN_TIME_LENGTH = 13
         private val BUILT_IN_SERVERS = listOf(
             BuiltInServer(R.string.server_planet_xela, "http://10.82.1.30/", DEFAULT_COUNTRY_CODE),
@@ -1202,16 +1154,6 @@ class MyPlanetLite : AppCompatActivity() {
             BuiltInServer(R.string.server_planet_earth, "https://planet.earth.ole.org/", "US"),
             BuiltInServer(R.string.server_planet_vi, "https://planet.vi.ole.org/", "US"),
             BuiltInServer(R.string.server_planet_uriur, "https://planet.uriur.ole.org/", "KE")
-        )
-        private val SUPPORTED_LANGUAGES = listOf(
-            LanguageOption("en", R.string.language_name_english),
-            LanguageOption("es", R.string.language_name_spanish),
-            LanguageOption("fr", R.string.language_name_french),
-            LanguageOption("pt", R.string.language_name_portuguese),
-            LanguageOption("ne", R.string.language_name_nepali),
-            LanguageOption("ar", R.string.language_name_arabic),
-            LanguageOption("so", R.string.language_name_somali),
-            LanguageOption("hi", R.string.language_name_hindi)
         )
     }
 

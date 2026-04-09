@@ -6,10 +6,7 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.app.Activity
-import android.content.Context.MODE_PRIVATE
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -72,6 +69,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class CreateVoiceActivity : AppCompatActivity() {
 
@@ -526,14 +524,18 @@ class CreateVoiceActivity : AppCompatActivity() {
                 }
                 adjustViewBounds = false
                 scaleType = ImageView.ScaleType.CENTER_CROP
-                val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
-                setImageBitmap(bitmap)
                 contentDescription = pending.fileName
                 setOnClickListener {
                     showImageOptionsDialog(pending)
                 }
             }
             wrapper.addView(preview)
+            lifecycleScope.launch(Dispatchers.Default) {
+                val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+                withContext(Dispatchers.Main) {
+                    preview.setImageBitmap(bitmap)
+                }
+            }
         }
     }
 
@@ -567,11 +569,15 @@ class CreateVoiceActivity : AppCompatActivity() {
             )
             adjustViewBounds = true
             scaleType = ImageView.ScaleType.FIT_CENTER
-            val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
-            setImageBitmap(bitmap)
             contentDescription = pending.fileName
             val padding = resources.getDimensionPixelSize(R.dimen.create_voice_image_preview_dialog_padding)
             setPadding(padding, padding, padding, padding)
+        }
+        lifecycleScope.launch(Dispatchers.Default) {
+            val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+            withContext(Dispatchers.Main) {
+                imageView.setImageBitmap(bitmap)
+            }
         }
         MaterialAlertDialogBuilder(this)
             .setTitle(pending.fileName)
@@ -978,7 +984,7 @@ class CreateVoiceActivity : AppCompatActivity() {
         val loaded = coroutineScope {
             editInitialImagePaths.map { path ->
                 async(Dispatchers.IO) {
-                    runCatching { fetchExistingVoiceImage(base, path) }.getOrNull()
+                    runCatching { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { generateImageFileName() }, { generatePendingImageId(it) }) }.getOrNull()
                 }
             }.awaitAll().filterNotNull()
         }
@@ -990,77 +996,6 @@ class CreateVoiceActivity : AppCompatActivity() {
             pendingImages[pending.id] = pending
         }
         renderPreviewImages()
-    }
-
-    private fun fetchExistingVoiceImage(baseUrl: String, imagePath: String): PendingVoiceImage? {
-        val requestUrl = resolveImageUrl(baseUrl, imagePath) ?: return null
-        val requestBuilder = Request.Builder()
-            .url(requestUrl)
-            .get()
-        sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-            requestBuilder.addHeader("Cookie", cookie)
-        }
-        return runCatching {
-            httpClient.newCall(requestBuilder.build()).execute().use { response ->
-                if (!response.isSuccessful) {
-                    return null
-                }
-                val body = response.body
-                val bytes = body.byteStream().use { stream ->
-                    BufferedInputStream(stream).readBytes()
-                }
-                val fileName = extractFileName(imagePath) ?: generateImageFileName()
-                val tempFile = File(cacheDir, fileName)
-                FileOutputStream(tempFile).use { output ->
-                    output.write(bytes)
-                }
-                val (resourceId, resourceFileName) = parseResourceFromPath(imagePath)
-                val resolvedFileName = resourceFileName ?: fileName
-                val markdown = buildExistingImageMarkdown(baseUrl, imagePath)
-                PendingVoiceImage(
-                    id = generatePendingImageId(resolvedFileName),
-                    fileName = resolvedFileName,
-                    file = tempFile,
-                    jpegBytes = bytes,
-                    resourceId = resourceId,
-                    uploadedMarkdown = markdown
-                )
-            }
-        }.getOrNull()
-    }
-
-    private fun resolveImageUrl(baseUrl: String, path: String): String? {
-        val normalizedBase = baseUrl.trim().trimEnd('/')
-        if (normalizedBase.isEmpty()) {
-            return null
-        }
-        val trimmedPath = path.trim()
-        if (trimmedPath.isEmpty()) {
-            return null
-        }
-        if (trimmedPath.startsWith("http://") || trimmedPath.startsWith("https://")) {
-            return trimmedPath
-        }
-        val normalizedPath = trimmedPath.trimStart('/')
-        val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
-        return "$normalizedBase/$finalPath"
-    }
-
-    private fun buildExistingImageMarkdown(baseUrl: String, path: String): String {
-        val trimmedPath = path.trim().trimStart('/')
-        if (trimmedPath.isEmpty()) {
-            return "![]($path)"
-        }
-        val normalizedPath = if (trimmedPath.startsWith("db/")) {
-            trimmedPath.removePrefix("db/")
-        } else {
-            trimmedPath
-        }
-        return if (normalizedPath.startsWith("resources/")) {
-            "![](${normalizedPath.trim()})"
-        } else {
-            "![](resources/${normalizedPath.trim()})"
-        }
     }
 
     private fun extractPathFromMarkdown(markdown: String?): String? {
@@ -1079,29 +1014,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         return "resources/${resourceId.trim()}/${fileName.trim()}"
     }
 
-    private fun parseResourceFromPath(path: String): Pair<String?, String?> {
-        val parts = path.split('/')
-        if (parts.size < 3) {
-            return null to null
-        }
-        val resourcesIndex = parts.indexOfFirst { it.equals("resources", ignoreCase = true) }
-        if (resourcesIndex == -1 || resourcesIndex + 2 >= parts.size) {
-            return null to null
-        }
-        val resourceId = parts[resourcesIndex + 1].takeIf { it.isNotBlank() }
-        val fileName = parts[resourcesIndex + 2].takeIf { it.isNotBlank() }
-        return resourceId to fileName
-    }
-
-    private fun extractFileName(path: String): String? {
-        val trimmed = path.trim().trimEnd('/')
-        val lastSlash = trimmed.lastIndexOf('/')
-        if (lastSlash == -1 || lastSlash == trimmed.lastIndex) {
-            return trimmed.takeIf { it.isNotEmpty() }
-        }
-        return trimmed.substring(lastSlash + 1).takeIf { it.isNotEmpty() }
-    }
-
     private fun derivePendingNormalizedKey(pending: PendingVoiceImage): String {
         val candidates = listOfNotNull(
             pending.uploadedMarkdown?.let { extractPathFromMarkdown(it) },
@@ -1115,15 +1027,7 @@ class CreateVoiceActivity : AppCompatActivity() {
     }
 
     private fun mergeImagePaths(paths: List<String>): List<String> {
-        val seen = LinkedHashSet<String>()
-        val result = mutableListOf<String>()
-        for (path in paths) {
-            val normalized = normalizeImagePath(path)
-            if (seen.add(normalized)) {
-                result += path
-            }
-        }
-        return result
+        return paths.distinctBy { normalizeImagePath(it) }
     }
 
     private fun normalizeImagePath(path: String): String {
@@ -1265,13 +1169,21 @@ class CreateVoiceActivity : AppCompatActivity() {
         var updatedMessage = dedupedMessage
         val preparedImages = LinkedHashMap<String, VoicesComposerRepository.ImagePayload>()
         val normalizedMessageImages = dedupedExistingImages.toMutableSet()
-        for (pending in uniquePendings) {
-            val requiresUpload = shouldUploadPending(pending)
-            val markdown = if (requiresUpload) {
-                ensureImageUpload(baseUrl, credentials, context, pending)
-            } else {
-                resolveExistingMarkdown(pending) ?: ensureImageUpload(baseUrl, credentials, context, pending)
-            }
+        val uploadResults = coroutineScope {
+            uniquePendings.map { pending ->
+                async {
+                    val requiresUpload = shouldUploadPending(pending)
+                    val markdown = if (requiresUpload) {
+                        ensureImageUpload(baseUrl, credentials, context, pending)
+                    } else {
+                        resolveExistingMarkdown(pending) ?: ensureImageUpload(baseUrl, credentials, context, pending)
+                    }
+                    pending to markdown
+                }
+            }.awaitAll()
+        }
+
+        for ((pending, markdown) in uploadResults) {
             val normalizedPath = normalizeImagePath(markdown)
             val replaced = replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
             if (!normalizedMessageImages.contains(normalizedPath)) {
@@ -1673,15 +1585,7 @@ class CreateVoiceActivity : AppCompatActivity() {
 }
 
 
-data class PendingVoiceImage(
-    val id: String,
-    val fileName: String,
-    val file: File,
-    val jpegBytes: ByteArray,
-    var resourceId: String? = null,
-    var resourceRevision: String? = null,
-    var uploadedMarkdown: String? = null
-)
+
 
 data class PreparedVoicePost(
     val message: String,

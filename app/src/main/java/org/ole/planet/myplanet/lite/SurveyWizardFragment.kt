@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite
 
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
@@ -64,12 +62,16 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyChoice
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
+import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
+import org.ole.planet.myplanet.lite.profile.GENDER_MALE
+import org.ole.planet.myplanet.lite.profile.GENDER_OTHER
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
@@ -1333,7 +1335,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 } else {
                     val choice = if (isOther) {
                         SelectedOption(
-                            id = "other",
+                            id = GENDER_OTHER,
                             text = otherValue,
                             isOther = true,
                         )
@@ -1447,7 +1449,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 if (otherChecked && otherText.isNotBlank()) {
                     combined.add(
                         SelectedOption(
-                            id = "other",
+                            id = GENDER_OTHER,
                             text = otherText,
                             isOther = true,
                         ),
@@ -1652,6 +1654,3 @@ private data class SubmissionOptionValue(
     @param:Json(name = "text") val text: String?,
     @param:Json(name = "isOther") val isOther: Boolean = false,
 )
-
-private const val GENDER_MALE = "male"
-private const val GENDER_FEMALE = "female"

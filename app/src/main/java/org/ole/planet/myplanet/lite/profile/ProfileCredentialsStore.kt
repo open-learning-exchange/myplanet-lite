@@ -11,6 +11,7 @@ import android.content.Context
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import org.ole.planet.myplanet.lite.MyPlanetLite
+
 /**
  * Reads the credentials that were persisted after login so the profile screen can refresh data.
  */

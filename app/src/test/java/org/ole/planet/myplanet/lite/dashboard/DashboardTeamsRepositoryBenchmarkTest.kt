@@ -1,12 +1,12 @@
 package org.ole.planet.myplanet.lite.dashboard
 
-import kotlinx.coroutines.runBlocking
-import org.junit.Test
 import kotlin.system.measureTimeMillis
-import okhttp3.mockwebserver.MockWebServer
+import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Before
+import org.junit.Test
 
 class DashboardTeamsRepositoryBenchmarkTest {
     private lateinit var mockWebServer: MockWebServer
