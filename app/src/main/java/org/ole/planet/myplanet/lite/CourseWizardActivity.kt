@@ -10,7 +10,6 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -51,7 +50,6 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : AppCompatActivity() {
-    private val courseLogTag = "CourseWizard"
     private val pendingProgressPrefs by lazy {
         getSharedPreferences(PREF_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
     }
@@ -246,7 +244,6 @@ class CourseWizardActivity : AppCompatActivity() {
         nextButton: View
     ) {
         val step = steps[currentIndex]
-        logStepMarkdownStatus(step)
         stepPositionView.text = getString(
             R.string.course_wizard_step_position,
             currentIndex + 1,
@@ -348,7 +345,6 @@ class CourseWizardActivity : AppCompatActivity() {
         val id = courseId?.takeIf { it.isNotBlank() } ?: return
         if (!isDeviceOnline()) {
             enqueuePendingProgress(id, targetStepNumber)
-            Log.d(courseLogTag, "Queued step progress (offline): course=$id step=$targetStepNumber")
             return
         }
         val existingDocuments = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
@@ -375,11 +371,9 @@ class CourseWizardActivity : AppCompatActivity() {
         val saveResult = coursesRepository.saveCourseProgress(normalizedBase, creds, document)
         if (saveResult.isFailure) {
             enqueuePendingProgress(id, targetStepNumber)
-            Log.e(courseLogTag, "Failed to sync step progress, queued: course=$id step=$targetStepNumber")
         } else {
             val persistedDoc = saveResult.getOrNull()
                 ?.firstOrNull { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
-            Log.d(courseLogTag, "Synced step progress: course=$id step=$targetStepNumber")
             val resolvedId = persistedDoc?.id ?: document.id
             val resolvedRev = persistedDoc?.rev ?: document.rev
             cachedProgressDocument = DashboardCoursesRepository.CourseProgressDocument(
@@ -403,7 +397,6 @@ class CourseWizardActivity : AppCompatActivity() {
         if (!isDeviceOnline()) return
         val pendingSteps = getPendingProgress(id)
         if (pendingSteps.isEmpty()) return
-        Log.d(courseLogTag, "Flushing pending step progress for course=$id, steps=$pendingSteps")
         pendingSteps.sorted().forEach { step ->
             val existingDocuments = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
                 .getOrNull()
@@ -431,9 +424,6 @@ class CourseWizardActivity : AppCompatActivity() {
             val result = coursesRepository.saveCourseProgress(normalizedBase, creds, document)
             if (result.isSuccess) {
                 removePendingProgress(id, step)
-                Log.d(courseLogTag, "Flushed pending step progress: course=$id step=$step")
-            } else {
-                Log.e(courseLogTag, "Failed flushing pending step progress: course=$id step=$step")
             }
         }
     }
@@ -446,7 +436,6 @@ class CourseWizardActivity : AppCompatActivity() {
             .filter { it.submission.type.equals("exam", ignoreCase = true) }
             .sortedBy { it.createdAt }
         if (pendingEntries.isEmpty()) return
-        Log.d(courseLogTag, "Flushing pending exam submissions: count=${pendingEntries.size}")
         pendingEntries.forEach { entry ->
             val result = surveySubmissionRepository.submitSurvey(
                 normalizedBase,
@@ -456,9 +445,6 @@ class CourseWizardActivity : AppCompatActivity() {
             )
             if (result.isSuccess) {
                 surveyOutboxStore.deleteEntry(entry.id)
-                Log.d(courseLogTag, "Flushed pending exam submission outboxId=${entry.id}")
-            } else {
-                Log.e(courseLogTag, "Failed to flush pending exam outboxId=${entry.id}")
             }
         }
     }
@@ -869,42 +855,6 @@ class CourseWizardActivity : AppCompatActivity() {
             value = value.substringBefore(" ")
         }
         return value.trim()
-    }
-    private fun logStepMarkdownStatus(step: StepDisplay) {
-        logLongMessage("Step description markdown", step.description)
-        val safeCourseId = courseId?.takeIf { it.isNotBlank() }
-        val markdownPattern = Regex("""!\[[^\]]*]\(([^)]+)\)""")
-        val htmlPattern = Regex("""<img[^>]+src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
-        val sources = buildList {
-            markdownPattern.findAll(step.description).forEach { add(it.groupValues[1]) }
-            htmlPattern.findAll(step.description).forEach { add(it.groupValues[1]) }
-        }.map { normalizeMarkdownImageSource(it) }
-            .distinct()
-        if (sources.isEmpty()) {
-            Log.d(courseLogTag, "No markdown images found in this step.")
-            return
-        }
-        sources.forEach { source ->
-            val hasLocal = if (safeCourseId == null) {
-                false
-            } else {
-                OfflineCourseStorage.localMarkdownImageUri(this, safeCourseId, source) != null
-            }
-            Log.d(
-                courseLogTag,
-                "Markdown image source: $source | downloaded_local=$hasLocal"
-            )
-        }
-    }
-    private fun logLongMessage(prefix: String, content: String) {
-        val chunkSize = 3500
-        if (content.length <= chunkSize) {
-            Log.d(courseLogTag, "$prefix: $content")
-            return
-        }
-        content.chunked(chunkSize).forEachIndexed { index, chunk ->
-            Log.d(courseLogTag, "$prefix [part ${index + 1}]: $chunk")
-        }
     }
     data class StepDisplay(
         val title: String,

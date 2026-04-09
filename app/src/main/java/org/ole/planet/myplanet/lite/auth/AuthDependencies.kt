@@ -9,7 +9,6 @@ import android.content.Context
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
-import okhttp3.logging.HttpLoggingInterceptor
 import org.ole.planet.myplanet.lite.BuildConfig
 import retrofit2.Retrofit
 import retrofit2.converter.moshi.MoshiConverterFactory
@@ -24,15 +23,7 @@ object AuthDependencies {
         authServiceOverride = service
     }
     private fun createAuthService(context: Context, baseUrl: String): AuthService {
-        val loggingInterceptor = HttpLoggingInterceptor().apply {
-            level = if (BuildConfig.DEBUG) {
-                HttpLoggingInterceptor.Level.BODY
-            } else {
-                HttpLoggingInterceptor.Level.NONE
-            }
-        }
         val client = OkHttpClient.Builder()
-            .addInterceptor(loggingInterceptor)
             .build()
         val moshi = Moshi.Builder()
             .addLast(KotlinJsonAdapterFactory())

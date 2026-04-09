@@ -15,7 +15,6 @@ import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
 import android.text.InputType
-import android.util.Log
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
@@ -688,7 +687,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             ).show()
             finishWithResult()
         } else {
-            Log.e(LOG_TAG, "Survey submission failed, storing in outbox for retry")
             queueSubmissionForOutbox(submission, survey)
         }
     }
@@ -704,7 +702,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 teamName = teamName,
             )
             if (saved) {
-                Log.d(LOG_TAG, "Saved survey submission in outbox surveyId=${survey.id}")
                 Toast.makeText(
                     requireContext(),
                     getString(R.string.dashboard_survey_submission_saved_offline),
@@ -720,14 +717,12 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     private suspend fun flushPendingSurveySubmissions() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         if (!isDeviceOnline()) {
-            Log.d(LOG_TAG, "Skipping survey outbox flush because device is offline")
             return
         }
         val store = outboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext)
         outboxStore = store
         val pendingEntries = store.getPendingForTeam(null).sortedBy { it.createdAt }
         if (pendingEntries.isEmpty()) return
-        Log.d(LOG_TAG, "Flushing survey outbox entries count=${pendingEntries.size}")
         pendingEntries.forEach { entry ->
             val result = submissionRepository.submitSurvey(
                 normalizedBase,
@@ -737,9 +732,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             )
             if (result.isSuccess) {
                 store.deleteEntry(entry.id)
-                Log.d(LOG_TAG, "Flushed and removed survey outboxId=${entry.id}")
-            } else {
-                Log.e(LOG_TAG, "Failed to flush survey outboxId=${entry.id}")
             }
         }
     }
@@ -1644,7 +1636,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         private const val PREFS_NAME = "server_preferences"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
         private const val DEFAULT_DEVICE_NAME = "Android Device"
-        private const val LOG_TAG = "SurveyWizard"
 
         fun newInstance(
             document: SurveyDocument,

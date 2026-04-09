@@ -9,7 +9,6 @@ package org.ole.planet.myplanet.lite
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
-import android.util.Log
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
@@ -735,14 +734,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         }
         val pendingEntries = store.getPendingForTeam(null).sortedBy { it.createdAt }
         if (pendingEntries.isEmpty()) return
-        Log.d(LOG_TAG, "Flushing pending survey outbox from courses: count=${pendingEntries.size}")
         pendingEntries.forEach { entry ->
             val result = surveySubmissionRepository.submitSurvey(base, creds, sessionCookie, entry.submission)
             if (result.isSuccess) {
                 store.deleteEntry(entry.id)
-                Log.d(LOG_TAG, "Flushed pending outbox entry id=${entry.id}")
-            } else {
-                Log.e(LOG_TAG, "Failed to flush outbox entry id=${entry.id}")
             }
         }
     }
@@ -1433,7 +1428,6 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         private const val KEY_JOINED_COURSE_ID = "joined_course_id"
         private const val KEY_LEFT_COURSE = "left_course"
         private const val MIN_DOWNLOAD_BUFFER_BYTES = 10L * 1024L * 1024L
-        private const val LOG_TAG = "DashboardCourses"
 
         private val pendingRefreshTabs = mutableSetOf<Int>()
 

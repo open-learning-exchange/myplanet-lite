@@ -10,7 +10,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
-import android.util.Log
 import android.widget.ImageButton
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -34,7 +33,6 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class FullscreenPlayerActivity : AppCompatActivity() {
 
-    private val logTag = "FullscreenPlayer"
     private var player: ExoPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +67,6 @@ class FullscreenPlayerActivity : AppCompatActivity() {
                 playerView.player = exo
                 exo.addListener(object : Player.Listener {
                     override fun onPlayerError(error: PlaybackException) {
-                        Log.e(logTag, "Playback error", error)
                         val messageRes = if (isDecoderCapabilityError(error)) {
                             R.string.fullscreen_player_unsupported_video
                         } else {

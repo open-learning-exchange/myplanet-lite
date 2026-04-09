@@ -6,7 +6,6 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.util.Log
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
@@ -46,7 +45,6 @@ class DashboardSurveySubmissionsRepository {
                 }
                 val endpoint = "$normalizedBase/db/submissions"
                 val payload = submissionAdapter.toJson(submission)
-                Log.d(LOG_TAG, "Submitting course survey to endpoint=$endpoint payload=$payload")
                 val requestBuilder = Request.Builder()
                     .url(endpoint)
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
@@ -58,10 +56,6 @@ class DashboardSurveySubmissionsRepository {
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
                     val responseBody = response.body.string()
-                    Log.d(
-                        LOG_TAG,
-                        "Course survey submit response endpoint=$endpoint status=${response.code} body=$responseBody",
-                    )
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}. body=$responseBody")
                     }
@@ -101,7 +95,6 @@ class DashboardSurveySubmissionsRepository {
                     ),
                 )
                 val endpoint = "$normalizedBase/db/submissions/_find"
-                Log.d(LOG_TAG, "Fetching existing course survey submission from endpoint=$endpoint payload=$payload")
                 val requestBuilder = Request.Builder()
                     .url(endpoint)
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
@@ -113,10 +106,6 @@ class DashboardSurveySubmissionsRepository {
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
                     val body = response.body.string()
-                    Log.d(
-                        LOG_TAG,
-                        "Course survey lookup response endpoint=$endpoint status=${response.code} body=$body",
-                    )
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}. body=$body")
                     }
@@ -223,7 +212,6 @@ class DashboardSurveySubmissionsRepository {
     )
 
     companion object {
-        private const val LOG_TAG = "DashboardSurveySubmit"
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
     }
 }
