@@ -94,7 +94,7 @@ class DashboardSurveySubmissionsRepositoryTest {
 
         assertTrue(result.isFailure)
         assertTrue(result.exceptionOrNull() is IOException)
-        assertEquals("Unexpected response 500", result.exceptionOrNull()?.message)
+        assertEquals("Unexpected response 500. body=", result.exceptionOrNull()?.message)
     }
 
     @Test
