@@ -69,6 +69,13 @@ class GenderTranslatorTest {
     }
 
     @Test
+    fun testToEnglish_IndexOutOfBoundsReturnsNull() {
+        // Mock a situation where the localized array has more elements than the English array
+        whenever(resources.getStringArray(R.array.signup_gender_options_language_es)).thenReturn(arrayOf("Masculino", "Femenino", "Otro"))
+        assertNull(GenderTranslator.toEnglish(context, "Otro"))
+    }
+
+    @Test
     fun testToLocalized_FromEnglish() {
         assertEquals("Masculino", GenderTranslator.toLocalized(context, "Male", R.array.signup_gender_options_language_es))
         assertEquals("Féminin", GenderTranslator.toLocalized(context, "Female", R.array.signup_gender_options_language_fr))
@@ -100,5 +107,13 @@ class GenderTranslatorTest {
         assertNull(GenderTranslator.toLocalized(context, null, R.array.signup_gender_options_language_es))
         assertNull(GenderTranslator.toLocalized(context, "", R.array.signup_gender_options_language_fr))
         assertNull(GenderTranslator.toLocalized(context, "   ", R.array.signup_gender_options_language_en))
+    }
+
+    @Test
+    fun testToLocalized_IndexOutOfBoundsReturnsEnglishValue() {
+        // Mock a situation where the target array has fewer elements than the English array
+        whenever(resources.getStringArray(R.array.signup_gender_options_language_en)).thenReturn(arrayOf("Male", "Female", "Other"))
+        whenever(resources.getStringArray(R.array.signup_gender_options_language_es)).thenReturn(arrayOf("Masculino", "Femenino"))
+        assertEquals("Other", GenderTranslator.toLocalized(context, "Other", R.array.signup_gender_options_language_es))
     }
 }

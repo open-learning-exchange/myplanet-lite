@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.lite.util
 
 import android.os.Build
+import androidx.annotation.VisibleForTesting
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
@@ -10,6 +11,9 @@ import java.util.TimeZone
 
 object DateUtils {
 
+    @VisibleForTesting
+    var sdkInt: Int = Build.VERSION.SDK_INT
+
     fun formatBirthDate(value: String?, fallback: String): String {
         if (value.isNullOrBlank()) {
             return fallback
@@ -17,7 +21,7 @@ object DateUtils {
 
         val targetPattern = "yyyy-MM-dd"
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        return if (sdkInt >= Build.VERSION_CODES.O) {
             val date = runCatching { Instant.parse(value).atZone(ZoneOffset.UTC).toLocalDate() }.getOrNull()
                 ?: runCatching { LocalDate.parse(value) }.getOrNull()
 
