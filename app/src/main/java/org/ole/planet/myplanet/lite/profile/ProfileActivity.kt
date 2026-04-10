@@ -150,6 +150,22 @@ class ProfileActivity : AppCompatActivity() {
         loadingContainer = findViewById(R.id.profileLoadingContainer)
         showLoading(true)
 
+        setupWindowInsets(root, toolbar, scrollView)
+
+        toolbar.setNavigationOnClickListener {
+            onBackPressedDispatcher.onBackPressed()
+        }
+
+        bindViews()
+        setupListeners()
+
+        val languageOptions = getLanguageOptions()
+        setupLanguageDropdown(languageOptions)
+
+        loadProfileData(languageOptions)
+    }
+
+    private fun setupWindowInsets(root: View, toolbar: MaterialToolbar, scrollView: View) {
         val toolbarPadding = Padding(toolbar.paddingLeft, toolbar.paddingTop, toolbar.paddingRight)
         val scrollPadding = Padding(scrollView.paddingLeft, scrollView.paddingTop, scrollView.paddingRight, scrollView.paddingBottom)
 
@@ -167,25 +183,25 @@ class ProfileActivity : AppCompatActivity() {
             )
             insets
         }
+    }
 
-        toolbar.setNavigationOnClickListener {
-            onBackPressedDispatcher.onBackPressed()
-        }
-
-        val usernameView: TextView = findViewById(R.id.profileUsernameValue)
+    private fun bindViews() {
         firstNameInput = findViewById(R.id.profileFirstNameInput)
         middleNameInput = findViewById(R.id.profileMiddleNameInput)
         lastNameInput = findViewById(R.id.profileLastNameInput)
         emailInput = findViewById(R.id.profileEmailInput)
         phoneInput = findViewById(R.id.profilePhoneInput)
-        val birthDateInput: TextInputEditText = findViewById(R.id.profileBirthDateInput)
         genderGroup = findViewById(R.id.profileGenderGroup)
         languageInput = findViewById(R.id.profileLanguageInput)
         levelInput = findViewById(R.id.profileLevelInput)
-        val changeAvatarButton: View = findViewById(R.id.profileChangeAvatarButton)
         avatarCircleView = findViewById(R.id.profileAvatarPreviewCircle)
         avatarSquareView = findViewById(R.id.profileAvatarPreviewSquare)
+    }
+
+    private fun setupListeners() {
+        val changeAvatarButton: View = findViewById(R.id.profileChangeAvatarButton)
         val saveButton: MaterialButton = findViewById(R.id.profileSaveButton)
+        val birthDateInput: TextInputEditText = findViewById(R.id.profileBirthDateInput)
 
         val avatarClickListener = View.OnClickListener {
             launchAvatarPicker()
@@ -225,8 +241,10 @@ class ProfileActivity : AppCompatActivity() {
                 showBirthDatePicker(birthDateInput)
             }
         }
+    }
 
-        val languageOptions = listOf(
+    private fun getLanguageOptions(): List<LanguageOption> {
+        return listOf(
             LanguageOption("en", R.string.language_name_english, R.array.signup_level_options_language_en),
             LanguageOption("es", R.string.language_name_spanish, R.array.signup_level_options_language_es),
             LanguageOption("fr", R.string.language_name_french, R.array.signup_level_options_language_fr),
@@ -236,7 +254,9 @@ class ProfileActivity : AppCompatActivity() {
             LanguageOption("ne", R.string.language_name_nepali, R.array.signup_level_options_language_ne),
             LanguageOption("hi", R.string.language_name_hindi, R.array.signup_level_options_language_hi)
         )
+    }
 
+    private fun setupLanguageDropdown(languageOptions: List<LanguageOption>) {
         val languageLabels = languageOptions.map { getString(it.labelRes) }
         val languageAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, languageLabels)
         languageInput.setAdapter(languageAdapter)
@@ -248,31 +268,36 @@ class ProfileActivity : AppCompatActivity() {
         val levelAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, defaultLevelOptions)
         levelInput.setAdapter(levelAdapter)
 
-        fun applyLanguage(option: LanguageOption, existingLevel: String?) {
-            val label = getString(option.labelRes)
-            if (languageInput.text?.toString() != label) {
-                languageInput.setText(label, false)
-            }
-            val newLevels = resources.getStringArray(option.levelArrayRes)
-            levelAdapter.clear()
-            levelAdapter.addAll(newLevels.asList())
-            levelAdapter.notifyDataSetChanged()
-
-            val localizedLevel = LearningLevelTranslator.toLocalized(
-                this@ProfileActivity,
-                existingLevel,
-                option.levelArrayRes
-            )
-            if (localizedLevel.isNullOrBlank()) {
-                levelInput.setText("", false)
-            } else {
-                levelInput.setText(localizedLevel, false)
-            }
-        }
-
         languageInput.setOnItemClickListener { _, _, position, _ ->
-            applyLanguage(languageOptions[position], levelInput.text?.toString())
+            applyLanguage(languageOptions[position], levelInput.text?.toString(), levelAdapter)
         }
+    }
+
+    private fun applyLanguage(option: LanguageOption, existingLevel: String?, levelAdapter: ArrayAdapter<String>) {
+        val label = getString(option.labelRes)
+        if (languageInput.text?.toString() != label) {
+            languageInput.setText(label, false)
+        }
+        val newLevels = resources.getStringArray(option.levelArrayRes)
+        levelAdapter.clear()
+        levelAdapter.addAll(newLevels.asList())
+        levelAdapter.notifyDataSetChanged()
+
+        val localizedLevel = LearningLevelTranslator.toLocalized(
+            this@ProfileActivity,
+            existingLevel,
+            option.levelArrayRes
+        )
+        if (localizedLevel.isNullOrBlank()) {
+            levelInput.setText("", false)
+        } else {
+            levelInput.setText(localizedLevel, false)
+        }
+    }
+
+    private fun loadProfileData(languageOptions: List<LanguageOption>) {
+        val usernameView: TextView = findViewById(R.id.profileUsernameValue)
+        val birthDateInput: TextInputEditText = findViewById(R.id.profileBirthDateInput)
 
         lifecycleScope.launch {
             showLoading(true)
@@ -317,7 +342,10 @@ class ProfileActivity : AppCompatActivity() {
             }
 
             if (matchedLanguage != null) {
-                applyLanguage(matchedLanguage, profile?.level)
+                val currentLevelAdapter = levelInput.adapter as? ArrayAdapter<String>
+                if (currentLevelAdapter != null) {
+                    applyLanguage(matchedLanguage, profile?.level, currentLevelAdapter)
+                }
             } else {
                 languageInput.setText(languageValue, false)
                 val englishLevel = LearningLevelTranslator.toEnglish(this@ProfileActivity, profile?.level)
@@ -335,6 +363,7 @@ class ProfileActivity : AppCompatActivity() {
             }
         }
     }
+
 
     private fun showLoading(show: Boolean) {
         loadingContainer.isVisible = show
