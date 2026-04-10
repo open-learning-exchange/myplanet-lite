@@ -17,6 +17,10 @@ import retrofit2.HttpException
 sealed class AuthResult {
     data class Success(val response: LoginResponse) : AuthResult()
     data class Error(val code: Int?, val message: String) : AuthResult()
+    sealed class Failure : AuthResult() {
+        object InvalidCredentials : Failure()
+        data class NetworkError(val http: HttpException) : Failure()
+    }
 }
 interface AuthService {
     suspend fun login(usernameOrEmail: String, password: String): AuthResult
@@ -58,7 +62,11 @@ class NetworkAuthService(
                 AuthResult.Error(response.code(), errorMessage)
             }
         } catch (http: HttpException) {
-            AuthResult.Error(http.code(), http.message())
+            if (http.code() == 401 || http.code() == 404) {
+                AuthResult.Failure.InvalidCredentials
+            } else {
+                AuthResult.Failure.NetworkError(http)
+            }
         } catch (io: IOException) {
             AuthResult.Error(null, "Error de red: ${io.localizedMessage ?: io.message}")
         } catch (e: CancellationException) {
