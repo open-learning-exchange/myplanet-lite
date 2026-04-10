@@ -9,24 +9,26 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 @RunWith(AndroidJUnit4::class)
 class DashboardSurveyStatusStoreTest {
 
     private lateinit var context: Context
-    private val PREFS_NAME = "dashboard_survey_statuses"
+    private val testPrefsName = "dashboard_survey_statuses_test"
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        // Ensure starting with clean state
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
+        val testPrefs = context.getSharedPreferences(testPrefsName, Context.MODE_PRIVATE)
+        testPrefs.edit().clear().commit()
+        SecurePreferencesProvider.injectedPreferences = testPrefs
     }
 
     @After
     fun tearDown() {
-        // Clean up after test
-        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit().clear().apply()
+        context.getSharedPreferences(testPrefsName, Context.MODE_PRIVATE).edit().clear().commit()
+        SecurePreferencesProvider.injectedPreferences = null
     }
 
     @Test
