@@ -30,6 +30,8 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
@@ -51,7 +53,37 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : AppCompatActivity() {
     private val pendingProgressPrefs by lazy {
-        getSharedPreferences(PREF_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
+        val masterKey = MasterKey.Builder(applicationContext)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+
+        val encryptedPrefs = EncryptedSharedPreferences.create(
+            applicationContext,
+            PREF_ENCRYPTED_PENDING_COURSE_PROGRESS,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+
+        val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
+        val allLegacy = legacyPrefs.all
+        if (allLegacy.isNotEmpty()) {
+            val editor = encryptedPrefs.edit()
+            for ((key, value) in allLegacy) {
+                when (value) {
+                    is String -> editor.putString(key, value)
+                    is Int -> editor.putInt(key, value)
+                    is Boolean -> editor.putBoolean(key, value)
+                    is Float -> editor.putFloat(key, value)
+                    is Long -> editor.putLong(key, value)
+                    is Set<*> -> @Suppress("UNCHECKED_CAST") editor.putStringSet(key, value as Set<String>)
+                }
+            }
+            editor.apply()
+            legacyPrefs.edit().clear().apply()
+        }
+
+        encryptedPrefs
     }
     private lateinit var markwon: Markwon
     private var steps: List<StepDisplay> = emptyList()
@@ -864,7 +896,8 @@ class CourseWizardActivity : AppCompatActivity() {
         val exam: SurveyDocument? = null
     )
     companion object {
-        private const val PREF_PENDING_COURSE_PROGRESS = "pref_pending_course_progress"
+        private const val PREF_LEGACY_PENDING_COURSE_PROGRESS = "pref_pending_course_progress"
+        private const val PREF_ENCRYPTED_PENDING_COURSE_PROGRESS = "encrypted_pending_course_progress"
         private const val EXTRA_TITLE = "extra_title"
         private const val EXTRA_COURSE_ID = "extra_course_id"
         private const val EXTRA_STEPS = "extra_steps"
