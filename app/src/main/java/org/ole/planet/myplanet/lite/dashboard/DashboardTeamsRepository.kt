@@ -17,6 +17,7 @@ import java.io.IOException
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Locale
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
@@ -61,13 +62,14 @@ class DateStringAdapter {
     }
 }
 
-class DashboardTeamsRepository {
-
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
+class DashboardTeamsRepository(
+    private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()
         .add(DateStringAdapter())
         .addLast(KotlinJsonAdapterFactory())
-        .build()
+        .build(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
     private val membershipRequestAdapter = moshi.adapter(MembershipFindRequest::class.java)
     private val membershipResponseAdapter = moshi.adapter(MembershipFindResponse::class.java)
     private val teamMembershipRequestAdapter = moshi.adapter(TeamMembershipFindRequest::class.java)
@@ -95,7 +97,7 @@ class DashboardTeamsRepository {
         userId: String,
         userPlanetCode: String,
     ): Result<Unit> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -191,7 +193,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         username: String
     ): Result<List<MembershipDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -238,7 +240,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         teamId: String,
     ): Result<List<TeamMemberDetails>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val memberships = fetchTeamMembers(baseUrl, credentials, sessionCookie, teamId)
                     .getOrThrow()
@@ -286,7 +288,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         teamId: String,
     ): Result<List<MembershipDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -334,7 +336,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         membership: MembershipDocument,
     ): Result<Unit> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -397,7 +399,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         teamIds: List<String>
     ): Result<List<TeamDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -441,7 +443,7 @@ class DashboardTeamsRepository {
         skip: Int = 0,
         limit: Int = 25
     ): Result<List<TeamDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -487,7 +489,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         userId: String,
     ): Result<List<JoinRequestDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -531,7 +533,7 @@ class DashboardTeamsRepository {
         teamId: String,
         userId: String,
     ): Result<Boolean> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -579,7 +581,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         teamIds: List<String>
     ): Result<Map<String, Int>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -638,7 +640,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         request: JoinTeamRequest,
     ): Result<Unit> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -723,7 +725,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         username: String,
     ): Result<TeamMemberProfileDetails> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -742,7 +744,7 @@ class DashboardTeamsRepository {
         documentId: String,
         revision: String,
     ): Result<Unit> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -784,7 +786,7 @@ class DashboardTeamsRepository {
         documentId: String,
         revision: String,
     ): Result<Unit> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -1098,7 +1100,7 @@ class DashboardTeamsRepository {
         sessionCookie: String?,
         userIds: List<String>
     ): Result<List<UserDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -1143,7 +1145,7 @@ class DashboardTeamsRepository {
         searchTerm: String? = null,
         excludedUserIds: List<String> = emptyList(),
     ): Result<List<UserDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
