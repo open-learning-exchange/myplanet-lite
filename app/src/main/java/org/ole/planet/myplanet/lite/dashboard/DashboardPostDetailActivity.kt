@@ -69,12 +69,9 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsActionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
@@ -158,6 +155,16 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard_post_detail)
 
+        setupToolbar()
+        setupViews()
+        setupBackNavigation()
+        setupReplyComposer()
+        if (!loadIntentData()) return
+        setupAdapter()
+        loadInitialData()
+    }
+
+    private fun setupToolbar() {
         val toolbar: MaterialToolbar = findViewById(R.id.postDetailToolbar)
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
@@ -176,9 +183,15 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             hitRect.right += extraTapArea
             toolbar.touchDelegate = TouchDelegate(hitRect, navButton)
         }
+    }
 
+    private fun setupViews() {
         markwon = Markwon.builder(this).build()
+        recyclerView = findViewById(R.id.postDetailRecyclerView)
+        loadingView = findViewById(R.id.postDetailLoading)
+    }
 
+    private fun setupBackNavigation() {
         backCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
                 if (collapseReplyComposerIfExpanded()) {
@@ -189,7 +202,9 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             }
         }
         onBackPressedDispatcher.addCallback(this, backCallback)
+    }
 
+    private fun setupReplyComposer() {
         replyContainer = findViewById(R.id.postDetailReplyContainer)
         replyInputLayout = findViewById(R.id.dashboardReplyInputLayout)
         replyInput = findViewById(R.id.dashboardReplyInput)
@@ -277,14 +292,13 @@ class DashboardPostDetailActivity : AppCompatActivity() {
 
         setMarkdownToolbarEnabled(false)
         replySendButton.isEnabled = false
+    }
 
-        recyclerView = findViewById(R.id.postDetailRecyclerView)
-        loadingView = findViewById(R.id.postDetailLoading)
-
+    private fun loadIntentData(): Boolean {
         val postId = intent.getStringExtra(EXTRA_POST_ID)
         if (postId.isNullOrBlank()) {
             finish()
-            return
+            return false
         }
         val author = intent.getStringExtra(EXTRA_AUTHOR) ?: ""
         val username = intent.getStringExtra(EXTRA_USERNAME)
@@ -317,7 +331,10 @@ class DashboardPostDetailActivity : AppCompatActivity() {
 
         updateReplyingToLabel(username)
         updateReplyComposerVisibility()
+        return true
+    }
 
+    private fun setupAdapter() {
         adapter = PostDetailAdapter(
             markwon,
             avatarBinder = { imageView, user, hasAvatar ->
@@ -359,7 +376,9 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
         submitItems(currentComments)
+    }
 
+    private fun loadInitialData() {
         lifecycleScope.launch {
             initializeSession()
             val profile = loadCachedProfile()
@@ -388,7 +407,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 { sessionCookie },
                 { serverCode ?: baseUrl?.let { Uri.parse(it).host } }
             )
-            loadComments(postId)
+            loadComments(headerItem.id)
         }
     }
 
