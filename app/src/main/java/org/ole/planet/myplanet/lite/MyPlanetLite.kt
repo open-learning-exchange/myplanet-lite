@@ -950,6 +950,14 @@ class MyPlanetLite : AppCompatActivity() {
                 errorText.text = errorMessage
                 errorText.isVisible = true
             }
+            is AuthResult.Failure.InvalidCredentials -> {
+                errorText.text = getString(R.string.login_invalid_credentials)
+                errorText.isVisible = true
+            }
+            is AuthResult.Failure.NetworkError -> {
+                errorText.text = getString(R.string.login_generic_error)
+                errorText.isVisible = true
+            }
         }
     }
 
