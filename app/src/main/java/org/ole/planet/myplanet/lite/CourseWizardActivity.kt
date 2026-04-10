@@ -1,10 +1,10 @@
+@file:Suppress("DEPRECATION")
 /**
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-01-04
  */
 package org.ole.planet.myplanet.lite
-
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
@@ -49,14 +49,12 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : AppCompatActivity() {
     private val pendingProgressPrefs by lazy {
         val masterKey = MasterKey.Builder(applicationContext)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
             .build()
-
         val encryptedPrefs = EncryptedSharedPreferences.create(
             applicationContext,
             PREF_ENCRYPTED_PENDING_COURSE_PROGRESS,
@@ -64,7 +62,6 @@ class CourseWizardActivity : AppCompatActivity() {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
-
         val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
         val allLegacy = legacyPrefs.all
         if (allLegacy.isNotEmpty()) {
@@ -82,7 +79,6 @@ class CourseWizardActivity : AppCompatActivity() {
             editor.apply()
             legacyPrefs.edit().clear().apply()
         }
-
         encryptedPrefs
     }
     private lateinit var markwon: Markwon
@@ -384,7 +380,6 @@ class CourseWizardActivity : AppCompatActivity() {
         val existingDoc = existingDocuments?.get(id)
         val existingStep = existingDoc?.stepNum ?: 0
         if (existingStep >= targetStepNumber) return
-
         val now = System.currentTimeMillis()
         val document = DashboardCoursesRepository.CourseProgressUpdateDocument(
             id = cachedProgressDocument?.id,
@@ -421,7 +416,6 @@ class CourseWizardActivity : AppCompatActivity() {
             )
         }
     }
-
     private suspend fun flushPendingCourseProgress() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
@@ -429,10 +423,8 @@ class CourseWizardActivity : AppCompatActivity() {
         if (!isDeviceOnline()) return
         val pendingSteps = getPendingProgress(id)
         if (pendingSteps.isEmpty()) return
-
         var existingDoc = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
             .getOrNull()?.get(id)
-
         pendingSteps.sorted().forEach { step ->
             val existingStep = existingDoc?.stepNum ?: 0
             if (existingStep >= step) {
@@ -476,7 +468,6 @@ class CourseWizardActivity : AppCompatActivity() {
             }
         }
     }
-
     private suspend fun flushPendingExamSubmissions() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
@@ -497,21 +488,18 @@ class CourseWizardActivity : AppCompatActivity() {
             }
         }
     }
-
     private fun isDeviceOnline(): Boolean {
         val manager = getSystemService(android.net.ConnectivityManager::class.java) ?: return false
         val network = manager.activeNetwork ?: return false
         val capabilities = manager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
-
     private fun enqueuePendingProgress(courseId: String, stepNumber: Int) {
         val updated = (getPendingProgress(courseId) + stepNumber).distinct().sorted()
         val array = JSONArray()
         updated.forEach { array.put(it) }
         pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
     }
-
     private fun getPendingProgress(courseId: String): List<Int> {
         val raw = pendingProgressPrefs.getString(progressKey(courseId), null) ?: return emptyList()
         return runCatching {
@@ -524,7 +512,6 @@ class CourseWizardActivity : AppCompatActivity() {
             }
         }.getOrDefault(emptyList())
     }
-
     private fun removePendingProgress(courseId: String, stepNumber: Int) {
         val remaining = getPendingProgress(courseId).filterNot { it == stepNumber }
         if (remaining.isEmpty()) {
@@ -535,7 +522,6 @@ class CourseWizardActivity : AppCompatActivity() {
         remaining.forEach { array.put(it) }
         pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
     }
-
     private fun progressKey(courseId: String): String = "course_progress_$courseId"
     private fun bindAttachments(
         resources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
@@ -883,7 +869,6 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         return resolved
     }
-
     private fun resolveMarkdownSourceUrl(source: String): String? {
         val trimmed = source.trim()
         if (trimmed.isBlank()) return null
