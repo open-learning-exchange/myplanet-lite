@@ -166,9 +166,29 @@ class MyPlanetLite : AppCompatActivity() {
         applyDeviceOrientationLock()
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
+        setupWindowState()
+        initializeState(savedInstanceState)
+
+        val logoImageView: ImageView = findViewById(R.id.logoImageView)
+        val appVersionTextView: TextView = findViewById(R.id.appVersionTextView)
+        val loginScroll: ScrollView = findViewById(R.id.loginScroll)
+
+        setupViews(logoImageView, appVersionTextView, loginScroll)
+        setupWindowInsets(logoImageView, appVersionTextView, loginScroll)
+
+        World.init(applicationContext)
+
+        configureLogin()
+    }
+
+    private fun setupWindowState() {
         @Suppress("DEPRECATION")
         window.statusBarColor = ContextCompat.getColor(this, R.color.white)
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+    }
+
+    private fun initializeState(savedInstanceState: Bundle?) {
         ProfileCredentialsStore.setSessionCredentials(null)
         clearStoredSessionIfNotRemembered()
         autoLoginEnabled = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
@@ -187,17 +207,20 @@ class MyPlanetLite : AppCompatActivity() {
                 }
             }
         }
+    }
 
-        val logoImageView: ImageView = findViewById(R.id.logoImageView)
+    private fun setupViews(
+        logoImageView: ImageView,
+        appVersionTextView: TextView,
+        loginScroll: ScrollView
+    ) {
         val languageSelectorIcon: ImageView = findViewById(R.id.languageSelectorIcon)
         serverInputLayoutView = findViewById(R.id.serverInputLayout)
         serverAutoCompleteView = findViewById(R.id.serverUrlInput)
         loginUsernameInput = findViewById(R.id.usernameInput)
         loginPasswordInput = findViewById(R.id.passwordInput)
         serverStatusIconView = findViewById(R.id.serverStatusIcon)
-        val appVersionTextView: TextView = findViewById(R.id.appVersionTextView)
         val poweredByTextView: TextView = findViewById(R.id.poweredByText)
-        val loginScroll: ScrollView = findViewById(R.id.loginScroll)
         signupPromptView = findViewById(R.id.signupPrompt)
         signupButtonView = findViewById(R.id.signupButton)
         privacyPolicyPromptView = findViewById(R.id.privacyPolicyPrompt)
@@ -239,12 +262,14 @@ class MyPlanetLite : AppCompatActivity() {
             (resources.displayMetrics.density * APP_VERSION_SHRUNK_BOTTOM_MARGIN_DP).roundToInt()
         shrunkLoginScrollPaddingTopPx =
             (resources.displayMetrics.density * LOGIN_SCROLL_SHRUNK_PADDING_TOP_DP).roundToInt()
+
         logoImageView.doOnLayout {
             if (originalLogoWidth == 0 || originalLogoHeight == 0) {
                 originalLogoWidth = it.width
                 originalLogoHeight = it.height
             }
         }
+
         appVersionTextView.doOnLayout {
             if (originalAppVersionBottomMargin == 0) {
                 val params = it.layoutParams as? ViewGroup.MarginLayoutParams
@@ -256,6 +281,17 @@ class MyPlanetLite : AppCompatActivity() {
                 originalLoginScrollPaddingTop = it.paddingTop
             }
         }
+
+        languageSelectorIcon.setOnClickListener {
+            LanguagePreferences.showLanguageSelectionDialog(this)
+        }
+    }
+
+    private fun setupWindowInsets(
+        logoImageView: ImageView,
+        appVersionTextView: TextView,
+        loginScroll: ScrollView
+    ) {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -272,14 +308,6 @@ class MyPlanetLite : AppCompatActivity() {
 
             insets
         }
-
-        languageSelectorIcon.setOnClickListener {
-            LanguagePreferences.showLanguageSelectionDialog(this)
-        }
-
-        World.init(applicationContext)
-
-        configureLogin()
     }
 
     private fun launchDashboard() {
