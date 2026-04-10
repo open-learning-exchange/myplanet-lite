@@ -239,4 +239,33 @@ class NetworkAuthServiceTest {
         assertEquals(null, error.code)
         assertTrue(error.message.contains("Error inesperado: Something bad happened"))
     }
+
+    @Test
+    fun `logout clears token`() = runTest {
+        tokenStorage.saveToken("some_token")
+        assertEquals("some_token", tokenStorage.token)
+
+        service.logout()
+
+        assertEquals(null, tokenStorage.token)
+    }
+
+    @Test
+    fun `getStoredToken returns token`() = runTest {
+        tokenStorage.saveToken("another_token")
+
+        val token = service.getStoredToken()
+
+        assertEquals("another_token", token)
+    }
+
+    @Test
+    fun `getStoredToken returns null when empty`() = runTest {
+        tokenStorage.clearToken()
+
+        val token = service.getStoredToken()
+
+        assertEquals(null, token)
+    }
+
 }
