@@ -160,14 +160,84 @@ class NetworkAuthServiceTest {
             500,
             "Internal Server Error".toResponseBody("text/plain".toMediaType())
         )
+        val httpException = HttpException(errorResponse)
+        whenever(mockApi.login(any())).thenThrow(httpException)
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertTrue(result is AuthResult.Failure.NetworkError)
+        val error = result as AuthResult.Failure.NetworkError
+        assertEquals(httpException, error.http)
+    }
+
+    @Test
+    fun `login http exception 401 returns error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val errorResponse = Response.error<LoginResponse>(
+            401,
+            "Unauthorized".toResponseBody("text/plain".toMediaType())
+        )
         whenever(mockApi.login(any())).thenThrow(HttpException(errorResponse))
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertEquals(AuthResult.Failure.InvalidCredentials, result)
+    }
+
+    @Test
+    fun `login http exception 404 returns error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val errorResponse = Response.error<LoginResponse>(
+            404,
+            "Not Found".toResponseBody("text/plain".toMediaType())
+        )
+        whenever(mockApi.login(any())).thenThrow(HttpException(errorResponse))
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertEquals(AuthResult.Failure.InvalidCredentials, result)
+    }
+
+    @Test
+    fun `login io exception returns network error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val ioException = java.io.IOException("Custom IO error")
+        whenever(mockApi.login(any())).thenAnswer { throw ioException }
 
         val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
         val result = serviceWithMockApi.login("user", "pass")
 
         assertTrue(result is AuthResult.Error)
         val error = result as AuthResult.Error
-        assertEquals(500, error.code)
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error de red: Custom IO error"))
+    }
+
+    @Test(expected = kotlinx.coroutines.CancellationException::class)
+    fun `login cancellation exception is rethrown`() = runTest {
+        val mockApi = mock<AuthApi>()
+        whenever(mockApi.login(any())).thenThrow(kotlinx.coroutines.CancellationException("Cancelled"))
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        serviceWithMockApi.login("user", "pass")
+    }
+
+    @Test
+    fun `login unexpected exception returns generic error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val unexpectedException = RuntimeException("Something bad happened")
+        whenever(mockApi.login(any())).thenThrow(unexpectedException)
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error inesperado: Something bad happened"))
     }
 
     @Test
