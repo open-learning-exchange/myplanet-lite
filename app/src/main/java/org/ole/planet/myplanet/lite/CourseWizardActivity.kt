@@ -397,10 +397,11 @@ class CourseWizardActivity : AppCompatActivity() {
         if (!isDeviceOnline()) return
         val pendingSteps = getPendingProgress(id)
         if (pendingSteps.isEmpty()) return
+
+        var existingDoc = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
+            .getOrNull()?.get(id)
+
         pendingSteps.sorted().forEach { step ->
-            val existingDocuments = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
-                .getOrNull()
-            val existingDoc = existingDocuments?.get(id)
             val existingStep = existingDoc?.stepNum ?: 0
             if (existingStep >= step) {
                 removePendingProgress(id, step)
@@ -424,6 +425,22 @@ class CourseWizardActivity : AppCompatActivity() {
             val result = coursesRepository.saveCourseProgress(normalizedBase, creds, document)
             if (result.isSuccess) {
                 removePendingProgress(id, step)
+                val persistedDoc = result.getOrNull()
+                    ?.firstOrNull { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
+                val resolvedId = persistedDoc?.id ?: existingDoc?.id
+                val resolvedRev = persistedDoc?.rev ?: existingDoc?.rev
+                existingDoc = DashboardCoursesRepository.CourseProgressDocument(
+                    id = resolvedId,
+                    rev = resolvedRev,
+                    courseId = id,
+                    stepNum = step,
+                    passed = true,
+                    createdDate = document.createdDate,
+                    updatedDate = now,
+                    createdOn = document.createdOn,
+                    parentCode = document.parentCode
+                )
+                cachedProgressDocument = existingDoc
             }
         }
     }
