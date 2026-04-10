@@ -3,10 +3,10 @@ package org.ole.planet.myplanet.lite.dashboard
 import android.content.Context
 import android.content.ContextWrapper
 import android.content.SharedPreferences
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
-import org.junit.After
 import org.junit.Test
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 

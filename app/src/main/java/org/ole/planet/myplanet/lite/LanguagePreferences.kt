@@ -9,11 +9,11 @@ package org.ole.planet.myplanet.lite
 import android.content.Context
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator
-import org.ole.planet.myplanet.lite.model.LanguageOption
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
+import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import java.util.Locale
+import org.ole.planet.myplanet.lite.model.LanguageOption
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 object LanguagePreferences {
