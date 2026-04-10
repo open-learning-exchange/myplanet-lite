@@ -394,7 +394,7 @@ class ProfileActivity : AppCompatActivity() {
                         username = loginResult.response.name ?: storedCredentials.username
                     }
                 }
-                is AuthResult.Error -> Unit
+                is AuthResult.Error, is AuthResult.Failure -> Unit
             }
         }
 
@@ -430,7 +430,7 @@ class ProfileActivity : AppCompatActivity() {
                     sessionCookie = loginResult.response.sessionCookie ?: sessionCookie
                 }
 
-                is AuthResult.Error -> {
+                is AuthResult.Error, is AuthResult.Failure -> {
                     if (sessionCookie.isNullOrBlank()) {
                         return false
                     }
