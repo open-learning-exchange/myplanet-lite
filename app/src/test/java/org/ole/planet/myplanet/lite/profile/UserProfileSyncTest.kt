@@ -14,6 +14,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import java.io.IOException
 import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
@@ -194,8 +195,14 @@ class UserProfileSyncTest {
 
     @Test
     fun `refreshProfile with exception returns false`() = runTest {
-        // Unreachable url
-        val result = userProfileSync.refreshProfile("http://127.0.0.1:1", "testuser", null)
+        val failingClient = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                throw IOException("Network error")
+            }
+            .build()
+        val failingSync = UserProfileSync(failingClient, mockDatabase)
+
+        val result = failingSync.refreshProfile("http://localhost", "testuser", null)
         assertFalse(result)
     }
 

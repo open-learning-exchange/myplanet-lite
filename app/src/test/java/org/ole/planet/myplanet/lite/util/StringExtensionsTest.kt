@@ -36,4 +36,29 @@ class StringExtensionsTest {
     fun `nullIfBlank returns string when string has surrounding whitespace`() {
         assertEquals(" hello ", " hello ".nullIfBlank())
     }
+
+    @Test
+    fun `nullIfBlank returns null when string contains only tabs`() {
+        assertEquals(null, "\t\t".nullIfBlank())
+    }
+
+    @Test
+    fun `nullIfBlank returns null when string contains only newlines`() {
+        assertEquals(null, "\n\n".nullIfBlank())
+    }
+
+    @Test
+    fun `nullIfBlank returns null when string contains only carriage returns`() {
+        assertEquals(null, "\r\r".nullIfBlank())
+    }
+
+    @Test
+    fun `nullIfBlank returns null when string contains non-breaking spaces`() {
+        assertEquals(null, "\u00A0".nullIfBlank())
+    }
+
+    @Test
+    fun `nullIfBlank returns string when string contains whitespace in the middle`() {
+        assertEquals("a b", "a b".nullIfBlank())
+    }
 }
