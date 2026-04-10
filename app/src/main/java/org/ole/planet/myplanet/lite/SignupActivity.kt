@@ -1051,6 +1051,9 @@ class SignupActivity : AppCompatActivity() {
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
             } catch (_: Exception) {
+                withContext(Dispatchers.Main) {
+                    android.widget.Toast.makeText(this@SignupActivity, "An unexpected error occurred.", android.widget.Toast.LENGTH_SHORT).show()
+                }
                 SignupSubmissionResult.FAILED
             }
         }
