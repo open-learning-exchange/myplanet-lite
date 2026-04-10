@@ -43,9 +43,10 @@ class DashboardSurveySubmissionsRepository {
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
+                val endpoint = "$normalizedBase/db/submissions"
                 val payload = submissionAdapter.toJson(submission)
                 val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/submissions")
+                    .url(endpoint)
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
@@ -54,8 +55,9 @@ class DashboardSurveySubmissionsRepository {
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
+                    val responseBody = response.body.string()
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
+                        throw IOException("Unexpected response ${response.code}. body=$responseBody")
                     }
                 }
             }
@@ -92,8 +94,9 @@ class DashboardSurveySubmissionsRepository {
                         ),
                     ),
                 )
+                val endpoint = "$normalizedBase/db/submissions/_find"
                 val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/submissions/_find")
+                    .url(endpoint)
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
@@ -102,10 +105,10 @@ class DashboardSurveySubmissionsRepository {
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
                     val body = response.body.string()
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}. body=$body")
+                    }
                     if (body.isEmpty()) {
                         null
                     } else {
@@ -142,6 +145,8 @@ class DashboardSurveySubmissionsRepository {
         @param:Json(name = "_rev") val rev: String?,
         @param:Json(name = "name") val name: String?,
         @param:Json(name = "type") val type: String? = null,
+        @param:Json(name = "passingPercentage") val passingPercentage: Int? = null,
+        @param:Json(name = "teamShareAllowed") val teamShareAllowed: Boolean? = null,
         @param:Json(name = "questions") val questions: List<SurveyQuestion>?,
         @param:Json(name = "description") val description: String?,
     )

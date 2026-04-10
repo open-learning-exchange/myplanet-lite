@@ -20,8 +20,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 76
-        versionName = "0.0.76"
+        versionCode = 77
+        versionName = "0.0.77"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -95,6 +95,8 @@ dependencies {
     implementation(libs.circleimageview)
     implementation(libs.core)
     implementation(libs.ext.tables)
+    implementation(libs.markwon.html)
+    implementation(libs.markwon.image.glide)
     implementation(libs.glide)
     implementation(libs.photoview)
     implementation(libs.ucrop)

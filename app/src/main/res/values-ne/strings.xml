@@ -492,7 +492,7 @@
 
     <string name="search_hint">खोज्नुहोस्</string>
     <string name="add_member_button_description">सदस्य थप्नुहोस्</string>
-    <string name="dashboard_offline_mode_only_surveys">अफलाइन मोड: केवल सर्वेक्षणहरू उपलब्ध छन्।</string>
+    <string name="dashboard_offline_mode_only_surveys">अफलाइन मोड: केवल सर्वेक्षणहरू र डाउनलोड गरिएका पाठ्यक्रमहरू उपलब्ध छन्।</string>
     <string name="dashboard_online_mode_restored">जडान पुनःस्थापित: सबै प्यानलहरू सक्षम छन्।</string>
     <string name="dashboard_survey_download">डाउनलोड</string>
     <string name="dashboard_survey_downloaded">डाउनलोड गरियो</string>
@@ -558,6 +558,7 @@
     <string name="course_wizard_attachment_audio">अडियो</string>
     <string name="course_wizard_attachment_pdf">PDF</string>
     <string name="course_wizard_play_error">संलग्न फाइल खोल्न सकेनौं</string>
+    <string name="fullscreen_player_unsupported_video">यो भिडियो ढाँचा वा रिजोल्युसन यस उपकरणमा समर्थित छैन।</string>
     <string name="course_wizard_open_image">तस्बिर खोल्नुहोस्</string>
     <string name="course_wizard_open_pdf">PDF खोल्नुहोस्</string>
     <string name="course_wizard_open_exam">परीक्षा खोल्नुहोस्</string>
@@ -570,4 +571,6 @@
     <string name="create_voice_image_options_title">तस्बिर विकल्पहरू</string>
     <string name="create_voice_image_option_view">तस्बिर हेर्नुहोस्</string>
     <string name="create_voice_image_option_delete">तस्बिर मेटाउनुहोस्</string>
+    <string name="dashboard_course_insufficient_storage">यो पाठ्यक्रम डाउनलोड गर्न पर्याप्त भण्डारण ठाउँ छैन।</string>
+    <string name="dashboard_course_delete_downloaded_confirm">डाउनलोड गरिएको पाठ्यक्रम र यसका सबै अफलाइन फाइलहरू मेटाउने?</string>
 </resources>

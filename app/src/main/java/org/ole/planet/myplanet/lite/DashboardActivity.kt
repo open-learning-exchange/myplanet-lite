@@ -202,10 +202,6 @@ class DashboardActivity : AppCompatActivity() {
         }
 
         coursesIcon.setOnClickListener {
-            if (isOfflineMode) {
-                showOfflineModeMessage()
-                return@setOnClickListener
-            }
             showCoursesSection()
         }
 
@@ -463,15 +459,15 @@ class DashboardActivity : AppCompatActivity() {
 
     private fun updateBottomNavigationState() {
         val homeActive = currentSection == DashboardSection.HOME && !isOfflineMode
-        val coursesActive = currentSection == DashboardSection.COURSES && !isOfflineMode
+        val coursesActive = currentSection == DashboardSection.COURSES
         val teamActive = currentSection == DashboardSection.TEAM_MEMBERS && !isOfflineMode
 
         homeIcon.alpha = if (isOfflineMode) 0.3f else if (homeActive) 1f else 0.5f
         surveysIcon.alpha = if (currentSection == DashboardSection.SURVEYS) 1f else 0.5f
-        coursesIcon.alpha = if (isOfflineMode) 0.3f else if (coursesActive) 1f else 0.5f
+        coursesIcon.alpha = if (coursesActive) 1f else 0.5f
         teamMembersIcon.alpha = if (isOfflineMode) 0.3f else if (teamActive) 1f else 0.5f
         homeIcon.isEnabled = !isOfflineMode
-        coursesIcon.isEnabled = !isOfflineMode
+        coursesIcon.isEnabled = true
         teamMembersIcon.isEnabled = !isOfflineMode
         viewPager.isUserInputEnabled = !isOfflineMode
         tabLayout.isEnabled = !isOfflineMode

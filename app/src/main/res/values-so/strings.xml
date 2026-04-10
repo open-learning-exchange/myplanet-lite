@@ -492,7 +492,7 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
 
     <string name="search_hint">Raadi</string>
     <string name="add_member_button_description">Ku dar xubin</string>
-    <string name="dashboard_offline_mode_only_surveys">Habka offline: kaliya sahanno ayaa la heli karaa.</string>
+    <string name="dashboard_offline_mode_only_surveys">Habka offline: kaliya sahanno iyo koorsooyin la soo dejiyey ayaa la heli karaa.</string>
     <string name="dashboard_online_mode_restored">Xiriirku wuu soo noqday: dhammaan guddiyadu waa la furtay.</string>
     <string name="dashboard_survey_download">Soo deji</string>
     <string name="dashboard_survey_downloaded">La soo dejiyey</string>
@@ -559,6 +559,7 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="course_wizard_attachment_audio">Cod</string>
     <string name="course_wizard_attachment_pdf">PDF</string>
     <string name="course_wizard_play_error">Lama furi karo lifaaqa</string>
+    <string name="fullscreen_player_unsupported_video">Qaabka ama xallinta muuqaalkan laguma taageero qalabkan.</string>
     <string name="course_wizard_open_image">Fur sawirka</string>
     <string name="course_wizard_open_pdf">Fur PDF</string>
     <string name="course_wizard_open_exam">Fur imtixaanka</string>
@@ -571,4 +572,6 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="create_voice_image_options_title">Xulashooyinka sawirka</string>
     <string name="create_voice_image_option_view">Daawo sawirka</string>
     <string name="create_voice_image_option_delete">Tirtir sawirka</string>
+    <string name="dashboard_course_insufficient_storage">Meel kaydin ku filan ma jiro si koorsadan loo soo dejiyo.</string>
+    <string name="dashboard_course_delete_downloaded_confirm">Ma tirtirtaa koorsada la soo dejiyey iyo dhammaan faylashadeeda offline?</string>
 </resources>

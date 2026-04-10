@@ -153,3 +153,6 @@ app/release/app-release.aab
 app/none
 
 gradle/gradle-daemon-jvm.properties
+
+# Local benchmarking scratch file
+benchmark.kt

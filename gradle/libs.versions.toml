@@ -57,6 +57,8 @@ converter-moshi = { module = "com.squareup.retrofit2:converter-moshi", version.r
 core = { module = "io.noties.markwon:core", version.ref = "core" }
 core-ktx = { module = "androidx.test:core-ktx", version.ref = "coreKtxVersion" }
 ext-tables = { module = "io.noties.markwon:ext-tables", version.ref = "core" }
+markwon-html = { module = "io.noties.markwon:html", version.ref = "core" }
+markwon-image-glide = { module = "io.noties.markwon:image-glide", version.ref = "core" }
 glide = { module = "com.github.bumptech.glide:glide", version.ref = "glide" }
 json = { group = "org.json", name = "json", version.ref = "json" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
