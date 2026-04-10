@@ -5,8 +5,8 @@ import android.graphics.Bitmap
 import android.widget.ImageView
 import androidx.test.core.app.ApplicationProvider
 import java.io.ByteArrayOutputStream
+import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -25,7 +25,6 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLog
-import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)

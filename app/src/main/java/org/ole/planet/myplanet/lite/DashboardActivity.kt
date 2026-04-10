@@ -32,7 +32,6 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
-import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import androidx.viewpager2.widget.ViewPager2
@@ -47,7 +46,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.model.LanguageOption
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase

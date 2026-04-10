@@ -3,7 +3,6 @@ package org.ole.planet.myplanet.lite.dashboard
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileOutputStream
-import java.util.UUID
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
