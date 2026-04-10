@@ -109,6 +109,39 @@ class UserProfileDatabaseTest {
         assertNull(database.getProfile())
     }
 
+
+    @Test
+    fun `test save and get profile with null fields`() {
+        val profile = UserProfile(
+            username = "nulluser",
+            firstName = null,
+            middleName = null,
+            lastName = null,
+            email = null,
+            language = null,
+            phoneNumber = null,
+            birthDate = null,
+            gender = null,
+            level = null,
+            avatarImage = null,
+            revision = null,
+            derivedKey = null,
+            rawDocument = null,
+            isUserAdmin = false
+        )
+        database.saveProfile(profile)
+        val retrieved = database.getProfile()
+        assertEquals(profile, retrieved)
+    }
+
+
+    @Test
+    fun `test getInstance returns singleton`() {
+        val instance1 = UserProfileDatabase.getInstance(context)
+        val instance2 = UserProfileDatabase.getInstance(context)
+        assertTrue(instance1 === instance2)
+    }
+
     @Test
     fun `test onUpgrade from old versions`() {
         val mockDb = mock(SQLiteDatabase::class.java)
