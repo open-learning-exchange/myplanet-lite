@@ -166,9 +166,29 @@ class MyPlanetLite : AppCompatActivity() {
         applyDeviceOrientationLock()
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
+        setupWindowState()
+        initializeState(savedInstanceState)
+
+        val logoImageView: ImageView = findViewById(R.id.logoImageView)
+        val appVersionTextView: TextView = findViewById(R.id.appVersionTextView)
+        val loginScroll: ScrollView = findViewById(R.id.loginScroll)
+
+        setupViews(logoImageView, appVersionTextView, loginScroll)
+        setupWindowInsets(logoImageView, appVersionTextView, loginScroll)
+
+        World.init(applicationContext)
+
+        configureLogin()
+    }
+
+    private fun setupWindowState() {
         @Suppress("DEPRECATION")
         window.statusBarColor = ContextCompat.getColor(this, R.color.white)
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
+    }
+
+    private fun initializeState(savedInstanceState: Bundle?) {
         ProfileCredentialsStore.setSessionCredentials(null)
         clearStoredSessionIfNotRemembered()
         autoLoginEnabled = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
@@ -187,17 +207,20 @@ class MyPlanetLite : AppCompatActivity() {
                 }
             }
         }
+    }
 
-        val logoImageView: ImageView = findViewById(R.id.logoImageView)
+    private fun setupViews(
+        logoImageView: ImageView,
+        appVersionTextView: TextView,
+        loginScroll: ScrollView
+    ) {
         val languageSelectorIcon: ImageView = findViewById(R.id.languageSelectorIcon)
         serverInputLayoutView = findViewById(R.id.serverInputLayout)
         serverAutoCompleteView = findViewById(R.id.serverUrlInput)
         loginUsernameInput = findViewById(R.id.usernameInput)
         loginPasswordInput = findViewById(R.id.passwordInput)
         serverStatusIconView = findViewById(R.id.serverStatusIcon)
-        val appVersionTextView: TextView = findViewById(R.id.appVersionTextView)
         val poweredByTextView: TextView = findViewById(R.id.poweredByText)
-        val loginScroll: ScrollView = findViewById(R.id.loginScroll)
         signupPromptView = findViewById(R.id.signupPrompt)
         signupButtonView = findViewById(R.id.signupButton)
         privacyPolicyPromptView = findViewById(R.id.privacyPolicyPrompt)
@@ -239,12 +262,14 @@ class MyPlanetLite : AppCompatActivity() {
             (resources.displayMetrics.density * APP_VERSION_SHRUNK_BOTTOM_MARGIN_DP).roundToInt()
         shrunkLoginScrollPaddingTopPx =
             (resources.displayMetrics.density * LOGIN_SCROLL_SHRUNK_PADDING_TOP_DP).roundToInt()
+
         logoImageView.doOnLayout {
             if (originalLogoWidth == 0 || originalLogoHeight == 0) {
                 originalLogoWidth = it.width
                 originalLogoHeight = it.height
             }
         }
+
         appVersionTextView.doOnLayout {
             if (originalAppVersionBottomMargin == 0) {
                 val params = it.layoutParams as? ViewGroup.MarginLayoutParams
@@ -256,6 +281,17 @@ class MyPlanetLite : AppCompatActivity() {
                 originalLoginScrollPaddingTop = it.paddingTop
             }
         }
+
+        languageSelectorIcon.setOnClickListener {
+            LanguagePreferences.showLanguageSelectionDialog(this)
+        }
+    }
+
+    private fun setupWindowInsets(
+        logoImageView: ImageView,
+        appVersionTextView: TextView,
+        loginScroll: ScrollView
+    ) {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
@@ -272,14 +308,6 @@ class MyPlanetLite : AppCompatActivity() {
 
             insets
         }
-
-        languageSelectorIcon.setOnClickListener {
-            LanguagePreferences.showLanguageSelectionDialog(this)
-        }
-
-        World.init(applicationContext)
-
-        configureLogin()
     }
 
     private fun launchDashboard() {
@@ -309,10 +337,14 @@ class MyPlanetLite : AppCompatActivity() {
     }
 
     private fun configureLogin() {
-        val usernameLayout: TextInputLayout = findViewById(R.id.usernameInputLayout)
-        val passwordLayout: TextInputLayout = findViewById(R.id.passwordInputLayout)
-        val serverLayout: TextInputLayout = serverInputLayoutView
-        val serverInput: MaterialAutoCompleteTextView = serverAutoCompleteView
+        initializeLoginViews()
+        setupRememberMeCheckbox()
+        setupServerDropdown()
+        setupLoginButton()
+        maybeRestoreSessionOrAutoLogin()
+    }
+
+    private fun initializeLoginViews() {
         loginButtonView = findViewById(R.id.loginButton)
         rememberMeCheckBox = findViewById(R.id.rememberCheckBox)
         loginErrorTextView = findViewById(R.id.errorText)
@@ -321,11 +353,13 @@ class MyPlanetLite : AppCompatActivity() {
         updateLoginButtonAvailability()
 
         serverAdapter = ServerOptionAdapter(this)
-        serverInput.setAdapter(serverAdapter)
-        serverLayout.setStartIconTintList(null)
+        serverAutoCompleteView.setAdapter(serverAdapter)
+        serverInputLayoutView.setStartIconTintList(null)
 
-        refreshServerOptions(serverInput, serverLayout)
+        refreshServerOptions(serverAutoCompleteView, serverInputLayoutView)
+    }
 
+    private fun setupRememberMeCheckbox() {
         val rememberedCredentials = loadRememberedCredentials()
         applyRememberedCredentials(rememberedCredentials)
 
@@ -349,57 +383,64 @@ class MyPlanetLite : AppCompatActivity() {
                 }
             }
         }
+    }
 
-        serverInput.setOnClickListener {
-            serverInput.showDropDownWhenSafe()
+    private fun setupServerDropdown() {
+        serverAutoCompleteView.setOnClickListener {
+            serverAutoCompleteView.showDropDownWhenSafe()
         }
-        serverInput.setOnFocusChangeListener { _, hasFocus ->
+        serverAutoCompleteView.setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
-                serverInput.showDropDownWhenSafe()
+                serverAutoCompleteView.showDropDownWhenSafe()
             }
         }
-        serverInput.setOnItemClickListener { _, _, position, _ ->
+        serverAutoCompleteView.setOnItemClickListener { _, _, position, _ ->
             val selected = serverAdapter.getItem(position) ?: return@setOnItemClickListener
             if (selected.isAction) {
                 when (selected.actionType) {
                     ServerAction.CONFIGURE -> {
                         val previousConfig = loadServerConfiguration()
-                        serverInput.setText(previousConfig.displayName, false)
-                        serverInput.tag = previousConfig.baseUrl
-                        updateServerFlag(serverLayout, previousConfig.countryCode)
+                        serverAutoCompleteView.setText(previousConfig.displayName, false)
+                        serverAutoCompleteView.tag = previousConfig.baseUrl
+                        updateServerFlag(serverInputLayoutView, previousConfig.countryCode)
                         updateServerStatusIcon(previousConfig.baseUrl)
-                        serverInput.dismissDropDown()
-                        showServerConfigurationDialog(serverInput, serverLayout)
+                        serverAutoCompleteView.dismissDropDown()
+                        showServerConfigurationDialog(serverAutoCompleteView, serverInputLayoutView)
                     }
                     ServerAction.CLEAR -> {
                         clearCustomServers()
-                        refreshServerOptions(serverInput, serverLayout)
-                        serverInput.dismissDropDown()
+                        refreshServerOptions(serverAutoCompleteView, serverInputLayoutView)
+                        serverAutoCompleteView.dismissDropDown()
                     }
                     null -> {
-                        serverInput.dismissDropDown()
+                        serverAutoCompleteView.dismissDropDown()
                     }
                 }
             } else {
-                serverInput.setText(selected.displayName, false)
-                serverInput.tag = selected.baseUrl
-                updateServerFlag(serverLayout, selected.countryCode)
+                serverAutoCompleteView.setText(selected.displayName, false)
+                serverAutoCompleteView.tag = selected.baseUrl
+                updateServerFlag(serverInputLayoutView, selected.countryCode)
                 saveServerConfiguration(selected.baseUrl, selected.countryCode, selected.displayName)
                 updateServerStatusIcon(selected.baseUrl)
-                serverInput.dismissDropDown()
+                serverAutoCompleteView.dismissDropDown()
             }
         }
-        serverInput.keyListener = null
+        serverAutoCompleteView.keyListener = null
+    }
+
+    private fun setupLoginButton() {
+        val usernameLayout: TextInputLayout = findViewById(R.id.usernameInputLayout)
+        val passwordLayout: TextInputLayout = findViewById(R.id.passwordInputLayout)
 
         loginButtonView.setOnClickListener {
             usernameLayout.error = null
             passwordLayout.error = null
-            serverLayout.error = null
+            serverInputLayoutView.error = null
             loginErrorTextView.isVisible = false
 
             val username = loginUsernameInput.text?.toString()?.trim().orEmpty()
             val password = loginPasswordInput.text?.toString().orEmpty()
-            val serverBaseUrl = (serverInput.tag as? String).orEmpty().trim()
+            val serverBaseUrl = (serverAutoCompleteView.tag as? String).orEmpty().trim()
 
             var hasError = false
             if (username.isEmpty()) {
@@ -411,7 +452,7 @@ class MyPlanetLite : AppCompatActivity() {
                 hasError = true
             }
             if (serverBaseUrl.isEmpty()) {
-                serverLayout.error = getString(R.string.login_server_error)
+                serverInputLayoutView.error = getString(R.string.login_server_error)
                 hasError = true
             }
             if (hasError) return@setOnClickListener
@@ -436,8 +477,6 @@ class MyPlanetLite : AppCompatActivity() {
                 }
             }
         }
-
-        maybeRestoreSessionOrAutoLogin()
     }
 
     private fun ensureSurveyTranslationConsent(onConsentGranted: () -> Unit) {
@@ -948,6 +987,14 @@ class MyPlanetLite : AppCompatActivity() {
                     else -> result.message.takeIf { it.isNotBlank() } ?: getString(R.string.login_generic_error)
                 }
                 errorText.text = errorMessage
+                errorText.isVisible = true
+            }
+            is AuthResult.Failure.InvalidCredentials -> {
+                errorText.text = getString(R.string.login_invalid_credentials)
+                errorText.isVisible = true
+            }
+            is AuthResult.Failure.NetworkError -> {
+                errorText.text = getString(R.string.login_generic_error)
                 errorText.isVisible = true
             }
         }
