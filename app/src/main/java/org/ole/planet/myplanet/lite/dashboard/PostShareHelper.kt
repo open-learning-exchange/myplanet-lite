@@ -14,6 +14,8 @@ import androidx.core.content.FileProvider
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -102,18 +104,21 @@ class PostShareHelper(
     private suspend fun downloadImages(imagePaths: List<String>): List<Uri> {
         val baseUrl = baseUrlProvider()
         val cookie = sessionCookieProvider()
-        val uris = mutableListOf<Uri>()
-        for (path in imagePaths) {
-            val url = resolveUrl(path, baseUrl) ?: continue
-            val file = downloadImageToCache(url, cookie) ?: continue
-            val uri = FileProvider.getUriForFile(
+        val files = withContext(Dispatchers.IO) {
+            imagePaths.map { path ->
+                async {
+                    val url = resolveUrl(path, baseUrl) ?: return@async null
+                    downloadImageToCache(url, cookie)
+                }
+            }.awaitAll().filterNotNull()
+        }
+        return files.map { file ->
+            FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
                 file
             )
-            uris.add(uri)
         }
-        return uris
     }
 
     private suspend fun downloadImageToCache(url: String, cookie: String?): File? = withContext(Dispatchers.IO) {
