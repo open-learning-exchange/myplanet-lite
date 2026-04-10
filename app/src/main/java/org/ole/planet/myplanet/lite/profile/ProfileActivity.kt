@@ -342,6 +342,7 @@ class ProfileActivity : AppCompatActivity() {
             }
 
             if (matchedLanguage != null) {
+                @Suppress("UNCHECKED_CAST")
                 val currentLevelAdapter = levelInput.adapter as? ArrayAdapter<String>
                 if (currentLevelAdapter != null) {
                     applyLanguage(matchedLanguage, profile?.level, currentLevelAdapter)
