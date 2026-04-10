@@ -24,6 +24,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository
 
 class SurveyTranslationManager(
@@ -73,7 +74,40 @@ class SurveyTranslationManager(
             return SurveyTranslationResult(sourceLanguage, null, null, emptyMap())
         }
 
-        val translations = mutableMapOf<Int, TranslatedQuestion>()
+        val (translatedTitle, translatedDescription) = translateSurveyMetadata(
+            survey = survey,
+            cachedTitle = cachedTitle,
+            cachedDescription = cachedDescription,
+            cacheSurveyId = cacheSurveyId,
+            normalizedTargetLanguage = normalizedTargetLanguage,
+            sourceLanguage = sourceLanguage,
+            openAiKey = openAiKey,
+            openAiModel = openAiModel,
+        )
+
+        val translations = translateSurveyQuestionList(
+            questions = survey.questions.orEmpty(),
+            cachedQuestionTranslations = cachedQuestionTranslations,
+            cacheSurveyId = cacheSurveyId,
+            normalizedTargetLanguage = normalizedTargetLanguage,
+            sourceLanguage = sourceLanguage,
+            openAiKey = openAiKey,
+            openAiModel = openAiModel,
+        )
+
+        return SurveyTranslationResult(sourceLanguage, translatedTitle, translatedDescription, translations)
+    }
+
+    private suspend fun translateSurveyMetadata(
+        survey: SurveyDocument,
+        cachedTitle: String?,
+        cachedDescription: String?,
+        cacheSurveyId: String?,
+        normalizedTargetLanguage: String,
+        sourceLanguage: String,
+        openAiKey: String,
+        openAiModel: String,
+    ): Pair<String?, String?> {
         val translatedTitle = survey.name?.let { title ->
             cachedTitle ?: translationClient.translate(
                 text = title,
@@ -110,7 +144,20 @@ class SurveyTranslationManager(
                 )
             }
         }
-        survey.questions.orEmpty().forEachIndexed { index, question ->
+        return Pair(translatedTitle, translatedDescription)
+    }
+
+    private suspend fun translateSurveyQuestionList(
+        questions: List<SurveyQuestion>,
+        cachedQuestionTranslations: Map<Int, TranslatedQuestion>,
+        cacheSurveyId: String?,
+        normalizedTargetLanguage: String,
+        sourceLanguage: String,
+        openAiKey: String,
+        openAiModel: String,
+    ): Map<Int, TranslatedQuestion> {
+        val translations = mutableMapOf<Int, TranslatedQuestion>()
+        questions.forEachIndexed { index, question ->
             val cached = cachedQuestionTranslations[index]
             val translatedBody: String?
             val translatedChoices: List<String?>
@@ -155,8 +202,7 @@ class SurveyTranslationManager(
                 )
             }
         }
-
-        return SurveyTranslationResult(sourceLanguage, translatedTitle, translatedDescription, translations)
+        return translations
     }
 
     suspend fun translateQuestion(
