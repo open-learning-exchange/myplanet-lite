@@ -142,4 +142,47 @@ class ServerMetadataExtractorTest {
         val result = ServerMetadataExtractor.extract(payload, moshi)
         assertNull(result)
     }
+
+    @Test
+    fun `extract empty json object`() {
+        val payload = "{}"
+        val result = ServerMetadataExtractor.extract(payload, moshi)
+        assertNull(result)
+    }
+
+    @Test
+    fun `extract json array payload`() {
+        val payload = "[]"
+        val result = ServerMetadataExtractor.extract(payload, moshi)
+        assertNull(result)
+    }
+
+    @Test
+    fun `extract missing rows field`() {
+        val payload = """
+            {
+              "something_else": []
+            }
+        """.trimIndent()
+        val result = ServerMetadataExtractor.extract(payload, moshi)
+        assertNull(result)
+    }
+
+    @Test
+    fun `extract doc with null fields`() {
+        val payload = """
+            {
+              "rows": [
+                {
+                  "doc": {
+                    "parentCode": null,
+                    "code": null
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+        val result = ServerMetadataExtractor.extract(payload, moshi)
+        assertNull(result)
+    }
 }
