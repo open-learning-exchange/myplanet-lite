@@ -5,6 +5,7 @@
  * Creation date: 2026-01-04
  */
 package org.ole.planet.myplanet.lite
+
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
