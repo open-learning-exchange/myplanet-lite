@@ -8,11 +8,10 @@ package org.ole.planet.myplanet.lite.auth
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 interface TokenStorage {
     suspend fun saveToken(token: String)
@@ -24,16 +23,7 @@ class SecureTokenStorage @JvmOverloads constructor(
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) : TokenStorage {
     private val sharedPreferences: SharedPreferences by lazy {
-        val masterKey = MasterKey.Builder(context.applicationContext)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        EncryptedSharedPreferences.create(
-            context.applicationContext,
-            PREF_FILE_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
+        SecurePreferencesProvider.getEncryptedPreferences(context.applicationContext, PREF_FILE_NAME)
     }
     override suspend fun saveToken(token: String) {
         withContext(dispatcher) {
