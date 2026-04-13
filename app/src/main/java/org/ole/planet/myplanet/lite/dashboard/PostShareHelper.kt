@@ -14,9 +14,12 @@ import androidx.core.content.FileProvider
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.util.concurrent.TimeUnit
 import org.ole.planet.myplanet.lite.R
 
 class PostShareHelper(
@@ -26,7 +29,7 @@ class PostShareHelper(
     private val serverNameProvider: () -> String?,
 ) {
 
-    private val client = OkHttpClient()
+    private val client: OkHttpClient get() = Companion.client
 
     suspend fun sharePost(
         _postId: String?,
@@ -102,18 +105,21 @@ class PostShareHelper(
     private suspend fun downloadImages(imagePaths: List<String>): List<Uri> {
         val baseUrl = baseUrlProvider()
         val cookie = sessionCookieProvider()
-        val uris = mutableListOf<Uri>()
-        for (path in imagePaths) {
-            val url = resolveUrl(path, baseUrl) ?: continue
-            val file = downloadImageToCache(url, cookie) ?: continue
-            val uri = FileProvider.getUriForFile(
+        val files = withContext(Dispatchers.IO) {
+            imagePaths.map { path ->
+                async {
+                    val url = resolveUrl(path, baseUrl) ?: return@async null
+                    downloadImageToCache(url, cookie)
+                }
+            }.awaitAll().filterNotNull()
+        }
+        return files.map { file ->
+            FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
                 file
             )
-            uris.add(uri)
         }
-        return uris
     }
 
     private suspend fun downloadImageToCache(url: String, cookie: String?): File? = withContext(Dispatchers.IO) {
@@ -142,6 +148,12 @@ class PostShareHelper(
     }
 
     companion object {
+        private val client by lazy {
+            OkHttpClient.Builder()
+                .connectTimeout(15, TimeUnit.SECONDS)
+                .readTimeout(15, TimeUnit.SECONDS)
+                .build()
+        }
         private val IMAGE_MARKDOWN_REGEX = Regex("!?\\[[^\\]]*\\]\\([^)]*\\.(?:jpe?g|png)\\)", RegexOption.IGNORE_CASE)
         private val IMAGE_URL_REGEX = Regex("\\b\\S+\\.(?:jpe?g|png)(?:\\?\\S*)?(?=\\s|$)", RegexOption.IGNORE_CASE)
         private val LINK_MARKDOWN_REGEX = Regex("\\[([^\\]]+)\\]\\(([^\\s)]+)\\)")
