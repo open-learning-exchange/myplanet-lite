@@ -1168,7 +1168,6 @@ class MyPlanetLite : AppCompatActivity() {
 
     companion object {
         private const val MIN_PASSWORD_LENGTH = 4
-        private const val PREFS_NAME = "server_preferences"
         const val SECURE_PREFS_NAME = "secure_server_prefs"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"

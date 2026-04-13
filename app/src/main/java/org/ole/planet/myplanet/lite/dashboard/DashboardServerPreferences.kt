@@ -10,7 +10,6 @@ import android.content.Context
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 object DashboardServerPreferences {
-    internal const val PREFS_NAME = "server_preferences"
     internal const val KEY_SERVER_URL = "server_url"
     internal const val KEY_SERVER_CODE = "server_code"
     internal const val KEY_SERVER_PARENT_CODE = "server_parent_code"
