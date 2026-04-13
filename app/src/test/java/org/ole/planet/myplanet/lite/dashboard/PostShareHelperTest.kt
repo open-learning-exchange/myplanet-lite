@@ -133,7 +133,6 @@ class PostShareHelperTest {
             message = "Hello world!",
             imagePaths = emptyList()
         )
-        testDispatcher.scheduler.advanceUntilIdle()
         val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
         verify(context).startActivity(intentCaptor.capture())
         val chooserIntent = intentCaptor.value
@@ -164,7 +163,6 @@ class PostShareHelperTest {
                 message = "Hello world!",
                 imagePaths = listOf("image1.jpg")
             )
-            testDispatcher.scheduler.advanceUntilIdle()
             val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
             verify(context).startActivity(intentCaptor.capture())
             val targetIntent = IntentCompat.getParcelableExtra(intentCaptor.value, Intent.EXTRA_INTENT, Intent::class.java)
@@ -193,7 +191,6 @@ class PostShareHelperTest {
                 message = "Hello world!",
                 imagePaths = listOf("image1.jpg", "image2.jpg")
             )
-            testDispatcher.scheduler.advanceUntilIdle()
             val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
             verify(context).startActivity(intentCaptor.capture())
             val targetIntent = IntentCompat.getParcelableExtra(intentCaptor.value, Intent.EXTRA_INTENT, Intent::class.java)
@@ -222,7 +219,6 @@ class PostShareHelperTest {
             message = "Hello world!",
             imagePaths = listOf("image1.jpg")
         )
-        testDispatcher.scheduler.advanceUntilIdle()
         val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
         verify(context).startActivity(intentCaptor.capture())
         val targetIntent = IntentCompat.getParcelableExtra(intentCaptor.value, Intent.EXTRA_INTENT, Intent::class.java)
@@ -252,7 +248,6 @@ class PostShareHelperTest {
                 message = "Hello world!",
                 imagePaths = listOf("image1.jpg")
             )
-            testDispatcher.scheduler.advanceUntilIdle()
             val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
             verify(context).startActivity(intentCaptor.capture())
             val targetIntent = IntentCompat.getParcelableExtra(intentCaptor.value, Intent.EXTRA_INTENT, Intent::class.java)
@@ -273,7 +268,6 @@ class PostShareHelperTest {
             message = "Hello world!",
             imagePaths = listOf("image1.jpg")
         )
-        testDispatcher.scheduler.advanceUntilIdle()
         val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
         verify(context).startActivity(intentCaptor.capture())
         val targetIntent = IntentCompat.getParcelableExtra(intentCaptor.value, Intent.EXTRA_INTENT, Intent::class.java)
