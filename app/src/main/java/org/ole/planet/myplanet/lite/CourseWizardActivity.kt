@@ -83,7 +83,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         encryptedPrefs
     }
-    
+
     private lateinit var markwon: Markwon
     private var steps: List<StepDisplay> = emptyList()
     private var baseUrl: String? = null
@@ -110,7 +110,7 @@ class CourseWizardActivity : AppCompatActivity() {
     private val completedExamSteps = mutableSetOf<Int>()
     private var pendingExamStepIndex: Int? = null
     private var cachedProgressDocument: DashboardCoursesRepository.CourseProgressDocument? = null
-    
+
     private val fullscreenLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val data = result.data ?: return@registerForActivityResult
@@ -120,7 +120,7 @@ class CourseWizardActivity : AppCompatActivity() {
                 0L
             )
         }
-        
+
     private val examLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
@@ -140,7 +140,7 @@ class CourseWizardActivity : AppCompatActivity() {
                 )
             }
         }
-        
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -174,7 +174,7 @@ class CourseWizardActivity : AppCompatActivity() {
             maybeAutoCompleteFirstStep()
         }
     }
-    
+
     private fun parseIntentData(savedInstanceState: Bundle?): Pair<String, Int> {
         val courseTitle = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         courseId = intent.getStringExtra(EXTRA_COURSE_ID)
@@ -202,7 +202,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }.orEmpty()
         return Pair(courseTitle, startIndex)
     }
-    
+
     private fun setupViews(courseTitle: String) {
         val root: View = findViewById(R.id.courseWizardRoot)
         WindowInsetsControllerCompat(window, root).isAppearanceLightStatusBars = true
@@ -231,12 +231,12 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         titleView.text = courseTitle
     }
-    
+
     override fun onDestroy() {
         super.onDestroy()
         releaseAudioPlayers()
     }
-    
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putIntegerArrayList(
@@ -244,7 +244,7 @@ class CourseWizardActivity : AppCompatActivity() {
             ArrayList(completedExamSteps)
         )
     }
-    
+
     private suspend fun resolveInitialStepIndex(fallbackIndex: Int): Int {
         if (cachedProgressDocument != null) {
             val progressStep = cachedProgressDocument?.stepNum
@@ -265,7 +265,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val resolvedIndex = progressStep?.minus(1) ?: fallbackIndex
         return resolvedIndex.coerceIn(0, steps.lastIndex)
     }
-    
+
     private fun maybeAutoCompleteFirstStep() {
         if (hasAutoCompletedFirstStep || currentIndex != 0) return
         hasAutoCompletedFirstStep = true
@@ -273,7 +273,7 @@ class CourseWizardActivity : AppCompatActivity() {
             runCatching { updateCourseProgressIfNeeded(1) }
         }
     }
-    
+
     private fun bindStep(
         stepPositionView: TextView,
         stepTitleView: TextView,
@@ -519,7 +519,7 @@ class CourseWizardActivity : AppCompatActivity() {
         updated.forEach { array.put(it) }
         pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
     }
-    
+
     private fun getPendingProgress(courseId: String): List<Int> {
         val raw = pendingProgressPrefs.getString(progressKey(courseId), null) ?: return emptyList()
         return runCatching {
@@ -925,6 +925,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         return value.trim()
     }
+
     data class StepDisplay(
         val title: String,
         val description: String,
@@ -932,6 +933,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val survey: SurveyDocument? = null,
         val exam: SurveyDocument? = null
     )
+
     companion object {
         private const val PREF_LEGACY_PENDING_COURSE_PROGRESS = "pref_pending_course_progress"
         private const val PREF_ENCRYPTED_PENDING_COURSE_PROGRESS = "encrypted_pending_course_progress"
