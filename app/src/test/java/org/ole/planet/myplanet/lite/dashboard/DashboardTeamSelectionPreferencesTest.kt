@@ -49,6 +49,12 @@ class DashboardTeamSelectionPreferencesTest {
     }
 
     @Test
+    fun `getSelectedTeamId returns null when saved id is empty`() {
+        mockPrefs.edit().putString("selected_team_id", "").apply()
+        assertNull(DashboardTeamSelectionPreferences.getSelectedTeamId(mockContext))
+    }
+
+    @Test
     fun `getSelectedTeamName returns null when nothing is saved`() {
         assertNull(DashboardTeamSelectionPreferences.getSelectedTeamName(mockContext))
     }
@@ -62,6 +68,12 @@ class DashboardTeamSelectionPreferencesTest {
     @Test
     fun `getSelectedTeamName returns null when saved name is blank`() {
         mockPrefs.edit().putString("selected_team_name", "   ").apply()
+        assertNull(DashboardTeamSelectionPreferences.getSelectedTeamName(mockContext))
+    }
+
+    @Test
+    fun `getSelectedTeamName returns null when saved name is empty`() {
+        mockPrefs.edit().putString("selected_team_name", "").apply()
         assertNull(DashboardTeamSelectionPreferences.getSelectedTeamName(mockContext))
     }
 
@@ -99,6 +111,19 @@ class DashboardTeamSelectionPreferencesTest {
     }
 
     @Test
+    fun `setSelectedTeam clears both when id is empty`() {
+        mockPrefs.edit()
+            .putString("selected_team_id", "team-123")
+            .putString("selected_team_name", "Team Alpha")
+            .apply()
+
+        DashboardTeamSelectionPreferences.setSelectedTeam(mockContext, "", "Some Name")
+
+        assertNull(mockPrefs.getString("selected_team_id", null))
+        assertNull(mockPrefs.getString("selected_team_name", null))
+    }
+
+    @Test
     fun `setSelectedTeam saves id but clears name when name is null`() {
         mockPrefs.edit()
             .putString("selected_team_id", "team-123")
@@ -119,6 +144,19 @@ class DashboardTeamSelectionPreferencesTest {
             .apply()
 
         DashboardTeamSelectionPreferences.setSelectedTeam(mockContext, "team-456", "   ")
+
+        assertEquals("team-456", mockPrefs.getString("selected_team_id", null))
+        assertNull(mockPrefs.getString("selected_team_name", null))
+    }
+
+    @Test
+    fun `setSelectedTeam saves id but clears name when name is empty`() {
+        mockPrefs.edit()
+            .putString("selected_team_id", "team-123")
+            .putString("selected_team_name", "Team Alpha")
+            .apply()
+
+        DashboardTeamSelectionPreferences.setSelectedTeam(mockContext, "team-456", "")
 
         assertEquals("team-456", mockPrefs.getString("selected_team_id", null))
         assertNull(mockPrefs.getString("selected_team_name", null))
