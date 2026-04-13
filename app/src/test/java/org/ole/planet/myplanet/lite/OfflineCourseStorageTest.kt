@@ -1,13 +1,13 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Context
+import java.io.File
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
-import java.io.File
+import org.mockito.Mockito.mock
 
 class OfflineCourseStorageTest {
 
