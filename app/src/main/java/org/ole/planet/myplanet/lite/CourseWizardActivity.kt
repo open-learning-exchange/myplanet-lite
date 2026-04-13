@@ -1,4 +1,9 @@
 @file:Suppress("DEPRECATION")
+/**
+ * Author: Walfre López Prado
+ * Email: loppra@plataformasinformaticas.com
+ * Creation date: 2026-01-04
+ */
 package org.ole.planet.myplanet.lite
 
 import android.content.Context
@@ -26,6 +31,8 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
@@ -43,12 +50,20 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import org.ole.planet.myplanet.lite.util.EncryptedSharedPreferencesFactory
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : AppCompatActivity() {
     private val pendingProgressPrefs by lazy {
-        val encryptedPrefs = EncryptedSharedPreferencesFactory.create(applicationContext, PREF_ENCRYPTED_PENDING_COURSE_PROGRESS)
+        val masterKey = MasterKey.Builder(applicationContext)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        val encryptedPrefs = EncryptedSharedPreferences.create(
+            applicationContext,
+            PREF_ENCRYPTED_PENDING_COURSE_PROGRESS,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
         val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
         val allLegacy = legacyPrefs.all
         if (allLegacy.isNotEmpty()) {
@@ -68,6 +83,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         encryptedPrefs
     }
+
     private lateinit var markwon: Markwon
     private var steps: List<StepDisplay> = emptyList()
     private var baseUrl: String? = null

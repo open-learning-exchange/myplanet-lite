@@ -1,5 +1,12 @@
 @file:Suppress("DEPRECATION")
+/**
+ * Author: Walfre López Prado
+ * Email: loppra@plataformasinformaticas.com
+ * Creation date: 2025-12-28
+ */
+
 package org.ole.planet.myplanet.lite
+
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
@@ -63,11 +70,12 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
-import org.ole.planet.myplanet.lite.util.EncryptedSharedPreferencesFactory
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
+
 class MyPlanetLite : AppCompatActivity() {
+
     private var originalLogoWidth = 0
     private var originalLogoHeight = 0
     private var shrunkLogoSizePx = 0
@@ -77,6 +85,7 @@ class MyPlanetLite : AppCompatActivity() {
     private var originalLoginScrollPaddingTop = 0
     private var shrunkLoginScrollPaddingTopPx = 0
     private var isLoginScrollPaddingShrunk = false
+
     private lateinit var serverAdapter: ServerOptionAdapter
     private lateinit var serverInputLayoutView: TextInputLayout
     private lateinit var serverAutoCompleteView: MaterialAutoCompleteTextView
@@ -111,10 +120,12 @@ class MyPlanetLite : AppCompatActivity() {
     private val serverPreferences: SharedPreferences by lazy {
         SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
+
     private val securePreferences: SharedPreferences by lazy {
-        EncryptedSharedPreferencesFactory.create(applicationContext, SECURE_PREFS_NAME)
+        SecurePreferencesProvider.getEncryptedPreferences(applicationContext, SECURE_PREFS_NAME)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
+
     private val signupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
             val data = result.data ?: run {
@@ -135,33 +146,47 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }
     }
+
     private var deepLinkPostId: String? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         LanguagePreferences.applySavedLocale(this)
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
         enableEdgeToEdge()
         setContentView(R.layout.activity_main)
+
         setupWindowState()
         initializeState(savedInstanceState)
+
         val logoImageView: ImageView = findViewById(R.id.logoImageView)
         val appVersionTextView: TextView = findViewById(R.id.appVersionTextView)
         val loginScroll: ScrollView = findViewById(R.id.loginScroll)
+
         setupViews(logoImageView, appVersionTextView, loginScroll)
         setupWindowInsets(logoImageView, appVersionTextView, loginScroll)
+
         World.init(applicationContext)
+
         configureLogin()
     }
+
     private fun setupWindowState() {
         @Suppress("DEPRECATION")
         window.statusBarColor = ContextCompat.getColor(this, R.color.white)
         WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
     }
+
     private fun initializeState(savedInstanceState: Bundle?) {
         ProfileCredentialsStore.setSessionCredentials(null)
         clearStoredSessionIfNotRemembered()
-        autoLoginEnabled = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
+        val requestedAutoLogin = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
+        val hasRememberedCredentials =
+            securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false) ||
+                serverPreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)
+        autoLoginEnabled = requestedAutoLogin || hasRememberedCredentials
         deepLinkPostId = IntentUtils.extractDeepLinkPostId(intent)
+
         if (savedInstanceState != null) {
             val contentRoot: View? = findViewById(android.R.id.content)
             contentRoot?.let { root ->
@@ -176,6 +201,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }
     }
+
     private fun setupViews(
         logoImageView: ImageView,
         appVersionTextView: TextView,
@@ -191,12 +217,15 @@ class MyPlanetLite : AppCompatActivity() {
         signupPromptView = findViewById(R.id.signupPrompt)
         signupButtonView = findViewById(R.id.signupButton)
         privacyPolicyPromptView = findViewById(R.id.privacyPolicyPrompt)
+
         appVersionTextView.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
+
         poweredByTextView.text = HtmlCompat.fromHtml(
             getString(R.string.powered_by_plataformas_informaticas),
             HtmlCompat.FROM_HTML_MODE_LEGACY
         )
         poweredByTextView.movementMethod = LinkMovementMethod.getInstance()
+
         signupPromptView.text = getString(R.string.login_signup_prompt)
         signupButtonView.setOnClickListener {
             if (!signupButtonView.isEnabled || isLoginInProgress || !isServerReachable) {
@@ -208,6 +237,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
             signupLauncher.launch(intent)
         }
+
         privacyPolicyPromptView.text = HtmlCompat.fromHtml(
             getString(R.string.login_privacy_policy_prompt),
             HtmlCompat.FROM_HTML_MODE_LEGACY
@@ -219,17 +249,20 @@ class MyPlanetLite : AppCompatActivity() {
             val intent = Intent(this, PrivacyPolicyActivity::class.java)
             startActivity(intent)
         }
+
         shrunkLogoSizePx = (resources.displayMetrics.density * LOGO_SHRUNK_DP).roundToInt()
         shrunkAppVersionBottomMarginPx =
             (resources.displayMetrics.density * APP_VERSION_SHRUNK_BOTTOM_MARGIN_DP).roundToInt()
         shrunkLoginScrollPaddingTopPx =
             (resources.displayMetrics.density * LOGIN_SCROLL_SHRUNK_PADDING_TOP_DP).roundToInt()
+
         logoImageView.doOnLayout {
             if (originalLogoWidth == 0 || originalLogoHeight == 0) {
                 originalLogoWidth = it.width
                 originalLogoHeight = it.height
             }
         }
+
         appVersionTextView.doOnLayout {
             if (originalAppVersionBottomMargin == 0) {
                 val params = it.layoutParams as? ViewGroup.MarginLayoutParams
@@ -241,10 +274,12 @@ class MyPlanetLite : AppCompatActivity() {
                 originalLoginScrollPaddingTop = it.paddingTop
             }
         }
+
         languageSelectorIcon.setOnClickListener {
             LanguagePreferences.showLanguageSelectionDialog(this)
         }
     }
+
     private fun setupWindowInsets(
         logoImageView: ImageView,
         appVersionTextView: TextView,
@@ -253,6 +288,7 @@ class MyPlanetLite : AppCompatActivity() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
+
             val imeVisible = insets.isVisible(WindowInsetsCompat.Type.ime())
             val focusedOnLoginFields = loginUsernameInput.hasFocus() || loginPasswordInput.hasFocus()
             if (imeVisible && focusedOnLoginFields) {
@@ -262,9 +298,11 @@ class MyPlanetLite : AppCompatActivity() {
                 restoreLogo(logoImageView, appVersionTextView)
                 restoreLoginScrollPadding(loginScroll)
             }
+
             insets
         }
     }
+
     private fun launchDashboard() {
         val dashboardIntent = Intent(this, DashboardActivity::class.java)
         deepLinkPostId?.let { postId ->
@@ -274,12 +312,14 @@ class MyPlanetLite : AppCompatActivity() {
         deepLinkPostId = null
         finish()
     }
+
     override fun onResume() {
         super.onResume()
         if (::serverAdapter.isInitialized && ::serverInputLayoutView.isInitialized && ::serverAutoCompleteView.isInitialized) {
             refreshServerOptions(serverAutoCompleteView, serverInputLayoutView)
         }
     }
+
     private fun applyDeviceOrientationLock() {
         val isTablet = resources.configuration.smallestScreenWidthDp >= 600
         requestedOrientation = if (isTablet) {
@@ -288,6 +328,7 @@ class MyPlanetLite : AppCompatActivity() {
             ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
         }
     }
+
     private fun configureLogin() {
         initializeLoginViews()
         setupRememberMeCheckbox()
@@ -295,20 +336,26 @@ class MyPlanetLite : AppCompatActivity() {
         setupLoginButton()
         maybeRestoreSessionOrAutoLogin()
     }
+
     private fun initializeLoginViews() {
         loginButtonView = findViewById(R.id.loginButton)
         rememberMeCheckBox = findViewById(R.id.rememberCheckBox)
         loginErrorTextView = findViewById(R.id.errorText)
         loginProgressView = findViewById(R.id.loginProgress)
+
         updateLoginButtonAvailability()
+
         serverAdapter = ServerOptionAdapter(this)
         serverAutoCompleteView.setAdapter(serverAdapter)
         serverInputLayoutView.setStartIconTintList(null)
+
         refreshServerOptions(serverAutoCompleteView, serverInputLayoutView)
     }
+
     private fun setupRememberMeCheckbox() {
         val rememberedCredentials = loadRememberedCredentials()
         applyRememberedCredentials(rememberedCredentials)
+
         rememberMeCheckBox.setOnCheckedChangeListener { _, isChecked ->
             if (suppressRememberListener) {
                 return@setOnCheckedChangeListener
@@ -330,6 +377,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }
     }
+
     private fun setupServerDropdown() {
         serverAutoCompleteView.setOnClickListener {
             serverAutoCompleteView.showDropDownWhenSafe()
@@ -372,17 +420,21 @@ class MyPlanetLite : AppCompatActivity() {
         }
         serverAutoCompleteView.keyListener = null
     }
+
     private fun setupLoginButton() {
         val usernameLayout: TextInputLayout = findViewById(R.id.usernameInputLayout)
         val passwordLayout: TextInputLayout = findViewById(R.id.passwordInputLayout)
+
         loginButtonView.setOnClickListener {
             usernameLayout.error = null
             passwordLayout.error = null
             serverInputLayoutView.error = null
             loginErrorTextView.isVisible = false
+
             val username = loginUsernameInput.text?.toString()?.trim().orEmpty()
             val password = loginPasswordInput.text?.toString().orEmpty()
             val serverBaseUrl = (serverAutoCompleteView.tag as? String).orEmpty().trim()
+
             var hasError = false
             if (username.isEmpty()) {
                 usernameLayout.error = getString(R.string.login_username_error)
@@ -397,9 +449,12 @@ class MyPlanetLite : AppCompatActivity() {
                 hasError = true
             }
             if (hasError) return@setOnClickListener
+
             ensureSurveyTranslationConsent {
                 val authService = AuthDependencies.provideAuthService(this, serverBaseUrl)
+
                 setLoadingState(isLoading = true, loginButton = loginButtonView, progress = loginProgressView)
+
                 lifecycleScope.launch {
                     val result = authService.login(username, password)
                     handleLoginResult(
@@ -416,19 +471,24 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }
     }
+
     private fun ensureSurveyTranslationConsent(onConsentGranted: () -> Unit) {
         if (isSurveyTranslationConsentAccepted()) {
             onConsentGranted()
             return
         }
+
         if (!serverPreferences.contains(KEY_SURVEY_TRANSLATIONS_ENABLED)) {
             setSurveyTranslationEnabled(DEFAULT_SURVEY_TRANSLATION_ENABLED)
         }
+
         val dialogView = LayoutInflater.from(this)
             .inflate(R.layout.dialog_survey_translation_consent, null, false)
         val consentCheckBox = dialogView.findViewById<MaterialCheckBox>(R.id.surveyTranslationConsentCheckBox)
         val policyLink = dialogView.findViewById<TextView>(R.id.surveyTranslationPolicyLink)
+
         consentCheckBox.isChecked = isSurveyTranslationEnabled()
+
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.login_survey_translation_consent_title)
             .setView(dialogView)
@@ -445,17 +505,21 @@ class MyPlanetLite : AppCompatActivity() {
                 alertDialog.dismiss()
             }
             .create()
+
         dialog.setOnCancelListener {
             setSurveyTranslationEnabled(false)
             setSurveyTranslationConsentAccepted(false)
         }
+
         policyLink.setOnClickListener {
             if (!isLoginInProgress) {
                 startActivity(Intent(this, PrivacyPolicyActivity::class.java))
             }
         }
+
         dialog.show()
     }
+
     private fun applyRememberedCredentials(remembered: RememberedCredentials? = loadRememberedCredentials()) {
         rememberedLoginCredentials = remembered
         suppressRememberListener = true
@@ -480,6 +544,7 @@ class MyPlanetLite : AppCompatActivity() {
             maybeRestoreSessionOrAutoLogin()
         }
     }
+
     private fun maybeRestoreSessionOrAutoLogin() {
         if (!autoLoginEnabled) {
             return
@@ -497,6 +562,7 @@ class MyPlanetLite : AppCompatActivity() {
             maybeAutoLogin()
         }
     }
+
     private fun attemptStoredSessionRestore(baseUrl: String) {
         if (isLoginInProgress || sessionRestoreInProgress) {
             return
@@ -533,6 +599,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }
     }
+
     private fun maybeAutoLogin() {
         if (!shouldAutoLoginOnLaunch || credentialsAutoLoginAttempted) {
             return
@@ -572,6 +639,7 @@ class MyPlanetLite : AppCompatActivity() {
             )
         }
     }
+
     private fun showServerConfigurationDialog(
         serverInput: MaterialAutoCompleteTextView,
         serverLayout: TextInputLayout
@@ -584,6 +652,7 @@ class MyPlanetLite : AppCompatActivity() {
         val serverNameInput: TextInputEditText = dialogView.findViewById(R.id.serverNameInput)
         val countryLayout: TextInputLayout = dialogView.findViewById(R.id.countryInputLayout)
         val countryInput: MaterialAutoCompleteTextView = dialogView.findViewById(R.id.countryInput)
+
         val excludedCountryCodes = setOf("CN", "HK", "TW", "IL", "PS")
         val countryList = World.getAllCountries()
             .filterNot { excludedCountryCodes.contains(it.alpha2.uppercase(Locale.ROOT)) }
@@ -609,28 +678,33 @@ class MyPlanetLite : AppCompatActivity() {
                 countryInput.showDropDownWhenSafe()
             }
         }
+
         serverUrlInput.setText(currentConfig.baseUrl, false)
         serverNameInput.setText(currentConfig.displayName)
         val selectedCountryIndex = countryList.indexOfFirst { it.alpha2.equals(currentConfig.countryCode, ignoreCase = true) }
         if (selectedCountryIndex >= 0) {
             countryInput.setText(countryList[selectedCountryIndex].name, false)
         }
+
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.server_configuration_title)
             .setView(dialogView)
             .setNegativeButton(android.R.string.cancel, null)
             .setPositiveButton(R.string.server_configuration_save, null)
             .create()
+
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 serverUrlLayout.error = null
                 serverNameLayout.error = null
                 countryLayout.error = null
+
                 val url = serverUrlInput.text?.toString()?.trim().orEmpty()
                 val normalizedUrl = normalizeServerUrl(url)
                 val serverName = serverNameInput.text?.toString()?.trim().orEmpty()
                 val countryName = countryInput.text?.toString()?.trim().orEmpty()
                 val selectedCountry = countryList.firstOrNull { it.name.equals(countryName, ignoreCase = true) }
+
                 if (normalizedUrl.isEmpty()) {
                     serverUrlLayout.error = getString(R.string.server_configuration_url_error)
                     return@setOnClickListener
@@ -643,6 +717,7 @@ class MyPlanetLite : AppCompatActivity() {
                     countryLayout.error = getString(R.string.server_configuration_country_error)
                     return@setOnClickListener
                 }
+
                 val added = addCustomServer(serverName, normalizedUrl, nonNullCountry.alpha2)
                 if (added) {
                     saveServerConfiguration(normalizedUrl, nonNullCountry.alpha2, serverName)
@@ -658,8 +733,10 @@ class MyPlanetLite : AppCompatActivity() {
                 }
             }
         }
+
         dialog.show()
     }
+
     private fun loadServerConfiguration(): ServerConfiguration {
         val builtInServers = builtInServerOptions()
         val customServers = loadCustomServers().map { it.toServerOption() }
@@ -687,6 +764,7 @@ class MyPlanetLite : AppCompatActivity() {
             displayName = displayName
         )
     }
+
     private fun saveServerConfiguration(url: String, countryCode: String, displayName: String) {
         val sanitizedUrl = normalizeServerUrl(url)
         val resolvedDisplayName = displayName.ifBlank { sanitizedUrl }
@@ -696,6 +774,7 @@ class MyPlanetLite : AppCompatActivity() {
             .putString(KEY_SERVER_DISPLAY_NAME, resolvedDisplayName)
             .apply()
     }
+
     private fun updateServerFlag(serverLayout: TextInputLayout, countryCode: String) {
         val flagRes = World.getFlagOf(countryCode)
         if (flagRes != 0) {
@@ -725,6 +804,7 @@ class MyPlanetLite : AppCompatActivity() {
             serverLayout.isStartIconVisible = false
         }
     }
+
     private fun refreshServerOptions(
         serverInput: MaterialAutoCompleteTextView,
         serverLayout: TextInputLayout
@@ -732,17 +812,20 @@ class MyPlanetLite : AppCompatActivity() {
         val currentConfig = loadServerConfiguration()
         val options = createServerOptions(currentConfig)
         serverAdapter.submitList(options)
+
         val selectedOption = options.firstOrNull {
             !it.isAction && baseUrlKey(it.baseUrl) == baseUrlKey(currentConfig.baseUrl)
         }
         val displayName = selectedOption?.displayName ?: currentConfig.displayName
         val countryCode = selectedOption?.countryCode ?: currentConfig.countryCode
         val resolvedBaseUrl = selectedOption?.baseUrl ?: currentConfig.baseUrl
+
         serverInput.setText(displayName, false)
         serverInput.tag = resolvedBaseUrl
         updateServerFlag(serverLayout, countryCode.ifEmpty { DEFAULT_COUNTRY_CODE })
         updateServerStatusIcon(resolvedBaseUrl)
     }
+
     private fun createServerOptions(currentConfig: ServerConfiguration): List<ServerOption> {
         val builtIns = builtInServerOptions()
         val customs = loadCustomServers().map { it.toServerOption() }
@@ -757,9 +840,11 @@ class MyPlanetLite : AppCompatActivity() {
         items.add(ServerOption(getString(R.string.server_option_configure), "", currentConfig.countryCode, actionType = ServerAction.CONFIGURE))
         return items
     }
+
     private fun builtInServerOptions(): List<ServerOption> = BUILT_IN_SERVERS.map {
         ServerOption(getString(it.nameRes), it.baseUrl, it.countryCode)
     }
+
     private fun buildServerSuggestions(currentConfig: ServerConfiguration): MutableList<String> {
         val unique = linkedMapOf<String, String>()
         loadCustomServers().forEach { server ->
@@ -782,6 +867,7 @@ class MyPlanetLite : AppCompatActivity() {
         }
         return unique.values.toMutableList()
     }
+
     private fun addCustomServer(displayName: String, baseUrl: String, countryCode: String): Boolean {
         val sanitizedUrl = normalizeServerUrl(baseUrl)
         if (sanitizedUrl.isEmpty()) return false
@@ -795,6 +881,7 @@ class MyPlanetLite : AppCompatActivity() {
         persistCustomServers(existing)
         return true
     }
+
     private fun loadCustomServers(): MutableList<CustomServer> {
         val raw = serverPreferences.getString(KEY_CUSTOM_SERVERS, null) ?: return mutableListOf()
         return try {
@@ -813,6 +900,7 @@ class MyPlanetLite : AppCompatActivity() {
             mutableListOf()
         }
     }
+
     private fun clearCustomServers() {
         val builtIns = builtInServerOptions()
         val fallback = builtIns.firstOrNull()
@@ -823,6 +911,7 @@ class MyPlanetLite : AppCompatActivity() {
             .remove(KEY_CUSTOM_SERVERS)
             .apply()
     }
+
     private fun persistCustomServers(servers: List<CustomServer>) {
         val array = JSONArray()
         servers.forEach { server ->
@@ -836,11 +925,13 @@ class MyPlanetLite : AppCompatActivity() {
             .putString(KEY_CUSTOM_SERVERS, array.toString())
             .apply()
     }
+
     private fun baseUrlKey(url: String): String {
         val trimmed = url.trim()
         if (trimmed.isEmpty()) return ""
         return trimmed.trimEnd('/').lowercase(Locale.ROOT)
     }
+
     private fun normalizeServerUrl(input: String): String {
         val trimmed = input.trim()
         if (trimmed.isEmpty()) return ""
@@ -848,6 +939,7 @@ class MyPlanetLite : AppCompatActivity() {
         val normalized = withScheme.toHttpUrlOrNull() ?: return ""
         return normalized.newBuilder().build().toString().trimEnd('/')
     }
+
     private suspend fun handleLoginResult(
         result: AuthResult,
         errorText: TextView,
@@ -900,6 +992,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }
     }
+
     private fun recordLoginActivity(serverBaseUrl: String, username: String, sessionCookie: String?) {
         val sanitizedBaseUrl = serverBaseUrl.trim()
         if (sanitizedBaseUrl.isEmpty()) {
@@ -907,6 +1000,7 @@ class MyPlanetLite : AppCompatActivity() {
         }
         val requestUrl = buildLoginActivityUrl(sanitizedBaseUrl) ?: return
         val payload = buildLoginActivityPayload(username) ?: return
+
         lifecycleScope.launch {
             withContext(Dispatchers.IO) {
                 runCatching {
@@ -919,25 +1013,30 @@ class MyPlanetLite : AppCompatActivity() {
                         requestBuilder.addHeader("Cookie", cookie)
                     }
                     connectivityClient.newCall(requestBuilder.build()).execute().use { _ ->
+                        // Intentionally ignoring response
                     }
                 }
             }
         }
     }
+
     private fun buildLoginActivityUrl(baseUrl: String): String? {
         return baseUrl.toHttpUrlOrNull()?.newBuilder()
             ?.addPathSegments("db/login_activities")
             ?.build()
             ?.toString()
     }
+
     private fun buildLoginActivityPayload(username: String): JSONObject? {
         val parentCode = serverPreferences.getString(KEY_SERVER_PARENT_CODE, null)
         val code = serverPreferences.getString(KEY_SERVER_CODE, null)
         val androidId = serverPreferences.getString(KEY_DEVICE_ANDROID_ID, null)
         val customDeviceName = serverPreferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)
+
         val deviceName = resolveDeviceName()
         val loginTimeMillis = System.currentTimeMillis()
         val loginTimeString = loginTimeMillis.toString()
+
         return runCatching {
             JSONObject().apply {
                 put("user", username)
@@ -952,6 +1051,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }.getOrNull()
     }
+
     private fun resolveDeviceName(): String {
         val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
         val model = Build.MODEL?.trim().orEmpty()
@@ -966,6 +1066,7 @@ class MyPlanetLite : AppCompatActivity() {
             else -> "$manufacturer $model"
         }
     }
+
     private fun setLoadingState(isLoading: Boolean, loginButton: Button, progress: ProgressBar) {
         isLoginInProgress = isLoading
         if (isLoading) {
@@ -974,22 +1075,27 @@ class MyPlanetLite : AppCompatActivity() {
         updateLoginButtonAvailability()
         progress.isVisible = isLoading
     }
+
     private fun saveRememberedCredentials(username: String, password: String) {
         securePreferences.edit()
             .putBoolean(KEY_REMEMBER_CREDENTIALS, true)
             .putString(KEY_REMEMBERED_USERNAME, username)
             .putString(KEY_REMEMBERED_PASSWORD, password)
-            .apply()
+            .commit()
     }
+
     private fun clearRememberedCredentials() {
         securePreferences.edit()
             .putBoolean(KEY_REMEMBER_CREDENTIALS, false)
             .remove(KEY_REMEMBERED_USERNAME)
             .remove(KEY_REMEMBERED_PASSWORD)
-            .apply()
+            .commit()
     }
+
     private fun clearStoredSessionIfNotRemembered() {
-        if (securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)) {
+        val rememberedInSecurePrefs = securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)
+        val rememberedInLegacyPrefs = serverPreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)
+        if (rememberedInSecurePrefs || rememberedInLegacyPrefs) {
             return
         }
         val baseUrl = loadServerConfiguration().baseUrl.trim()
@@ -1001,20 +1107,24 @@ class MyPlanetLite : AppCompatActivity() {
             authService.logout()
         }
     }
+
     private fun loadRememberedCredentials(): RememberedCredentials? {
         if (serverPreferences.contains(KEY_REMEMBER_CREDENTIALS)) {
             val legacyUsername = serverPreferences.getString(KEY_REMEMBERED_USERNAME, null)
             val legacyPassword = serverPreferences.getString(KEY_REMEMBERED_PASSWORD, null)
             val legacyRemembered = serverPreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)
+
             if (legacyRemembered && legacyUsername != null && legacyPassword != null) {
                 saveRememberedCredentials(legacyUsername, legacyPassword)
             }
+
             serverPreferences.edit()
                 .remove(KEY_REMEMBER_CREDENTIALS)
                 .remove(KEY_REMEMBERED_USERNAME)
                 .remove(KEY_REMEMBERED_PASSWORD)
                 .apply()
         }
+
         if (!securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)) {
             return null
         }
@@ -1025,26 +1135,32 @@ class MyPlanetLite : AppCompatActivity() {
         }
         return RememberedCredentials(username.orEmpty(), password.orEmpty())
     }
+
     private fun isSurveyTranslationEnabled(): Boolean {
         return serverPreferences.getBoolean(KEY_SURVEY_TRANSLATIONS_ENABLED, DEFAULT_SURVEY_TRANSLATION_ENABLED)
     }
+
     private fun setSurveyTranslationEnabled(enabled: Boolean) {
         serverPreferences.edit()
             .putBoolean(KEY_SURVEY_TRANSLATIONS_ENABLED, enabled)
             .apply()
     }
+
     private fun isSurveyTranslationConsentAccepted(): Boolean {
         return serverPreferences.getBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
     }
+
     private fun setSurveyTranslationConsentAccepted(accepted: Boolean) {
         serverPreferences.edit()
             .putBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, accepted)
             .apply()
     }
+
     override fun onDestroy() {
         serverStatusJob?.cancel()
         super.onDestroy()
     }
+
     companion object {
         private const val MIN_PASSWORD_LENGTH = 4
         private const val PREFS_NAME = "server_preferences"
@@ -1081,6 +1197,7 @@ class MyPlanetLite : AppCompatActivity() {
             BuiltInServer(R.string.server_planet_uriur, "https://planet.uriur.ole.org/", "KE")
         )
     }
+
     private data class ServerOption(
         val displayName: String,
         val baseUrl: String,
@@ -1089,26 +1206,36 @@ class MyPlanetLite : AppCompatActivity() {
     ) {
         val isAction: Boolean
             get() = actionType != null
+
         override fun toString(): String = displayName
     }
+
     private enum class ServerAction {
         CONFIGURE,
         CLEAR
     }
+
     private data class ServerConfiguration(val baseUrl: String, val countryCode: String, val displayName: String)
+
     private data class ServerConnectivityResult(
         val reachable: Boolean,
         val parentCode: String? = null,
         val code: String? = null
     )
+
     private data class BuiltInServer(val nameRes: Int, val baseUrl: String, val countryCode: String)
+
     private data class CustomServer(val displayName: String, val baseUrl: String, val countryCode: String) {
         fun toServerOption(): ServerOption = ServerOption(displayName, baseUrl, countryCode)
     }
+
     private data class RememberedCredentials(val username: String, val password: String)
+
     private inner class ServerOptionAdapter(context: Context) : ArrayAdapter<ServerOption>(context, 0, mutableListOf()) {
+
         private val allItems = mutableListOf<ServerOption>()
         private val visibleItems = mutableListOf<ServerOption>()
+
         fun submitList(items: List<ServerOption>) {
             allItems.clear()
             allItems.addAll(items)
@@ -1116,14 +1243,19 @@ class MyPlanetLite : AppCompatActivity() {
             visibleItems.addAll(items)
             notifyDataSetChanged()
         }
+
         override fun getCount(): Int = visibleItems.size
+
         override fun getItem(position: Int): ServerOption? = visibleItems.getOrNull(position)
+
         override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
             return createView(position, convertView, parent, isDropdown = false)
         }
+
         override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
             return createView(position, convertView, parent, isDropdown = true)
         }
+
         override fun getFilter(): Filter = object : Filter() {
             override fun performFiltering(constraint: CharSequence?): FilterResults {
                 return FilterResults().apply {
@@ -1131,6 +1263,7 @@ class MyPlanetLite : AppCompatActivity() {
                     count = allItems.size
                 }
             }
+
             override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
                 visibleItems.clear()
                 @Suppress("UNCHECKED_CAST")
@@ -1142,17 +1275,22 @@ class MyPlanetLite : AppCompatActivity() {
                 }
                 notifyDataSetChanged()
             }
+
             override fun convertResultToString(resultValue: Any?): CharSequence {
                 return (resultValue as? ServerOption)?.displayName
                     ?: super.convertResultToString(resultValue)
             }
         }
+
         private fun createView(position: Int, convertView: View?, parent: ViewGroup, isDropdown: Boolean): View {
             val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_server_option, parent, false)
             val option = getItem(position) ?: return view
+
             val flagView: ImageView = view.findViewById(R.id.serverOptionFlag)
             val nameView: TextView = view.findViewById(R.id.serverOptionName)
+
             nameView.text = option.displayName
+
             val desiredMargin = if (isDropdown) {
                 context.resources.getDimensionPixelSize(R.dimen.server_option_flag_margin)
             } else {
@@ -1163,6 +1301,7 @@ class MyPlanetLite : AppCompatActivity() {
                 layoutParams.marginStart = desiredMargin
                 nameView.layoutParams = layoutParams
             }
+
             if (!isDropdown) {
                 flagView.setImageDrawable(null)
                 flagView.isVisible = false
@@ -1179,9 +1318,11 @@ class MyPlanetLite : AppCompatActivity() {
                     flagView.isVisible = false
                 }
             }
+
             return view
         }
     }
+
     private fun updateServerStatusIcon(baseUrl: String?) {
         if (!::serverStatusIconView.isInitialized) {
             return
@@ -1195,6 +1336,7 @@ class MyPlanetLite : AppCompatActivity() {
         }
         checkServerConnectivity(sanitizedUrl)
     }
+
     private fun checkServerConnectivity(baseUrl: String) {
         if (!::serverStatusIconView.isInitialized) {
             return
@@ -1215,6 +1357,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }
     }
+
     private fun fetchServerConnectivity(baseUrl: String): ServerConnectivityResult {
         val requestUrl = buildConfigurationRequestUrl(baseUrl) ?: return ServerConnectivityResult(false)
         return runCatching {
@@ -1235,6 +1378,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }.getOrDefault(ServerConnectivityResult(false))
     }
+
     private fun buildConfigurationRequestUrl(baseUrl: String): String? {
         return baseUrl.toHttpUrlOrNull()?.newBuilder()
             ?.addPathSegments("db/configurations/_all_docs")
@@ -1242,6 +1386,7 @@ class MyPlanetLite : AppCompatActivity() {
             ?.build()
             ?.toString()
     }
+
     private fun persistServerMetadata(baseUrl: String, parentCode: String?, code: String?) {
         serverPreferences.edit().apply {
             putString(KEY_SERVER_URL, baseUrl)
@@ -1257,6 +1402,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }.apply()
     }
+
     private fun showServerStatusChecking() {
         serverStatusIconView.setImageResource(R.drawable.ic_server_disconnected)
         serverStatusIconView.alpha = 0.5f
@@ -1267,6 +1413,7 @@ class MyPlanetLite : AppCompatActivity() {
         isServerReachable = false
         updateLoginButtonAvailability()
     }
+
     private fun showServerConnectedState() {
         serverStatusIconView.setImageResource(R.drawable.ic_server_connected)
         serverStatusIconView.alpha = 1f
@@ -1279,6 +1426,7 @@ class MyPlanetLite : AppCompatActivity() {
         updateLoginButtonAvailability()
         maybeRestoreSessionOrAutoLogin()
     }
+
     private fun showServerDisconnectedState(allowRetry: Boolean) {
         serverStatusIconView.setImageResource(R.drawable.ic_server_disconnected)
         serverStatusIconView.alpha = 1f
@@ -1300,6 +1448,7 @@ class MyPlanetLite : AppCompatActivity() {
         isServerReachable = false
         updateLoginButtonAvailability()
     }
+
     private fun updateLoginButtonAvailability() {
         if (!::loginButtonView.isInitialized) {
             return
@@ -1311,6 +1460,7 @@ class MyPlanetLite : AppCompatActivity() {
             signupButtonView.alpha = if (canAuthenticate) 1f else 0.5f
         }
     }
+
     private fun MaterialAutoCompleteTextView.showDropDownWhenSafe() {
         if (this@MyPlanetLite.isFinishing || this@MyPlanetLite.isDestroyed) {
             return
@@ -1331,6 +1481,7 @@ class MyPlanetLite : AppCompatActivity() {
             }
         }
     }
+
     private fun shrinkLogo(logo: ImageView, appVersion: TextView) {
         if (isLogoShrunk || originalLogoWidth == 0 || originalLogoHeight == 0 || shrunkLogoSizePx == 0) {
             return
@@ -1346,6 +1497,7 @@ class MyPlanetLite : AppCompatActivity() {
         }
         isLogoShrunk = true
     }
+
     private fun restoreLogo(logo: ImageView, appVersion: TextView) {
         if (!isLogoShrunk || originalLogoWidth == 0 || originalLogoHeight == 0) {
             return
@@ -1361,6 +1513,7 @@ class MyPlanetLite : AppCompatActivity() {
         }
         isLogoShrunk = false
     }
+
     private fun shrinkLoginScrollPadding(loginScroll: ScrollView) {
         if (isLoginScrollPaddingShrunk || originalLoginScrollPaddingTop == 0 ||
             shrunkLoginScrollPaddingTopPx == 0
@@ -1375,6 +1528,7 @@ class MyPlanetLite : AppCompatActivity() {
         )
         isLoginScrollPaddingShrunk = true
     }
+
     private fun restoreLoginScrollPadding(loginScroll: ScrollView) {
         if (!isLoginScrollPaddingShrunk || originalLoginScrollPaddingTop == 0) {
             return
