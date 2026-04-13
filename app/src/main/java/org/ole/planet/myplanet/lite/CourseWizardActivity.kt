@@ -104,7 +104,7 @@ class CourseWizardActivity : AppCompatActivity() {
                 0L
             )
         }
-    
+
     private val examLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
