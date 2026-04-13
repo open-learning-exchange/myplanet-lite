@@ -180,11 +180,7 @@ class MyPlanetLite : AppCompatActivity() {
     private fun initializeState(savedInstanceState: Bundle?) {
         ProfileCredentialsStore.setSessionCredentials(null)
         clearStoredSessionIfNotRemembered()
-        val requestedAutoLogin = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
-        val hasRememberedCredentials =
-            securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false) ||
-                serverPreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)
-        autoLoginEnabled = requestedAutoLogin || hasRememberedCredentials
+        autoLoginEnabled = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
         deepLinkPostId = IntentUtils.extractDeepLinkPostId(intent)
 
         if (savedInstanceState != null) {
@@ -1178,7 +1174,7 @@ class MyPlanetLite : AppCompatActivity() {
         private const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
-        private const val EXTRA_ALLOW_AUTO_LOGIN = "extra_allow_auto_login"
+        const val EXTRA_ALLOW_AUTO_LOGIN = "extra_allow_auto_login"
         private const val DEFAULT_COUNTRY_CODE = "GT"
         private const val DEFAULT_SURVEY_TRANSLATION_ENABLED = true
         private const val DEFAULT_DEVICE_NAME = "Android Device"
