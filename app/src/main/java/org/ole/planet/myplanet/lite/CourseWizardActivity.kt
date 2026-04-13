@@ -353,6 +353,7 @@ class CourseWizardActivity : AppCompatActivity() {
             nextButton.isEnabled = false
         }
     }
+
     private suspend fun advanceToNextStep(
         stepPositionView: TextView,
         stepTitleView: TextView,
@@ -380,7 +381,7 @@ class CourseWizardActivity : AppCompatActivity() {
             nextButton
         )
     }
-    
+
     private suspend fun updateCourseProgressIfNeeded(targetStepNumber: Int) {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
@@ -430,7 +431,7 @@ class CourseWizardActivity : AppCompatActivity() {
             )
         }
     }
-    
+
     private suspend fun flushPendingCourseProgress() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
@@ -483,7 +484,7 @@ class CourseWizardActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private suspend fun flushPendingExamSubmissions() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
@@ -504,14 +505,14 @@ class CourseWizardActivity : AppCompatActivity() {
             }
         }
     }
-    
+
     private fun isDeviceOnline(): Boolean {
         val manager = getSystemService(android.net.ConnectivityManager::class.java) ?: return false
         val network = manager.activeNetwork ?: return false
         val capabilities = manager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
-    
+
     private fun enqueuePendingProgress(courseId: String, stepNumber: Int) {
         val updated = (getPendingProgress(courseId) + stepNumber).distinct().sorted()
         val array = JSONArray()
@@ -531,7 +532,7 @@ class CourseWizardActivity : AppCompatActivity() {
             }
         }.getOrDefault(emptyList())
     }
-    
+
     private fun removePendingProgress(courseId: String, stepNumber: Int) {
         val remaining = getPendingProgress(courseId).filterNot { it == stepNumber }
         if (remaining.isEmpty()) {
@@ -542,8 +543,9 @@ class CourseWizardActivity : AppCompatActivity() {
         remaining.forEach { array.put(it) }
         pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
     }
-    
+
     private fun progressKey(courseId: String): String = "course_progress_$courseId"
+
     private fun bindAttachments(
         resources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
         survey: SurveyDocument?,
@@ -727,7 +729,7 @@ class CourseWizardActivity : AppCompatActivity() {
             listContainer.addView(itemView)
         }
     }
-    
+
     private fun bindAudioPlayer(
         itemView: View,
         resource: DashboardCoursePageFragment.CourseItem.LessonResource
@@ -749,20 +751,23 @@ class CourseWizardActivity : AppCompatActivity() {
         player.playWhenReady = false
         audioPlayers.add(player)
     }
-    
+
     private fun buildAudioDataSourceFactory(authorizationHeader: String?): DataSource.Factory {
         val httpFactory = DefaultHttpDataSource.Factory().setAllowCrossProtocolRedirects(true)
         authorizationHeader?.let { httpFactory.setDefaultRequestProperties(mapOf("Authorization" to it)) }
         return DefaultDataSource.Factory(this, httpFactory)
     }
+
     private fun releaseAudioPlayers() {
         audioPlayers.forEach { it.release() }
         audioPlayers.clear()
     }
+
     private fun selectResource(resource: DashboardCoursePageFragment.CourseItem.LessonResource) {
         val targetIndex = playlistIndexByResourceId[resource.id] ?: return
         launchFullscreenPlayer(targetIndex)
     }
+
     private fun launchFullscreenPlayer(startIndex: Int) {
         if (currentPlaylistUrls.isEmpty()) {
             Toast.makeText(this, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT)
@@ -784,6 +789,7 @@ class CourseWizardActivity : AppCompatActivity() {
         )
         fullscreenLauncher.launch(intent)
     }
+
     private fun openPdfResource(resource: DashboardCoursePageFragment.CourseItem.LessonResource) {
         val url = buildResourceUrl(resource)
         if (url.isNullOrBlank()) {
@@ -795,6 +801,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val intent = FullscreenPdfActivity.createIntent(this, url, authHeader)
         startActivity(intent)
     }
+
     private fun openImageResource(
         resource: DashboardCoursePageFragment.CourseItem.LessonResource,
         imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>
@@ -821,7 +828,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
-    
+
     private fun buildResourceUrl(resource: DashboardCoursePageFragment.CourseItem.LessonResource): String? {
         val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return null
         val localFile = OfflineCourseStorage.findExistingResourceFile(
@@ -847,7 +854,7 @@ class CourseWizardActivity : AppCompatActivity() {
             .build()
             .toString()
     }
-    
+
     private fun buildResourcePath(resource: DashboardCoursePageFragment.CourseItem.LessonResource): String? {
         val safeCourseId = courseId?.takeIf { it.isNotBlank() }
         if (safeCourseId != null) {
@@ -865,7 +872,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val filename = resource.filename.trim().takeIf { it.isNotEmpty() } ?: return null
         return "resources/$resourceId/$filename"
     }
-    
+
     private fun resolveOfflineMarkdownImages(markdown: String): String {
         val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return markdown
         var resolved = markdown
@@ -895,7 +902,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         return resolved
     }
-    
+
     private fun resolveMarkdownSourceUrl(source: String): String? {
         val trimmed = source.trim()
         if (trimmed.isBlank()) return null
@@ -907,7 +914,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
         return "$normalizedBase/$finalPath"
     }
-    
+
     private fun normalizeMarkdownImageSource(rawSource: String): String {
         var value = rawSource.trim()
         if (value.startsWith("<") && value.endsWith(">")) {
