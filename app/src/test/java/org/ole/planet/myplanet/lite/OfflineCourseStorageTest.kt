@@ -51,6 +51,15 @@ class OfflineCourseStorageTest {
     }
 
     @Test
+    fun `downloadedCourseIds returns empty set when root dir is empty`() {
+        val rootDir = File(tempFilesDir, ".offline_courses")
+        rootDir.mkdirs()
+
+        val result = OfflineCourseStorage.downloadedCourseIds(context)
+        assertEquals(emptySet<String>(), result)
+    }
+
+    @Test
     fun `downloadedCourseIds returns only valid course directories`() {
         val rootDir = File(tempFilesDir, ".offline_courses")
         rootDir.mkdirs()
