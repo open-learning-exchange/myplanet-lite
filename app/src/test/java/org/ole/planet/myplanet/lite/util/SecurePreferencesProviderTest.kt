@@ -16,6 +16,7 @@ import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.never
 
 class SecurePreferencesProviderTest {
 
@@ -93,10 +94,8 @@ class SecurePreferencesProviderTest {
     }
 
     @Test
-    fun `migrateLegacyPreferences migrates data and clears legacy prefs`() {
+    fun `migrateLegacyPreferences migrates data and deletes legacy prefs`() {
         val mockLegacyPrefs = mock(SharedPreferences::class.java)
-        val mockLegacyEditor = mock(SharedPreferences.Editor::class.java)
-
         val mockEncryptedPrefs = mock(SharedPreferences::class.java)
         val mockEncryptedEditor = mock(SharedPreferences.Editor::class.java)
 
@@ -113,9 +112,6 @@ class SecurePreferencesProviderTest {
         )
 
         `when`(mockLegacyPrefs.all).thenReturn(legacyData)
-        `when`(mockLegacyPrefs.edit()).thenReturn(mockLegacyEditor)
-        `when`(mockLegacyEditor.clear()).thenReturn(mockLegacyEditor)
-
         `when`(mockEncryptedPrefs.edit()).thenReturn(mockEncryptedEditor)
 
         val method = SecurePreferencesProvider::class.java.getDeclaredMethod("migrateLegacyPreferences", Context::class.java, SharedPreferences::class.java)
@@ -130,8 +126,7 @@ class SecurePreferencesProviderTest {
         verify(mockEncryptedEditor).putStringSet("set_key", setOf("a", "b"))
         verify(mockEncryptedEditor).apply()
 
-        verify(mockLegacyEditor).clear()
-        verify(mockLegacyEditor).apply()
+        verify(mockContext).deleteSharedPreferences("server_preferences")
     }
 
     @Test
@@ -148,8 +143,8 @@ class SecurePreferencesProviderTest {
         method.isAccessible = true
         method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs)
 
-        // Verify that edit() was never called on either prefs
-        verify(mockEncryptedPrefs, org.mockito.Mockito.never()).edit()
-        verify(mockLegacyPrefs, org.mockito.Mockito.never()).edit()
+        verify(mockEncryptedPrefs, never()).edit()
+        verify(mockLegacyPrefs, never()).edit()
+        verify(mockContext, never()).deleteSharedPreferences(any())
     }
 }
