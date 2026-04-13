@@ -1,3 +1,4 @@
+@file:Suppress("DEPRECATION")
 /**
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
@@ -30,6 +31,8 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
@@ -51,8 +54,36 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : AppCompatActivity() {
     private val pendingProgressPrefs by lazy {
-        getSharedPreferences(PREF_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
+        val masterKey = MasterKey.Builder(applicationContext)
+            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+            .build()
+        val encryptedPrefs = EncryptedSharedPreferences.create(
+            applicationContext,
+            PREF_ENCRYPTED_PENDING_COURSE_PROGRESS,
+            masterKey,
+            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        )
+        val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
+        val allLegacy = legacyPrefs.all
+        if (allLegacy.isNotEmpty()) {
+            val editor = encryptedPrefs.edit()
+            for ((key, value) in allLegacy) {
+                when (value) {
+                    is String -> editor.putString(key, value)
+                    is Int -> editor.putInt(key, value)
+                    is Boolean -> editor.putBoolean(key, value)
+                    is Float -> editor.putFloat(key, value)
+                    is Long -> editor.putLong(key, value)
+                    is Set<*> -> @Suppress("UNCHECKED_CAST") editor.putStringSet(key, value as Set<String>)
+                }
+            }
+            editor.apply()
+            legacyPrefs.edit().clear().apply()
+        }
+        encryptedPrefs
     }
+
     private lateinit var markwon: Markwon
     private var steps: List<StepDisplay> = emptyList()
     private var baseUrl: String? = null
@@ -79,6 +110,7 @@ class CourseWizardActivity : AppCompatActivity() {
     private val completedExamSteps = mutableSetOf<Int>()
     private var pendingExamStepIndex: Int? = null
     private var cachedProgressDocument: DashboardCoursesRepository.CourseProgressDocument? = null
+
     private val fullscreenLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val data = result.data ?: return@registerForActivityResult
@@ -88,6 +120,7 @@ class CourseWizardActivity : AppCompatActivity() {
                 0L
             )
         }
+
     private val examLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
@@ -107,6 +140,7 @@ class CourseWizardActivity : AppCompatActivity() {
                 )
             }
         }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
@@ -140,6 +174,7 @@ class CourseWizardActivity : AppCompatActivity() {
             maybeAutoCompleteFirstStep()
         }
     }
+
     private fun parseIntentData(savedInstanceState: Bundle?): Pair<String, Int> {
         val courseTitle = intent.getStringExtra(EXTRA_TITLE).orEmpty()
         courseId = intent.getStringExtra(EXTRA_COURSE_ID)
@@ -167,6 +202,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }.orEmpty()
         return Pair(courseTitle, startIndex)
     }
+
     private fun setupViews(courseTitle: String) {
         val root: View = findViewById(R.id.courseWizardRoot)
         WindowInsetsControllerCompat(window, root).isAppearanceLightStatusBars = true
@@ -195,10 +231,12 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         titleView.text = courseTitle
     }
+
     override fun onDestroy() {
         super.onDestroy()
         releaseAudioPlayers()
     }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putIntegerArrayList(
@@ -206,6 +244,7 @@ class CourseWizardActivity : AppCompatActivity() {
             ArrayList(completedExamSteps)
         )
     }
+
     private suspend fun resolveInitialStepIndex(fallbackIndex: Int): Int {
         if (cachedProgressDocument != null) {
             val progressStep = cachedProgressDocument?.stepNum
@@ -226,6 +265,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val resolvedIndex = progressStep?.minus(1) ?: fallbackIndex
         return resolvedIndex.coerceIn(0, steps.lastIndex)
     }
+
     private fun maybeAutoCompleteFirstStep() {
         if (hasAutoCompletedFirstStep || currentIndex != 0) return
         hasAutoCompletedFirstStep = true
@@ -233,6 +273,7 @@ class CourseWizardActivity : AppCompatActivity() {
             runCatching { updateCourseProgressIfNeeded(1) }
         }
     }
+
     private fun bindStep(
         stepPositionView: TextView,
         stepTitleView: TextView,
@@ -312,6 +353,7 @@ class CourseWizardActivity : AppCompatActivity() {
             nextButton.isEnabled = false
         }
     }
+
     private suspend fun advanceToNextStep(
         stepPositionView: TextView,
         stepTitleView: TextView,
@@ -339,6 +381,7 @@ class CourseWizardActivity : AppCompatActivity() {
             nextButton
         )
     }
+
     private suspend fun updateCourseProgressIfNeeded(targetStepNumber: Int) {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
@@ -352,7 +395,6 @@ class CourseWizardActivity : AppCompatActivity() {
         val existingDoc = existingDocuments?.get(id)
         val existingStep = existingDoc?.stepNum ?: 0
         if (existingStep >= targetStepNumber) return
-
         val now = System.currentTimeMillis()
         val document = DashboardCoursesRepository.CourseProgressUpdateDocument(
             id = cachedProgressDocument?.id,
@@ -397,10 +439,9 @@ class CourseWizardActivity : AppCompatActivity() {
         if (!isDeviceOnline()) return
         val pendingSteps = getPendingProgress(id)
         if (pendingSteps.isEmpty()) return
+        var existingDoc = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
+            .getOrNull()?.get(id)
         pendingSteps.sorted().forEach { step ->
-            val existingDocuments = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
-                .getOrNull()
-            val existingDoc = existingDocuments?.get(id)
             val existingStep = existingDoc?.stepNum ?: 0
             if (existingStep >= step) {
                 removePendingProgress(id, step)
@@ -424,6 +465,22 @@ class CourseWizardActivity : AppCompatActivity() {
             val result = coursesRepository.saveCourseProgress(normalizedBase, creds, document)
             if (result.isSuccess) {
                 removePendingProgress(id, step)
+                val persistedDoc = result.getOrNull()
+                    ?.firstOrNull { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
+                val resolvedId = persistedDoc?.id ?: existingDoc?.id
+                val resolvedRev = persistedDoc?.rev ?: existingDoc?.rev
+                existingDoc = DashboardCoursesRepository.CourseProgressDocument(
+                    id = resolvedId,
+                    rev = resolvedRev,
+                    courseId = id,
+                    stepNum = step,
+                    passed = true,
+                    createdDate = document.createdDate,
+                    updatedDate = now,
+                    createdOn = document.createdOn,
+                    parentCode = document.parentCode
+                )
+                cachedProgressDocument = existingDoc
             }
         }
     }
@@ -488,6 +545,7 @@ class CourseWizardActivity : AppCompatActivity() {
     }
 
     private fun progressKey(courseId: String): String = "course_progress_$courseId"
+
     private fun bindAttachments(
         resources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
         survey: SurveyDocument?,
@@ -671,6 +729,7 @@ class CourseWizardActivity : AppCompatActivity() {
             listContainer.addView(itemView)
         }
     }
+
     private fun bindAudioPlayer(
         itemView: View,
         resource: DashboardCoursePageFragment.CourseItem.LessonResource
@@ -692,19 +751,23 @@ class CourseWizardActivity : AppCompatActivity() {
         player.playWhenReady = false
         audioPlayers.add(player)
     }
+
     private fun buildAudioDataSourceFactory(authorizationHeader: String?): DataSource.Factory {
         val httpFactory = DefaultHttpDataSource.Factory().setAllowCrossProtocolRedirects(true)
         authorizationHeader?.let { httpFactory.setDefaultRequestProperties(mapOf("Authorization" to it)) }
         return DefaultDataSource.Factory(this, httpFactory)
     }
+
     private fun releaseAudioPlayers() {
         audioPlayers.forEach { it.release() }
         audioPlayers.clear()
     }
+
     private fun selectResource(resource: DashboardCoursePageFragment.CourseItem.LessonResource) {
         val targetIndex = playlistIndexByResourceId[resource.id] ?: return
         launchFullscreenPlayer(targetIndex)
     }
+
     private fun launchFullscreenPlayer(startIndex: Int) {
         if (currentPlaylistUrls.isEmpty()) {
             Toast.makeText(this, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT)
@@ -726,6 +789,7 @@ class CourseWizardActivity : AppCompatActivity() {
         )
         fullscreenLauncher.launch(intent)
     }
+
     private fun openPdfResource(resource: DashboardCoursePageFragment.CourseItem.LessonResource) {
         val url = buildResourceUrl(resource)
         if (url.isNullOrBlank()) {
@@ -737,6 +801,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val intent = FullscreenPdfActivity.createIntent(this, url, authHeader)
         startActivity(intent)
     }
+
     private fun openImageResource(
         resource: DashboardCoursePageFragment.CourseItem.LessonResource,
         imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>
@@ -763,6 +828,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         startActivity(intent)
     }
+
     private fun buildResourceUrl(resource: DashboardCoursePageFragment.CourseItem.LessonResource): String? {
         val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return null
         val localFile = OfflineCourseStorage.findExistingResourceFile(
@@ -788,6 +854,7 @@ class CourseWizardActivity : AppCompatActivity() {
             .build()
             .toString()
     }
+
     private fun buildResourcePath(resource: DashboardCoursePageFragment.CourseItem.LessonResource): String? {
         val safeCourseId = courseId?.takeIf { it.isNotBlank() }
         if (safeCourseId != null) {
@@ -805,6 +872,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val filename = resource.filename.trim().takeIf { it.isNotEmpty() } ?: return null
         return "resources/$resourceId/$filename"
     }
+
     private fun resolveOfflineMarkdownImages(markdown: String): String {
         val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return markdown
         var resolved = markdown
@@ -846,6 +914,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
         return "$normalizedBase/$finalPath"
     }
+
     private fun normalizeMarkdownImageSource(rawSource: String): String {
         var value = rawSource.trim()
         if (value.startsWith("<") && value.endsWith(">")) {
@@ -856,6 +925,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }
         return value.trim()
     }
+
     data class StepDisplay(
         val title: String,
         val description: String,
@@ -863,8 +933,10 @@ class CourseWizardActivity : AppCompatActivity() {
         val survey: SurveyDocument? = null,
         val exam: SurveyDocument? = null
     )
+
     companion object {
-        private const val PREF_PENDING_COURSE_PROGRESS = "pref_pending_course_progress"
+        private const val PREF_LEGACY_PENDING_COURSE_PROGRESS = "pref_pending_course_progress"
+        private const val PREF_ENCRYPTED_PENDING_COURSE_PROGRESS = "encrypted_pending_course_progress"
         private const val EXTRA_TITLE = "extra_title"
         private const val EXTRA_COURSE_ID = "extra_course_id"
         private const val EXTRA_STEPS = "extra_steps"

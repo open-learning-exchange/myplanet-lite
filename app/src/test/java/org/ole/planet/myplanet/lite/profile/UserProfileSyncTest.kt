@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.lite.profile
 
+import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.Dispatcher
@@ -194,8 +195,14 @@ class UserProfileSyncTest {
 
     @Test
     fun `refreshProfile with exception returns false`() = runTest {
-        // Unreachable url
-        val result = userProfileSync.refreshProfile("http://127.0.0.1:1", "testuser", null)
+        val failingClient = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                throw IOException("Network error")
+            }
+            .build()
+        val failingSync = UserProfileSync(failingClient, mockDatabase)
+
+        val result = failingSync.refreshProfile("http://localhost", "testuser", null)
         assertFalse(result)
     }
 
