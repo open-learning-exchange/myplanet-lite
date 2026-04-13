@@ -1,45 +1,19 @@
 @file:Suppress("DEPRECATION")
-/**
- * Author: Walfre López Prado
- * Email: loppra@plataformasinformaticas.com
- * Creation date: 2025-11-17
- */
-
 package org.ole.planet.myplanet.lite.profile
-
 import android.content.Context
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import org.ole.planet.myplanet.lite.MyPlanetLite
-
-/**
- * Reads the credentials that were persisted after login so the profile screen can refresh data.
- */
+import org.ole.planet.myplanet.lite.util.EncryptedSharedPreferencesFactory
 object ProfileCredentialsStore {
     private const val KEY_REMEMBERED_USERNAME = "remembered_username"
     private const val KEY_REMEMBERED_PASSWORD = "remembered_password"
     @Volatile
     private var sessionCredentials: StoredCredentials? = null
-
     fun setSessionCredentials(credentials: StoredCredentials?) {
         sessionCredentials = credentials
     }
-
     fun getStoredCredentials(context: Context): StoredCredentials? {
         sessionCredentials?.let { return it }
-
-        val appContext = context.applicationContext
-        val masterKey = MasterKey.Builder(appContext)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        val securePrefs = EncryptedSharedPreferences.create(
-            appContext,
-            MyPlanetLite.SECURE_PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
-
+        val securePrefs = EncryptedSharedPreferencesFactory.create(context.applicationContext, MyPlanetLite.SECURE_PREFS_NAME)
         val username = securePrefs.getString(KEY_REMEMBERED_USERNAME, null)?.takeIf { it.isNotBlank() }
         val password = securePrefs.getString(KEY_REMEMBERED_PASSWORD, null)?.takeIf { it.isNotBlank() }
         return if (username != null && password != null) {
@@ -49,5 +23,4 @@ object ProfileCredentialsStore {
         }
     }
 }
-
 data class StoredCredentials(val username: String, val password: String)
