@@ -38,6 +38,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.JoinReque
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.JoinTeamRequest
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.MembershipDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamDocument
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 
@@ -158,85 +159,82 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         memberCounts.clear()
         updateLoadingVisibility()
         viewLifecycleOwner.lifecycleScope.launch {
-            val membershipResult = repository.fetchMemberships(base, credentials, sessionCookie, username)
-            val memberships = membershipResult.getOrElse {
-                handleLoadError()
-                isLoading = false
-                updateLoadingVisibility()
-                return@launch
-            }
-            membershipsByTeamId = memberships.mapNotNull { membership ->
-                membership.teamId?.takeIf { it.isNotBlank() }?.let { id -> id to membership }
-            }.toMap()
-
-            val teamIds = membershipsByTeamId.keys.toList()
-            val userId = "org.couchdb.user:$username"
-
-            coroutineScope {
-                val joinRequestsDeferred = async {
-                    repository.fetchJoinRequests(base, credentials, sessionCookie, userId)
-                }
-                val teamsDeferred = async {
-                    repository.fetchTeams(base, credentials, sessionCookie, teamIds)
-                }
-                val memberCountsDeferred = async {
-                    if (teamIds.isNotEmpty()) {
-                        repository.fetchMemberCounts(base, credentials, sessionCookie, teamIds)
-                    } else {
-                        Result.success(emptyMap<String, Int>())
-                    }
-                }
-                val availableTeamsDeferred = async {
-                    fetchAvailableTeamsData(base, credentials, sessionCookie, teamIds, 0, pageSize)
-                }
-
-                val joinRequestsResult = joinRequestsDeferred.await()
-                val remoteJoinRequests = joinRequestsResult.getOrElse { emptyList() }
-                joinRequestsByTeamId = remoteJoinRequests.mapNotNull { doc ->
-                    doc.teamId?.takeIf { it.isNotBlank() }?.let { it to doc }
-                }.toMap()
-                pendingJoinRequests = joinRequestsByTeamId.keys - membershipsByTeamId.keys
-
-                val teamsResult = teamsDeferred.await()
-                memberTeams = teamsResult.getOrElse {
+            try {
+                val membershipResult = repository.fetchMemberships(base, credentials, sessionCookie, username)
+                val memberships = membershipResult.getOrElse {
                     handleLoadError()
-                    isLoading = false
-                    updateLoadingVisibility()
-                    return@coroutineScope
+                    return@launch
                 }
+                membershipsByTeamId = memberships.mapNotNull { membership ->
+                    membership.teamId?.takeIf { it.isNotBlank() }?.let { id -> id to membership }
+                }.toMap()
 
-                memberCountsDeferred.await().getOrNull()?.let { counts ->
-                    memberCounts.putAll(counts)
-                    memberTeams.mapNotNull { it.id }.forEach { id ->
+                val teamIds = membershipsByTeamId.keys.toList()
+                val userId = "org.couchdb.user:$username"
+
+                coroutineScope {
+                    val joinRequestsDeferred = async {
+                        repository.fetchJoinRequests(base, credentials, sessionCookie, userId)
+                    }
+                    val teamsDeferred = async {
+                        repository.fetchTeams(base, credentials, sessionCookie, teamIds)
+                    }
+                    val memberCountsDeferred = async {
+                        if (teamIds.isNotEmpty()) {
+                            repository.fetchMemberCounts(base, credentials, sessionCookie, teamIds)
+                        } else {
+                            Result.success(emptyMap<String, Int>())
+                        }
+                    }
+                    val availableTeamsDeferred = async {
+                        fetchAvailableTeamsData(base, credentials, sessionCookie, teamIds, 0, pageSize)
+                    }
+
+                    val joinRequestsResult = joinRequestsDeferred.await()
+                    val remoteJoinRequests = joinRequestsResult.getOrElse { emptyList() }
+                    joinRequestsByTeamId = remoteJoinRequests.mapNotNull { doc ->
+                        doc.teamId?.takeIf { it.isNotBlank() }?.let { it to doc }
+                    }.toMap()
+                    pendingJoinRequests = joinRequestsByTeamId.keys - membershipsByTeamId.keys
+
+                    val teamsResult = teamsDeferred.await()
+                    memberTeams = teamsResult.getOrElse {
+                        handleLoadError()
+                        return@coroutineScope
+                    }
+
+                    memberCountsDeferred.await().getOrNull()?.let { counts ->
+                        memberCounts.putAll(counts)
+                        memberTeams.mapNotNull { it.id }.forEach { id ->
+                            memberCounts.putIfAbsent(id, 0)
+                        }
+                    }
+
+                    val availableResult = availableTeamsDeferred.await()
+                    val availableData = availableResult.getOrElse {
+                        handleLoadError()
+                        return@coroutineScope
+                    }
+
+                    availableTeams.addAll(availableData.teams)
+                    memberCounts.putAll(availableData.counts)
+                    availableData.teams.mapNotNull { it.id }.forEach { id ->
                         memberCounts.putIfAbsent(id, 0)
                     }
+
+                    availableSkip = availableData.teams.size
+                    hasMoreAvailableTeams = availableData.teams.size >= pageSize
+
+                    renderTeams(memberTeams, availableTeams, memberCounts)
                 }
-
-                val availableResult = availableTeamsDeferred.await()
-                val availableData = availableResult.getOrElse {
-                    handleLoadError()
-                    isLoading = false
-                    updateLoadingVisibility()
-                    return@coroutineScope
-                }
-
-                availableTeams.addAll(availableData.teams)
-                memberCounts.putAll(availableData.counts)
-                availableData.teams.mapNotNull { it.id }.forEach { id ->
-                    memberCounts.putIfAbsent(id, 0)
-                }
-
-                availableSkip = availableData.teams.size
-                hasMoreAvailableTeams = availableData.teams.size >= pageSize
-
+            } finally {
                 isLoading = false
                 updateLoadingVisibility()
-                renderTeams(memberTeams, availableTeams, memberCounts)
             }
         }
     }
 
-private suspend fun fetchAvailableTeamsData(
+    private suspend fun fetchAvailableTeamsData(
         base: String,
         credentials: StoredCredentials,
         sessionCookie: String?,
