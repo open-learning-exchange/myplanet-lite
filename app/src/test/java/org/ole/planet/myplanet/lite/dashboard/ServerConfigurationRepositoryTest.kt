@@ -113,4 +113,88 @@ class ServerConfigurationRepositoryTest {
         assertTrue(exception is IOException)
         assertEquals("Unexpected response 500", exception?.message)
     }
+
+    @Test
+    fun `fetchConfiguration fails when base url is null`() = runTest {
+        val result = repository.fetchConfiguration(null)
+
+        assertTrue(result.isFailure)
+        val exception = result.exceptionOrNull()
+        assertTrue(exception is IOException)
+        assertEquals("Missing base url", exception?.message)
+    }
+
+    @Test
+    fun `fetchConfiguration normalizes base url`() = runTest {
+        val jsonResponse = "{\"rows\": []}"
+        mockWebServer.enqueue(MockResponse().setBody(jsonResponse).setResponseCode(200))
+
+        val baseUrl = "  " + mockWebServer.url("/").toString() + "///  "
+        val result = repository.fetchConfiguration(baseUrl)
+
+        assertTrue(result.isSuccess)
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("/db/configurations/_all_docs?include_docs=true", request.path)
+    }
+
+    @Test
+    fun `fetchConfiguration ignores rows with null doc`() = runTest {
+        val jsonResponse = """
+            {
+              "rows": [
+                {
+                  "doc": null
+                },
+                {
+                  "doc": {
+                    "keys": {
+                      "openai": "test-key-2"
+                    }
+                  }
+                }
+              ]
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(MockResponse().setBody(jsonResponse).setResponseCode(200))
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val result = repository.fetchConfiguration(baseUrl)
+
+        assertTrue(result.isSuccess)
+        val doc = result.getOrNull()
+        assertEquals("test-key-2", doc?.keys?.openAi)
+    }
+
+    @Test
+    fun `fetchConfiguration fails when json is malformed`() = runTest {
+        val malformedJson = "{ malformed json "
+        mockWebServer.enqueue(MockResponse().setBody(malformedJson).setResponseCode(200))
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val result = repository.fetchConfiguration(baseUrl)
+
+        assertTrue(result.isFailure)
+        val exception = result.exceptionOrNull()
+        assertTrue(exception is com.squareup.moshi.JsonDataException || exception is java.io.EOFException || exception is com.squareup.moshi.JsonEncodingException)
+    }
+
+    @Test
+    fun `fetchConfiguration fails on network exception`() = runTest {
+        val errorClient = okhttp3.OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                throw IOException("Network error")
+            }
+            .build()
+        val errorRepository = ServerConfigurationRepository(client = errorClient)
+
+        val baseUrl = "http://localhost:8080"
+        val result = errorRepository.fetchConfiguration(baseUrl)
+
+        assertTrue(result.isFailure)
+        val exception = result.exceptionOrNull()
+        assertTrue(exception is IOException)
+        assertEquals("Network error", exception?.message)
+    }
 }
