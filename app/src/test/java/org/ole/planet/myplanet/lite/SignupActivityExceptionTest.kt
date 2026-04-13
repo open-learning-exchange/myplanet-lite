@@ -1,34 +1,33 @@
 package org.ole.planet.myplanet.lite
 
+import android.content.SharedPreferences
 import android.os.Looper
-import androidx.test.core.app.ApplicationProvider
+import kotlin.reflect.full.callSuspend
+import kotlin.reflect.full.memberFunctions
+import kotlin.reflect.jvm.isAccessible
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.shadows.ShadowToast
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import kotlinx.coroutines.test.runTest
-import okhttp3.MediaType.Companion.toMediaType
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import android.content.SharedPreferences
-import kotlinx.coroutines.test.advanceUntilIdle
-import kotlinx.coroutines.async
-import kotlin.reflect.full.callSuspend
-import kotlin.reflect.full.memberFunctions
-import kotlin.reflect.jvm.isAccessible
-import okhttp3.mockwebserver.MockWebServer
-import okhttp3.mockwebserver.MockResponse
-import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
