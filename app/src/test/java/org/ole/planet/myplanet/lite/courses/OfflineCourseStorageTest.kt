@@ -1,13 +1,13 @@
-package org.ole.planet.myplanet.lite
+package org.ole.planet.myplanet.lite.courses
 
 import android.content.Context
-import java.io.File
 import org.junit.After
-import org.junit.Assert.assertEquals
+import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
-import org.mockito.Mockito.`when`
-import org.mockito.Mockito.mock
+import org.mockito.Mockito
+import org.ole.planet.myplanet.lite.OfflineCourseStorage
+import java.io.File
 
 class OfflineCourseStorageTest {
 
@@ -21,8 +21,8 @@ class OfflineCourseStorageTest {
         tempFile.mkdir()
         tempFilesDir = tempFile
 
-        context = mock(Context::class.java)
-        `when`(context.filesDir).thenReturn(tempFilesDir)
+        context = Mockito.mock(Context::class.java)
+        Mockito.`when`(context.filesDir).thenReturn(tempFilesDir)
     }
 
     @After
@@ -34,10 +34,10 @@ class OfflineCourseStorageTest {
     fun `downloadedCourseIds returns empty set when root dir does not exist`() {
         // Assert that the ROOT_DIR (".offline_courses") does not exist in tempFilesDir initially
         val rootDir = File(tempFilesDir, ".offline_courses")
-        assertEquals(false, rootDir.exists())
+        Assert.assertEquals(false, rootDir.exists())
 
         val result = OfflineCourseStorage.downloadedCourseIds(context)
-        assertEquals(emptySet<String>(), result)
+        Assert.assertEquals(emptySet<String>(), result)
     }
 
     @Test
@@ -47,7 +47,7 @@ class OfflineCourseStorageTest {
         rootDir.createNewFile()
 
         val result = OfflineCourseStorage.downloadedCourseIds(context)
-        assertEquals(emptySet<String>(), result)
+        Assert.assertEquals(emptySet<String>(), result)
     }
 
     @Test
@@ -56,7 +56,7 @@ class OfflineCourseStorageTest {
         rootDir.mkdirs()
 
         val result = OfflineCourseStorage.downloadedCourseIds(context)
-        assertEquals(emptySet<String>(), result)
+        Assert.assertEquals(emptySet<String>(), result)
     }
 
     @Test
@@ -80,6 +80,6 @@ class OfflineCourseStorageTest {
         val result = OfflineCourseStorage.downloadedCourseIds(context)
 
         // Should only contain "valid_course"
-        assertEquals(setOf("valid_course"), result)
+        Assert.assertEquals(setOf("valid_course"), result)
     }
 }
