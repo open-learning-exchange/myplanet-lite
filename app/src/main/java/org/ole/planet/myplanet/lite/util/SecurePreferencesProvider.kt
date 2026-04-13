@@ -1,7 +1,9 @@
 @file:Suppress("DEPRECATION")
 package org.ole.planet.myplanet.lite.util
+
 import android.content.Context
 import android.content.SharedPreferences
+
 object SecurePreferencesProvider {
     @androidx.annotation.VisibleForTesting
     var injectedPreferences: SharedPreferences? = null
@@ -9,17 +11,20 @@ object SecurePreferencesProvider {
     private const val LEGACY_PREFS_NAME = "server_preferences"
     @Volatile
     private var instance: SharedPreferences? = null
+
     fun getServerPreferences(context: Context): SharedPreferences {
         injectedPreferences?.let { return it }
         return instance ?: synchronized(this) {
             instance ?: createEncryptedPreferences(context.applicationContext).also { instance = it }
         }
     }
+
     private fun createEncryptedPreferences(appContext: Context): SharedPreferences {
         val encryptedPrefs = EncryptedSharedPreferencesFactory.create(appContext, ENCRYPTED_PREFS_NAME)
         migrateLegacyPreferences(appContext, encryptedPrefs)
         return encryptedPrefs
     }
+
     private fun migrateLegacyPreferences(context: Context, encryptedPrefs: SharedPreferences) {
         val legacyPrefs = context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
         val allLegacy = legacyPrefs.all
