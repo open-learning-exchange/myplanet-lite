@@ -87,6 +87,8 @@ class DashboardTeamsRepository(
     private val membershipBulkAddAdapter = moshi.adapter(BulkMembershipAddRequest::class.java)
     private val usersFindResponseAdapter = moshi.adapter(UsersFindResponse::class.java)
 
+    private val teamMemberDetailsCache = java.util.concurrent.ConcurrentHashMap<String, List<TeamMemberDetails>>()
+
     suspend fun addTeamMember(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -146,6 +148,8 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.remove(teamId)
+                    Unit
                 }
             }
         }
@@ -242,6 +246,8 @@ class DashboardTeamsRepository(
     ): Result<List<TeamMemberDetails>> {
         return withContext(dispatcher) {
             runCatching {
+                teamMemberDetailsCache[teamId]?.let { return@runCatching it }
+
                 val memberships = fetchTeamMembers(baseUrl, credentials, sessionCookie, teamId)
                     .getOrThrow()
                 val normalizedBase = baseUrl.trim().trimEnd('/')
@@ -257,7 +263,7 @@ class DashboardTeamsRepository(
 
                 val profileMap = profiles.associateBy { it._id }
 
-                validMemberships.mapNotNull { member ->
+                val details = validMemberships.mapNotNull { member ->
                     val userId = member.userId ?: return@mapNotNull null
                     val username = userId.substringAfter("org.couchdb.user:")
                     if (username.isBlank()) {
@@ -278,6 +284,9 @@ class DashboardTeamsRepository(
                         membership = member,
                     )
                 }
+
+                teamMemberDetailsCache[teamId] = details
+                details
             }
         }
     }
@@ -388,6 +397,8 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.remove(teamId)
+                    Unit
                 }
             }
         }
@@ -668,6 +679,8 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.remove(request.teamId)
+                    Unit
                 }
             }
         }
@@ -774,6 +787,7 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.clear()
                 }
             }
         }
@@ -816,6 +830,7 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.clear()
                 }
             }
         }
