@@ -19,6 +19,7 @@ import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.lifecycle.Lifecycle
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import org.hamcrest.Description
@@ -59,6 +60,7 @@ class MyPlanetLiteAuthTest {
         AuthDependencies.overrideAuthService(FakeService(AuthResult.Success(LoginResponse(ok = true))))
 
         ActivityScenario.launch(MyPlanetLite::class.java).use { scenario ->
+            scenario.moveToState(Lifecycle.State.RESUMED)
             scenario.onActivity { activity ->
                 activity.findViewById<Button>(R.id.loginButton).apply {
                     isEnabled = true
@@ -81,6 +83,7 @@ class MyPlanetLiteAuthTest {
         AuthDependencies.overrideAuthService(FakeService(AuthResult.Error(code = 401, message = "")))
 
         ActivityScenario.launch(MyPlanetLite::class.java).use { scenario ->
+            scenario.moveToState(Lifecycle.State.RESUMED)
             scenario.onActivity { activity ->
                 activity.findViewById<TextInputEditText>(R.id.usernameInput).setText("user@planet.com")
                 activity.findViewById<TextInputEditText>(R.id.passwordInput).setText("badpass")

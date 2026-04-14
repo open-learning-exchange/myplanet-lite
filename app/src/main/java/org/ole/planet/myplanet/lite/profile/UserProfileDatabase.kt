@@ -39,23 +39,23 @@ class UserProfileDatabase private constructor(context: Context) :
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
-            CREATE TABLE $TABLE_PROFILE (
-                $COLUMN_ID INTEGER PRIMARY KEY,
-                $COLUMN_USERNAME TEXT NOT NULL,
-                $COLUMN_FIRST_NAME TEXT,
-                $COLUMN_MIDDLE_NAME TEXT,
-                $COLUMN_LAST_NAME TEXT,
-                $COLUMN_EMAIL TEXT,
-                $COLUMN_LANGUAGE TEXT,
-                $COLUMN_PHONE_NUMBER TEXT,
-                $COLUMN_BIRTH_DATE TEXT,
-                $COLUMN_GENDER TEXT,
-                $COLUMN_LEVEL TEXT,
-                $COLUMN_AVATAR BLOB,
-                $COLUMN_REVISION TEXT,
-                $COLUMN_DERIVED_KEY TEXT,
-                $COLUMN_RAW_DOCUMENT TEXT,
-                $COLUMN_IS_USER_ADMIN INTEGER NOT NULL DEFAULT 0
+            CREATE TABLE user_profile (
+                id INTEGER PRIMARY KEY,
+                username TEXT NOT NULL,
+                first_name TEXT,
+                middle_name TEXT,
+                last_name TEXT,
+                email TEXT,
+                language TEXT,
+                phone_number TEXT,
+                birth_date TEXT,
+                gender TEXT,
+                level TEXT,
+                avatar BLOB,
+                revision TEXT,
+                derived_key TEXT,
+                raw_document TEXT,
+                is_user_admin INTEGER NOT NULL DEFAULT 0
             )
             """.trimIndent()
         )
@@ -63,14 +63,14 @@ class UserProfileDatabase private constructor(context: Context) :
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE $TABLE_PROFILE ADD COLUMN $COLUMN_REVISION TEXT")
-            db.execSQL("ALTER TABLE $TABLE_PROFILE ADD COLUMN $COLUMN_DERIVED_KEY TEXT")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN revision TEXT")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN derived_key TEXT")
         }
         if (oldVersion < 3) {
-            db.execSQL("ALTER TABLE $TABLE_PROFILE ADD COLUMN $COLUMN_RAW_DOCUMENT TEXT")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN raw_document TEXT")
         }
         if (oldVersion < 4) {
-            db.execSQL("ALTER TABLE $TABLE_PROFILE ADD COLUMN $COLUMN_IS_USER_ADMIN INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN is_user_admin INTEGER NOT NULL DEFAULT 0")
         }
     }
 
