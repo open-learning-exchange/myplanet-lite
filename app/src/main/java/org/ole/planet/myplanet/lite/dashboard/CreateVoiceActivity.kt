@@ -1555,7 +1555,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         private const val MAX_IMAGE_DIMENSION = 1280
         private const val JPEG_QUALITY = 85
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
-        private const val PREFS_NAME = "server_preferences"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"

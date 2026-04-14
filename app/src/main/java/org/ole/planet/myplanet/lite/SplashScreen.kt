@@ -254,7 +254,6 @@ class SplashScreen : AppCompatActivity() {
 
     companion object {
         private const val SPLASH_DELAY_MS = 2000L
-        private const val PREFS_NAME = "server_preferences"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_UNIQUE_ANDROID_ID = "device_unique_android_id"

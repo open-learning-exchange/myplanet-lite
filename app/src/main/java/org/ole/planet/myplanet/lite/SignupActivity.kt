@@ -175,7 +175,6 @@ class SignupActivity : AppCompatActivity() {
         const val EXTRA_USERNAME = "org.ole.planet.myplanet.lite.signup.USERNAME"
         const val EXTRA_PASSWORD = "org.ole.planet.myplanet.lite.signup.PASSWORD"
         const val EXTRA_SERVER_BASE_URL = "org.ole.planet.myplanet.lite.signup.SERVER_BASE_URL"
-        private const val PREFS_NAME = "server_preferences"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
         private const val KEY_SERVER_CODE = "server_code"

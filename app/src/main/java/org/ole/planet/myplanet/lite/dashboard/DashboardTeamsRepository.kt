@@ -19,6 +19,9 @@ import java.text.SimpleDateFormat
 import java.util.Locale
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
@@ -599,45 +602,49 @@ class DashboardTeamsRepository(
                     throw IOException("Missing server base URL")
                 }
 
-                val results = mutableMapOf<String, Int>()
-                if (teamIds.isEmpty()) return@runCatching results
+                if (teamIds.isEmpty()) return@runCatching emptyMap()
 
-                teamIds.chunked(500).forEach { chunk ->
-                    val selector = MultipleMemberCountSelector(
-                        teamId = IdsInClause(ids = chunk),
-                        docType = "membership",
-                        status = StatusClause(
-                            or = listOf(
-                                StatusCondition(exists = false),
-                                StatusCondition(notEquals = "archived")
+                val allDocs = coroutineScope {
+                    teamIds.chunked(50).map { chunk ->
+                        async {
+                            val selector = MultipleMemberCountSelector(
+                                teamId = IdsInClause(ids = chunk),
+                                docType = "membership",
+                                status = StatusClause(
+                                    or = listOf(
+                                        StatusCondition(exists = false),
+                                        StatusCondition(notEquals = "archived")
+                                    )
+                                )
                             )
-                        )
-                    )
-                    val payload = multipleMemberCountRequestAdapter.toJson(
-                        MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"), limit = 50000)
-                    )
-                    val requestBuilder = Request.Builder()
-                        .url("$normalizedBase/db/teams/_find")
-                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-                    credentials?.let {
-                        requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
-                    }
-                    sessionCookie.nullIfBlank()?.let { cookie ->
-                        requestBuilder.addHeader("Cookie", cookie)
-                    }
+                            val payload = multipleMemberCountRequestAdapter.toJson(
+                                MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"))
+                            )
+                            val requestBuilder = Request.Builder()
+                                .url("$normalizedBase/db/teams/_find")
+                                .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                            credentials?.let {
+                                requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
+                            }
+                            sessionCookie.nullIfBlank()?.let { cookie ->
+                                requestBuilder.addHeader("Cookie", cookie)
+                            }
 
-                    client.newCall(requestBuilder.build()).execute().use { response ->
-                        if (!response.isSuccessful) {
-                            throw IOException("Unexpected response ${response.code}")
-                        }
-                        val body = response.body.string()
-                        val docs = multipleMemberCountResponseAdapter.fromJson(body)?.docs ?: emptyList()
-
-                        docs.forEach { doc ->
-                            doc.teamId?.let { tId ->
-                                results[tId] = (results[tId] ?: 0) + 1
+                            client.newCall(requestBuilder.build()).execute().use { response ->
+                                if (!response.isSuccessful) {
+                                    throw IOException("Unexpected response ${response.code}")
+                                }
+                                val body = response.body.string()
+                                multipleMemberCountResponseAdapter.fromJson(body)?.docs ?: emptyList()
                             }
                         }
+                    }.awaitAll()
+                }.flatten()
+
+                val results = mutableMapOf<String, Int>()
+                allDocs.forEach { doc ->
+                    doc.teamId?.let { tId ->
+                        results[tId] = (results[tId] ?: 0) + 1
                     }
                 }
                 results

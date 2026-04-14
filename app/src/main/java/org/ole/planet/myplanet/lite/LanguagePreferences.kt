@@ -18,7 +18,6 @@ import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 object LanguagePreferences {
 
-    private const val PREFS_NAME = "server_preferences"
     private const val KEY_SELECTED_LANGUAGE = "selected_language"
     private const val DEFAULT_LANGUAGE_TAG = "en"
 
