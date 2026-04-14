@@ -9,7 +9,6 @@ package org.ole.planet.myplanet.lite
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
@@ -19,6 +18,8 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.IntentCompat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -37,8 +38,6 @@ import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
 import io.noties.markwon.image.glide.GlideImagesPlugin
-import java.util.ArrayList
-import java.util.Locale
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
 import org.json.JSONArray
@@ -50,6 +49,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import java.util.Locale
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : AppCompatActivity() {
@@ -64,22 +64,25 @@ class CourseWizardActivity : AppCompatActivity() {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
-        val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
+        val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, MODE_PRIVATE)
         val allLegacy = legacyPrefs.all
         if (allLegacy.isNotEmpty()) {
-            val editor = encryptedPrefs.edit()
-            for ((key, value) in allLegacy) {
-                when (value) {
-                    is String -> editor.putString(key, value)
-                    is Int -> editor.putInt(key, value)
-                    is Boolean -> editor.putBoolean(key, value)
-                    is Float -> editor.putFloat(key, value)
-                    is Long -> editor.putLong(key, value)
-                    is Set<*> -> @Suppress("UNCHECKED_CAST") editor.putStringSet(key, value as Set<String>)
+            encryptedPrefs.edit {
+                for ((key, value) in allLegacy) {
+                    when (value) {
+                        is String -> putString(key, value)
+                        is Int -> putInt(key, value)
+                        is Boolean -> putBoolean(key, value)
+                        is Float -> putFloat(key, value)
+                        is Long -> putLong(key, value)
+                        is Set<*> -> @Suppress("UNCHECKED_CAST") putStringSet(
+                            key,
+                            value as Set<String>
+                        )
+                    }
                 }
             }
-            editor.apply()
-            legacyPrefs.edit().clear().apply()
+            legacyPrefs.edit { clear() }
             applicationContext.deleteSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS)
         }
         encryptedPrefs
@@ -255,7 +258,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return fallbackIndex
         val creds = credentials ?: return fallbackIndex
         val id = courseId?.takeIf { it.isNotBlank() } ?: return fallbackIndex
-        val pendingMaxStep = getPendingProgress(id).maxOrNull()
+        getPendingProgress(id).maxOrNull()
         val progressDocuments = coursesRepository.fetchCoursesProgressDocuments(
             normalizedBase,
             creds,
@@ -355,7 +358,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun advanceToNextStep(
+    private fun advanceToNextStep(
         stepPositionView: TextView,
         stepTitleView: TextView,
         descriptionView: TextView,
@@ -518,7 +521,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val updated = (getPendingProgress(courseId) + stepNumber).distinct().sorted()
         val array = JSONArray()
         updated.forEach { array.put(it) }
-        pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
+        pendingProgressPrefs.edit { putString(progressKey(courseId), array.toString()) }
     }
 
     private fun getPendingProgress(courseId: String): List<Int> {
@@ -537,12 +540,12 @@ class CourseWizardActivity : AppCompatActivity() {
     private fun removePendingProgress(courseId: String, stepNumber: Int) {
         val remaining = getPendingProgress(courseId).filterNot { it == stepNumber }
         if (remaining.isEmpty()) {
-            pendingProgressPrefs.edit().remove(progressKey(courseId)).apply()
+            pendingProgressPrefs.edit { remove(progressKey(courseId)) }
             return
         }
         val array = JSONArray()
         remaining.forEach { array.put(it) }
-        pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
+        pendingProgressPrefs.edit { putString(progressKey(courseId), array.toString()) }
     }
 
     private fun progressKey(courseId: String): String = "course_progress_$courseId"
@@ -568,10 +571,8 @@ class CourseWizardActivity : AppCompatActivity() {
             mediaType.contains("video") || mediaType.contains("pdf") || mediaType.contains("image") ||
                     mediaType.contains("audio")
         }
-        val surveyDocument = survey
-        val examDocument = exam
-        val hasSurvey = surveyDocument?.questions?.isNotEmpty() == true
-        val hasExam = examDocument?.questions?.isNotEmpty() == true
+        val hasSurvey = survey?.questions?.isNotEmpty() == true
+        val hasExam = exam?.questions?.isNotEmpty() == true
         if (displayResources.isEmpty() && !hasSurvey && !hasExam) {
             container.visibility = View.GONE
             return
@@ -603,7 +604,7 @@ class CourseWizardActivity : AppCompatActivity() {
             val iconView: android.widget.ImageView =
                 itemView.findViewById(R.id.courseWizardAttachmentIcon)
             val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-            titleText.text = surveyDocument.name.orEmpty().ifBlank {
+            titleText.text = survey.name.orEmpty().ifBlank {
                 getString(R.string.dashboard_surveys_title)
             }
             subtitle.text = getString(R.string.dashboard_surveys_title)
@@ -613,8 +614,8 @@ class CourseWizardActivity : AppCompatActivity() {
             val openSurvey = {
                 SurveyWizardActivity.newIntent(
                     this,
-                    surveyDocument,
-                    surveyDocument.teamId,
+                    survey,
+                    survey.teamId,
                     null,
                     courseId
                 ).also { startActivity(it) }
@@ -624,7 +625,6 @@ class CourseWizardActivity : AppCompatActivity() {
             listContainer.addView(itemView)
         }
         if (hasExam) {
-            val examPayload = requireNotNull(examDocument)
             val itemView = inflater.inflate(
                 R.layout.item_course_wizard_attachment,
                 listContainer,
@@ -635,7 +635,7 @@ class CourseWizardActivity : AppCompatActivity() {
             val iconView: android.widget.ImageView =
                 itemView.findViewById(R.id.courseWizardAttachmentIcon)
             val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-            titleText.text = examPayload.name.orEmpty().ifBlank {
+            titleText.text = exam.name.orEmpty().ifBlank {
                 getString(R.string.dashboard_exam_title)
             }
             subtitle.text = getString(R.string.dashboard_exam_title)
@@ -646,8 +646,8 @@ class CourseWizardActivity : AppCompatActivity() {
                 pendingExamStepIndex = currentIndex
                 SurveyWizardActivity.newIntent(
                     this,
-                    examPayload,
-                    examPayload.teamId,
+                    exam,
+                    exam.teamId,
                     null,
                     courseId,
                     isExam = true
@@ -842,7 +842,7 @@ class CourseWizardActivity : AppCompatActivity() {
             return localFile.toURI().toString()
         }
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return null
-        val parsed = Uri.parse(normalizedBase)
+        val parsed = normalizedBase.toUri()
         val scheme = parsed.scheme ?: return null
         val authority = parsed.encodedAuthority ?: return null
         return parsed.buildUpon()
@@ -877,7 +877,7 @@ class CourseWizardActivity : AppCompatActivity() {
     private fun resolveOfflineMarkdownImages(markdown: String): String {
         val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return markdown
         var resolved = markdown
-        val markdownPattern = Regex("""!\[([^\]]*)]\(([^)\s]+)(?:\s+"[^"]*")?\)""")
+        val markdownPattern = Regex("""!\[([^]]*)]\(([^)\s]+)(?:\s+"[^"]*")?\)""")
         resolved = markdownPattern.replace(resolved) { match ->
             val alt = match.groupValues[1]
             val source = normalizeMarkdownImageSource(match.groupValues[2])
