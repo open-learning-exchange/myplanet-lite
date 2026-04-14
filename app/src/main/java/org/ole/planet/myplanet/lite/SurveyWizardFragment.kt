@@ -1633,7 +1633,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         private const val OTHER_CHOICE_TAG = "other_choice"
         private const val BIRTH_DATE_PICKER_TAG = "survey_birth_date_picker"
         private const val DEFAULT_EXAM_PASSING_PERCENTAGE = 100
-        private const val PREFS_NAME = "server_preferences"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
         private const val DEFAULT_DEVICE_NAME = "Android Device"
 

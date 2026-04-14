@@ -148,7 +148,6 @@ object SecurePreferencesProvider {
                 }
             }
             editor.apply()
-            legacyPrefs.edit().clear().apply()
             context.deleteSharedPreferences(LEGACY_PREFS_NAME)
         }
     }
