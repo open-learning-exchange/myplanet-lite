@@ -6,6 +6,9 @@
 
 package org.ole.planet.myplanet.lite
 
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import okhttp3.OkHttpClient
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -88,7 +91,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
     }
 
-    private val repository = DashboardNewsRepository()
+    private val repository = DashboardNewsRepository(OkHttpClient.Builder().build(), Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build())
     private val actionsRepository = DashboardNewsActionsRepository()
     private val items = mutableListOf<DashboardNewsItem>()
     private val commentCounts = mutableMapOf<String, Int>()

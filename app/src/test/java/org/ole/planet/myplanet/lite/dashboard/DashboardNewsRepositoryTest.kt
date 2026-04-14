@@ -1,5 +1,8 @@
 package org.ole.planet.myplanet.lite.dashboard
 
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import okhttp3.OkHttpClient
 import java.io.IOException
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
@@ -21,7 +24,7 @@ class DashboardNewsRepositoryTest {
     fun setup() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        repository = DashboardNewsRepository()
+        repository = DashboardNewsRepository(OkHttpClient.Builder().build(), Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build())
     }
 
     @After

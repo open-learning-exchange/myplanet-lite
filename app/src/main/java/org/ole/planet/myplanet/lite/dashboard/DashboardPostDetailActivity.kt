@@ -68,6 +68,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -88,7 +90,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: View
 
-    private val repository = DashboardNewsRepository()
+    private val repository by lazy { DashboardNewsRepository(httpClient, Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()) }
     private val actionsRepository = DashboardNewsActionsRepository()
     private val composerRepository = VoicesComposerRepository()
     private val httpClient = OkHttpClient.Builder().build()
