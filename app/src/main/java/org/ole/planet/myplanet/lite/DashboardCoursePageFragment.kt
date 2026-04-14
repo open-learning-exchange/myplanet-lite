@@ -79,6 +79,19 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         baseUrl = DashboardServerPreferences.getServerBaseUrl(requireContext())
         credentials = ProfileCredentialsStore.getStoredCredentials(requireContext())
 
+        setupViews(view)
+        setupAdapter()
+        setupRecyclerView()
+        setupRefreshLayout()
+
+        registerJoinListener()
+        maybeHandlePendingJoinRefresh()
+
+        performInitialLoad()
+        setupPagination()
+    }
+
+    private fun setupViews(view: View) {
         recyclerView = view.findViewById(R.id.dashboardCoursesRecycler)
         emptyView = view.findViewById(R.id.dashboardCoursesEmptyView)
         refreshLayout = view.findViewById(R.id.dashboardCoursesRefresh)
@@ -86,6 +99,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         courseCategories = listOf(
             CourseCategory(id = null, name = getString(R.string.dashboard_courses_category_all))
         )
+    }
+
+    private fun setupAdapter() {
         adapter = CourseAdapter(
             showProgress = tabPosition == 0,
             showDownloadButton = tabPosition == 0,
@@ -111,18 +127,6 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 confirmDeleteDownloadedCourse(course)
             }
         }
-        val spanCount = 2
-        val layoutManager = GridLayoutManager(requireContext(), spanCount)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                return if (adapter.isHeader(position)) spanCount else 1
-            }
-        }
-
-        recyclerView.layoutManager = layoutManager
-        recyclerView.adapter = adapter
-        recyclerView.addItemDecoration(SpacingDecoration(spanCount))
-
         adapter.onCourseClick = { course ->
             val isEnrolledCourse = tabPosition == 0 || myCourseIds.contains(course.id)
             DashboardCourseDetailsBottomSheet.show(
@@ -144,7 +148,23 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 }
             )
         }
+    }
 
+    private fun setupRecyclerView() {
+        val spanCount = 2
+        val layoutManager = GridLayoutManager(requireContext(), spanCount)
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                return if (adapter.isHeader(position)) spanCount else 1
+            }
+        }
+
+        recyclerView.layoutManager = layoutManager
+        recyclerView.adapter = adapter
+        recyclerView.addItemDecoration(SpacingDecoration(spanCount))
+    }
+
+    private fun setupRefreshLayout() {
         refreshLayout.setOnRefreshListener {
             refreshLayout.isRefreshing = false
             showLoadingOverlay(true)
@@ -156,11 +176,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 refreshTeamCourses(adapter, refreshLayout, forceReload = true)
             }
         }
+    }
 
-        registerJoinListener()
-
-        maybeHandlePendingJoinRefresh()
-
+    private fun performInitialLoad() {
         showLoadingOverlay(true)
         if (tabPosition == 0) {
             refreshUserCourses(adapter, refreshLayout)
@@ -171,7 +189,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         }
 
         loadCourseCategories()
+    }
 
+    private fun setupPagination() {
         if (tabPosition == 1) {
             recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {

@@ -12,6 +12,8 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
@@ -190,46 +192,56 @@ class DashboardSurveysRepository {
                 val counts = mutableMapOf<String, Int>()
 
                 // Chunk IDs to avoid huge payloads
-                surveyIds.chunked(50).forEach { chunk ->
-                    val parentMatches = chunk.flatMap { surveyId ->
-                        listOf(
-                            mapOf("parentId" to surveyId),
-                            mapOf("parentId" to mapOf("\$regex" to "^${surveyId}@"))
-                        )
-                    }
+                val deferredChunks = surveyIds.chunked(50).map { chunk ->
+                    async {
+                        val localCounts = mutableMapOf<String, Int>()
+                        val parentMatches = chunk.flatMap { surveyId ->
+                            listOf(
+                                mapOf("parentId" to surveyId),
+                                mapOf("parentId" to mapOf("\$regex" to "^${surveyId}@"))
+                            )
+                        }
 
-                    val selector = SurveyCompletionsSelector(
-                        type = "survey",
-                        status = "complete",
-                        teamId = teamId,
-                        parentMatches = parentMatches,
-                    )
-                    val payload = completionsRequestAdapter.toJson(
-                        SurveyCompletionsRequest(
-                            selector = selector,
-                            limit = 50000, // Increase limit for batched requests
-                        ),
-                    )
-                    val requestBuilder = Request.Builder()
-                        .url("$normalizedBase/db/submissions/_find")
-                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-                    credentials?.let { creds ->
-                        requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
-                    }
-                    sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                        requestBuilder.addHeader("Cookie", cookie)
-                    }
-                    client.newCall(requestBuilder.build()).execute().use { response ->
-                        if (!response.isSuccessful) {
-                            throw IOException("Unexpected response ${response.code}")
+                        val selector = SurveyCompletionsSelector(
+                            type = "survey",
+                            status = "complete",
+                            teamId = teamId,
+                            parentMatches = parentMatches,
+                        )
+                        val payload = completionsRequestAdapter.toJson(
+                            SurveyCompletionsRequest(
+                                selector = selector,
+                                limit = 50000, // Increase limit for batched requests
+                            ),
+                        )
+                        val requestBuilder = Request.Builder()
+                            .url("$normalizedBase/db/submissions/_find")
+                            .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                        credentials?.let { creds ->
+                            requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
                         }
-                        val body = response.body.string()
-                        val docs = completionsResponseAdapter.fromJson(body)?.docs ?: emptyList()
-                        docs.forEach { doc ->
-                            val parentId = doc["parentId"] as? String ?: return@forEach
-                            val baseId = parentId.substringBefore("@")
-                            counts[baseId] = counts.getOrDefault(baseId, 0) + 1
+                        sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                            requestBuilder.addHeader("Cookie", cookie)
                         }
+                        client.newCall(requestBuilder.build()).execute().use { response ->
+                            if (!response.isSuccessful) {
+                                throw IOException("Unexpected response ${response.code}")
+                            }
+                            val body = response.body.string()
+                            val docs = completionsResponseAdapter.fromJson(body)?.docs ?: emptyList()
+                            docs.forEach { doc ->
+                                val parentId = doc["parentId"] as? String ?: return@forEach
+                                val baseId = parentId.substringBefore("@")
+                                localCounts[baseId] = localCounts.getOrDefault(baseId, 0) + 1
+                            }
+                        }
+                        localCounts
+                    }
+                }
+
+                deferredChunks.awaitAll().forEach { localMap ->
+                    localMap.forEach { (key, value) ->
+                        counts[key] = counts.getOrDefault(key, 0) + value
                     }
                 }
                 counts

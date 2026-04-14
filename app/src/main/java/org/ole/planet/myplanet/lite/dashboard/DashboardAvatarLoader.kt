@@ -28,10 +28,10 @@ class DashboardAvatarLoader(
     private val baseUrl: String,
     private val sessionCookie: String?,
     private val credentials: StoredCredentials?,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val client: OkHttpClient = OkHttpClient.Builder().build()
 ) {
 
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
     private val cache = sharedCache
     private val avatarUpdateListener = AvatarUpdateNotifier.register(
         AvatarUpdateNotifier.Listener { username ->
