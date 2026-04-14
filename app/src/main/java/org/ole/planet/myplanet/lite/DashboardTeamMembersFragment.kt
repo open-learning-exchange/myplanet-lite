@@ -55,18 +55,19 @@ class DashboardTeamMembersFragment : Fragment() {
     private val repository = DashboardTeamsRepository()
     private var avatarLoader: DashboardAvatarLoader? = null
 
-    private val adapter = TeamMembersAdapter(
-        avatarBinder = { imageView, username, hasAvatar ->
-            val shouldAttemptLoad = hasAvatar || !username.isNullOrBlank()
-            avatarLoader?.bind(imageView, username, shouldAttemptLoad)
-        },
-        onMemberClicked = { member ->
-            openTeamMemberProfile(member)
-        },
-        onRemoveMemberClicked = { member ->
-            confirmMemberRemoval(member)
-        }
-    )
+    private val adapter = TeamMembersAdapter { holder, member ->
+        holder.bind(
+            member = member,
+            showRemoveAction = isCurrentUserTeamLeader,
+            currentUsername = normalizedCurrentUsername,
+            avatarBinder = { imageView, username, hasAvatar ->
+                val shouldAttemptLoad = hasAvatar || !username.isNullOrBlank()
+                avatarLoader?.bind(imageView, username, shouldAttemptLoad)
+            },
+            onMemberClicked = { openTeamMemberProfile(it) },
+            onRemoveMemberClicked = { confirmMemberRemoval(it) }
+        )
+    }
 
     private var currentMembers: List<TeamMemberDetails> = emptyList()
     private var searchQuery: String = ""
@@ -79,6 +80,7 @@ class DashboardTeamMembersFragment : Fragment() {
     private var currentTeamPlanetCode: String? = null
     private var currentTeamType: String? = null
     private var isCurrentUserTeamLeader: Boolean = false
+    private var normalizedCurrentUsername: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -253,7 +255,7 @@ class DashboardTeamMembersFragment : Fragment() {
                         username.equals(normalizedCurrentUsername, ignoreCase = true)
                     )
             }
-            adapter.currentUsername = normalizedCurrentUsername
+            this@DashboardTeamMembersFragment.normalizedCurrentUsername = normalizedCurrentUsername
             updateLeaderActionsVisibility()
             searchQuery = binding.dashboardTeamMembersSearchInput.text?.toString().orEmpty()
             applySearchFilter()
@@ -310,7 +312,7 @@ class DashboardTeamMembersFragment : Fragment() {
 
     private fun updateLeaderActionsVisibility() {
         binding.fabAddMember.isVisible = isCurrentUserTeamLeader
-        adapter.showRemoveAction = isCurrentUserTeamLeader
+        adapter.notifyDataSetChanged()
     }
 
     private fun confirmMemberRemoval(member: TeamMemberDetails) {
@@ -654,51 +656,39 @@ class DashboardTeamMembersFragment : Fragment() {
 }
 
 private class TeamMembersAdapter(
-    private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
-    private val onMemberClicked: (TeamMemberDetails) -> Unit,
-    private val onRemoveMemberClicked: (TeamMemberDetails) -> Unit
-) : RecyclerView.Adapter<TeamMemberViewHolder>() {
-
-    private val items: MutableList<TeamMemberDetails> = mutableListOf()
-    var showRemoveAction: Boolean = false
-        set(value) {
-            field = value
-            notifyDataSetChanged()
-        }
-
-    var currentUsername: String? = null
-        set(value) {
-            field = value
-            notifyDataSetChanged()
-        }
+    private val bindItem: (TeamMemberViewHolder, TeamMemberDetails) -> Unit
+) : androidx.recyclerview.widget.ListAdapter<TeamMemberDetails, TeamMemberViewHolder>(
+    object : androidx.recyclerview.widget.DiffUtil.ItemCallback<TeamMemberDetails>() {
+        override fun areItemsTheSame(oldItem: TeamMemberDetails, newItem: TeamMemberDetails): Boolean =
+            oldItem.username == newItem.username
+        override fun areContentsTheSame(oldItem: TeamMemberDetails, newItem: TeamMemberDetails): Boolean =
+            oldItem == newItem
+    }
+) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamMemberViewHolder {
         val inflater = LayoutInflater.from(parent.context)
         val binding = ItemTeamMemberBinding.inflate(inflater, parent, false)
-        return TeamMemberViewHolder(binding, avatarBinder, onMemberClicked, onRemoveMemberClicked)
+        return TeamMemberViewHolder(binding)
     }
 
     override fun onBindViewHolder(holder: TeamMemberViewHolder, position: Int) {
-        holder.bind(items[position], showRemoveAction, currentUsername)
-    }
-
-    override fun getItemCount(): Int = items.size
-
-    fun submitList(members: List<TeamMemberDetails>) {
-        items.clear()
-        items.addAll(members)
-        notifyDataSetChanged()
+        bindItem(holder, getItem(position))
     }
 }
 
 private class TeamMemberViewHolder(
-    private val binding: ItemTeamMemberBinding,
-    private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
-    private val onMemberClicked: (TeamMemberDetails) -> Unit,
-    private val onRemoveMemberClicked: (TeamMemberDetails) -> Unit
+    private val binding: ItemTeamMemberBinding
 ) : RecyclerView.ViewHolder(binding.root) {
 
-    fun bind(member: TeamMemberDetails, showRemoveAction: Boolean, currentUsername: String?) {
+    fun bind(
+        member: TeamMemberDetails,
+        showRemoveAction: Boolean,
+        currentUsername: String?,
+        avatarBinder: (ImageView, String?, Boolean) -> Unit,
+        onMemberClicked: (TeamMemberDetails) -> Unit,
+        onRemoveMemberClicked: (TeamMemberDetails) -> Unit
+    ) {
         val username = member.username
         binding.teamMemberAvatar.setImageResource(R.drawable.ic_person_placeholder_24)
         avatarBinder(binding.teamMemberAvatar, username, member.hasAvatar)
