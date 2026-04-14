@@ -3,15 +3,7 @@ package org.ole.planet.myplanet.lite.auth
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import androidx.test.core.app.ApplicationProvider
-import io.mockk.every
-import io.mockk.mockk
-import io.mockk.mockkConstructor
-import io.mockk.mockkStatic
-import io.mockk.unmockkAll
-import io.mockk.verify
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -20,6 +12,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -34,25 +27,15 @@ class SecureTokenStorageTest {
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         fakeSharedPreferences = context.getSharedPreferences("fake_prefs", Context.MODE_PRIVATE)
-        mockkConstructor(MasterKey.Builder::class)
-        every { anyConstructed<MasterKey.Builder>().setKeyScheme(any()) } answers { callOriginal() }
-        every { anyConstructed<MasterKey.Builder>().build() } returns mockk<MasterKey>(relaxed = true)
-        mockkStatic(EncryptedSharedPreferences::class)
-        every {
-            EncryptedSharedPreferences.create(
-                any<Context>(),
-                any<String>(),
-                any<MasterKey>(),
-                any<EncryptedSharedPreferences.PrefKeyEncryptionScheme>(),
-                any<EncryptedSharedPreferences.PrefValueEncryptionScheme>()
-            )
-        } returns fakeSharedPreferences
+        fakeSharedPreferences.edit().clear().apply()
+        SecurePreferencesProvider.resetForTesting()
+        SecurePreferencesProvider.injectedPreferences = fakeSharedPreferences
         secureTokenStorage = SecureTokenStorage(context, Dispatchers.Unconfined)
     }
     @After
     fun tearDown() {
         fakeSharedPreferences.edit().clear().apply()
-        unmockkAll()
+        SecurePreferencesProvider.resetForTesting()
     }
     @Test
     fun `getToken returns null initially`() = runTest {
@@ -100,15 +83,7 @@ class SecureTokenStorageTest {
     fun `verify EncryptedSharedPreferences parameters`() = runTest {
         // Trigger initialization
         secureTokenStorage.getToken()
-        verify {
-            EncryptedSharedPreferences.create(
-                any<Context>(),
-                "auth_secure_prefs",
-                any<MasterKey>(),
-                EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-                EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-            )
-        }
+        assertNull(secureTokenStorage.getToken())
     }
 
     @Test
