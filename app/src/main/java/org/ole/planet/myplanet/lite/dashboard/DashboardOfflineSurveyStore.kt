@@ -40,7 +40,7 @@ class DashboardOfflineSurveyStore(
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < DATABASE_VERSION) {
-            db.execSQL("DROP TABLE IF EXISTS $TABLE_SURVEYS")
+            db.execSQL("DROP TABLE IF EXISTS surveys")
             onCreate(db)
         }
     }

@@ -180,7 +180,8 @@ class DashboardNewsActionsRepository {
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
-        private fun resolveViewInEntries(
+        @androidx.annotation.VisibleForTesting
+        internal fun resolveViewInEntries(
             document: DashboardNewsRepository.NewsDocument,
             teamId: String?,
             teamName: String?
@@ -202,7 +203,8 @@ class DashboardNewsActionsRepository {
             return buildViewInEntries(document.createdOn, document.parentCode, teamId, teamName)
         }
 
-        private fun buildViewInEntries(
+        @androidx.annotation.VisibleForTesting
+        internal fun buildViewInEntries(
             createdOn: String?,
             parentCode: String?,
             teamId: String?,
