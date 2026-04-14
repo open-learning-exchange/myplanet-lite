@@ -14,7 +14,9 @@ import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import androidx.viewpager2.widget.ViewPager2
@@ -499,7 +501,7 @@ private class SurveysPagerAdapter(
                 outboxAdapter = SurveyOutboxAdapter(onOutboxSelected)
                 recyclerView.adapter = outboxAdapter
             }
-            outboxAdapter?.submit(items)
+            outboxAdapter?.submitList(items)
             emptyView.text = emptyMessage
             emptyView.isVisible = items.isEmpty()
             recyclerView.isVisible = items.isNotEmpty()
@@ -656,9 +658,17 @@ private val SurveyStatus.iconRes: Int
 
 private class SurveyOutboxAdapter(
     private val onOutboxSelected: (OutboxEntry) -> Unit,
-) : RecyclerView.Adapter<SurveyOutboxAdapter.OutboxViewHolder>() {
+) : ListAdapter<OutboxEntry, SurveyOutboxAdapter.OutboxViewHolder>(DiffCallback) {
 
-    private var items: List<OutboxEntry> = emptyList()
+    private object DiffCallback : DiffUtil.ItemCallback<OutboxEntry>() {
+        override fun areItemsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean {
+            return oldItem.id == newItem.id
+        }
+
+        override fun areContentsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean {
+            return oldItem == newItem
+        }
+    }
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): OutboxViewHolder {
         val view = android.view.LayoutInflater.from(parent.context)
@@ -666,15 +676,8 @@ private class SurveyOutboxAdapter(
         return OutboxViewHolder(view, onOutboxSelected)
     }
 
-    override fun getItemCount(): Int = items.size
-
     override fun onBindViewHolder(holder: OutboxViewHolder, position: Int) {
-        holder.bind(items[position])
-    }
-
-    fun submit(newItems: List<OutboxEntry>) {
-        items = newItems
-        notifyDataSetChanged()
+        holder.bind(getItem(position))
     }
 
     class OutboxViewHolder(
