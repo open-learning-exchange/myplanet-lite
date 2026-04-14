@@ -29,10 +29,9 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.SurveyWizardActivity
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardOfflineSurveyStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardOutboxDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository
@@ -57,8 +56,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
     private var tabMediator: TabLayoutMediator? = null
     private lateinit var pagerAdapter: SurveysPagerAdapter
     private lateinit var statusStore: DashboardSurveyStatusStore
-    private lateinit var offlineSurveyStore: DashboardOfflineSurveyStore
-    private lateinit var outboxStore: DashboardSurveyOutboxStore
+    private lateinit var localSurveyRepository: DashboardLocalSurveyRepository
 
     private var teamSurveys: List<SurveyDocument> = emptyList()
     private var adoptedSurveys: List<SurveyDocument> = emptyList()
@@ -94,8 +92,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         val appContext = requireContext().applicationContext
         username = ProfileCredentialsStore.getStoredCredentials(appContext)?.username
         statusStore = DashboardSurveyStatusStore(appContext, username)
-        offlineSurveyStore = DashboardOfflineSurveyStore(appContext)
-        outboxStore = DashboardSurveyOutboxStore(appContext)
+        localSurveyRepository = DashboardLocalSurveyRepository(appContext)
 
         titleView.text = getString(R.string.dashboard_surveys_header_title)
         descriptionView.text = getString(R.string.dashboard_surveys_header_description)
@@ -199,7 +196,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
             try {
                 val result = repository.fetchTeamSurveys(base, creds, sessionCookie, team)
                 val documents = result.getOrElse {
-                    val cached = offlineSurveyStore.getSavedSurveysForTeam(team)
+                    val cached = localSurveyRepository.getSavedSurveysForTeam(team)
                     if (cached.isEmpty()) {
                         showError(getString(R.string.dashboard_surveys_error_loading))
                         swipeRefresh.isRefreshing = false
@@ -211,9 +208,9 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                 adoptedSurveys = documents.filter { !it.sourceSurveyId.isNullOrBlank() }
                 teamSurveys = documents.filter { it.sourceSurveyId.isNullOrBlank() }
                 fetchCompletionCounts(base, team, documents)
-                savedSurveyIds = offlineSurveyStore.getSavedSurveyIds()
-                savedSurveyRevisions = offlineSurveyStore.getSavedSurveyRevisions()
-                outboxEntries = outboxStore.getPendingForTeam(team)
+                savedSurveyIds = localSurveyRepository.getSavedSurveyIds()
+                savedSurveyRevisions = localSurveyRepository.getSavedSurveyRevisions()
+                outboxEntries = localSurveyRepository.getPendingForTeam(team)
                 pagerAdapter.submit(
                     teamSurveys,
                     adoptedSurveys,
@@ -334,7 +331,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         }
         viewLifecycleOwner.lifecycleScope.launch {
             val saved = withContext(Dispatchers.IO) {
-                offlineSurveyStore.saveSurvey(document, teamId)
+                localSurveyRepository.saveSurvey(document, teamId)
             }
             if (saved) {
                 savedSurveyIds = savedSurveyIds + surveyId
