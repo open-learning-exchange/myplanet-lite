@@ -3,19 +3,13 @@ package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
 import android.content.SharedPreferences
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import org.mockito.MockedConstruction
-import org.mockito.MockedStatic
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.mockito.Mockito.mock
-import org.mockito.Mockito.mockConstruction
-import org.mockito.Mockito.mockStatic
-import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
 
@@ -23,8 +17,6 @@ class ProfileCredentialsStoreTest {
     private lateinit var mockContext: Context
     private lateinit var mockAppContext: Context
     private lateinit var mockPrefs: SharedPreferences
-    private lateinit var encryptedSharedPreferencesMockStatic: MockedStatic<EncryptedSharedPreferences>
-    private lateinit var masterKeyBuilderMockedConstruction: MockedConstruction<MasterKey.Builder>
 
     @Before
     fun setup() {
@@ -33,24 +25,8 @@ class ProfileCredentialsStoreTest {
         mockPrefs = mock()
 
         whenever(mockContext.applicationContext).thenReturn(mockAppContext)
-
-        // Mock MasterKey Builder via mockConstruction since we invoke the constructor
-        masterKeyBuilderMockedConstruction = mockConstruction(MasterKey.Builder::class.java) { mock, _ ->
-            whenever(mock.setKeyScheme(any())).thenReturn(mock)
-            whenever(mock.build()).thenReturn(mock(MasterKey::class.java))
-        }
-
-        // Mock EncryptedSharedPreferences
-        encryptedSharedPreferencesMockStatic = mockStatic(EncryptedSharedPreferences::class.java)
-        encryptedSharedPreferencesMockStatic.`when`<SharedPreferences> {
-            EncryptedSharedPreferences.create(
-                eq(mockAppContext),
-                any(),
-                any(),
-                any(),
-                any()
-            )
-        }.thenReturn(mockPrefs)
+        SecurePreferencesProvider.resetForTesting()
+        SecurePreferencesProvider.injectedPreferences = mockPrefs
 
         // Reset singleton state before each test
         ProfileCredentialsStore.setSessionCredentials(null)
@@ -58,8 +34,7 @@ class ProfileCredentialsStoreTest {
 
     @After
     fun teardown() {
-        masterKeyBuilderMockedConstruction.close()
-        encryptedSharedPreferencesMockStatic.close()
+        SecurePreferencesProvider.resetForTesting()
         ProfileCredentialsStore.setSessionCredentials(null)
     }
 
