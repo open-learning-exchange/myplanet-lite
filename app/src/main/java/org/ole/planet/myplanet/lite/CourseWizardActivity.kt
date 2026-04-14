@@ -82,7 +82,6 @@ class CourseWizardActivity : AppCompatActivity() {
                     }
                 }
             }
-            legacyPrefs.edit { clear() }
             applicationContext.deleteSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS)
         }
         encryptedPrefs
