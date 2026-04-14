@@ -41,8 +41,6 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.lifecycle.lifecycleScope
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import com.blongho.country_data.World
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
@@ -124,16 +122,7 @@ class MyPlanetLite : AppCompatActivity() {
     }
 
     private val securePreferences: SharedPreferences by lazy {
-        val masterKey = MasterKey.Builder(applicationContext)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        EncryptedSharedPreferences.create(
-            applicationContext,
-            SECURE_PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
-        )
+        SecurePreferencesProvider.getEncryptedPreferences(applicationContext, SECURE_PREFS_NAME)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
 
@@ -1088,7 +1077,7 @@ class MyPlanetLite : AppCompatActivity() {
             .putBoolean(KEY_REMEMBER_CREDENTIALS, true)
             .putString(KEY_REMEMBERED_USERNAME, username)
             .putString(KEY_REMEMBERED_PASSWORD, password)
-            .apply()
+            .commit()
     }
 
     private fun clearRememberedCredentials() {
@@ -1096,11 +1085,13 @@ class MyPlanetLite : AppCompatActivity() {
             .putBoolean(KEY_REMEMBER_CREDENTIALS, false)
             .remove(KEY_REMEMBERED_USERNAME)
             .remove(KEY_REMEMBERED_PASSWORD)
-            .apply()
+            .commit()
     }
 
     private fun clearStoredSessionIfNotRemembered() {
-        if (securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)) {
+        val rememberedInSecurePrefs = securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)
+        val rememberedInLegacyPrefs = serverPreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)
+        if (rememberedInSecurePrefs || rememberedInLegacyPrefs) {
             return
         }
         val baseUrl = loadServerConfiguration().baseUrl.trim()
@@ -1182,7 +1173,7 @@ class MyPlanetLite : AppCompatActivity() {
         private const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
-        private const val EXTRA_ALLOW_AUTO_LOGIN = "extra_allow_auto_login"
+        const val EXTRA_ALLOW_AUTO_LOGIN = "extra_allow_auto_login"
         private const val DEFAULT_COUNTRY_CODE = "GT"
         private const val DEFAULT_SURVEY_TRANSLATION_ENABLED = true
         private const val DEFAULT_DEVICE_NAME = "Android Device"

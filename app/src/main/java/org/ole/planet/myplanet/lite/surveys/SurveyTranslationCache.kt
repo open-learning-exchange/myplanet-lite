@@ -41,7 +41,7 @@ class SurveyTranslationCache(
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < DATABASE_VERSION) {
-            db.execSQL("DROP TABLE IF EXISTS $TABLE_TRANSLATIONS")
+            db.execSQL("DROP TABLE IF EXISTS survey_translations")
             onCreate(db)
         }
     }

@@ -132,6 +132,31 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
+    fun deleteEntry_withMultipleEntries_removesOnlySpecifiedEntry() = runTest {
+        val submission1 = createSubmission()
+        val submission2 = createSubmission()
+
+        store.saveSubmission(submission1, "survey1", "Test Survey 1", "team1", "Team A")
+        store.saveSubmission(submission2, "survey2", "Test Survey 2", "team2", "Team B")
+
+        val pendingAll = store.getPendingForTeam(null)
+        assertEquals(2, pendingAll.size)
+
+        val entryIdToDelete = pendingAll.find { it.surveyId == "survey1" }?.id
+        assertNotNull(entryIdToDelete)
+
+        val deleted = store.deleteEntry(entryIdToDelete!!)
+        assertTrue(deleted)
+
+        val pendingAfterDelete = store.getPendingForTeam(null)
+        assertEquals(1, pendingAfterDelete.size)
+        assertEquals("survey2", pendingAfterDelete[0].surveyId)
+
+        val deletedEntry = store.getEntry(entryIdToDelete)
+        assertNull(deletedEntry)
+    }
+
+    @Test
     fun saveSubmission_handlesSerializationFailure() = runTest {
         // Just verify basic saving again, serialization failures would require a custom moshi or interceptor.
         val submission = createSubmission()

@@ -28,19 +28,12 @@ class SecurePreferencesProviderTest {
         mockContext = mock(Context::class.java)
         `when`(mockContext.applicationContext).thenReturn(mockContext)
         mockPrefs = mock(SharedPreferences::class.java)
-
-        // reset instance
-        val instanceField = SecurePreferencesProvider::class.java.getDeclaredField("instance")
-        instanceField.isAccessible = true
-        instanceField.set(SecurePreferencesProvider, null)
+        SecurePreferencesProvider.resetForTesting()
     }
 
     @After
     fun teardown() {
-        SecurePreferencesProvider.injectedPreferences = null
-        val instanceField = SecurePreferencesProvider::class.java.getDeclaredField("instance")
-        instanceField.isAccessible = true
-        instanceField.set(SecurePreferencesProvider, null)
+        SecurePreferencesProvider.resetForTesting()
     }
 
     @Test
@@ -52,9 +45,7 @@ class SecurePreferencesProviderTest {
 
     @Test
     fun `getServerPreferences returns instance when already created`() {
-        val instanceField = SecurePreferencesProvider::class.java.getDeclaredField("instance")
-        instanceField.isAccessible = true
-        instanceField.set(SecurePreferencesProvider, mockPrefs)
+        SecurePreferencesProvider.injectedPreferences = mockPrefs
 
         val result = SecurePreferencesProvider.getServerPreferences(mockContext)
         assertEquals(mockPrefs, result)

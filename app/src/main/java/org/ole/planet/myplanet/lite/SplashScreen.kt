@@ -112,7 +112,9 @@ class SplashScreen : AppCompatActivity() {
                 DashboardLaunchMode.OFFLINE -> Intent(this@SplashScreen, DashboardActivity::class.java).apply {
                     putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
                 }
-                DashboardLaunchMode.NONE -> Intent(this@SplashScreen, MyPlanetLite::class.java)
+                DashboardLaunchMode.NONE -> Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
+                    putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
+                }
             }
 
             if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
