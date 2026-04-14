@@ -602,7 +602,7 @@ class DashboardTeamsRepository(
                 val results = mutableMapOf<String, Int>()
                 if (teamIds.isEmpty()) return@runCatching results
 
-                teamIds.chunked(50).forEach { chunk ->
+                teamIds.chunked(500).forEach { chunk ->
                     val selector = MultipleMemberCountSelector(
                         teamId = IdsInClause(ids = chunk),
                         docType = "membership",
@@ -614,7 +614,7 @@ class DashboardTeamsRepository(
                         )
                     )
                     val payload = multipleMemberCountRequestAdapter.toJson(
-                        MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"))
+                        MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"), limit = 50000)
                     )
                     val requestBuilder = Request.Builder()
                         .url("$normalizedBase/db/teams/_find")
@@ -874,7 +874,8 @@ class DashboardTeamsRepository(
     @JsonClass(generateAdapter = true)
     data class MultipleMemberCountFindRequest(
         val selector: MultipleMemberCountSelector,
-        val fields: List<String>
+        val fields: List<String>,
+        val limit: Int? = null
     )
 
     @JsonClass(generateAdapter = true)
