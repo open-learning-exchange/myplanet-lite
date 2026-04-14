@@ -25,19 +25,26 @@ object DashboardTeamSelectionPreferences {
     }
 
     fun setSelectedTeam(context: Context, teamId: String?, teamName: String?) {
+        if (teamId.isNullOrBlank()) {
+            clearSelectedTeam(context)
+            return
+        }
         val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
         prefs.edit().apply {
-            if (teamId.isNullOrBlank()) {
-                remove(KEY_SELECTED_TEAM_ID)
+            putString(KEY_SELECTED_TEAM_ID, teamId)
+            if (teamName.isNullOrBlank()) {
                 remove(KEY_SELECTED_TEAM_NAME)
             } else {
-                putString(KEY_SELECTED_TEAM_ID, teamId)
-                if (teamName.isNullOrBlank()) {
-                    remove(KEY_SELECTED_TEAM_NAME)
-                } else {
-                    putString(KEY_SELECTED_TEAM_NAME, teamName)
-                }
+                putString(KEY_SELECTED_TEAM_NAME, teamName)
             }
+        }.apply()
+    }
+
+    fun clearSelectedTeam(context: Context) {
+        val prefs = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
+        prefs.edit().apply {
+            remove(KEY_SELECTED_TEAM_ID)
+            remove(KEY_SELECTED_TEAM_NAME)
         }.apply()
     }
 }

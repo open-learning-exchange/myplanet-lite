@@ -124,6 +124,19 @@ class DashboardTeamSelectionPreferencesTest {
         assertNull(mockPrefs.getString("selected_team_name", null))
     }
 
+    @Test
+    fun `clearSelectedTeam clears both id and name`() {
+        mockPrefs.edit()
+            .putString("selected_team_id", "team-123")
+            .putString("selected_team_name", "Team Alpha")
+            .apply()
+
+        DashboardTeamSelectionPreferences.clearSelectedTeam(mockContext)
+
+        assertNull(mockPrefs.getString("selected_team_id", null))
+        assertNull(mockPrefs.getString("selected_team_name", null))
+    }
+
     // --- Fakes ---
 
     class FakeContext(private val prefs: SharedPreferences) : ContextWrapper(null) {
