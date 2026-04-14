@@ -107,6 +107,50 @@ class PostShareHelperTest {
         assertNull(PostShareHelper.sanitizeForHtml(null))
         assertNull(PostShareHelper.sanitizeForHtml("   "))
     }
+
+    @Test
+    fun testSanitizeForHtmlOnlyMarkdownImage_returnsNull() {
+        val raw = "![image](http://example.com/image.jpg)"
+        assertNull(PostShareHelper.sanitizeForHtml(raw))
+    }
+
+    @Test
+    fun testSanitizeForHtmlOnlyImageUrl_returnsNull() {
+        val raw = "http://example.com/image.png"
+        assertNull(PostShareHelper.sanitizeForHtml(raw))
+    }
+
+    @Test
+    fun testSanitizeForHtmlImageUrlWithQueryParams_removesImageUrl() {
+        val raw = "Check this out http://example.com/image.jpg?size=large end"
+        val expected = "Check this out   end"
+        val result = PostShareHelper.sanitizeForHtml(raw)
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun testSanitizeForHtmlMultipleImages_removesAll() {
+        val raw = "Start ![img1](http://example.com/1.png) middle http://example.com/2.jpg end"
+        val expected = "Start   middle   end"
+        val result = PostShareHelper.sanitizeForHtml(raw)
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun testSanitizeForHtmlNonImageLinks_arePreserved() {
+        val raw = "Hello [link](http://example.com/page.html) world"
+        val expected = "Hello [link](http://example.com/page.html) world"
+        val result = PostShareHelper.sanitizeForHtml(raw)
+        assertEquals(expected, result)
+    }
+
+    @Test
+    fun testSanitizeForHtmlUppercaseExtensions_removesImages() {
+        val raw = "Image1 http://example.com/a.JPG and ![Image2](http://example.com/b.PNG)"
+        val expected = "Image1   and"
+        val result = PostShareHelper.sanitizeForHtml(raw)
+        assertEquals(expected, result)
+    }
     @Test
     fun testToHtml() {
         val text = "Hello **world**\n[link](http://example.com)"
