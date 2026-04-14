@@ -27,18 +27,18 @@ class DashboardSurveyOutboxStore(
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
-            CREATE TABLE $TABLE_SUBMISSIONS(
-                $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
-                $COLUMN_SURVEY_ID TEXT,
-                $COLUMN_TEAM_ID TEXT,
-                $COLUMN_TEAM_NAME TEXT,
-                $COLUMN_SURVEY_NAME TEXT,
-                $COLUMN_CREATED_AT INTEGER NOT NULL,
-                $COLUMN_PAYLOAD TEXT NOT NULL
+            CREATE TABLE outbox_submissions(
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                survey_id TEXT,
+                team_id TEXT,
+                team_name TEXT,
+                survey_name TEXT,
+                created_at INTEGER NOT NULL,
+                payload TEXT NOT NULL
             )
             """.trimIndent(),
         )
-        db.execSQL("CREATE INDEX idx_outbox_team_id ON $TABLE_SUBMISSIONS($COLUMN_TEAM_ID)")
+        db.execSQL("CREATE INDEX idx_outbox_team_id ON outbox_submissions(team_id)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
