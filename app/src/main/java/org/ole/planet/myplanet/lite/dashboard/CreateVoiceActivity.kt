@@ -26,7 +26,10 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.BundleCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
@@ -157,6 +160,7 @@ class CreateVoiceActivity : AppCompatActivity() {
         createVoiceSubmitButton.setOnClickListener {
             attemptPost()
         }
+        applySubmitButtonBottomSpacing()
 
         targetTeamId = intent.getStringExtra(EXTRA_TARGET_TEAM_ID)
         targetTeamName = intent.getStringExtra(EXTRA_TARGET_TEAM_NAME)
@@ -196,6 +200,19 @@ class CreateVoiceActivity : AppCompatActivity() {
         updatePreview(initialText)
         updateActionAvailability()
         renderPreviewImages()
+    }
+
+    private fun applySubmitButtonBottomSpacing() {
+        val baseBottomMargin = resources.getDimensionPixelSize(R.dimen.create_voice_submit_bottom_margin)
+        val boostedBottomMargin = baseBottomMargin + (baseBottomMargin / 2)
+        ViewCompat.setOnApplyWindowInsetsListener(createVoiceSubmitButton) { view, insets ->
+            val navBarInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = boostedBottomMargin + navBarInset
+            }
+            insets
+        }
+        ViewCompat.requestApplyInsets(createVoiceSubmitButton)
     }
 
     override fun onDestroy() {
