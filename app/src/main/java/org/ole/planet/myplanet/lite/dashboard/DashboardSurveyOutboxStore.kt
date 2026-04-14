@@ -43,7 +43,7 @@ class DashboardSurveyOutboxStore(
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < DATABASE_VERSION) {
-            db.execSQL("DROP TABLE IF EXISTS $TABLE_SUBMISSIONS")
+            db.execSQL("DROP TABLE IF EXISTS outbox_submissions")
             onCreate(db)
         }
     }
