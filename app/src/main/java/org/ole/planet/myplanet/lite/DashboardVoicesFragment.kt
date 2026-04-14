@@ -703,15 +703,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
 
         companion object {
-            private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<DashboardNewsItem>() {
-                override fun areItemsTheSame(oldItem: DashboardNewsItem, newItem: DashboardNewsItem): Boolean {
-                    return oldItem.id == newItem.id
-                }
-
-                override fun areContentsTheSame(oldItem: DashboardNewsItem, newItem: DashboardNewsItem): Boolean {
-                    return oldItem == newItem
-                }
-            }
+            private val DIFF_CALLBACK = org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback<DashboardNewsItem>({ oldItem, newItem -> oldItem.id == newItem.id })
         }
     }
 
