@@ -452,6 +452,10 @@ private class SurveysPagerAdapter(
         private var outboxAdapter: SurveyOutboxAdapter? = null
         private var currentPage: Page = Page.TEAM
 
+        private var completionCounts: Map<String, Int> = emptyMap()
+        private var savedSurveyIds: Set<String> = emptySet()
+        private var savedSurveyRevisions: Map<String, String?> = emptyMap()
+
         init {
             recyclerView.layoutManager = LinearLayoutManager(itemView.context)
         }
@@ -467,6 +471,10 @@ private class SurveysPagerAdapter(
             savedSurveyRevisions: Map<String, String?>,
             onDownloadRequested: (SurveyDocument) -> Unit,
         ) {
+            this.completionCounts = completionCounts
+            this.savedSurveyIds = savedSurveyIds
+            this.savedSurveyRevisions = savedSurveyRevisions
+
             if (currentPage != Page.TEAM && currentPage != Page.ADOPTED) {
                 recyclerView.adapter = null
             }
@@ -476,10 +484,29 @@ private class SurveysPagerAdapter(
                     onStatusChanged = onStatusChanged,
                     onSurveySelected = onSurveySelected,
                     onDownloadRequested = onDownloadRequested,
+                    bindItem = { holder, uiModel ->
+                        holder.bind(
+                            uiModel.document,
+                            uiModel.completionCount,
+                            uiModel.isSaved,
+                            uiModel.savedRevision,
+                            onDownloadRequested
+                        )
+                    }
                 )
                 recyclerView.adapter = teamAdapter
             }
-            teamAdapter?.submit(items, completionCounts, savedSurveyIds, savedSurveyRevisions)
+
+            val uiModels = items.map { doc ->
+                SurveyItemUiModel(
+                    document = doc,
+                    completionCount = completionCounts[doc.id] ?: 0,
+                    isSaved = savedSurveyIds.contains(doc.id),
+                    savedRevision = savedSurveyRevisions[doc.id]
+                )
+            }
+            teamAdapter?.submitList(uiModels)
+
             emptyView.text = emptyMessage
             emptyView.isVisible = items.isEmpty()
             recyclerView.isVisible = items.isNotEmpty()
@@ -509,17 +536,30 @@ private class SurveysPagerAdapter(
     }
 }
 
+private data class SurveyItemUiModel(
+    val document: SurveyDocument,
+    val completionCount: Int,
+    val isSaved: Boolean,
+    val savedRevision: String?,
+)
+
+private class SurveyDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<SurveyItemUiModel>() {
+    override fun areItemsTheSame(oldItem: SurveyItemUiModel, newItem: SurveyItemUiModel): Boolean {
+        return oldItem.document.id == newItem.document.id
+    }
+
+    override fun areContentsTheSame(oldItem: SurveyItemUiModel, newItem: SurveyItemUiModel): Boolean {
+        return oldItem == newItem
+    }
+}
+
 private class SurveyItemsAdapter(
     private val statusStore: DashboardSurveyStatusStore,
     private val onStatusChanged: () -> Unit,
     private val onSurveySelected: (SurveyDocument) -> Unit,
     private val onDownloadRequested: (SurveyDocument) -> Unit,
-) : RecyclerView.Adapter<SurveyItemsAdapter.SurveyViewHolder>() {
-
-    private var items: List<SurveyDocument> = emptyList()
-    private var completionCounts: Map<String, Int> = emptyMap()
-    private var savedSurveyIds: Set<String> = emptySet()
-    private var savedSurveyRevisions: Map<String, String?> = emptyMap()
+    private val bindItem: (SurveyViewHolder, SurveyItemUiModel) -> Unit,
+) : androidx.recyclerview.widget.ListAdapter<SurveyItemUiModel, SurveyItemsAdapter.SurveyViewHolder>(SurveyDiffCallback()) {
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): SurveyViewHolder {
         val view = android.view.LayoutInflater.from(parent.context)
@@ -533,23 +573,8 @@ private class SurveyItemsAdapter(
         )
     }
 
-    override fun getItemCount(): Int = items.size
-
     override fun onBindViewHolder(holder: SurveyViewHolder, position: Int) {
-        holder.bind(items[position], completionCounts, savedSurveyIds, savedSurveyRevisions, onDownloadRequested)
-    }
-
-    fun submit(
-        newItems: List<SurveyDocument>,
-        completionCounts: Map<String, Int>,
-        savedSurveyIds: Set<String>,
-        savedSurveyRevisions: Map<String, String?>,
-    ) {
-        items = newItems
-        this.completionCounts = completionCounts
-        this.savedSurveyIds = savedSurveyIds
-        this.savedSurveyRevisions = savedSurveyRevisions
-        notifyDataSetChanged()
+        bindItem(holder, getItem(position))
     }
 
     class SurveyViewHolder(
@@ -568,9 +593,9 @@ private class SurveyItemsAdapter(
 
         fun bind(
             document: SurveyDocument,
-            completionCounts: Map<String, Int>,
-            savedSurveyIds: Set<String>,
-            savedSurveyRevisions: Map<String, String?>,
+            completionCount: Int,
+            isSaved: Boolean,
+            savedRevision: String?,
             onDownloadRequested: (SurveyDocument) -> Unit,
         ) {
             title.text = document.name.orEmpty()
@@ -584,17 +609,14 @@ private class SurveyItemsAdapter(
             }
 
             val created = formatCreatedDate(document.createdDate)
-            val completions = completionCounts[document.id] ?: 0
             metadata.text = itemView.context.getString(
                 R.string.dashboard_surveys_metadata,
                 created,
-                completions,
+                completionCount,
             )
             metadata.isVisible = true
 
             val documentId = document.id.orEmpty()
-            val isSaved = savedSurveyIds.contains(documentId)
-            val savedRevision = savedSurveyRevisions[documentId]
             val latestRevision = document.rev
             val isOutdated = isSaved && !latestRevision.isNullOrBlank() && savedRevision != null && savedRevision != latestRevision
             val context = itemView.context
