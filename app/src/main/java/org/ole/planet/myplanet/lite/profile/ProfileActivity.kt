@@ -382,7 +382,7 @@ class ProfileActivity : AppCompatActivity() {
 
         return ProfileFormValues(
             firstName = firstNameInput.text?.toString()?.trim().nullIfBlank(),
-            middleName = middleNameInput.text?.toString()?.trim().nullIfBlank(),
+            middleName = middleNameInput.text?.toString()?.trim().orEmpty(),
             lastName = lastNameInput.text?.toString()?.trim().nullIfBlank(),
             email = emailInput.text?.toString()?.trim().nullIfBlank(),
             phoneNumber = phoneInput.text?.toString()?.trim().nullIfBlank(),
@@ -586,7 +586,7 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun applyFormValuesToDocument(document: JSONObject, values: ProfileFormValues) {
         document.putOrRemove("firstName", values.firstName)
-        document.putOrRemove("middleName", values.middleName)
+        document.put("middleName", values.middleName.orEmpty())
         document.putOrRemove("lastName", values.lastName)
         document.putOrRemove("email", values.email)
         document.putOrRemove("phoneNumber", values.phoneNumber)
