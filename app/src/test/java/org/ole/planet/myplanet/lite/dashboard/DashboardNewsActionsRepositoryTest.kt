@@ -147,4 +147,102 @@ class DashboardNewsActionsRepositoryTest {
 
         assertTrue(result.isFailure)
     }
+
+    @Test
+    fun resolveViewInEntries_withExistingTeamsEntry_updatesMissingFields() {
+        val entry = DashboardNewsRepository.ViewInEntry(
+            section = "teams",
+            id = "team-1",
+            isPublic = null,
+            name = null,
+            mode = null
+        )
+        val document = createDocument().copy(viewIn = listOf(entry))
+        val result = DashboardNewsActionsRepository.resolveViewInEntries(
+            document = document,
+            teamId = "team-1",
+            teamName = "My Team"
+        )
+        assertEquals(1, result.size)
+        val updatedEntry = result[0]
+        assertEquals("teams", updatedEntry.section)
+        assertEquals("team-1", updatedEntry.id)
+        assertEquals(false, updatedEntry.isPublic)
+        assertEquals("My Team", updatedEntry.name)
+        assertEquals("team", updatedEntry.mode)
+    }
+
+    @Test
+    fun resolveViewInEntries_withExistingNonTeamsEntry_returnsUnmodified() {
+        val entry = DashboardNewsRepository.ViewInEntry(
+            section = "community",
+            id = "planet@parent"
+        )
+        val document = createDocument().copy(viewIn = listOf(entry))
+        val result = DashboardNewsActionsRepository.resolveViewInEntries(
+            document = document,
+            teamId = "team-1",
+            teamName = "My Team"
+        )
+        assertEquals(1, result.size)
+        val returnedEntry = result[0]
+        assertEquals("community", returnedEntry.section)
+        assertEquals("planet@parent", returnedEntry.id)
+        assertEquals(null, returnedEntry.isPublic)
+    }
+
+    @Test
+    fun resolveViewInEntries_fallback_withTeamId_buildsTeamEntry() {
+        val document = createDocument().copy(viewIn = emptyList())
+        val result = DashboardNewsActionsRepository.resolveViewInEntries(
+            document = document,
+            teamId = "team-2",
+            teamName = "Team Two"
+        )
+        assertEquals(1, result.size)
+        val entry = result[0]
+        assertEquals("teams", entry.section)
+        assertEquals("team-2", entry.id)
+        assertEquals(false, entry.isPublic)
+        assertEquals("Team Two", entry.name)
+        assertEquals("team", entry.mode)
+    }
+
+    @Test
+    fun resolveViewInEntries_fallback_withoutTeamId_buildsCommunityEntry() {
+        val document = createDocument().copy(
+            viewIn = emptyList(),
+            createdOn = "earth",
+            parentCode = "solar"
+        )
+        val result = DashboardNewsActionsRepository.resolveViewInEntries(
+            document = document,
+            teamId = null,
+            teamName = null
+        )
+        assertEquals(1, result.size)
+        val entry = result[0]
+        assertEquals("community", entry.section)
+        assertEquals("earth@solar", entry.id)
+        assertEquals(null, entry.isPublic)
+    }
+
+    @Test
+    fun resolveViewInEntries_fallback_missingPlanetOrParent_returnsEmptyList() {
+        val document1 = createDocument().copy(viewIn = emptyList(), createdOn = null, parentCode = "solar")
+        val result1 = DashboardNewsActionsRepository.resolveViewInEntries(
+            document = document1,
+            teamId = null,
+            teamName = null
+        )
+        assertTrue(result1.isEmpty())
+
+        val document2 = createDocument().copy(viewIn = emptyList(), createdOn = "earth", parentCode = null)
+        val result2 = DashboardNewsActionsRepository.resolveViewInEntries(
+            document = document2,
+            teamId = null,
+            teamName = null
+        )
+        assertTrue(result2.isEmpty())
+    }
 }

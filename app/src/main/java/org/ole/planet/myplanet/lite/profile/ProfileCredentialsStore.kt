@@ -8,9 +8,8 @@
 package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import org.ole.planet.myplanet.lite.MyPlanetLite
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 /**
  * Reads the credentials that were persisted after login so the profile screen can refresh data.
@@ -29,15 +28,9 @@ object ProfileCredentialsStore {
         sessionCredentials?.let { return it }
 
         val appContext = context.applicationContext
-        val masterKey = MasterKey.Builder(appContext)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        val securePrefs = EncryptedSharedPreferences.create(
+        val securePrefs = SecurePreferencesProvider.getEncryptedPreferences(
             appContext,
-            MyPlanetLite.SECURE_PREFS_NAME,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+            MyPlanetLite.SECURE_PREFS_NAME
         )
 
         val username = securePrefs.getString(KEY_REMEMBERED_USERNAME, null)?.takeIf { it.isNotBlank() }
