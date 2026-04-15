@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
@@ -70,7 +70,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private val httpClient = OkHttpClient()
     private val activeDownloads = mutableMapOf<String, Job>()
     private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
-    private var surveyOutboxStore: DashboardSurveyOutboxStore? = null
+    private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -744,22 +744,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     }
 
     private suspend fun flushPendingSurveyOutbox() {
-        val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
-        val creds = credentials ?: return
-        if (!isDeviceOnline()) return
-        val authService = AuthDependencies.provideAuthService(requireContext().applicationContext, base)
-        val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
-        val store = surveyOutboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext).also {
-            surveyOutboxStore = it
-        }
-        val pendingEntries = store.getPendingForTeam(null).sortedBy { it.createdAt }
-        if (pendingEntries.isEmpty()) return
-        pendingEntries.forEach { entry ->
-            val result = surveySubmissionRepository.submitSurvey(base, creds, sessionCookie, entry.submission)
-            if (result.isSuccess) {
-                store.deleteEntry(entry.id)
-            }
-        }
+        localSurveyRepository.flushPendingSurveyOutbox()
     }
 
     private suspend fun estimateResourcesSize(
@@ -1156,11 +1141,45 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         }
 
         fun submitCourses(newItems: List<CourseItem>) {
+            val oldDisplayed = displayedItems.toList()
+
             items.clear()
             items.addAll(newItems.distinctBy { it.id })
             displayedItems.clear()
             displayedItems.addAll(items)
-            notifyDataSetChanged()
+
+            val newDisplayed = displayedItems.toList()
+
+            val diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(object : androidx.recyclerview.widget.DiffUtil.Callback() {
+                override fun getOldListSize() = oldDisplayed.size
+                override fun getNewListSize() = newDisplayed.size
+
+                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                    return oldDisplayed[oldItemPosition].id == newDisplayed[newItemPosition].id
+                }
+
+                override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                    return oldDisplayed[oldItemPosition] == newDisplayed[newItemPosition]
+                }
+            })
+
+            diffResult.dispatchUpdatesTo(object : androidx.recyclerview.widget.ListUpdateCallback {
+                override fun onInserted(position: Int, count: Int) {
+                    notifyItemRangeInserted(position + 1, count)
+                }
+
+                override fun onRemoved(position: Int, count: Int) {
+                    notifyItemRangeRemoved(position + 1, count)
+                }
+
+                override fun onMoved(fromPosition: Int, toPosition: Int) {
+                    notifyItemMoved(fromPosition + 1, toPosition + 1)
+                }
+
+                override fun onChanged(position: Int, count: Int, payload: Any?) {
+                    notifyItemRangeChanged(position + 1, count, payload)
+                }
+            })
         }
 
         fun appendCourses(newItems: List<CourseItem>) {
