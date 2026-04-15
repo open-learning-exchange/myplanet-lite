@@ -27,7 +27,9 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 class DashboardCoursesRepository(
     private val client: OkHttpClient = OkHttpClient.Builder().build(),
-    private val moshi: Moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+    private val moshi: Moshi = Moshi.Builder()
+        .addLast(KotlinJsonAdapterFactory())
+        .build(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     private val findRequestAdapter = moshi.adapter(ShelfFindRequest::class.java)
