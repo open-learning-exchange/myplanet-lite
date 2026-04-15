@@ -48,6 +48,7 @@ class CreateVoiceActivityRobolectricTest {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
+        context.setTheme(R.style.Theme_MyPlanetLite)
         ProfileCredentialsStore.setSessionCredentials(StoredCredentials("test", "testpass"))
         org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = org.mockito.Mockito.mock(android.content.SharedPreferences::class.java)
     }

@@ -24,9 +24,8 @@
                 android:layout_height="160dp"
                 android:background="@drawable/dashboard_course_image_background"
                 android:contentDescription="@string/dashboard_courses_content_description_icon"
-                android:padding="24dp"
                 android:scaleType="centerInside"
-                app:srcCompat="@drawable/ic_courses_24" />
+                app:srcCompat="@drawable/no_image" />
 
             <com.google.android.material.floatingactionbutton.FloatingActionButton
                 android:id="@+id/dashboardCourseDownloadButton"
