@@ -448,6 +448,9 @@ private class SurveysPagerAdapter(
         private var teamAdapter: SurveyItemsAdapter? = null
         private var outboxAdapter: SurveyOutboxAdapter? = null
         private var currentPage: Page = Page.TEAM
+        private var completionCounts: Map<String, Int> = emptyMap()
+        private var savedSurveyIds: Set<String> = emptySet()
+        private var savedSurveyRevisions: Map<String, String?> = emptyMap()
 
         init {
             recyclerView.layoutManager = LinearLayoutManager(itemView.context)
@@ -467,16 +470,21 @@ private class SurveysPagerAdapter(
             if (currentPage != Page.TEAM && currentPage != Page.ADOPTED) {
                 recyclerView.adapter = null
             }
+            this.completionCounts = completionCounts
+            this.savedSurveyIds = savedSurveyIds
+            this.savedSurveyRevisions = savedSurveyRevisions
             if (recyclerView.adapter !is SurveyItemsAdapter) {
                 teamAdapter = SurveyItemsAdapter(
                     statusStore = statusStore,
                     onStatusChanged = onStatusChanged,
                     onSurveySelected = onSurveySelected,
                     onDownloadRequested = onDownloadRequested,
-                )
+                ) { holder, document ->
+                    holder.bind(document, this.completionCounts, this.savedSurveyIds, this.savedSurveyRevisions, onDownloadRequested)
+                }
                 recyclerView.adapter = teamAdapter
             }
-            teamAdapter?.submit(items, completionCounts, savedSurveyIds, savedSurveyRevisions)
+            teamAdapter?.submitList(items)
             emptyView.text = emptyMessage
             emptyView.isVisible = items.isEmpty()
             recyclerView.isVisible = items.isNotEmpty()
@@ -496,7 +504,7 @@ private class SurveysPagerAdapter(
                 outboxAdapter = SurveyOutboxAdapter(onOutboxSelected)
                 recyclerView.adapter = outboxAdapter
             }
-            outboxAdapter?.submit(items)
+            outboxAdapter?.submitList(items)
             emptyView.text = emptyMessage
             emptyView.isVisible = items.isEmpty()
             recyclerView.isVisible = items.isNotEmpty()
@@ -506,17 +514,18 @@ private class SurveysPagerAdapter(
     }
 }
 
+private class SurveyDocumentDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<SurveyDocument>() {
+    override fun areItemsTheSame(oldItem: SurveyDocument, newItem: SurveyDocument): Boolean = oldItem.id == newItem.id
+    override fun areContentsTheSame(oldItem: SurveyDocument, newItem: SurveyDocument): Boolean = oldItem == newItem
+}
+
 private class SurveyItemsAdapter(
     private val statusStore: DashboardSurveyStatusStore,
     private val onStatusChanged: () -> Unit,
     private val onSurveySelected: (SurveyDocument) -> Unit,
     private val onDownloadRequested: (SurveyDocument) -> Unit,
-) : RecyclerView.Adapter<SurveyItemsAdapter.SurveyViewHolder>() {
-
-    private var items: List<SurveyDocument> = emptyList()
-    private var completionCounts: Map<String, Int> = emptyMap()
-    private var savedSurveyIds: Set<String> = emptySet()
-    private var savedSurveyRevisions: Map<String, String?> = emptyMap()
+    private val bindItem: (SurveyViewHolder, SurveyDocument) -> Unit,
+) : androidx.recyclerview.widget.ListAdapter<SurveyDocument, SurveyItemsAdapter.SurveyViewHolder>(SurveyDocumentDiffCallback()) {
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): SurveyViewHolder {
         val view = android.view.LayoutInflater.from(parent.context)
@@ -530,23 +539,8 @@ private class SurveyItemsAdapter(
         )
     }
 
-    override fun getItemCount(): Int = items.size
-
     override fun onBindViewHolder(holder: SurveyViewHolder, position: Int) {
-        holder.bind(items[position], completionCounts, savedSurveyIds, savedSurveyRevisions, onDownloadRequested)
-    }
-
-    fun submit(
-        newItems: List<SurveyDocument>,
-        completionCounts: Map<String, Int>,
-        savedSurveyIds: Set<String>,
-        savedSurveyRevisions: Map<String, String?>,
-    ) {
-        items = newItems
-        this.completionCounts = completionCounts
-        this.savedSurveyIds = savedSurveyIds
-        this.savedSurveyRevisions = savedSurveyRevisions
-        notifyDataSetChanged()
+        bindItem(holder, getItem(position))
     }
 
     class SurveyViewHolder(
@@ -651,11 +645,14 @@ private val SurveyStatus.iconRes: Int
         SurveyStatus.COMPLETED -> R.drawable.ic_survey_completed_24
     }
 
+private class OutboxEntryDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<OutboxEntry>() {
+    override fun areItemsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean = oldItem.id == newItem.id
+    override fun areContentsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean = oldItem == newItem
+}
+
 private class SurveyOutboxAdapter(
     private val onOutboxSelected: (OutboxEntry) -> Unit,
-) : RecyclerView.Adapter<SurveyOutboxAdapter.OutboxViewHolder>() {
-
-    private var items: List<OutboxEntry> = emptyList()
+) : androidx.recyclerview.widget.ListAdapter<OutboxEntry, SurveyOutboxAdapter.OutboxViewHolder>(OutboxEntryDiffCallback()) {
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): OutboxViewHolder {
         val view = android.view.LayoutInflater.from(parent.context)
@@ -663,15 +660,12 @@ private class SurveyOutboxAdapter(
         return OutboxViewHolder(view, onOutboxSelected)
     }
 
-    override fun getItemCount(): Int = items.size
-
     override fun onBindViewHolder(holder: OutboxViewHolder, position: Int) {
-        holder.bind(items[position])
+        holder.bind(getItem(position))
     }
 
     fun submit(newItems: List<OutboxEntry>) {
-        items = newItems
-        notifyDataSetChanged()
+        submitList(newItems)
     }
 
     class OutboxViewHolder(

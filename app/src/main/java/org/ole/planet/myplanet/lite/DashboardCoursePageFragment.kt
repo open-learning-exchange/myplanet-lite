@@ -1141,11 +1141,45 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         }
 
         fun submitCourses(newItems: List<CourseItem>) {
+            val oldDisplayed = displayedItems.toList()
+
             items.clear()
             items.addAll(newItems.distinctBy { it.id })
             displayedItems.clear()
             displayedItems.addAll(items)
-            notifyDataSetChanged()
+
+            val newDisplayed = displayedItems.toList()
+
+            val diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(object : androidx.recyclerview.widget.DiffUtil.Callback() {
+                override fun getOldListSize() = oldDisplayed.size
+                override fun getNewListSize() = newDisplayed.size
+
+                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                    return oldDisplayed[oldItemPosition].id == newDisplayed[newItemPosition].id
+                }
+
+                override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                    return oldDisplayed[oldItemPosition] == newDisplayed[newItemPosition]
+                }
+            })
+
+            diffResult.dispatchUpdatesTo(object : androidx.recyclerview.widget.ListUpdateCallback {
+                override fun onInserted(position: Int, count: Int) {
+                    notifyItemRangeInserted(position + 1, count)
+                }
+
+                override fun onRemoved(position: Int, count: Int) {
+                    notifyItemRangeRemoved(position + 1, count)
+                }
+
+                override fun onMoved(fromPosition: Int, toPosition: Int) {
+                    notifyItemMoved(fromPosition + 1, toPosition + 1)
+                }
+
+                override fun onChanged(position: Int, count: Int, payload: Any?) {
+                    notifyItemRangeChanged(position + 1, count, payload)
+                }
+            })
         }
 
         fun appendCourses(newItems: List<CourseItem>) {

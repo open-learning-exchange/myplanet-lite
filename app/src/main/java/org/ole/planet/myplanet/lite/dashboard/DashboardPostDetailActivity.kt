@@ -50,6 +50,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputLayout
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -79,6 +81,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
+
 private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
 }
@@ -90,7 +93,10 @@ class DashboardPostDetailActivity : AppCompatActivity() {
 
     private val repository = DashboardNewsRepository()
     private val actionsRepository = DashboardNewsActionsRepository()
-    private val composerRepository = VoicesComposerRepository()
+    private val composerRepository = VoicesComposerRepository(
+        client = OkHttpClient.Builder().build(),
+        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+    )
     private val httpClient = OkHttpClient.Builder().build()
     private lateinit var adapter: PostDetailAdapter
     private lateinit var markwon: Markwon
@@ -1919,19 +1925,13 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             private const val VIEW_TYPE_HEADER = 0
             private const val VIEW_TYPE_COMMENT = 1
 
-            private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<PostDetailItem>() {
-                override fun areItemsTheSame(oldItem: PostDetailItem, newItem: PostDetailItem): Boolean {
-                    return when {
-                        oldItem is PostDetailItem.Header && newItem is PostDetailItem.Header -> oldItem.id == newItem.id
-                        oldItem is PostDetailItem.Comment && newItem is PostDetailItem.Comment -> oldItem.id == newItem.id
-                        else -> false
-                    }
+            private val DIFF_CALLBACK = org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback<PostDetailItem>({ oldItem, newItem ->
+                when {
+                    oldItem is PostDetailItem.Header && newItem is PostDetailItem.Header -> oldItem.id == newItem.id
+                    oldItem is PostDetailItem.Comment && newItem is PostDetailItem.Comment -> oldItem.id == newItem.id
+                    else -> false
                 }
-
-                override fun areContentsTheSame(oldItem: PostDetailItem, newItem: PostDetailItem): Boolean {
-                    return oldItem == newItem
-                }
-            }
+            })
         }
     }
 
