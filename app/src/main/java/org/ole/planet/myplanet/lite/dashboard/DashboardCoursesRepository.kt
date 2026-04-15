@@ -452,7 +452,7 @@ class DashboardCoursesRepository {
     suspend fun saveCourseProgress(
         baseUrl: String,
         credentials: StoredCredentials,
-        document: CourseProgressUpdateDocument
+        documents: List<CourseProgressUpdateDocument>
     ): Result<List<BulkDocResult>> {
         return withContext(Dispatchers.IO) {
             runCatching {
@@ -460,9 +460,10 @@ class DashboardCoursesRepository {
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
+                if (documents.isEmpty()) return@runCatching emptyList()
 
                 val requestUrl = "$normalizedBase/db/courses_progress/_bulk_docs"
-                val payload = coursesProgressBulkAdapter.toJson(CoursesProgressBulkRequest(docs = listOf(document)))
+                val payload = coursesProgressBulkAdapter.toJson(CoursesProgressBulkRequest(docs = documents))
                 val mediaType = "application/json; charset=utf-8".toMediaType()
                 val request = Request.Builder()
                     .url(requestUrl)
