@@ -38,6 +38,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -72,6 +74,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
+
 class CreateVoiceActivity : AppCompatActivity() {
 
     private lateinit var toolbar: MaterialToolbar
@@ -84,7 +87,10 @@ class CreateVoiceActivity : AppCompatActivity() {
     private lateinit var createVoiceEditorLabel: TextView
     private lateinit var markdownToolbar: LinearLayout
 
-    private val repository = VoicesComposerRepository()
+    private val repository = VoicesComposerRepository(
+        client = OkHttpClient.Builder().build(),
+        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+    )
     private val newsActionsRepository = DashboardNewsActionsRepository()
     private val httpClient = OkHttpClient.Builder().build()
     private val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
