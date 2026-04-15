@@ -11,6 +11,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.async
@@ -347,7 +348,7 @@ class DashboardCoursesRepository(
                 val progressByCourse = mutableMapOf<String, Int>()
                 coroutineScope {
                     sanitizedIds.chunked(10).map { courseChunk ->
-                        async(Dispatchers.IO) {
+                        async(dispatcher) {
                             val requestUrl = "$normalizedBase/db/courses_progress/_find"
                             val payload = coursesProgressRequestAdapter.toJson(
                                 CoursesProgressFindRequest(
