@@ -11,6 +11,8 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import org.ole.planet.myplanet.lite.util.getBlobOrNull
+import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 private const val DATABASE_NAME = "user_profile.db"
 private const val DATABASE_VERSION = 4
@@ -147,16 +149,6 @@ class UserProfileDatabase private constructor(context: Context) :
     fun clearProfile() {
         val db = writableDatabase
         db.delete(TABLE_PROFILE, null, null)
-    }
-
-    private fun Cursor.getStringOrNull(columnName: String): String? {
-        val index = getColumnIndexOrThrow(columnName)
-        return if (isNull(index)) null else getString(index)
-    }
-
-    private fun Cursor.getBlobOrNull(columnName: String): ByteArray? {
-        val index = getColumnIndexOrThrow(columnName)
-        return if (isNull(index)) null else getBlob(index)
     }
 
     companion object {
