@@ -44,7 +44,7 @@ import org.json.JSONArray
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
@@ -107,7 +107,7 @@ class CourseWizardActivity : AppCompatActivity() {
     private var lastPlaybackPositionMs = 0L
     private val coursesRepository = DashboardCoursesRepository()
     private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
-    private val surveyOutboxStore by lazy { DashboardSurveyOutboxStore(applicationContext) }
+    private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(applicationContext) }
     private var hasAutoCompletedFirstStep = false
     private val audioPlayers = mutableListOf<ExoPlayer>()
     private val completedExamSteps = mutableSetOf<Int>()
@@ -489,24 +489,7 @@ class CourseWizardActivity : AppCompatActivity() {
     }
 
     private suspend fun flushPendingExamSubmissions() {
-        val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
-        val creds = credentials ?: return
-        if (!isDeviceOnline()) return
-        val pendingEntries = surveyOutboxStore.getPendingForTeam(null)
-            .filter { it.submission.type.equals("exam", ignoreCase = true) }
-            .sortedBy { it.createdAt }
-        if (pendingEntries.isEmpty()) return
-        pendingEntries.forEach { entry ->
-            val result = surveySubmissionRepository.submitSurvey(
-                normalizedBase,
-                creds,
-                null,
-                entry.submission
-            )
-            if (result.isSuccess) {
-                surveyOutboxStore.deleteEntry(entry.id)
-            }
-        }
+        localSurveyRepository.flushPendingSurveyOutbox("exam")
     }
 
     private fun isDeviceOnline(): Boolean {

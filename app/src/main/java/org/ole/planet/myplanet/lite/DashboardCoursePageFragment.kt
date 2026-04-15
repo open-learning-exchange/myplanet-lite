@@ -37,7 +37,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
@@ -70,7 +70,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private val httpClient = OkHttpClient()
     private val activeDownloads = mutableMapOf<String, Job>()
     private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
-    private var surveyOutboxStore: DashboardSurveyOutboxStore? = null
+    private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -744,22 +744,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     }
 
     private suspend fun flushPendingSurveyOutbox() {
-        val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
-        val creds = credentials ?: return
-        if (!isDeviceOnline()) return
-        val authService = AuthDependencies.provideAuthService(requireContext().applicationContext, base)
-        val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
-        val store = surveyOutboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext).also {
-            surveyOutboxStore = it
-        }
-        val pendingEntries = store.getPendingForTeam(null).sortedBy { it.createdAt }
-        if (pendingEntries.isEmpty()) return
-        pendingEntries.forEach { entry ->
-            val result = surveySubmissionRepository.submitSurvey(base, creds, sessionCookie, entry.submission)
-            if (result.isSuccess) {
-                store.deleteEntry(entry.id)
-            }
-        }
+        localSurveyRepository.flushPendingSurveyOutbox()
     }
 
     private suspend fun estimateResourcesSize(
