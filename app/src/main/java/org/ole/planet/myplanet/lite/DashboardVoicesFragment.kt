@@ -234,11 +234,16 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         if (!::adapter.isInitialized) {
             return
         }
-        val positions = adapter.currentList.mapIndexedNotNull { index, item ->
-            if (item.username?.equals(username, ignoreCase = true) == true) {
-                index
-            } else {
-                null
+
+        val positions = if (adapter.isIndexAvailable()) {
+            adapter.getPositionsForUsername(username)?.toList() ?: emptyList()
+        } else {
+            adapter.currentList.mapIndexedNotNull { index, item ->
+                if (item.username?.equals(username, ignoreCase = true) == true) {
+                    index
+                } else {
+                    null
+                }
             }
         }
         if (positions.isEmpty()) {
@@ -702,16 +707,29 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             holder.bind(getItem(position))
         }
 
-        companion object {
-            private val DIFF_CALLBACK = object : DiffUtil.ItemCallback<DashboardNewsItem>() {
-                override fun areItemsTheSame(oldItem: DashboardNewsItem, newItem: DashboardNewsItem): Boolean {
-                    return oldItem.id == newItem.id
-                }
+        private var usernameIndex: Map<String, IntArray>? = null
 
-                override fun areContentsTheSame(oldItem: DashboardNewsItem, newItem: DashboardNewsItem): Boolean {
-                    return oldItem == newItem
-                }
-            }
+        override fun onCurrentListChanged(
+            previousList: List<DashboardNewsItem>,
+            currentList: List<DashboardNewsItem>
+        ) {
+            super.onCurrentListChanged(previousList, currentList)
+            usernameIndex = currentList.mapIndexedNotNull { index, item ->
+                item.username?.let { it.lowercase() to index }
+            }.groupBy({ it.first }, { it.second })
+            .mapValues { it.value.toIntArray() }
+        }
+
+        fun getPositionsForUsername(username: String): IntArray? {
+            return usernameIndex?.get(username.lowercase())
+        }
+
+        fun isIndexAvailable(): Boolean {
+            return usernameIndex != null
+        }
+
+        companion object {
+            private val DIFF_CALLBACK = org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback<DashboardNewsItem>({ oldItem, newItem -> oldItem.id == newItem.id })
         }
     }
 

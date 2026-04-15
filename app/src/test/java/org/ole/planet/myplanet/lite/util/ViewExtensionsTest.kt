@@ -146,4 +146,41 @@ class ViewExtensionsTest {
 
         assertFalse("Should not handle touch if no parent", handled)
     }
+
+    @Test
+    fun testActionOther() {
+        val listener = getListener()
+        val otherEvent = mockEvent(MotionEvent.ACTION_SCROLL, 50f, 50f)
+        val handled = listener.onTouch(view, otherEvent)
+
+        assertFalse("Action other than DOWN, MOVE, UP, CANCEL should return false", handled)
+    }
+
+    @Test
+    fun testCompleteDragLifecycle() {
+        val listener = getListener()
+
+        // 1. Initial State
+        assertEquals(0f, view.x, 0.01f)
+        assertEquals(0f, view.y, 0.01f)
+
+        // 2. ACTION_DOWN
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_DOWN, 50f, 50f))
+        verify(parent).requestDisallowInterceptTouchEvent(true)
+
+        // 3. First ACTION_MOVE (Drag diagonally)
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_MOVE, 70f, 80f))
+        assertEquals(20f, view.x, 0.01f) // dX(-50) + 70
+        assertEquals(30f, view.y, 0.01f) // dY(-50) + 80
+
+        // 4. Second ACTION_MOVE (Drag further diagonally)
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_MOVE, 100f, 150f))
+        assertEquals(50f, view.x, 0.01f) // dX(-50) + 100
+        assertEquals(100f, view.y, 0.01f) // dY(-50) + 150
+
+        // 5. ACTION_UP
+        listener.onTouch(view, mockEvent(MotionEvent.ACTION_UP, 100f, 150f))
+        verify(parent).requestDisallowInterceptTouchEvent(false)
+        assertFalse("Click should not be performed after significant drag", clickPerformed)
+    }
 }

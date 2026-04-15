@@ -38,6 +38,8 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -72,6 +74,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
+
 class CreateVoiceActivity : AppCompatActivity() {
 
     private lateinit var toolbar: MaterialToolbar
@@ -84,10 +87,14 @@ class CreateVoiceActivity : AppCompatActivity() {
     private lateinit var createVoiceEditorLabel: TextView
     private lateinit var markdownToolbar: LinearLayout
 
-    private val repository = VoicesComposerRepository()
+    private val repository = VoicesComposerRepository(
+        client = OkHttpClient.Builder().build(),
+        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+    )
     private val newsActionsRepository = DashboardNewsActionsRepository()
     private val httpClient = OkHttpClient.Builder().build()
     private val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
+    private val decodedBitmaps = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             lifecycleScope.launch {
@@ -223,6 +230,12 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
         }
         pendingImages.clear()
+        decodedBitmaps.values.forEach { bitmap ->
+            if (!bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        }
+        decodedBitmaps.clear()
         super.onDestroy()
     }
 
@@ -546,7 +559,9 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
             wrapper.addView(preview)
             lifecycleScope.launch(Dispatchers.Default) {
-                val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+                val bitmap = decodedBitmaps.getOrPut(pending.id) {
+                    BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+                }
                 withContext(Dispatchers.Main) {
                     preview.setImageBitmap(bitmap)
                 }
@@ -589,7 +604,9 @@ class CreateVoiceActivity : AppCompatActivity() {
             setPadding(padding, padding, padding, padding)
         }
         lifecycleScope.launch(Dispatchers.Default) {
-            val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+            val bitmap = decodedBitmaps.getOrPut(pending.id) {
+                BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+            }
             withContext(Dispatchers.Main) {
                 imageView.setImageBitmap(bitmap)
             }
@@ -609,6 +626,11 @@ class CreateVoiceActivity : AppCompatActivity() {
 
         idsToRemove.forEach { id ->
             val removed = pendingImages.remove(id) ?: return@forEach
+            decodedBitmaps.remove(id)?.let { bitmap ->
+                if (!bitmap.isRecycled) {
+                    bitmap.recycle()
+                }
+            }
             removeImageMarkdownReferences(removed)
             if (removed.file.exists()) {
                 removed.file.delete()

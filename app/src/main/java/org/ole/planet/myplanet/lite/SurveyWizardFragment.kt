@@ -53,7 +53,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionAnswer
@@ -104,7 +104,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     private var detectedSurveyLanguage: String? = null
     private var translatedTitle: String? = null
     private var translatedDescription: String? = null
-    private var outboxStore: DashboardSurveyOutboxStore? = null
+    private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
     private val connectivityManager by lazy {
         context?.getSystemService(ConnectivityManager::class.java)
     }
@@ -178,7 +178,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         lifecycleScope.launch {
             initializeSession()
             attemptSurveyTranslation()
-            outboxStore = DashboardSurveyOutboxStore(requireContext().applicationContext)
             flushPendingSurveySubmissions()
         }
 
@@ -692,9 +691,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     }
 
     private fun queueSubmissionForOutbox(submission: SurveySubmission, survey: SurveyDocument) {
-        val store = outboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext)
         viewLifecycleOwner.lifecycleScope.launch {
-            val saved = store.saveSubmission(
+            val saved = localSurveyRepository.saveSubmission(
                 submission = submission,
                 surveyId = survey.id,
                 surveyName = survey.name,
@@ -715,25 +713,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     }
 
     private suspend fun flushPendingSurveySubmissions() {
-        val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
-        if (!isDeviceOnline()) {
-            return
-        }
-        val store = outboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext)
-        outboxStore = store
-        val pendingEntries = store.getPendingForTeam(null).sortedBy { it.createdAt }
-        if (pendingEntries.isEmpty()) return
-        pendingEntries.forEach { entry ->
-            val result = submissionRepository.submitSurvey(
-                normalizedBase,
-                credentials,
-                sessionCookie,
-                entry.submission,
-            )
-            if (result.isSuccess) {
-                store.deleteEntry(entry.id)
-            }
-        }
+        localSurveyRepository.flushPendingSurveyOutbox()
     }
 
     private fun buildSubmissionParentId(survey: SurveyDocument): String? {
