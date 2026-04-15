@@ -22,8 +22,10 @@ import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.recyclerview.widget.ListAdapter
 import org.ole.planet.myplanet.lite.util.DiffUtils
@@ -797,6 +799,16 @@ private data class InviteCandidate(
     val hasAvatar: Boolean,
     val colorRes: Int,
 )
+
+private class InviteCandidateDiffCallback : DiffUtil.ItemCallback<InviteCandidate>() {
+    override fun areItemsTheSame(oldItem: InviteCandidate, newItem: InviteCandidate): Boolean {
+        return oldItem.username == newItem.username
+    }
+
+    override fun areContentsTheSame(oldItem: InviteCandidate, newItem: InviteCandidate): Boolean {
+        return oldItem == newItem
+    }
+}
 
 private class InviteMembersAdapter(
     private val avatarLoader: DashboardAvatarLoader?,
