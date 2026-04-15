@@ -22,8 +22,10 @@ import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -653,23 +655,32 @@ class DashboardTeamMembersFragment : Fragment() {
     }
 }
 
+private class TeamMemberDiffCallback : DiffUtil.ItemCallback<TeamMemberDetails>() {
+    override fun areItemsTheSame(oldItem: TeamMemberDetails, newItem: TeamMemberDetails): Boolean {
+        return oldItem.username == newItem.username
+    }
+
+    override fun areContentsTheSame(oldItem: TeamMemberDetails, newItem: TeamMemberDetails): Boolean {
+        return oldItem == newItem
+    }
+}
+
 private class TeamMembersAdapter(
     private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
     private val onMemberClicked: (TeamMemberDetails) -> Unit,
     private val onRemoveMemberClicked: (TeamMemberDetails) -> Unit
-) : RecyclerView.Adapter<TeamMemberViewHolder>() {
+) : ListAdapter<TeamMemberDetails, TeamMemberViewHolder>(TeamMemberDiffCallback()) {
 
-    private val items: MutableList<TeamMemberDetails> = mutableListOf()
     var showRemoveAction: Boolean = false
         set(value) {
             field = value
-            notifyDataSetChanged()
+            submitList(currentList.toList())
         }
 
     var currentUsername: String? = null
         set(value) {
             field = value
-            notifyDataSetChanged()
+            submitList(currentList.toList())
         }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamMemberViewHolder {
@@ -679,15 +690,7 @@ private class TeamMembersAdapter(
     }
 
     override fun onBindViewHolder(holder: TeamMemberViewHolder, position: Int) {
-        holder.bind(items[position], showRemoveAction, currentUsername)
-    }
-
-    override fun getItemCount(): Int = items.size
-
-    fun submitList(members: List<TeamMemberDetails>) {
-        items.clear()
-        items.addAll(members)
-        notifyDataSetChanged()
+        holder.bind(getItem(position), showRemoveAction, currentUsername)
     }
 }
 
@@ -753,12 +756,21 @@ private data class InviteCandidate(
     val colorRes: Int,
 )
 
+private class InviteCandidateDiffCallback : DiffUtil.ItemCallback<InviteCandidate>() {
+    override fun areItemsTheSame(oldItem: InviteCandidate, newItem: InviteCandidate): Boolean {
+        return oldItem.username == newItem.username
+    }
+
+    override fun areContentsTheSame(oldItem: InviteCandidate, newItem: InviteCandidate): Boolean {
+        return oldItem == newItem
+    }
+}
+
 private class InviteMembersAdapter(
     private val avatarLoader: DashboardAvatarLoader?,
     private val onAddClicked: (InviteCandidate) -> Unit
-) : RecyclerView.Adapter<InviteMemberViewHolder>() {
+) : ListAdapter<InviteCandidate, InviteMemberViewHolder>(InviteCandidateDiffCallback()) {
 
-    private val allCandidates: MutableList<InviteCandidate> = mutableListOf()
     private val disabledUsernames: MutableSet<String> = mutableSetOf()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): InviteMemberViewHolder {
@@ -768,27 +780,22 @@ private class InviteMembersAdapter(
     }
 
     override fun onBindViewHolder(holder: InviteMemberViewHolder, position: Int) {
-        val candidate = allCandidates[position]
+        val candidate = getItem(position)
         holder.bind(candidate, disabledUsernames.contains(candidate.username))
     }
 
-    override fun getItemCount(): Int = allCandidates.size
-
     fun replaceCandidates(candidates: List<InviteCandidate>) {
-        allCandidates.clear()
         disabledUsernames.clear()
-        allCandidates.addAll(candidates)
-        notifyDataSetChanged()
+        submitList(candidates)
     }
 
     fun appendCandidates(candidates: List<InviteCandidate>) {
-        allCandidates.addAll(candidates)
-        notifyDataSetChanged()
+        submitList(currentList + candidates)
     }
 
     fun disableCandidate(username: String) {
         disabledUsernames.add(username)
-        val index = allCandidates.indexOfFirst { it.username.equals(username, ignoreCase = true) }
+        val index = currentList.indexOfFirst { it.username.equals(username, ignoreCase = true) }
         if (index >= 0) {
             notifyItemChanged(index)
         }
@@ -796,7 +803,7 @@ private class InviteMembersAdapter(
 
     fun enableCandidate(username: String) {
         disabledUsernames.removeIf { it.equals(username, ignoreCase = true) }
-        val index = allCandidates.indexOfFirst { it.username.equals(username, ignoreCase = true) }
+        val index = currentList.indexOfFirst { it.username.equals(username, ignoreCase = true) }
         if (index >= 0) {
             notifyItemChanged(index)
         }
