@@ -28,9 +28,8 @@ class DashboardSurveysRepository(
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
         .build(),
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-
     private val findRequestAdapter = moshi.adapter(SurveysFindRequest::class.java)
     private val findResponseAdapter = moshi.adapter(SurveysFindResponse::class.java)
     private val completionsRequestAdapter = moshi.adapter(SurveyCompletionsRequest::class.java)
