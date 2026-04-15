@@ -237,11 +237,16 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         if (!::adapter.isInitialized) {
             return
         }
-        val positions = adapter.currentList.mapIndexedNotNull { index, item ->
-            if (item.username?.equals(username, ignoreCase = true) == true) {
-                index
-            } else {
-                null
+
+        val positions = if (adapter.isIndexAvailable()) {
+            adapter.getPositionsForUsername(username)?.toList() ?: emptyList()
+        } else {
+            adapter.currentList.mapIndexedNotNull { index, item ->
+                if (item.username?.equals(username, ignoreCase = true) == true) {
+                    index
+                } else {
+                    null
+                }
             }
         }
         if (positions.isEmpty()) {
@@ -703,6 +708,27 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
         override fun onBindViewHolder(holder: DashboardNewsViewHolder, position: Int) {
             holder.bind(getItem(position))
+        }
+
+        private var usernameIndex: Map<String, IntArray>? = null
+
+        override fun onCurrentListChanged(
+            previousList: List<DashboardNewsItem>,
+            currentList: List<DashboardNewsItem>
+        ) {
+            super.onCurrentListChanged(previousList, currentList)
+            usernameIndex = currentList.mapIndexedNotNull { index, item ->
+                item.username?.let { it.lowercase() to index }
+            }.groupBy({ it.first }, { it.second })
+            .mapValues { it.value.toIntArray() }
+        }
+
+        fun getPositionsForUsername(username: String): IntArray? {
+            return usernameIndex?.get(username.lowercase())
+        }
+
+        fun isIndexAvailable(): Boolean {
+            return usernameIndex != null
         }
 
         companion object {

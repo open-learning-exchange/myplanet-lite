@@ -50,6 +50,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputLayout
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -81,6 +83,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
+
 private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
 }
@@ -92,7 +95,10 @@ class DashboardPostDetailActivity : AppCompatActivity() {
 
     private val repository by lazy { DashboardNewsRepository(httpClient, Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()) }
     private val actionsRepository = DashboardNewsActionsRepository()
-    private val composerRepository = VoicesComposerRepository()
+    private val composerRepository = VoicesComposerRepository(
+        client = OkHttpClient.Builder().build(),
+        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+    )
     private val httpClient = OkHttpClient.Builder().build()
     private lateinit var adapter: PostDetailAdapter
     private lateinit var markwon: Markwon

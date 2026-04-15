@@ -11,6 +11,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
@@ -21,12 +22,14 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
-class DashboardSurveySubmissionsRepository {
-
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
+class DashboardSurveySubmissionsRepository(
+    private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
-        .build()
+        .build(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
+
     private val submissionAdapter = moshi.adapter(SurveySubmission::class.java)
     private val lookupRequestAdapter = moshi.adapter(SubmissionLookupRequest::class.java)
     private val lookupResponseAdapter = moshi.adapter(SubmissionLookupResponse::class.java)
@@ -37,7 +40,7 @@ class DashboardSurveySubmissionsRepository {
         sessionCookie: String?,
         submission: SurveySubmission,
     ): Result<Unit> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -74,7 +77,7 @@ class DashboardSurveySubmissionsRepository {
         parentRev: String?,
         type: String = "survey",
     ): Result<SubmissionLookup?> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
