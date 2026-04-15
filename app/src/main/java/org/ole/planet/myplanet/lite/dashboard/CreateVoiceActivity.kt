@@ -94,6 +94,7 @@ class CreateVoiceActivity : AppCompatActivity() {
     private val newsActionsRepository = DashboardNewsActionsRepository()
     private val httpClient = OkHttpClient.Builder().build()
     private val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
+    private val decodedBitmaps = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             lifecycleScope.launch {
@@ -229,6 +230,12 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
         }
         pendingImages.clear()
+        decodedBitmaps.values.forEach { bitmap ->
+            if (!bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        }
+        decodedBitmaps.clear()
         super.onDestroy()
     }
 
@@ -552,7 +559,9 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
             wrapper.addView(preview)
             lifecycleScope.launch(Dispatchers.Default) {
-                val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+                val bitmap = decodedBitmaps.getOrPut(pending.id) {
+                    BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+                }
                 withContext(Dispatchers.Main) {
                     preview.setImageBitmap(bitmap)
                 }
@@ -595,7 +604,9 @@ class CreateVoiceActivity : AppCompatActivity() {
             setPadding(padding, padding, padding, padding)
         }
         lifecycleScope.launch(Dispatchers.Default) {
-            val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+            val bitmap = decodedBitmaps.getOrPut(pending.id) {
+                BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+            }
             withContext(Dispatchers.Main) {
                 imageView.setImageBitmap(bitmap)
             }
@@ -615,6 +626,11 @@ class CreateVoiceActivity : AppCompatActivity() {
 
         idsToRemove.forEach { id ->
             val removed = pendingImages.remove(id) ?: return@forEach
+            decodedBitmaps.remove(id)?.let { bitmap ->
+                if (!bitmap.isRecycled) {
+                    bitmap.recycle()
+                }
+            }
             removeImageMarkdownReferences(removed)
             if (removed.file.exists()) {
                 removed.file.delete()
