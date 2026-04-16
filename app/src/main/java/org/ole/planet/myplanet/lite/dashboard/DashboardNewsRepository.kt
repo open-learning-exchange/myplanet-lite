@@ -21,10 +21,8 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class DashboardNewsRepository(
-    private val client: OkHttpClient = OkHttpClient.Builder().build(),
-    private val moshi: Moshi = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
-        .build(),
+    private val client: OkHttpClient,
+    private val moshi: Moshi,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 

@@ -91,7 +91,10 @@ class DashboardPostDetailActivity : AppCompatActivity() {
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: View
 
-    private val repository = DashboardNewsRepository()
+    private val repository = DashboardNewsRepository(
+        client = OkHttpClient.Builder().build(),
+        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+    )
     private val actionsRepository = DashboardNewsActionsRepository()
     private val composerRepository = VoicesComposerRepository(
         client = OkHttpClient.Builder().build(),
