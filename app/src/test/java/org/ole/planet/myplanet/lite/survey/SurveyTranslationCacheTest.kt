@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.lite.surveys
+package org.ole.planet.myplanet.lite.survey
 
 import kotlin.system.measureTimeMillis
 import org.junit.Test
