@@ -9,6 +9,9 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
+import okhttp3.OkHttpClient
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import org.junit.Before
 import org.junit.Test
 
@@ -21,7 +24,11 @@ class DashboardNewsRepositoryTest {
     fun setup() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        repository = DashboardNewsRepository()
+        repository = DashboardNewsRepository(
+            client = OkHttpClient.Builder().build(),
+            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+            /* using default dispatcher */
+        )
     }
 
     @After
