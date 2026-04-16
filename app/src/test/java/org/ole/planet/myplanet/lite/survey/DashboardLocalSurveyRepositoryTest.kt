@@ -37,6 +37,7 @@ class DashboardLocalSurveyRepositoryTest {
 
     @After
     fun tearDown() {
+        repository.close()
         SecurePreferencesProvider.resetForTesting()
     }
 
