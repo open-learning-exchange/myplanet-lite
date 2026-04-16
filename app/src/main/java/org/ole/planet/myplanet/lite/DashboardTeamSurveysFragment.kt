@@ -369,11 +369,8 @@ private class SurveysPagerAdapter(
 ) : RecyclerView.Adapter<SurveysPagerAdapter.PageViewHolder>() {
 
     private val pages = listOf(Page.TEAM, Page.ADOPTED, Page.OUTBOX)
-    private var teamItems: List<SurveyDocument> = emptyList()
-    private var adoptedItems: List<SurveyDocument> = emptyList()
-    private var adapterCompletionCounts: Map<String, Int> = emptyMap()
-    private var savedSurveyIds: Set<String> = emptySet()
-    private var savedSurveyRevisions: Map<String, String?> = emptyMap()
+    private var teamItems: List<SurveyItemUiModel> = emptyList()
+    private var adoptedItems: List<SurveyItemUiModel> = emptyList()
     private var outboxItems: List<OutboxEntry> = emptyList()
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): PageViewHolder {
@@ -392,10 +389,7 @@ private class SurveysPagerAdapter(
                 emptyMessage = teamEmptyMessage,
                 statusStore = statusStore,
                 onStatusChanged = onStatusChanged,
-                completionCounts = adapterCompletionCounts,
                 onSurveySelected = onSurveySelected,
-                savedSurveyIds = savedSurveyIds,
-                savedSurveyRevisions = savedSurveyRevisions,
                 onDownloadRequested = onSurveyDownloadRequested,
             )
             Page.ADOPTED -> holder.bindTeam(
@@ -403,10 +397,7 @@ private class SurveysPagerAdapter(
                 emptyMessage = adoptedEmptyMessage,
                 statusStore = statusStore,
                 onStatusChanged = onStatusChanged,
-                completionCounts = adapterCompletionCounts,
                 onSurveySelected = onSurveySelected,
-                savedSurveyIds = savedSurveyIds,
-                savedSurveyRevisions = savedSurveyRevisions,
                 onDownloadRequested = onSurveyDownloadRequested,
             )
             Page.OUTBOX -> holder.bindOutbox(
@@ -425,19 +416,33 @@ private class SurveysPagerAdapter(
         savedRevisions: Map<String, String?>,
         outboxItems: List<OutboxEntry>,
     ) {
-        teamItems = teamSurveys
-        adoptedItems = adoptedSurveys
-        adapterCompletionCounts = completionCounts
-        savedSurveyIds = savedSurveys
-        savedSurveyRevisions = savedRevisions
+        teamItems = teamSurveys.map { it.toUiModel(completionCounts, savedSurveys, savedRevisions) }
+        adoptedItems = adoptedSurveys.map { it.toUiModel(completionCounts, savedSurveys, savedRevisions) }
         this.outboxItems = outboxItems
-        notifyDataSetChanged()
+        notifyItemChanged(0)
+        notifyItemChanged(1)
+        notifyItemChanged(2)
     }
 
     fun updateSavedSurveys(savedSurveys: Set<String>, savedRevisions: Map<String, String?>) {
-        savedSurveyIds = savedSurveys
-        savedSurveyRevisions = savedRevisions
-        notifyDataSetChanged()
+        teamItems = teamItems.map { it.copy(isSaved = savedSurveys.contains(it.document.id.orEmpty()), savedRevision = savedRevisions[it.document.id.orEmpty()]) }
+        adoptedItems = adoptedItems.map { it.copy(isSaved = savedSurveys.contains(it.document.id.orEmpty()), savedRevision = savedRevisions[it.document.id.orEmpty()]) }
+        notifyItemChanged(0)
+        notifyItemChanged(1)
+    }
+
+    private fun SurveyDocument.toUiModel(
+        completionCounts: Map<String, Int>,
+        savedSurveys: Set<String>,
+        savedRevisions: Map<String, String?>
+    ): SurveyItemUiModel {
+        val documentId = id.orEmpty()
+        return SurveyItemUiModel(
+            document = this,
+            completionCount = completionCounts[documentId] ?: 0,
+            isSaved = savedSurveys.contains(documentId),
+            savedRevision = savedRevisions[documentId],
+        )
     }
 
     private enum class Page { TEAM, ADOPTED, OUTBOX }
@@ -448,40 +453,28 @@ private class SurveysPagerAdapter(
         private var teamAdapter: SurveyItemsAdapter? = null
         private var outboxAdapter: SurveyOutboxAdapter? = null
         private var currentPage: Page = Page.TEAM
-        private var completionCounts: Map<String, Int> = emptyMap()
-        private var savedSurveyIds: Set<String> = emptySet()
-        private var savedSurveyRevisions: Map<String, String?> = emptyMap()
-
         init {
             recyclerView.layoutManager = LinearLayoutManager(itemView.context)
         }
 
         fun bindTeam(
-            items: List<SurveyDocument>,
+            items: List<SurveyItemUiModel>,
             emptyMessage: String,
             statusStore: DashboardSurveyStatusStore,
             onStatusChanged: () -> Unit,
-            completionCounts: Map<String, Int>,
             onSurveySelected: (SurveyDocument) -> Unit,
-            savedSurveyIds: Set<String>,
-            savedSurveyRevisions: Map<String, String?>,
             onDownloadRequested: (SurveyDocument) -> Unit,
         ) {
             if (currentPage != Page.TEAM && currentPage != Page.ADOPTED) {
                 recyclerView.adapter = null
             }
-            this.completionCounts = completionCounts
-            this.savedSurveyIds = savedSurveyIds
-            this.savedSurveyRevisions = savedSurveyRevisions
             if (recyclerView.adapter !is SurveyItemsAdapter) {
                 teamAdapter = SurveyItemsAdapter(
                     statusStore = statusStore,
                     onStatusChanged = onStatusChanged,
                     onSurveySelected = onSurveySelected,
                     onDownloadRequested = onDownloadRequested,
-                ) { holder, document ->
-                    holder.bind(document, this.completionCounts, this.savedSurveyIds, this.savedSurveyRevisions, onDownloadRequested)
-                }
+                )
                 recyclerView.adapter = teamAdapter
             }
             teamAdapter?.submitList(items)
@@ -514,9 +507,16 @@ private class SurveysPagerAdapter(
     }
 }
 
-private class SurveyDocumentDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<SurveyDocument>() {
-    override fun areItemsTheSame(oldItem: SurveyDocument, newItem: SurveyDocument): Boolean = oldItem.id == newItem.id
-    override fun areContentsTheSame(oldItem: SurveyDocument, newItem: SurveyDocument): Boolean = oldItem == newItem
+private data class SurveyItemUiModel(
+    val document: SurveyDocument,
+    val completionCount: Int,
+    val isSaved: Boolean,
+    val savedRevision: String?,
+)
+
+private class SurveyItemUiModelDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<SurveyItemUiModel>() {
+    override fun areItemsTheSame(oldItem: SurveyItemUiModel, newItem: SurveyItemUiModel): Boolean = oldItem.document.id == newItem.document.id
+    override fun areContentsTheSame(oldItem: SurveyItemUiModel, newItem: SurveyItemUiModel): Boolean = oldItem == newItem
 }
 
 private class SurveyItemsAdapter(
@@ -524,8 +524,7 @@ private class SurveyItemsAdapter(
     private val onStatusChanged: () -> Unit,
     private val onSurveySelected: (SurveyDocument) -> Unit,
     private val onDownloadRequested: (SurveyDocument) -> Unit,
-    private val bindItem: (SurveyViewHolder, SurveyDocument) -> Unit,
-) : androidx.recyclerview.widget.ListAdapter<SurveyDocument, SurveyItemsAdapter.SurveyViewHolder>(SurveyDocumentDiffCallback()) {
+) : androidx.recyclerview.widget.ListAdapter<SurveyItemUiModel, SurveyItemsAdapter.SurveyViewHolder>(SurveyItemUiModelDiffCallback()) {
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): SurveyViewHolder {
         val view = android.view.LayoutInflater.from(parent.context)
@@ -540,7 +539,7 @@ private class SurveyItemsAdapter(
     }
 
     override fun onBindViewHolder(holder: SurveyViewHolder, position: Int) {
-        bindItem(holder, getItem(position))
+        holder.bind(getItem(position))
     }
 
     class SurveyViewHolder(
@@ -557,13 +556,8 @@ private class SurveyItemsAdapter(
         private val downloadButton: com.google.android.material.button.MaterialButton =
             itemView.findViewById(R.id.dashboardSurveyDownloadButton)
 
-        fun bind(
-            document: SurveyDocument,
-            completionCounts: Map<String, Int>,
-            savedSurveyIds: Set<String>,
-            savedSurveyRevisions: Map<String, String?>,
-            onDownloadRequested: (SurveyDocument) -> Unit,
-        ) {
+        fun bind(uiModel: SurveyItemUiModel) {
+            val document = uiModel.document
             title.text = document.name.orEmpty()
             val detail = document.description?.takeIf { it.isNotBlank() }
             if (detail.isNullOrBlank()) {
@@ -575,7 +569,7 @@ private class SurveyItemsAdapter(
             }
 
             val created = formatCreatedDate(document.createdDate)
-            val completions = completionCounts[document.id] ?: 0
+            val completions = uiModel.completionCount
             metadata.text = itemView.context.getString(
                 R.string.dashboard_surveys_metadata,
                 created,
@@ -583,9 +577,8 @@ private class SurveyItemsAdapter(
             )
             metadata.isVisible = true
 
-            val documentId = document.id.orEmpty()
-            val isSaved = savedSurveyIds.contains(documentId)
-            val savedRevision = savedSurveyRevisions[documentId]
+            val isSaved = uiModel.isSaved
+            val savedRevision = uiModel.savedRevision
             val latestRevision = document.rev
             val isOutdated = isSaved && !latestRevision.isNullOrBlank() && savedRevision != null && savedRevision != latestRevision
             val context = itemView.context

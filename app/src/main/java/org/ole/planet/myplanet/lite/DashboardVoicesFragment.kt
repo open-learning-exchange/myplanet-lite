@@ -34,6 +34,9 @@ import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.CreateVoiceActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
@@ -88,7 +91,10 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
     }
 
-    private val repository = DashboardNewsRepository()
+    private val repository = DashboardNewsRepository(
+        client = OkHttpClient.Builder().build(),
+        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+    )
     private val actionsRepository = DashboardNewsActionsRepository()
     private val items = mutableListOf<DashboardNewsItem>()
     private val commentCounts = mutableMapOf<String, Int>()
