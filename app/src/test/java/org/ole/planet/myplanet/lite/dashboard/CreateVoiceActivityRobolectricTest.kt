@@ -6,8 +6,11 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.AfterClass
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,6 +26,17 @@ import org.robolectric.shadows.ShadowToast
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class CreateVoiceActivityRobolectricTest {
+
+    companion object {
+        private val originalErr: PrintStream = System.err
+        private val silentErr = PrintStream(ByteArrayOutputStream())
+
+        @JvmStatic
+        @AfterClass
+        fun restoreErrorStream() {
+            System.setErr(originalErr)
+        }
+    }
 
     private fun buildActivityController(): ActivityController<CreateVoiceActivity> {
         return Robolectric.buildActivity(CreateVoiceActivity::class.java).also {
@@ -54,6 +68,7 @@ class CreateVoiceActivityRobolectricTest {
 
     @Before
     fun setup() {
+        System.setErr(silentErr)
         context = ApplicationProvider.getApplicationContext()
         context.setTheme(R.style.Theme_MyPlanetLite)
         ProfileCredentialsStore.setSessionCredentials(StoredCredentials("test", "testpass"))
