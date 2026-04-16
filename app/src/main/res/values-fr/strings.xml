@@ -7,7 +7,7 @@
     <string name="login_password_label">Mot de passe</string>
     <string name="login_action">Se connecter</string>
     <string name="login_username_error">Saisissez votre nom d\'utilisateur</string>
-    <string name="login_password_error">Le mot de passe doit contenir au moins 4 caractères</string>
+    <string name="login_password_error">Saisissez votre mot de passe</string>
     <string name="login_invalid_credentials">Nom d\'utilisateur ou mot de passe incorrect</string>
     <string name="login_generic_error">Impossible de se connecter. Veuillez réessayer.</string>
     <string name="logo">Logo</string>
@@ -68,7 +68,7 @@
     <string name="signup_email_label">Courriel</string>
     <string name="signup_email_error_invalid">Saisissez un courriel valide</string>
     <string name="signup_password_error_mismatch">Les mots de passe doivent correspondre</string>
-    <string name="signup_password_error_length">Le mot de passe doit contenir au moins 6 caractères</string>
+    <string name="signup_password_error_length">Saisissez un mot de passe</string>
     <string name="signup_username_error_invalid">Saisissez un nom d\'utilisateur qui commence par une lettre et utilise uniquement des lettres et des chiffres</string>
     <string name="signup_first_name_error_required">Saisissez votre prénom</string>
     <string name="signup_last_name_error_required">Saisissez votre nom de famille</string>
@@ -137,7 +137,7 @@
     <string name="signup_step_contact_title">Comment vous joindre ?</string>
     <string name="signup_step_contact_subtitle">Indiquez votre courriel et votre numéro de mobile.</string>
     <string name="signup_step_password_title">Créez un mot de passe</string>
-    <string name="signup_step_password_subtitle">Utilisez au moins six lettres ou chiffres.</string>
+    <string name="signup_step_password_subtitle">Utilisez au moins une lettre ou un chiffre.</string>
     <string name="signup_step_language_title">Langue et niveau</string>
     <string name="signup_step_language_subtitle">Choisissez la langue et le niveau que vous préférez.</string>
     <string name="signup_step_license_title">Acceptez la licence</string>
