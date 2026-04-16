@@ -9,6 +9,7 @@ package org.ole.planet.myplanet.lite
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
@@ -810,7 +811,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             onProgress(downloaded to totalItems)
         }
         markdownImageSources.forEach { source ->
-            val resolvedUrl = resolveMarkdownSourceUrl(base, source) ?: return@forEach
+            val resolvedUrl = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
             val target = OfflineCourseStorage.markdownImageFile(requireContext(), course.id, source)
             target.parentFile?.mkdirs()
             val request = Request.Builder()
@@ -842,7 +843,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         var total = 0L
         val authHeader = Credentials.basic(creds.username, creds.password)
         sources.forEach { source ->
-            val url = resolveMarkdownSourceUrl(base, source) ?: return@forEach
+            val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
             val request = Request.Builder()
                 .url(url)
                 .head()
@@ -859,42 +860,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     }
 
     private fun extractMarkdownImageSources(course: CourseItem): List<String> {
-        val markdownPattern = Regex("""!\[[^\]]*]\(([^)]+)\)""")
-        val htmlPattern = Regex("""<img[^>]+src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
-        fun extractFromText(text: String): List<String> {
-            val fromMarkdown = markdownPattern.findAll(text)
-                .map { normalizeMarkdownImageSource(it.groupValues[1]) }
-                .toList()
-            val fromHtml = htmlPattern.findAll(text)
-                .map { normalizeMarkdownImageSource(it.groupValues[1]) }
-                .toList()
-            return (fromMarkdown + fromHtml).filter { it.isNotBlank() }
-        }
-        val fromCourseDescription = extractFromText(course.description)
-        val fromSteps = course.steps.flatMap { step -> extractFromText(step.description) }
+        val fromCourseDescription = MarkdownUtils.extractImageSourcesFromText(course.description)
+        val fromSteps = course.steps.flatMap { step -> MarkdownUtils.extractImageSourcesFromText(step.description) }
         return (fromCourseDescription + fromSteps).distinct()
-    }
-
-    private fun normalizeMarkdownImageSource(rawSource: String): String {
-        var value = rawSource.trim()
-        if (value.startsWith("<") && value.endsWith(">")) {
-            value = value.removePrefix("<").removeSuffix(">")
-        }
-        if (value.contains(" ")) {
-            value = value.substringBefore(" ")
-        }
-        return value.trim()
-    }
-
-    private fun resolveMarkdownSourceUrl(base: String, source: String): String? {
-        val trimmed = source.trim()
-        if (trimmed.isBlank()) return null
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
-        val normalizedBase = base.trim().trimEnd('/')
-        if (normalizedBase.isBlank()) return null
-        val normalizedPath = trimmed.trimStart('/')
-        val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
-        return "$normalizedBase/$finalPath"
     }
 
     private fun buildServerResourceUrl(base: String, resource: CourseItem.LessonResource): String? {
