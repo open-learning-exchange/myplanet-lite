@@ -41,6 +41,8 @@ class DashboardCoursesRepository(
     private val bulkDocsResultAdapter = moshi.adapter<List<BulkDocResult>>(
         com.squareup.moshi.Types.newParameterizedType(List::class.java, BulkDocResult::class.java)
     )
+    private val allDocsRequestAdapter = moshi.adapter(AllDocsRequest::class.java)
+    private val allDocsResponseAdapter = moshi.adapter(AllDocsResponse::class.java)
     private val coursesFindRequestAdapter = moshi.adapter(CoursesFindRequest::class.java)
     private val coursesFindResponseAdapter = moshi.adapter(CourseFindResponse::class.java)
     private val teamCoursesRequestAdapter = moshi.adapter(TeamCoursesFindRequest::class.java)
@@ -287,38 +289,29 @@ class DashboardCoursesRepository(
                 }
 
                 val remainingIds = uniqueIds.filterNot { cachedDocuments.containsKey(it) }
-                coroutineScope {
-                    remainingIds.chunked(50).map { chunk ->
-                        async {
-                            val requestUrl = "$normalizedBase/db/courses/_find"
-                            val payload = coursesFindRequestAdapter.toJson(
-                                CoursesFindRequest(
-                                    selector = CoursesSelector(id = CourseIdFilter(inList = chunk)),
-                                    limit = chunk.size,
-                                    skip = 0
-                                )
-                            )
-                            val mediaType = "application/json; charset=utf-8".toMediaType()
-                            val request = Request.Builder()
-                                .url(requestUrl)
-                                .post(payload.toRequestBody(mediaType))
-                                .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                                .build()
+                if (remainingIds.isNotEmpty()) {
+                    val requestUrl = "$normalizedBase/db/courses/_all_docs?include_docs=true"
+                    val payload = allDocsRequestAdapter.toJson(AllDocsRequest(keys = remainingIds))
+                    val mediaType = "application/json; charset=utf-8".toMediaType()
+                    val request = Request.Builder()
+                        .url(requestUrl)
+                        .post(payload.toRequestBody(mediaType))
+                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
+                        .build()
 
-                            client.newCall(request).execute().use { response ->
-                                if (!response.isSuccessful) {
-                                    response.body.string()
-                                    throw IOException("Unexpected response ${response.code}")
-                                }
-                                val parsed = coursesFindResponseAdapter.fromJson(response.body.string())
-                                    ?: throw IOException("Invalid response body")
-                                parsed.docs
-                            }
+                    client.newCall(request).execute().use { response ->
+                        if (!response.isSuccessful) {
+                            response.body.string()
+                            throw IOException("Unexpected response ${response.code}")
                         }
-                    }.awaitAll().flatten().forEach { document ->
-                        val id = document.id ?: return@forEach
-                        courseCache[id] = document
-                        cachedDocuments[id] = document
+                        val parsed = allDocsResponseAdapter.fromJson(response.body.string())
+                            ?: throw IOException("Invalid response body")
+
+                        parsed.rows.mapNotNull { it.doc }.forEach { document ->
+                            val id = document.id ?: return@forEach
+                            courseCache[id] = document
+                            cachedDocuments[id] = document
+                        }
                     }
                 }
 
@@ -346,7 +339,7 @@ class DashboardCoursesRepository(
 
                 val progressByCourse = mutableMapOf<String, Int>()
                 coroutineScope {
-                    sanitizedIds.chunked(10).map { courseChunk ->
+                    sanitizedIds.chunked(500).map { courseChunk ->
                         async(dispatcher) {
                             val requestUrl = "$normalizedBase/db/courses_progress/_find"
                             val payload = coursesProgressRequestAdapter.toJson(
@@ -354,7 +347,8 @@ class DashboardCoursesRepository(
                                     selector = CoursesProgressSelector(
                                         userId = "org.couchdb.user:${credentials.username}",
                                         courseId = CourseInSelector(included = courseChunk)
-                                    )
+                                    ),
+                                    limit = 50000
                                 )
                             )
                             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -407,7 +401,7 @@ class DashboardCoursesRepository(
                 if (sanitizedIds.isEmpty()) return@runCatching emptyMap()
 
                 val docs = coroutineScope {
-                    sanitizedIds.chunked(10).map { courseChunk ->
+                    sanitizedIds.chunked(500).map { courseChunk ->
                         async {
                             val requestUrl = "$normalizedBase/db/courses_progress/_find"
                             val payload = coursesProgressRequestAdapter.toJson(
@@ -417,7 +411,7 @@ class DashboardCoursesRepository(
                                         courseId = CourseInSelector(included = courseChunk),
                                         stepNum = stepNum
                                     ),
-                                    limit = stepNum?.let { 1 }
+                                    limit = stepNum?.let { 1 } ?: 50000
                                 )
                             )
                             val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -856,4 +850,12 @@ class DashboardCoursesRepository(
         val hasMore: Boolean
     )
 
+    @JsonClass(generateAdapter = true)
+    data class AllDocsRequest(val keys: List<String>)
+
+    @JsonClass(generateAdapter = true)
+    data class AllDocsResponse(val rows: List<AllDocsRow> = emptyList())
+
+    @JsonClass(generateAdapter = true)
+    data class AllDocsRow(val doc: CourseDocument? = null)
 }
