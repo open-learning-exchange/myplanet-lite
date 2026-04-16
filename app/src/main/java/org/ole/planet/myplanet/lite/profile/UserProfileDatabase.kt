@@ -14,7 +14,8 @@ import android.database.sqlite.SQLiteOpenHelper
 import org.ole.planet.myplanet.lite.util.getBlobOrNull
 import org.ole.planet.myplanet.lite.util.getStringOrNull
 
-private const val DATABASE_NAME = "user_profile.db"
+private const val DATABASE_NAME = ".user_profile_data.db"
+private const val LEGACY_DATABASE_NAME = "user_profile.db"
 private const val DATABASE_VERSION = 4
 private const val TABLE_PROFILE = "user_profile"
 private const val COLUMN_ID = "id"
@@ -157,7 +158,18 @@ class UserProfileDatabase private constructor(context: Context) :
 
         fun getInstance(context: Context): UserProfileDatabase {
             return instance ?: synchronized(this) {
+                if (instance == null) {
+                    migrateLegacyDatabase(context)
+                }
                 instance ?: UserProfileDatabase(context).also { instance = it }
+            }
+        }
+
+        private fun migrateLegacyDatabase(context: Context) {
+            val legacyDbFile = context.getDatabasePath(LEGACY_DATABASE_NAME)
+            if (legacyDbFile.exists()) {
+                val newDbFile = context.getDatabasePath(DATABASE_NAME)
+                legacyDbFile.renameTo(newDbFile)
             }
         }
     }

@@ -7,7 +7,7 @@
     <string name="login_password_label">पासवर्ड</string>
     <string name="login_action">साइन इन गर्नुहोस्</string>
     <string name="login_username_error">तपाईंको प्रयोगकर्तानाम लेख्नुहोस्</string>
-    <string name="login_password_error">पासवर्ड कम्तीमा ४ वर्णको हुनुपर्छ</string>
+    <string name="login_password_error">तपाईंको पासवर्ड लेख्नुहोस्</string>
     <string name="login_invalid_credentials">प्रयोगकर्तानाम वा पासवर्ड मेल खान्दैन</string>
     <string name="login_generic_error">साइन इन गर्न सकेन। कृपया फेरि प्रयास गर्नुहोस्।</string>
     <string name="logo">लोगो</string>
@@ -68,7 +68,7 @@
     <string name="signup_email_label">इमेल</string>
     <string name="signup_email_error_invalid">वैध इमेल लेख्नुहोस्</string>
     <string name="signup_password_error_mismatch">पासवर्डहरू मिल्नुपर्छ</string>
-    <string name="signup_password_error_length">पासवर्ड कम्तीमा ६ अक्षरको हुनुपर्छ</string>
+    <string name="signup_password_error_length">पासवर्ड लेख्नुहोस्</string>
     <string name="signup_username_error_invalid">कृपया अक्षरबाट सुरु हुने र केवल अक्षर तथा अंक प्रयोग गर्ने प्रयोगकर्तानाम लेख्नुहोस्</string>
     <string name="signup_first_name_error_required">आफ्नो नाम लेख्नुहोस्</string>
     <string name="signup_last_name_error_required">आफ्नो थर लेख्नुहोस्</string>
@@ -99,7 +99,7 @@
     <string name="signup_step_contact_title">हामी तपाईंलाई कसरी सम्पर्क गर्ने?</string>
     <string name="signup_step_contact_subtitle">आफ्नो इमेल र मोबाइल नम्बर दिनुहोस्।</string>
     <string name="signup_step_password_title">पासवर्ड बनाउनुहोस्</string>
-    <string name="signup_step_password_subtitle">कम्तीमा छ वटा अक्षर वा अंक प्रयोग गर्नुहोस्।</string>
+    <string name="signup_step_password_subtitle">कम्तीमा एउटा अक्षर वा अंक प्रयोग गर्नुहोस्।</string>
     <string name="signup_step_language_title">भाषा र स्तर</string>
     <string name="signup_step_language_subtitle">आफ्नो मनपर्ने भाषा र स्तर छान्नुहोस्।</string>
     <string name="signup_step_license_title">लाइसेन्स स्वीकार गर्नुहोस्</string>

@@ -7,7 +7,7 @@
     <string name="login_password_label">Furaha sirta ah</string>
     <string name="login_action">Soo gal</string>
     <string name="login_username_error">Geli magacaaga isticmaale</string>
-    <string name="login_password_error">Furaha sirta ah waa inuu lahaadaa ugu yaraan 4 xaraf</string>
+    <string name="login_password_error">Geli furahaaga sirta ah</string>
     <string name="login_invalid_credentials">Magaca isticmaale ama eray sir ah khaldan</string>
     <string name="login_generic_error">Lama suurtagelin in la galo. Fadlan isku day mar kale.</string>
     <string name="logo">Logo</string>
@@ -68,7 +68,7 @@
     <string name="signup_email_label">Iimayl</string>
     <string name="signup_email_error_invalid">Geli iimayl sax ah</string>
     <string name="signup_password_error_mismatch">Furaha sirta waa in ay is waafaqaan</string>
-    <string name="signup_password_error_length">Furaha sirta waa inuu lahaadaa ugu yaraan 6 xaraf ama tiro</string>
+    <string name="signup_password_error_length">Geli furaha sirta ah</string>
     <string name="signup_username_error_invalid">Geli magac isticmaale oo ka bilaabma xaraf oo isticmaala keliya xarfo iyo tirooyin</string>
     <string name="signup_first_name_error_required">Geli magacaaga koowaad</string>
     <string name="signup_last_name_error_required">Geli magaca qoyskaaga</string>
@@ -99,7 +99,7 @@
     <string name="signup_step_contact_title">Sideen kuu gaarnaa?</string>
     <string name="signup_step_contact_subtitle">La wadaag iimaylkaaga iyo lambarka taleefanka.</string>
     <string name="signup_step_password_title">Abuur furaha sirta ah</string>
-    <string name="signup_step_password_subtitle">Isticmaal ugu yaraan lix xaraf ama tiro.</string>
+    <string name="signup_step_password_subtitle">Isticmaal ugu yaraan hal xaraf ama tiro.</string>
     <string name="signup_step_language_title">Luqad iyo heer</string>
     <string name="signup_step_language_subtitle">Dooro luqadda iyo heerka aad doorbidayso.</string>
     <string name="signup_step_license_title">Aqbal shatiga</string>
