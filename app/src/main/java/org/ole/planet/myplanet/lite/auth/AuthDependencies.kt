@@ -29,6 +29,14 @@ object AuthDependencies {
     fun overrideAuthService(service: AuthService?) {
         authServiceOverride = service
     }
+
+    @androidx.annotation.VisibleForTesting
+    fun resetForTesting() {
+        authServiceOverride = null
+        cachedClient = null
+        cachedMoshi = null
+    }
+
     private fun createAuthService(context: Context, baseUrl: String): AuthService {
         val client = cachedClient ?: synchronized(this) {
             cachedClient ?: OkHttpClient.Builder()
