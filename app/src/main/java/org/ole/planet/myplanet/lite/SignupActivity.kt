@@ -1194,7 +1194,7 @@ class SignupActivity : AppCompatActivity() {
     private fun validatePasswords(): Boolean {
         val password = passwordInput.text?.toString().orEmpty()
         val passwordsMatch = updatePasswordErrorState(showEmptyError = true)
-        return if (password.length < 6) {
+        return if (password.length < 1) {
             passwordLayout.error = getString(R.string.signup_password_error_length)
             if (confirmPasswordLayout.error == getString(R.string.signup_password_error_mismatch)) {
                 confirmPasswordLayout.error = null
