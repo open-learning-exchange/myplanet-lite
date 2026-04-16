@@ -12,6 +12,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
 import java.io.Serializable
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -19,12 +20,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
-class DashboardNewsRepository {
-
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
+class DashboardNewsRepository(
+    private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
-        .build()
+        .build(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
+
     private val requestAdapter = moshi.adapter(NewsFindRequest::class.java)
     private val responseAdapter = moshi.adapter(NewsFindResponse::class.java)
 
@@ -38,7 +41,7 @@ class DashboardNewsRepository {
         parentCode: String?,
         teamName: String? = null
     ): Result<NewsPage> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -120,7 +123,7 @@ class DashboardNewsRepository {
         parentCode: String?,
         teamName: String? = null
     ): Result<List<NewsDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {

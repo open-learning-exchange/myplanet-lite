@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.lite.dashboard
 
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
 import kotlinx.coroutines.test.runTest
+import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -12,6 +15,7 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
+
 class VoicesComposerRepositoryTest {
 
     private lateinit var mockWebServer: MockWebServer
@@ -21,7 +25,10 @@ class VoicesComposerRepositoryTest {
     fun setup() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        repository = VoicesComposerRepository()
+        repository = VoicesComposerRepository(
+            client = OkHttpClient.Builder().build(),
+            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+        )
     }
 
     @After

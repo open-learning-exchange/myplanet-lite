@@ -19,7 +19,6 @@ class SurveyTranslationCacheTest {
                 count += qIdx + bIdx + cIdx
             }
         }
-        println("Original time: ${originalTime} ms")
 
         count = 0
         var optimizedTime = measureTimeMillis {
@@ -30,7 +29,6 @@ class SurveyTranslationCacheTest {
                 count += qIdx + bIdx + cIdx
             }
         }
-        println("Optimized time: ${optimizedTime} ms")
 
         assert(optimizedTime <= originalTime) { "Optimization did not improve performance" }
     }
