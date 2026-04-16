@@ -15,6 +15,7 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class SurveyTranslationCache(
     context: Context,
@@ -103,10 +104,6 @@ class SurveyTranslationCache(
                 SQLiteDatabase.CONFLICT_REPLACE,
             )
         }
-    }
-
-    private fun Cursor.getStringOrNull(index: Int): String? {
-        return if (isNull(index)) null else getString(index)
     }
 
     private companion object {
