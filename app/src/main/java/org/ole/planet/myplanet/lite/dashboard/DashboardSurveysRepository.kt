@@ -11,6 +11,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -22,12 +23,13 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
-class DashboardSurveysRepository {
-
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
+class DashboardSurveysRepository(
+    private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
-        .build()
+        .build(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     private val findRequestAdapter = moshi.adapter(SurveysFindRequest::class.java)
     private val findResponseAdapter = moshi.adapter(SurveysFindResponse::class.java)
     private val completionsRequestAdapter = moshi.adapter(SurveyCompletionsRequest::class.java)
@@ -39,7 +41,7 @@ class DashboardSurveysRepository {
         sessionCookie: String?,
         teamId: String,
     ): Result<List<SurveyDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -128,7 +130,7 @@ class DashboardSurveysRepository {
         teamId: String,
         surveyId: String,
     ): Result<Int> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -179,7 +181,7 @@ class DashboardSurveysRepository {
         teamId: String,
         surveyIds: List<String>,
     ): Result<Map<String, Int>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {

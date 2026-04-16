@@ -16,6 +16,13 @@ import retrofit2.converter.moshi.MoshiConverterFactory
 object AuthDependencies {
     @Volatile
     private var authServiceOverride: AuthService? = null
+
+    @Volatile
+    private var cachedClient: OkHttpClient? = null
+
+    @Volatile
+    private var cachedMoshi: Moshi? = null
+
     fun provideAuthService(context: Context, baseUrl: String = BuildConfig.PLANET_BASE_URL): AuthService {
         return authServiceOverride ?: createAuthService(context.applicationContext, baseUrl)
     }
@@ -23,11 +30,15 @@ object AuthDependencies {
         authServiceOverride = service
     }
     private fun createAuthService(context: Context, baseUrl: String): AuthService {
-        val client = OkHttpClient.Builder()
-            .build()
-        val moshi = Moshi.Builder()
-            .addLast(KotlinJsonAdapterFactory())
-            .build()
+        val client = cachedClient ?: synchronized(this) {
+            cachedClient ?: OkHttpClient.Builder()
+                .build().also { cachedClient = it }
+        }
+        val moshi = cachedMoshi ?: synchronized(this) {
+            cachedMoshi ?: Moshi.Builder()
+                .addLast(KotlinJsonAdapterFactory())
+                .build().also { cachedMoshi = it }
+        }
         val retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
             .addConverterFactory(MoshiConverterFactory.create(moshi))

@@ -10,6 +10,7 @@ object IntentUtils {
             return null
         }
         val data = intent.data ?: return null
+        if (data.isOpaque) return null
         val queryPostId = data.getQueryParameter("postId")
         if (!queryPostId.isNullOrBlank() && queryPostId.matches(ID_PATTERN)) {
             return queryPostId
