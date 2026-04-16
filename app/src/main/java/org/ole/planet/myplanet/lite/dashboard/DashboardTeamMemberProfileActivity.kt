@@ -14,7 +14,6 @@ import android.os.Bundle
 import android.view.View
 import android.widget.ImageView
 import android.widget.TextView
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
@@ -32,7 +31,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.DateUtils
 
-class DashboardTeamMemberProfileActivity : AppCompatActivity() {
+class DashboardTeamMemberProfileActivity : BaseActivity() {
 
     private lateinit var avatarView: ImageView
     private lateinit var nameView: TextView
@@ -337,12 +336,5 @@ class DashboardTeamMemberProfileActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 }

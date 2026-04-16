@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 
 class DashboardLocalSurveyRepository(private val context: Context) {
     private val offlineStore by lazy { DashboardOfflineSurveyStore(context.applicationContext) }
@@ -43,7 +44,7 @@ class DashboardLocalSurveyRepository(private val context: Context) {
     suspend fun deleteEntry(id: Long): Boolean = outboxStore.deleteEntry(id)
 
     suspend fun flushPendingSurveyOutbox(typeFilter: String? = null) {
-        if (!isDeviceOnline()) return
+        if (!NetworkUtils.isDeviceOnline(context)) return
         val baseUrl = DashboardServerPreferences.getServerBaseUrl(context)
         val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = ProfileCredentialsStore.getStoredCredentials(context) ?: return
@@ -65,10 +66,5 @@ class DashboardLocalSurveyRepository(private val context: Context) {
         }
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = context.getSystemService(ConnectivityManager::class.java) ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 }

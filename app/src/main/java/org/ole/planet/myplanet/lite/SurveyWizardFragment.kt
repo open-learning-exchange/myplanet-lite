@@ -48,6 +48,7 @@ import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import org.json.JSONObject
@@ -659,7 +660,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         survey: SurveyDocument,
         username: String
     ) {
-        val isOnline = isDeviceOnline()
+        val isOnline = NetworkUtils.isDeviceOnline(requireContext())
         if (!isOnline) {
             setSubmitting(false)
             queueSubmissionForOutbox(submission, survey)
@@ -862,12 +863,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         requireActivity().finish()
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = connectivityManager ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     private fun setSubmitting(submitting: Boolean) {
         isSubmitting = submitting

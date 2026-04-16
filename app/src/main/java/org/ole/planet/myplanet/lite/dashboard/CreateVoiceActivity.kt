@@ -24,7 +24,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.BundleCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -75,7 +74,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 
-class CreateVoiceActivity : AppCompatActivity() {
+class CreateVoiceActivity : BaseActivity() {
 
     private lateinit var toolbar: MaterialToolbar
     private lateinit var markwon: Markwon
@@ -1610,14 +1609,7 @@ class CreateVoiceActivity : AppCompatActivity() {
         const val EXTRA_TARGET_TEAM_NAME = "extra_target_team_name"
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 }
 
 

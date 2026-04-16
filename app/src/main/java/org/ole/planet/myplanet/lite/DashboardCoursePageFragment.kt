@@ -43,6 +43,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyD
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 
 class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses_page) {
 
@@ -316,7 +317,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         viewLifecycleOwner.lifecycleScope.launch {
             val base = baseUrl
             val creds = credentials
-            val isOnline = isDeviceOnline()
+            val isOnline = NetworkUtils.isDeviceOnline(requireContext())
             if (!isOnline) {
                 val offlineCourses = OfflineCourseStorage.loadDownloadedCourses(requireContext())
                 adapter.submitCourses(offlineCourses)
@@ -722,7 +723,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 val deleted = OfflineCourseStorage.deleteCourse(requireContext(), course.id)
                 if (deleted) {
                     adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
-                    if (!isDeviceOnline() && tabPosition == 0) {
+                    if (!NetworkUtils.isDeviceOnline(requireContext()) && tabPosition == 0) {
                         refreshUserCourses(adapter, refreshLayout)
                     }
                 } else {
@@ -736,12 +737,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             .show()
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = requireContext().getSystemService(android.net.ConnectivityManager::class.java) ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     private suspend fun flushPendingSurveyOutbox() {
         localSurveyRepository.flushPendingSurveyOutbox()
