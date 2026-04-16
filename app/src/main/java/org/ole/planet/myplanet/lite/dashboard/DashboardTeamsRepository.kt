@@ -604,42 +604,36 @@ class DashboardTeamsRepository(
 
                 if (teamIds.isEmpty()) return@runCatching emptyMap()
 
-                val allDocs = coroutineScope {
-                    teamIds.chunked(50).map { chunk ->
-                        async {
-                            val selector = MultipleMemberCountSelector(
-                                teamId = IdsInClause(ids = chunk),
-                                docType = "membership",
-                                status = StatusClause(
-                                    or = listOf(
-                                        StatusCondition(exists = false),
-                                        StatusCondition(notEquals = "archived")
-                                    )
-                                )
-                            )
-                            val payload = multipleMemberCountRequestAdapter.toJson(
-                                MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"))
-                            )
-                            val requestBuilder = Request.Builder()
-                                .url("$normalizedBase/db/teams/_find")
-                                .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-                            credentials?.let {
-                                requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
-                            }
-                            sessionCookie.nullIfBlank()?.let { cookie ->
-                                requestBuilder.addHeader("Cookie", cookie)
-                            }
+                val selector = MultipleMemberCountSelector(
+                    teamId = IdsInClause(ids = teamIds),
+                    docType = "membership",
+                    status = StatusClause(
+                        or = listOf(
+                            StatusCondition(exists = false),
+                            StatusCondition(notEquals = "archived")
+                        )
+                    )
+                )
+                val payload = multipleMemberCountRequestAdapter.toJson(
+                    MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"), limit = 50000)
+                )
+                val requestBuilder = Request.Builder()
+                    .url("$normalizedBase/db/teams/_find")
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                credentials?.let {
+                    requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
+                }
+                sessionCookie.nullIfBlank()?.let { cookie ->
+                    requestBuilder.addHeader("Cookie", cookie)
+                }
 
-                            client.newCall(requestBuilder.build()).execute().use { response ->
-                                if (!response.isSuccessful) {
-                                    throw IOException("Unexpected response ${response.code}")
-                                }
-                                val body = response.body.string()
-                                multipleMemberCountResponseAdapter.fromJson(body)?.docs ?: emptyList()
-                            }
-                        }
-                    }.awaitAll()
-                }.flatten()
+                val allDocs = client.newCall(requestBuilder.build()).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}")
+                    }
+                    val body = response.body.string()
+                    multipleMemberCountResponseAdapter.fromJson(body)?.docs ?: emptyList()
+                }
 
                 val results = mutableMapOf<String, Int>()
                 allDocs.forEach { doc ->
