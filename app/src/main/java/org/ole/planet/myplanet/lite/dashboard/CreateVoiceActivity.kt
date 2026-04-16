@@ -6,6 +6,7 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
+import org.ole.planet.myplanet.lite.BaseActivity
 import android.app.Activity
 import android.content.pm.ActivityInfo
 import android.graphics.Bitmap

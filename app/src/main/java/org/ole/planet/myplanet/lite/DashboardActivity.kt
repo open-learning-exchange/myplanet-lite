@@ -6,6 +6,8 @@
 
 package org.ole.planet.myplanet.lite
 
+import androidx.appcompat.app.AppCompatActivity
+import android.net.ConnectivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo

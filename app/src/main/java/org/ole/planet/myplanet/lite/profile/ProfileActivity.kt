@@ -6,6 +6,7 @@
 
 package org.ole.planet.myplanet.lite.profile
 
+import org.ole.planet.myplanet.lite.BaseActivity
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
