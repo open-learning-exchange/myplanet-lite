@@ -16,6 +16,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class DashboardOfflineSurveyStore(
     context: Context,
@@ -127,11 +128,6 @@ class DashboardOfflineSurveyStore(
                 }
             }
         }
-    }
-
-    private fun Cursor.getStringOrNull(columnName: String): String? {
-        val index = getColumnIndexOrThrow(columnName)
-        return if (isNull(index)) null else getString(index)
     }
 
     private companion object {

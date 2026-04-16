@@ -15,24 +15,21 @@ import android.widget.ImageView
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 
 class DashboardPostImageLoader(
     private val baseUrl: String,
     private val sessionCookie: String?,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val client: OkHttpClient = SharedBitmapDependencies.client
 ) {
 
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
-    private val cache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
-        override fun sizeOf(key: String, value: Bitmap): Int {
-            return value.byteCount
-        }
-    }
+    private val cache = sharedCache
 
     fun bind(imageView: ImageView, imagePath: String, onResult: ((Boolean) -> Unit)? = null) {
         imageView.setImageDrawable(null)
@@ -45,8 +42,21 @@ class DashboardPostImageLoader(
         }
         imageView.tag = cacheKey
         scope.launch {
-            val bitmap = withContext(Dispatchers.IO) {
-                runCatching { fetchImageBitmap(imagePath) }.getOrNull()
+            val deferred = synchronized(inFlightRequests) {
+                inFlightRequests.getOrPut(cacheKey) {
+                    inFlightScope.async {
+                        runCatching { fetchImageBitmap(imagePath) }.getOrNull()
+                    }
+                }
+            }
+            val bitmap = try {
+                deferred.await()
+            } finally {
+                synchronized(inFlightRequests) {
+                    if (inFlightRequests[cacheKey] == deferred) {
+                        inFlightRequests.remove(cacheKey)
+                    }
+                }
             }
             if (imageView.tag != cacheKey) {
                 onResult?.invoke(bitmap != null)
@@ -115,5 +125,12 @@ class DashboardPostImageLoader(
 
     private companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
+        private val inFlightScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
+        private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
+        private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
+            override fun sizeOf(key: String, value: Bitmap): Int {
+                return value.byteCount
+            }
+        }
     }
 }

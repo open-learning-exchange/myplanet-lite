@@ -16,6 +16,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
+import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class DashboardSurveyOutboxStore(
     context: Context,
@@ -213,14 +214,6 @@ class DashboardSurveyOutboxStore(
         val createdAt: Long,
         val payload: String,
     )
-
-    private fun Cursor.getStringOrNull(columnName: String): String? {
-        return getStringOrNull(getColumnIndexOrThrow(columnName))
-    }
-
-    private fun Cursor.getStringOrNull(index: Int): String? {
-        return if (isNull(index)) null else getString(index)
-    }
 
     private companion object {
         private const val DATABASE_NAME = "dashboard_survey_outbox.db"
