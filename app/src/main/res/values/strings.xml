@@ -7,7 +7,7 @@
     <string name="login_password_label">Password</string>
     <string name="login_action">Login</string>
     <string name="login_username_error">Enter your username</string>
-    <string name="login_password_error">The password must be at least 4 characters long</string>
+    <string name="login_password_error">Enter your password</string>
     <string name="login_invalid_credentials">Incorrect username or password</string>
     <string name="login_generic_error">Couldn\'t sign in. Please try again.</string>
     <string name="login_success_title">Login Successful</string>
@@ -70,7 +70,7 @@
     <string name="signup_email_label">Email</string>
     <string name="signup_email_error_invalid">Enter a valid email address</string>
     <string name="signup_password_error_mismatch">Passwords must match</string>
-    <string name="signup_password_error_length">Password must be at least 6 characters long</string>
+    <string name="signup_password_error_length">Enter a password</string>
     <string name="signup_username_error_invalid">Enter a username that starts with a letter and uses only letters and numbers</string>
     <string name="signup_first_name_error_required">Enter your first name</string>
     <string name="signup_last_name_error_required">Enter your last name</string>
@@ -139,7 +139,7 @@
     <string name="signup_step_contact_title">How can we reach you?</string>
     <string name="signup_step_contact_subtitle">Share your email and mobile number.</string>
     <string name="signup_step_password_title">Create a password</string>
-    <string name="signup_step_password_subtitle">Use at least six letters or numbers.</string>
+    <string name="signup_step_password_subtitle">Use at least one letter or number.</string>
     <string name="signup_step_language_title">Language and level</string>
     <string name="signup_step_language_subtitle">Choose the language and level you prefer.</string>
     <string name="signup_step_license_title">Accept the license</string>

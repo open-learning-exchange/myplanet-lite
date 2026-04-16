@@ -7,7 +7,7 @@
     <string name="login_password_label">Contraseña</string>
     <string name="login_action">Iniciar sesión</string>
     <string name="login_username_error">Ingresa tu usuario</string>
-    <string name="login_password_error">La contraseña debe tener al menos 4 caracteres</string>
+    <string name="login_password_error">Ingresa tu contraseña</string>
     <string name="login_invalid_credentials">Usuario o contraseña incorrectos</string>
     <string name="login_generic_error">No se pudo iniciar sesión. Intenta nuevamente.</string>
     <string name="login_success_title">Inicio de sesión exitoso</string>
@@ -70,7 +70,7 @@
     <string name="signup_email_label">Correo</string>
     <string name="signup_email_error_invalid">Ingresa un correo válido</string>
     <string name="signup_password_error_mismatch">Las contraseñas deben coincidir</string>
-    <string name="signup_password_error_length">La contraseña debe tener al menos 6 caracteres</string>
+    <string name="signup_password_error_length">Ingresa una contraseña</string>
     <string name="signup_username_error_invalid">Ingresa un usuario que empiece con una letra y use solo letras y números</string>
     <string name="signup_first_name_error_required">Ingresa tu nombre</string>
     <string name="signup_last_name_error_required">Ingresa tu apellido</string>
@@ -139,7 +139,7 @@
     <string name="signup_step_contact_title">¿Cómo te contactamos?</string>
     <string name="signup_step_contact_subtitle">Comparte tu correo y número de celular.</string>
     <string name="signup_step_password_title">Crea una contraseña</string>
-    <string name="signup_step_password_subtitle">Usa al menos seis letras o números.</string>
+    <string name="signup_step_password_subtitle">Usa al menos una letra o número.</string>
     <string name="signup_step_language_title">Idioma y nivel</string>
     <string name="signup_step_language_subtitle">Selecciona el idioma y nivel que prefieres.</string>
     <string name="signup_step_license_title">Acepta la licencia</string>
