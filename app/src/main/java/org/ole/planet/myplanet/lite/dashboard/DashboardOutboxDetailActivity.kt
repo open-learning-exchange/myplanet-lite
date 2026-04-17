@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.widget.CheckBox
 import android.widget.LinearLayout
@@ -124,7 +122,7 @@ class DashboardOutboxDetailActivity : BaseActivity() {
             sendButton.setOnClickListener {
                 attemptSend(entry)
             }
-            sendButton.isEnabled = NetworkUtils.isDeviceOnline(this)
+            sendButton.isEnabled = NetworkUtils.isDeviceOnline(this@DashboardOutboxDetailActivity)
             deleteButton.setOnClickListener {
                 confirmDelete(entry)
             }
@@ -272,7 +270,7 @@ class DashboardOutboxDetailActivity : BaseActivity() {
     }
 
     private fun attemptSend(entry: DashboardSurveyOutboxStore.OutboxEntry) {
-        if (!NetworkUtils.isDeviceOnline(this)) {
+        if (!NetworkUtils.isDeviceOnline(this@DashboardOutboxDetailActivity)) {
             Toast.makeText(this, R.string.dashboard_outbox_offline_cannot_send, Toast.LENGTH_SHORT).show()
             return
         }
