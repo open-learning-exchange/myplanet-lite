@@ -6,8 +6,11 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import java.io.ByteArrayOutputStream
+import java.io.PrintStream
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.AfterClass
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,22 +20,40 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
+import org.robolectric.android.controller.ActivityController
 import org.robolectric.shadows.ShadowToast
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class CreateVoiceActivityRobolectricTest {
 
+    companion object {
+        private val originalErr: PrintStream = System.err
+        private val silentErr = PrintStream(ByteArrayOutputStream())
+
+        @JvmStatic
+        @AfterClass
+        fun restoreErrorStream() {
+            System.setErr(originalErr)
+        }
+    }
+
+    private fun buildActivityController(): ActivityController<CreateVoiceActivity> {
+        return Robolectric.buildActivity(CreateVoiceActivity::class.java).also {
+            it.get().setTheme(R.style.Theme_MyPlanetLite)
+        }.create().start().resume()
+    }
+
     @Test
     fun `test activity launches successfully`() {
-        val controller = Robolectric.buildActivity(CreateVoiceActivity::class.java).create().start().resume()
+        val controller = buildActivityController()
         val activity = controller.get()
         assertNotNull(activity)
     }
 
     @Test
     fun `test initial UI state`() {
-        val controller = Robolectric.buildActivity(CreateVoiceActivity::class.java).create().start().resume()
+        val controller = buildActivityController()
         val activity = controller.get()
 
         val createVoiceInput: TextInputEditText = activity.findViewById(R.id.createVoiceInput)
@@ -47,6 +68,7 @@ class CreateVoiceActivityRobolectricTest {
 
     @Before
     fun setup() {
+        System.setErr(silentErr)
         context = ApplicationProvider.getApplicationContext()
         context.setTheme(R.style.Theme_MyPlanetLite)
         ProfileCredentialsStore.setSessionCredentials(StoredCredentials("test", "testpass"))
@@ -55,7 +77,7 @@ class CreateVoiceActivityRobolectricTest {
 
     @Test
     fun `attemptPost shows empty error toast when message is blank`() {
-        val controller = Robolectric.buildActivity(CreateVoiceActivity::class.java).create().start().resume()
+        val controller = buildActivityController()
         val activity = controller.get()
 
         val submitButton: MaterialButton = activity.findViewById(R.id.createVoiceSubmitButton)
@@ -71,7 +93,7 @@ class CreateVoiceActivityRobolectricTest {
 
     @Test
     fun `attemptPost shows missing server toast when base url is blank`() {
-        val controller = Robolectric.buildActivity(CreateVoiceActivity::class.java).create().start().resume()
+        val controller = buildActivityController()
         val activity = controller.get()
 
         val input: TextInputEditText = activity.findViewById(R.id.createVoiceInput)
@@ -92,7 +114,7 @@ class CreateVoiceActivityRobolectricTest {
         // Mocking or circumventing the secure preferences exception for now
         ProfileCredentialsStore.setSessionCredentials(null)
         org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = org.mockito.Mockito.mock(android.content.SharedPreferences::class.java)
-        val controller = Robolectric.buildActivity(CreateVoiceActivity::class.java).create().start().resume()
+        val controller = buildActivityController()
         val activity = controller.get()
 
         val input: TextInputEditText = activity.findViewById(R.id.createVoiceInput)
@@ -116,7 +138,7 @@ class CreateVoiceActivityRobolectricTest {
 
     @Test
     fun `attemptPost shows confirmation dialog when valid`() {
-        val controller = Robolectric.buildActivity(CreateVoiceActivity::class.java).create().start().resume()
+        val controller = buildActivityController()
         val activity = controller.get()
 
         val input: TextInputEditText = activity.findViewById(R.id.createVoiceInput)

@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.lite.surveys
+package org.ole.planet.myplanet.lite.survey
 
 import android.content.Context
 import com.google.mlkit.nl.languageid.LanguageIdentifier
@@ -20,6 +20,9 @@ import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository
 import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository.AiKeys
 import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository.AiModels
 import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository.ConfigurationDocument
+import org.ole.planet.myplanet.lite.surveys.OpenAiTranslationClient
+import org.ole.planet.myplanet.lite.surveys.SurveyTranslationCache
+import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 
 class SurveyTranslationManagerTest {
 
