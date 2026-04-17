@@ -91,70 +91,74 @@ class SecurePreferencesProviderTest {
     }
 
     @Test
-    fun `migrateLegacyPreferences migrates data and deletes legacy prefs`() = runBlocking {
-        val mockLegacyPrefs = mock(SharedPreferences::class.java)
-        val mockEncryptedPrefs = mock(SharedPreferences::class.java)
-        val mockEncryptedEditor = mock(SharedPreferences.Editor::class.java)
+    fun `migrateLegacyPreferences migrates data and deletes legacy prefs`() {
+        runBlocking {
+            val mockLegacyPrefs = mock(SharedPreferences::class.java)
+            val mockEncryptedPrefs = mock(SharedPreferences::class.java)
+            val mockEncryptedEditor = mock(SharedPreferences.Editor::class.java)
 
-        `when`(mockContext.getSharedPreferences("server_preferences", Context.MODE_PRIVATE))
-            .thenReturn(mockLegacyPrefs)
+            `when`(mockContext.getSharedPreferences("server_preferences", Context.MODE_PRIVATE))
+                .thenReturn(mockLegacyPrefs)
 
-        val legacyData = mapOf<String, Any?>(
-            "string_key" to "value",
-            "int_key" to 42,
-            "bool_key" to true,
-            "float_key" to 3.14f,
-            "long_key" to 100L,
-            "set_key" to setOf("a", "b")
-        )
+            val legacyData = mapOf<String, Any?>(
+                "string_key" to "value",
+                "int_key" to 42,
+                "bool_key" to true,
+                "float_key" to 3.14f,
+                "long_key" to 100L,
+                "set_key" to setOf("a", "b")
+            )
 
-        `when`(mockLegacyPrefs.all).thenReturn(legacyData)
-        `when`(mockEncryptedPrefs.edit()).thenReturn(mockEncryptedEditor)
-        `when`(mockEncryptedEditor.commit()).thenReturn(true)
+            `when`(mockLegacyPrefs.all).thenReturn(legacyData)
+            `when`(mockEncryptedPrefs.edit()).thenReturn(mockEncryptedEditor)
+            `when`(mockEncryptedEditor.commit()).thenReturn(true)
 
-        val method = SecurePreferencesProvider::class.java.getDeclaredMethod(
-            "migrateLegacyPreferences",
-            Context::class.java,
-            SharedPreferences::class.java,
-            SharedPreferences::class.java
-        )
-        method.isAccessible = true
-        val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs) as Job
-        job.join()
+            val method = SecurePreferencesProvider::class.java.getDeclaredMethod(
+                "migrateLegacyPreferences",
+                Context::class.java,
+                SharedPreferences::class.java,
+                SharedPreferences::class.java
+            )
+            method.isAccessible = true
+            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs) as Job
+            job.join()
 
-        verify(mockEncryptedEditor).putString("string_key", "value")
-        verify(mockEncryptedEditor).putInt("int_key", 42)
-        verify(mockEncryptedEditor).putBoolean("bool_key", true)
-        verify(mockEncryptedEditor).putFloat("float_key", 3.14f)
-        verify(mockEncryptedEditor).putLong("long_key", 100L)
-        verify(mockEncryptedEditor).putStringSet("set_key", setOf("a", "b"))
-        verify(mockEncryptedEditor).commit()
+            verify(mockEncryptedEditor).putString("string_key", "value")
+            verify(mockEncryptedEditor).putInt("int_key", 42)
+            verify(mockEncryptedEditor).putBoolean("bool_key", true)
+            verify(mockEncryptedEditor).putFloat("float_key", 3.14f)
+            verify(mockEncryptedEditor).putLong("long_key", 100L)
+            verify(mockEncryptedEditor).putStringSet("set_key", setOf("a", "b"))
+            verify(mockEncryptedEditor).commit()
 
-        verify(mockContext).deleteSharedPreferences("server_preferences")
+            verify(mockContext).deleteSharedPreferences("server_preferences")
+        }
     }
 
     @Test
-    fun `migrateLegacyPreferences does nothing when legacy prefs are empty`() = runBlocking {
-        val mockLegacyPrefs = mock(SharedPreferences::class.java)
-        val mockEncryptedPrefs = mock(SharedPreferences::class.java)
+    fun `migrateLegacyPreferences does nothing when legacy prefs are empty`() {
+        runBlocking {
+            val mockLegacyPrefs = mock(SharedPreferences::class.java)
+            val mockEncryptedPrefs = mock(SharedPreferences::class.java)
 
-        `when`(mockContext.getSharedPreferences("server_preferences", Context.MODE_PRIVATE))
-            .thenReturn(mockLegacyPrefs)
+            `when`(mockContext.getSharedPreferences("server_preferences", Context.MODE_PRIVATE))
+                .thenReturn(mockLegacyPrefs)
 
-        `when`(mockLegacyPrefs.all).thenReturn(emptyMap<String, Any?>())
+            `when`(mockLegacyPrefs.all).thenReturn(emptyMap<String, Any?>())
 
-        val method = SecurePreferencesProvider::class.java.getDeclaredMethod(
-            "migrateLegacyPreferences",
-            Context::class.java,
-            SharedPreferences::class.java,
-            SharedPreferences::class.java
-        )
-        method.isAccessible = true
-        val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs) as Job
-        job.join()
+            val method = SecurePreferencesProvider::class.java.getDeclaredMethod(
+                "migrateLegacyPreferences",
+                Context::class.java,
+                SharedPreferences::class.java,
+                SharedPreferences::class.java
+            )
+            method.isAccessible = true
+            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs) as Job
+            job.join()
 
-        verify(mockEncryptedPrefs, never()).edit()
-        verify(mockLegacyPrefs, never()).edit()
-        verify(mockContext, never()).deleteSharedPreferences(any())
+            verify(mockEncryptedPrefs, never()).edit()
+            verify(mockLegacyPrefs, never()).edit()
+            verify(mockContext, never()).deleteSharedPreferences(any())
+        }
     }
 }
