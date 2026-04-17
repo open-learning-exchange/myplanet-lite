@@ -759,7 +759,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val request = Request.Builder()
                 .url(url)
                 .head()
-                .header("Authorization", Credentials.basic(creds.username, creds.password))
+                .apply {
+                    if (url.startsWith("https://", ignoreCase = true)) {
+                        header("Authorization", Credentials.basic(creds.username, creds.password))
+                    }
+                }
                 .build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
@@ -792,7 +796,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             target.parentFile?.mkdirs()
             val request = Request.Builder()
                 .url(url)
-                .header("Authorization", authHeader)
+                .apply {
+                    if (url.startsWith("https://", ignoreCase = true)) {
+                        header("Authorization", authHeader)
+                    }
+                }
                 .build()
             val success = runCatching {
                 httpClient.newCall(request).execute().use { response ->
@@ -816,7 +824,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             target.parentFile?.mkdirs()
             val request = Request.Builder()
                 .url(resolvedUrl)
-                .header("Authorization", authHeader)
+                .apply {
+                    if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
+                        header("Authorization", authHeader)
+                    }
+                }
                 .build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
@@ -847,7 +859,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val request = Request.Builder()
                 .url(url)
                 .head()
-                .header("Authorization", authHeader)
+                .apply {
+                    if (url.startsWith("https://", ignoreCase = true)) {
+                        header("Authorization", authHeader)
+                    }
+                }
                 .build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
