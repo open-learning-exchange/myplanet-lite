@@ -26,6 +26,7 @@ interface AuthService {
     suspend fun login(usernameOrEmail: String, password: String): AuthResult
     suspend fun logout()
     suspend fun getStoredToken(): String?
+    suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult
 }
 class NetworkAuthService(
     private val api: AuthApi,
@@ -75,6 +76,35 @@ class NetworkAuthService(
             AuthResult.Error(null, "Error inesperado: ${e.localizedMessage ?: e.message}")
         }
     }
+    override suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult {
+        return try {
+            val url = if (baseUrl.endsWith("/")) "${baseUrl}db/_session" else "$baseUrl/db/_session"
+            val response = api.authenticate(url, credentials)
+            if (response.isSuccessful) {
+                val body = response.body()
+                if (body?.ok == true) {
+                    val sessionCookie = response.headers()["Set-Cookie"]
+                    if (!sessionCookie.isNullOrBlank()) {
+                        tokenStorage.saveToken(sessionCookie)
+                    } else {
+                        tokenStorage.clearToken()
+                    }
+                    AuthResult.Success(body.copy(sessionCookie = sessionCookie))
+                } else {
+                    AuthResult.Error(response.code(), "Respuesta inválida")
+                }
+            } else {
+                AuthResult.Error(response.code(), "Error ${response.code()}")
+            }
+        } catch (http: HttpException) {
+            AuthResult.Failure.NetworkError(http)
+        } catch (io: IOException) {
+            AuthResult.Error(null, "Error de red")
+        } catch (e: Exception) {
+            AuthResult.Error(null, "Error")
+        }
+    }
+
     override suspend fun logout() {
         tokenStorage.clearToken()
     }
