@@ -136,7 +136,7 @@ class SecurePreferencesProviderTest {
     }
 
     @Test
-    fun `migrateLegacyPreferences does nothing when legacy prefs are empty`() {
+    fun `migrateLegacyPreferences deletes legacy prefs when they are empty`() {
         runBlocking {
             val mockLegacyPrefs = mock(SharedPreferences::class.java)
             val mockEncryptedPrefs = mock(SharedPreferences::class.java)
@@ -158,7 +158,7 @@ class SecurePreferencesProviderTest {
 
             verify(mockEncryptedPrefs, never()).edit()
             verify(mockLegacyPrefs, never()).edit()
-            verify(mockContext, never()).deleteSharedPreferences(any())
+            verify(mockContext).deleteSharedPreferences("server_preferences")
         }
     }
 }
