@@ -7,7 +7,7 @@
     <string name="login_password_label">Senha</string>
     <string name="login_action">Entrar</string>
     <string name="login_username_error">Digite seu nome de usuário</string>
-    <string name="login_password_error">A senha deve ter pelo menos 4 caracteres</string>
+    <string name="login_password_error">Digite sua senha</string>
     <string name="login_invalid_credentials">Nome de usuário ou senha incorretos</string>
     <string name="login_generic_error">Não foi possível entrar. Tente novamente.</string>
     <string name="logo">Logotipo</string>
@@ -68,7 +68,7 @@
     <string name="signup_email_label">E-mail</string>
     <string name="signup_email_error_invalid">Digite um endereço de e-mail válido</string>
     <string name="signup_password_error_mismatch">As senhas devem coincidir</string>
-    <string name="signup_password_error_length">A senha deve ter pelo menos 6 caracteres</string>
+    <string name="signup_password_error_length">Digite uma senha</string>
     <string name="signup_username_error_invalid">Digite um nome de usuário que comece com uma letra e use apenas letras e números</string>
     <string name="signup_first_name_error_required">Digite seu nome</string>
     <string name="signup_last_name_error_required">Digite seu sobrenome</string>
@@ -137,7 +137,7 @@
     <string name="signup_step_contact_title">Como podemos falar com você?</string>
     <string name="signup_step_contact_subtitle">Informe seu e-mail e número de celular.</string>
     <string name="signup_step_password_title">Crie uma senha</string>
-    <string name="signup_step_password_subtitle">Use pelo menos seis letras ou números.</string>
+    <string name="signup_step_password_subtitle">Use pelo menos uma letra ou número.</string>
     <string name="signup_step_language_title">Idioma e nível</string>
     <string name="signup_step_language_subtitle">Escolha o idioma e o nível de sua preferência.</string>
     <string name="signup_step_license_title">Aceite a licença</string>

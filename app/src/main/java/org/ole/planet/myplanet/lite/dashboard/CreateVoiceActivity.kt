@@ -59,6 +59,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.json.JSONObject
@@ -1019,9 +1021,12 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         val base = baseUrl ?: return
         val loaded = coroutineScope {
+            val semaphore = Semaphore(10)
             editInitialImagePaths.map { path ->
                 async(Dispatchers.IO) {
-                    runCatching { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { generateImageFileName() }, { generatePendingImageId(it) }) }.getOrNull()
+                    semaphore.withPermit {
+                        runCatching { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { generateImageFileName() }, { generatePendingImageId(it) }) }.getOrNull()
+                    }
                 }
             }.awaitAll().filterNotNull()
         }

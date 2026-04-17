@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.lite.survey
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import java.io.Closeable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -15,10 +16,13 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
-class DashboardLocalSurveyRepository(private val context: Context) {
-    private val offlineStore by lazy { DashboardOfflineSurveyStore(context.applicationContext) }
-    private val outboxStore by lazy { DashboardSurveyOutboxStore(context.applicationContext) }
-    private val submissionsRepo by lazy { DashboardSurveySubmissionsRepository() }
+class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
+    private val offlineStoreDelegate = lazy { DashboardOfflineSurveyStore(context.applicationContext) }
+    private val outboxStoreDelegate = lazy { DashboardSurveyOutboxStore(context.applicationContext) }
+    private val submissionsRepoDelegate = lazy { DashboardSurveySubmissionsRepository() }
+    private val offlineStore get() = offlineStoreDelegate.value
+    private val outboxStore get() = outboxStoreDelegate.value
+    private val submissionsRepo get() = submissionsRepoDelegate.value
 
     suspend fun getSavedSurveyIds(): Set<String> = offlineStore.getSavedSurveyIds()
 
@@ -70,5 +74,14 @@ class DashboardLocalSurveyRepository(private val context: Context) {
         val network = manager.activeNetwork ?: return false
         val capabilities = manager.getNetworkCapabilities(network) ?: return false
         return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+    }
+
+    override fun close() {
+        if (offlineStoreDelegate.isInitialized()) {
+            offlineStore.close()
+        }
+        if (outboxStoreDelegate.isInitialized()) {
+            outboxStore.close()
+        }
     }
 }
