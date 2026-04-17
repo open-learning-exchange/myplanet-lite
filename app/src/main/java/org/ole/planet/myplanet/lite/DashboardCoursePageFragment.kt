@@ -44,6 +44,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyD
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.AuthUtils
 
 class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses_page) {
 
@@ -759,7 +760,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val request = Request.Builder()
                 .url(url)
                 .head()
-                .header("Authorization", Credentials.basic(creds.username, creds.password))
+                .apply {
+                    if (AuthUtils.isSecureAndTrustedUrl(url, base)) {
+                        header("Authorization", Credentials.basic(creds.username, creds.password))
+                    }
+                }
                 .build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
@@ -792,7 +797,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             target.parentFile?.mkdirs()
             val request = Request.Builder()
                 .url(url)
-                .header("Authorization", authHeader)
+                .apply {
+                    if (AuthUtils.isSecureAndTrustedUrl(url, base)) {
+                        header("Authorization", authHeader)
+                    }
+                }
                 .build()
             val success = runCatching {
                 httpClient.newCall(request).execute().use { response ->
@@ -816,7 +825,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             target.parentFile?.mkdirs()
             val request = Request.Builder()
                 .url(resolvedUrl)
-                .header("Authorization", authHeader)
+                .apply {
+                    if (AuthUtils.isSecureAndTrustedUrl(resolvedUrl, base)) {
+                        header("Authorization", authHeader)
+                    }
+                }
                 .build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
@@ -847,7 +860,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val request = Request.Builder()
                 .url(url)
                 .head()
-                .header("Authorization", authHeader)
+                .apply {
+                    if (AuthUtils.isSecureAndTrustedUrl(url, base)) {
+                        header("Authorization", authHeader)
+                    }
+                }
                 .build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
