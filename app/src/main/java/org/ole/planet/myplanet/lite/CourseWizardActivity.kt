@@ -10,6 +10,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
@@ -855,56 +856,7 @@ class CourseWizardActivity : BaseActivity() {
     }
 
     private fun resolveOfflineMarkdownImages(markdown: String): String {
-        val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return markdown
-        var resolved = markdown
-        val markdownPattern = Regex("""!\[([^]]*)]\(([^)\s]+)(?:\s+"[^"]*")?\)""")
-        resolved = markdownPattern.replace(resolved) { match ->
-            val alt = match.groupValues[1]
-            val source = normalizeMarkdownImageSource(match.groupValues[2])
-            val local = OfflineCourseStorage.localMarkdownImageUri(this, safeCourseId, source)
-            val selected = local ?: resolveMarkdownSourceUrl(source) ?: source
-            "![$alt]($selected)"
-        }
-        val htmlPattern = Regex("""<img\b[^>]*>""", RegexOption.IGNORE_CASE)
-        val srcAttributePattern = Regex("""\bsrc\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
-        val altAttributePattern = Regex("""\balt\s*=\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE)
-        resolved = htmlPattern.replace(resolved) { match ->
-            val imageTag = match.value
-            val source = normalizeMarkdownImageSource(
-                srcAttributePattern.find(imageTag)?.groupValues?.get(1).orEmpty()
-            )
-            if (source.isBlank()) {
-                return@replace imageTag
-            }
-            val alt = altAttributePattern.find(imageTag)?.groupValues?.get(1).orEmpty()
-            val local = OfflineCourseStorage.localMarkdownImageUri(this, safeCourseId, source)
-            val selected = local ?: resolveMarkdownSourceUrl(source) ?: source
-            "![$alt]($selected)"
-        }
-        return resolved
-    }
-
-    private fun resolveMarkdownSourceUrl(source: String): String? {
-        val trimmed = source.trim()
-        if (trimmed.isBlank()) return null
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
-        if (trimmed.startsWith("file://")) return trimmed
-        val normalizedBase = baseUrl?.trim()?.trimEnd('/').orEmpty()
-        if (normalizedBase.isBlank()) return null
-        val normalizedPath = trimmed.trimStart('/')
-        val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
-        return "$normalizedBase/$finalPath"
-    }
-
-    private fun normalizeMarkdownImageSource(rawSource: String): String {
-        var value = rawSource.trim()
-        if (value.startsWith("<") && value.endsWith(">")) {
-            value = value.removePrefix("<").removeSuffix(">")
-        }
-        if (value.contains(" ")) {
-            value = value.substringBefore(" ")
-        }
-        return value.trim()
+        return MarkdownUtils.resolveOfflineMarkdownImages(this, markdown, courseId, baseUrl)
     }
 
     data class StepDisplay(

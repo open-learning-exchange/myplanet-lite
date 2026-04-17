@@ -1150,7 +1150,7 @@ class MyPlanetLite : BaseActivity() {
     }
 
     companion object {
-        private const val MIN_PASSWORD_LENGTH = 4
+        private const val MIN_PASSWORD_LENGTH = 1
         const val SECURE_PREFS_NAME = "secure_server_prefs"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"

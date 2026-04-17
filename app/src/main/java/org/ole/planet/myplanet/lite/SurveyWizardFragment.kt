@@ -1145,6 +1145,38 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         return container to collector
     }
 
+    private fun createDropdownLayout(context: android.content.Context, hintText: String): Pair<TextInputLayout, AutoCompleteTextView> {
+        val layout = TextInputLayout(context).apply {
+            hint = hintText
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+        val input = AutoCompleteTextView(context).apply {
+            inputType = InputType.TYPE_NULL
+            keyListener = null
+            setOnClickListener { showDropDown() }
+            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
+        }
+        layout.addView(input)
+        return layout to input
+    }
+
+    private fun levelArrayForLanguage(languageLabel: String?): Int {
+        val normalized = languageLabel?.trim()?.lowercase(Locale.ROOT)
+        return when (normalized) {
+            getString(R.string.language_name_spanish).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_es
+            getString(R.string.language_name_french).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_fr
+            getString(R.string.language_name_portuguese).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_pt
+            getString(R.string.language_name_arabic).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_ar
+            getString(R.string.language_name_somali).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_so
+            getString(R.string.language_name_nepali).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_ne
+            getString(R.string.language_name_hindi).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_hi
+            else -> R.array.signup_level_options_language_en
+        }
+    }
+
     private fun renderLanguageLevelStep(): Pair<View, () -> Boolean> {
         val context = requireContext()
         val container = LinearLayout(context).apply {
@@ -1155,53 +1187,19 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             )
         }
 
-        val languageLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_language_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val languageInput = AutoCompleteTextView(context).apply {
-            inputType = InputType.TYPE_NULL
-            keyListener = null
-            setOnClickListener { showDropDown() }
-            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
-        }
+        val (languageLayout, languageInput) = createDropdownLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_language_label)
+        )
+        val (levelLayout, levelInput) = createDropdownLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_level_label)
+        )
+
         val languages = resources.getStringArray(R.array.signup_language_options).toList()
         val languageAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, languages)
         languageInput.setAdapter(languageAdapter)
         respondent.language?.let { languageInput.setText(it, false) }
-        languageLayout.addView(languageInput)
-
-        val levelLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_level_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val levelInput = AutoCompleteTextView(context).apply {
-            inputType = InputType.TYPE_NULL
-            keyListener = null
-            setOnClickListener { showDropDown() }
-            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
-        }
-        levelLayout.addView(levelInput)
-
-        fun levelArrayForLanguage(languageLabel: String?): Int {
-            val normalized = languageLabel?.trim()?.lowercase(Locale.ROOT)
-            return when (normalized) {
-                getString(R.string.language_name_spanish).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_es
-                getString(R.string.language_name_french).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_fr
-                getString(R.string.language_name_portuguese).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_pt
-                getString(R.string.language_name_arabic).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_ar
-                getString(R.string.language_name_somali).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_so
-                getString(R.string.language_name_nepali).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_ne
-                getString(R.string.language_name_hindi).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_hi
-                else -> R.array.signup_level_options_language_en
-            }
-        }
 
         var currentLevelOptions: List<String> = emptyList()
 

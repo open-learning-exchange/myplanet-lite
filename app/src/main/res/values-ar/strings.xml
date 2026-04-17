@@ -7,7 +7,7 @@
     <string name="login_password_label">كلمة المرور</string>
     <string name="login_action">تسجيل الدخول</string>
     <string name="login_username_error">أدخل اسم المستخدم الخاص بك</string>
-    <string name="login_password_error">يجب أن تتكون كلمة المرور من 4 أحرف على الأقل</string>
+    <string name="login_password_error">أدخل كلمة المرور الخاصة بك</string>
     <string name="login_invalid_credentials">اسم المستخدم أو كلمة المرور غير صحيح</string>
     <string name="login_generic_error">تعذّر تسجيل الدخول. حاول مرة أخرى.</string>
     <string name="logo">الشعار</string>
@@ -68,7 +68,7 @@
     <string name="signup_email_label">البريد الإلكتروني</string>
     <string name="signup_email_error_invalid">أدخل بريدًا إلكترونيًا صالحًا</string>
     <string name="signup_password_error_mismatch">يجب أن تتطابق كلمات المرور</string>
-    <string name="signup_password_error_length">يجب أن تتكون كلمة المرور من 6 أحرف على الأقل</string>
+    <string name="signup_password_error_length">أدخل كلمة مرور</string>
     <string name="signup_username_error_invalid">أدخل اسم مستخدم يبدأ بحرف ويستخدم الأحرف والأرقام فقط</string>
     <string name="signup_first_name_error_required">أدخل اسمك الأول</string>
     <string name="signup_last_name_error_required">أدخل اسم عائلتك</string>
@@ -137,7 +137,7 @@
     <string name="signup_step_contact_title">كيف نتواصل معك؟</string>
     <string name="signup_step_contact_subtitle">قدّم بريدك الإلكتروني ورقم جوالك.</string>
     <string name="signup_step_password_title">أنشئ كلمة مرور</string>
-    <string name="signup_step_password_subtitle">استخدم ستة أحرف أو أرقام على الأقل.</string>
+    <string name="signup_step_password_subtitle">استخدم حرفًا واحدًا أو رقمًا واحدًا على الأقل.</string>
     <string name="signup_step_language_title">اللغة والمستوى</string>
     <string name="signup_step_language_subtitle">اختر اللغة والمستوى الذي تفضله.</string>
     <string name="signup_step_license_title">اقبل الترخيص</string>
