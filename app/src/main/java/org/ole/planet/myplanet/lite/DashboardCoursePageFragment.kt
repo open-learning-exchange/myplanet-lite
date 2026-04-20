@@ -752,15 +752,13 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         var total = 0L
         resources.forEach { resource ->
             val url = buildServerResourceUrl(base, resource) ?: return@forEach
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
                 .head()
-                .apply {
-                    if (url.startsWith("https://", ignoreCase = true)) {
-                        header("Authorization", Credentials.basic(creds.username, creds.password))
-                    }
-                }
-                .build()
+            if (url.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", Credentials.basic(creds.username, creds.password))
+            }
+            val request = requestBuilder.build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
@@ -790,14 +788,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val url = buildServerResourceUrl(base, resource) ?: return false
             val target = OfflineCourseStorage.resourceFile(requireContext(), course.id, resource.id, resource.filename)
             target.parentFile?.mkdirs()
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
-                .apply {
-                    if (url.startsWith("https://", ignoreCase = true)) {
-                        header("Authorization", authHeader)
-                    }
-                }
-                .build()
+            if (url.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.build()
             val success = runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@use false
@@ -818,14 +814,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val resolvedUrl = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
             val target = OfflineCourseStorage.markdownImageFile(requireContext(), course.id, source)
             target.parentFile?.mkdirs()
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(resolvedUrl)
-                .apply {
-                    if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
-                        header("Authorization", authHeader)
-                    }
-                }
-                .build()
+            if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@use false
@@ -852,15 +846,13 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         val authHeader = Credentials.basic(creds.username, creds.password)
         sources.forEach { source ->
             val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
                 .head()
-                .apply {
-                    if (url.startsWith("https://", ignoreCase = true)) {
-                        header("Authorization", authHeader)
-                    }
-                }
-                .build()
+            if (url.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
