@@ -444,4 +444,12 @@ class NetworkAuthServiceTest {
         val error = result as AuthResult.Error
         assertEquals(401, error.code)
     }
+
+    @Test
+    fun `parseErrorMessage returns raw body on JSONException`() {
+        val method = NetworkAuthService::class.java.getDeclaredMethod("parseErrorMessage", String::class.java)
+        method.isAccessible = true
+        val result = method.invoke(service, "invalid json {") as String
+        assertEquals("invalid json {", result)
+    }
 }
