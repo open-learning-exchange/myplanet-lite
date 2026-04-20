@@ -106,7 +106,7 @@ class FullscreenPlayerActivity : AppCompatActivity() {
     private fun resolveAuthHeader(): String? {
         val credentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
         val baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
-        return if (credentials != null && !baseUrl.isNullOrBlank()) {
+        return if (credentials != null && baseUrl != null && baseUrl.startsWith("https://", ignoreCase = true)) {
             Credentials.basic(credentials.username, credentials.password)
         } else {
             null
