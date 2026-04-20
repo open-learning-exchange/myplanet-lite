@@ -513,7 +513,6 @@ class MyPlanetLite : BaseActivity() {
         if (::rememberMeCheckBox.isInitialized) {
             rememberMeCheckBox.isChecked = remembered != null
         }
-        suppressRememberListener = false
         if (remembered != null) {
             loginUsernameInput.setText(remembered.username)
             loginPasswordInput.setText(remembered.password)
@@ -521,6 +520,7 @@ class MyPlanetLite : BaseActivity() {
             loginUsernameInput.text?.clear()
             loginPasswordInput.text?.clear()
         }
+        suppressRememberListener = false
         shouldAutoLoginOnLaunch = autoLoginEnabled && remembered?.let { creds ->
             creds.username.isNotBlank() && creds.password.length >= MIN_PASSWORD_LENGTH
         } ?: false
@@ -1157,9 +1157,9 @@ class MyPlanetLite : BaseActivity() {
         private const val KEY_COUNTRY_CODE = "country_code"
         private const val KEY_SERVER_DISPLAY_NAME = "server_display_name"
         private const val KEY_CUSTOM_SERVERS = "custom_servers"
-        private const val KEY_REMEMBER_CREDENTIALS = "remember_credentials"
-        private const val KEY_REMEMBERED_USERNAME = "remembered_username"
-        private const val KEY_REMEMBERED_PASSWORD = "remembered_password"
+        const val KEY_REMEMBER_CREDENTIALS = "remember_credentials"
+        const val KEY_REMEMBERED_USERNAME = "remembered_username"
+        const val KEY_REMEMBERED_PASSWORD = "remembered_password"
         private const val KEY_SURVEY_TRANSLATIONS_ENABLED = "survey_translations_enabled"
         private const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
