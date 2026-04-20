@@ -26,6 +26,7 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.content.res.AppCompatResources
@@ -152,10 +153,14 @@ class MyPlanetLite : BaseActivity() {
 
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                ContextCompat.getColor(this, R.color.white),
+                ContextCompat.getColor(this, R.color.white)
+            )
+        )
         setContentView(R.layout.activity_main)
 
-        setupWindowState()
         initializeState(savedInstanceState)
 
         val logoImageView: ImageView = findViewById(R.id.logoImageView)
@@ -168,12 +173,6 @@ class MyPlanetLite : BaseActivity() {
         World.init(applicationContext)
 
         configureLogin()
-    }
-
-    private fun setupWindowState() {
-        @Suppress("DEPRECATION")
-        window.statusBarColor = ContextCompat.getColor(this, R.color.white)
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
     }
 
     private fun initializeState(savedInstanceState: Bundle?) {
