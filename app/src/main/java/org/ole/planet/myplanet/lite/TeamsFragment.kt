@@ -386,7 +386,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
 
         val teamId = team.id
         val displayName = resolveTeamName(team)
-        card.tag = teamId
+        card.tag = TeamViewHolder(teamId, bookmarkButton)
         initialsView.text = buildInitials(displayName)
         nameView.text = displayName
         membersView.text = resolveMembersLabel(team, memberCounts)
@@ -586,13 +586,16 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         }
     }
 
+    private data class TeamViewHolder(val teamId: String?, val bookmark: ImageButton?)
+
     private fun updateBookmarkSelection() {
         val selectedId = selectedTeamId
         if (!::myTeamsContainer.isInitialized) return
         for (i in 0 until myTeamsContainer.childCount) {
             val card = myTeamsContainer.getChildAt(i)
-            val bookmark = card.findViewById<ImageButton?>(R.id.teamBookmark)
-            val teamId = card.tag as? String
+            val viewHolder = card.tag as? TeamViewHolder
+            val bookmark = viewHolder?.bookmark
+            val teamId = viewHolder?.teamId
             if (bookmark != null && teamId != null) {
                 bookmark.setImageResource(
                     if (teamId == selectedId) R.drawable.ic_bookmark_selected_24 else R.drawable.ic_bookmark_24
