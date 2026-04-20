@@ -22,6 +22,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import retrofit2.HttpException
 import retrofit2.Response
@@ -344,6 +345,17 @@ class NetworkAuthServiceTest {
         service.logout()
 
         assertEquals(null, tokenStorage.token)
+    }
+
+    @Test
+    fun `logout invokes clearToken on mocked token storage`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val mockTokenStorage = mock<TokenStorage>()
+        val serviceWithMockStorage = NetworkAuthService(mockApi, mockTokenStorage, Dispatchers.Unconfined)
+
+        serviceWithMockStorage.logout()
+
+        verify(mockTokenStorage).clearToken()
     }
 
     @Test
