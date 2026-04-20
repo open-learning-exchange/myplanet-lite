@@ -633,7 +633,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             lastUpdateTime = System.currentTimeMillis(),
             source = serverCode,
             parentCode = parentCode,
-            deviceName = resolveDeviceName(),
+            deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName(),
             customDeviceName = resolveCustomDeviceName(),
         )
     }
@@ -833,21 +833,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         val trimmed = rawId?.trim().orEmpty()
         if (trimmed.isBlank()) return null
         return trimmed.substringBefore("/").trim().takeIf { it.isNotBlank() }
-    }
-
-    private fun resolveDeviceName(): String {
-        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
-        val model = Build.MODEL?.trim().orEmpty()
-        return when {
-            manufacturer.isEmpty() && model.isEmpty() -> {
-                val device = Build.DEVICE?.trim().orEmpty()
-                if (device.isNotEmpty()) device else DEFAULT_DEVICE_NAME
-            }
-            manufacturer.isEmpty() -> model
-            model.isEmpty() -> manufacturer
-            model.startsWith(manufacturer, ignoreCase = true) -> model
-            else -> "$manufacturer $model"
-        }
     }
 
     private fun resolveCustomDeviceName(): String? {
@@ -1607,7 +1592,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         private const val BIRTH_DATE_PICKER_TAG = "survey_birth_date_picker"
         private const val DEFAULT_EXAM_PASSING_PERCENTAGE = 100
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
-        private const val DEFAULT_DEVICE_NAME = "Android Device"
 
         fun newInstance(
             document: SurveyDocument,

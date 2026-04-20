@@ -1406,7 +1406,7 @@ class CreateVoiceActivity : BaseActivity() {
             resideOn = resolvedResideOn,
             sourcePlanet = resolvedParent,
             androidId = androidId,
-            deviceName = resolveDeviceName(),
+            deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName(),
             customDeviceName = customDeviceName
         )
     }
@@ -1576,21 +1576,6 @@ class CreateVoiceActivity : BaseActivity() {
         return result.takeIf { it.isNotEmpty() }
     }
 
-    private fun resolveDeviceName(): String {
-        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
-        val model = Build.MODEL?.trim().orEmpty()
-        return when {
-            manufacturer.isEmpty() && model.isEmpty() -> {
-                val device = Build.DEVICE?.trim().orEmpty()
-                if (device.isNotEmpty()) device else DEFAULT_DEVICE_NAME
-            }
-            manufacturer.isEmpty() -> model
-            model.isEmpty() -> manufacturer
-            model.startsWith(manufacturer, ignoreCase = true) -> model
-            else -> "$manufacturer $model"
-        }
-    }
-
     companion object {
         private const val PREVIEW_DEBOUNCE_MS = 150L
         private const val MAX_HEADING_LEVEL = 6
@@ -1602,7 +1587,6 @@ class CreateVoiceActivity : BaseActivity() {
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
         private const val KEY_SERVER_CODE = "server_code"
         private const val PRIVATE_FOR_COMMUNITY = "community"
-        private const val DEFAULT_DEVICE_NAME = "Android"
 
         const val EXTRA_IS_EDIT_MODE = "extra_is_edit_mode"
         const val EXTRA_EDIT_POST_ID = "extra_edit_post_id"
