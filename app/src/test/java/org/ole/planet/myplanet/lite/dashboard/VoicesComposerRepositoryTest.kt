@@ -15,7 +15,6 @@ import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
-
 class VoicesComposerRepositoryTest {
 
     private lateinit var mockWebServer: MockWebServer

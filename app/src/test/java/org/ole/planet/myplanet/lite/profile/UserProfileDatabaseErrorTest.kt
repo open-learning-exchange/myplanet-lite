@@ -1,20 +1,17 @@
 package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
+import android.database.sqlite.SQLiteException
 import androidx.test.core.app.ApplicationProvider
 import org.junit.After
+import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.doThrow
+import org.mockito.Mockito.spy
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.junit.Assert.assertThrows
-import android.database.sqlite.SQLiteException
-import org.mockito.Mockito.mock
-import org.mockito.Mockito.spy
-import org.mockito.Mockito.doThrow
-import android.database.sqlite.SQLiteDatabase
-import org.mockito.ArgumentMatchers.any
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33])

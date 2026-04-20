@@ -6,12 +6,10 @@
 
 package org.ole.planet.myplanet.lite
 
-import androidx.appcompat.app.AppCompatActivity
-import android.net.ConnectivityManager
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.graphics.BitmapFactory
+import android.net.ConnectivityManager
 import android.net.Network
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -24,6 +22,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
@@ -47,8 +46,8 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
-import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class DashboardActivity : BaseActivity() {

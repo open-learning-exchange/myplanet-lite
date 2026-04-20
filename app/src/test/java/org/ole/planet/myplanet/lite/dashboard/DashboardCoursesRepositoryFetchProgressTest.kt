@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.lite.dashboard
 
+import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -9,7 +10,6 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import kotlin.system.measureTimeMillis
 
 class DashboardCoursesRepositoryFetchProgressTest {
 

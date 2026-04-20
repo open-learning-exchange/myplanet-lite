@@ -37,8 +37,8 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.JoinReque
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.JoinTeamRequest
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.MembershipDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamDocument
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 
 class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
