@@ -6,20 +6,20 @@ import android.content.SharedPreferences
 import android.content.pm.ApplicationInfo
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.eq
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.runBlocking
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.mockConstruction
 import org.mockito.Mockito.mockStatic
-import org.mockito.Mockito.verify
 import org.mockito.Mockito.never
+import org.mockito.Mockito.verify
 
 class SecurePreferencesProviderTest {
 

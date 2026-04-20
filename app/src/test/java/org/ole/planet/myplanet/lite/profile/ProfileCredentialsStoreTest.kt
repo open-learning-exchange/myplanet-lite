@@ -8,10 +8,10 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.whenever
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class ProfileCredentialsStoreTest {
     private lateinit var mockContext: Context

@@ -9,7 +9,6 @@ package org.ole.planet.myplanet.lite.dashboard
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
 import java.io.Serializable
 import kotlinx.coroutines.CoroutineDispatcher
