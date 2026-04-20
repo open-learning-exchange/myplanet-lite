@@ -148,7 +148,7 @@ class FullscreenPdfActivity : AppCompatActivity() {
                 val request = Request.Builder()
                     .url(url)
                     .apply {
-                        if (!authHeader.isNullOrBlank()) {
+                        if (!authHeader.isNullOrBlank() && url.startsWith("https://", ignoreCase = true)) {
                             addHeader("Authorization", authHeader)
                         }
                     }
@@ -164,7 +164,7 @@ class FullscreenPdfActivity : AppCompatActivity() {
     private fun resolveAuthHeader(): String? {
         val credentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
         val baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
-        return if (credentials != null && baseUrl != null && baseUrl.startsWith("https://", ignoreCase = true)) {
+        return if (credentials != null && !baseUrl.isNullOrBlank() && baseUrl.startsWith("https://", ignoreCase = true)) {
             Credentials.basic(credentials.username, credentials.password)
         } else {
             null
