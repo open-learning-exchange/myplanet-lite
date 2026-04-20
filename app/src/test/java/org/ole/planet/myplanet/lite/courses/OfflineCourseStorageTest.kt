@@ -1,13 +1,13 @@
 package org.ole.planet.myplanet.lite.courses
 
 import android.content.Context
+import java.io.File
 import org.junit.After
 import org.junit.Assert
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito
 import org.ole.planet.myplanet.lite.OfflineCourseStorage
-import java.io.File
 
 class OfflineCourseStorageTest {
 

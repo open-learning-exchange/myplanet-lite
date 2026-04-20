@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.graphics.Rect
 import android.os.Bundle
 import android.text.InputFilter

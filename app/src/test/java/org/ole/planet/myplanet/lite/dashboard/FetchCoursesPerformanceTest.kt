@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.lite.dashboard
 
+import java.util.regex.Pattern
+import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -10,8 +12,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import kotlin.system.measureTimeMillis
-import java.util.regex.Pattern
 
 class FetchCoursesPerformanceTest {
 

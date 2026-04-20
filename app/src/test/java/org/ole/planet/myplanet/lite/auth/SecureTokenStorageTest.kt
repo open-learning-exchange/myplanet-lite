@@ -12,11 +12,11 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.junit.runner.RunWith
+import org.mockito.Mockito
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.mockito.Mockito
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])

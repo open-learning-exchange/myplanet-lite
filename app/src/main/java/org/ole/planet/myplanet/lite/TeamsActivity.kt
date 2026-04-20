@@ -6,7 +6,6 @@
 
 package org.ole.planet.myplanet.lite
 
-import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.view.View
 import androidx.activity.enableEdgeToEdge

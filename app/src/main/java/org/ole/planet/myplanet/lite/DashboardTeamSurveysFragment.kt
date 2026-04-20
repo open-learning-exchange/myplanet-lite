@@ -31,7 +31,6 @@ import org.ole.planet.myplanet.lite.SurveyWizardActivity
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardOutboxDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository
@@ -40,6 +39,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQ
 import org.ole.planet.myplanet.lite.dashboard.SurveyStatus
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 
 class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_surveys) {
 
