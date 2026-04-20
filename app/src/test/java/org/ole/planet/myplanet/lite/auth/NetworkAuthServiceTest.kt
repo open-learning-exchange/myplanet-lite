@@ -268,4 +268,18 @@ class NetworkAuthServiceTest {
         assertEquals(null, token)
     }
 
+    @Test
+    fun `login successful with null body returns error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        whenever(mockApi.login(any())).thenReturn(Response.success(null))
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(200, error.code)
+        assertEquals("Respuesta inválida del servidor", error.message)
+    }
+
 }
