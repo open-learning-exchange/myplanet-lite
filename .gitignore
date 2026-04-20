@@ -156,3 +156,5 @@ gradle/gradle-daemon-jvm.properties
 
 # Local benchmarking scratch file
 benchmark.kt
+
+app/baseline_time.txt
