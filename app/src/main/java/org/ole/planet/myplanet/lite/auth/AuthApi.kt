@@ -12,4 +12,7 @@ import retrofit2.http.POST
 interface AuthApi {
     @POST("db/_session")
     suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+
+    @POST
+    suspend fun authenticate(@retrofit2.http.Url url: String, @Body credentials: UserCredentials): Response<LoginResponse>
 }

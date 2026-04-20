@@ -6,13 +6,13 @@
 
 package org.ole.planet.myplanet.lite
 
+import androidx.appcompat.app.AppCompatActivity
+import android.net.ConnectivityManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.graphics.BitmapFactory
-import android.net.ConnectivityManager
 import android.net.Network
-import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -24,7 +24,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.SwitchCompat
 import androidx.core.view.GravityCompat
 import androidx.core.view.ViewCompat
@@ -48,10 +47,11 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
-class DashboardActivity : AppCompatActivity() {
+class DashboardActivity : BaseActivity() {
 
     private lateinit var avatarView: ImageView
     private lateinit var drawerAvatar: ImageView
@@ -92,7 +92,7 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        LanguagePreferences.applySavedLocale(this)
+
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
         deepLinkHandled = savedInstanceState?.getBoolean(STATE_DEEP_LINK_HANDLED) ?: false
@@ -345,7 +345,7 @@ class DashboardActivity : AppCompatActivity() {
         })
 
         handleDeepLinkNavigation()
-        val initialConnectivity = isDeviceOnline()
+        val initialConnectivity = NetworkUtils.isDeviceOnline(this)
         applyConnectivityState(isConnected = initialConnectivity, showMessages = intent?.getBooleanExtra(EXTRA_OFFLINE_MODE, false) == true || !initialConnectivity)
         registerConnectivityCallback()
     }
@@ -708,14 +708,7 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 
     private fun registerConnectivityCallback() {
         connectivityManager?.let { manager ->
@@ -723,12 +716,7 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = connectivityManager ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     private fun applyConnectivityState(isConnected: Boolean, showMessages: Boolean = false) {
         if (isConnected) {

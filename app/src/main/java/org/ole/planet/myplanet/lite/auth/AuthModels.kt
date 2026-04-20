@@ -15,3 +15,8 @@ data class LoginResponse(
     val roles: List<String>? = null,
     val sessionCookie: String? = null
 )
+
+data class UserCredentials(
+    val name: String,
+    val password: String
+)
