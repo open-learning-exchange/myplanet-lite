@@ -17,7 +17,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
+import org.ole.planet.myplanet.lite.BaseActivity
 import androidx.core.content.IntentCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
@@ -50,10 +50,11 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 import java.util.Locale
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-class CourseWizardActivity : AppCompatActivity() {
+class CourseWizardActivity : BaseActivity() {
     private val pendingProgressPrefs by lazy {
         val masterKey = MasterKey.Builder(applicationContext)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -147,7 +148,7 @@ class CourseWizardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        applyDeviceOrientationLock()
         WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_course_wizard)
         markwon = Markwon.builder(this)
@@ -390,7 +391,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
         val id = courseId?.takeIf { it.isNotBlank() } ?: return
-        if (!isDeviceOnline()) {
+        if (!NetworkUtils.isDeviceOnline(this)) {
             enqueuePendingProgress(id, targetStepNumber)
             return
         }
@@ -440,7 +441,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
         val id = courseId?.takeIf { it.isNotBlank() } ?: return
-        if (!isDeviceOnline()) return
+        if (!NetworkUtils.isDeviceOnline(this)) return
         val pendingSteps = getPendingProgress(id)
         if (pendingSteps.isEmpty()) return
 
@@ -495,12 +496,7 @@ class CourseWizardActivity : AppCompatActivity() {
         localSurveyRepository.flushPendingSurveyOutbox("exam")
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = getSystemService(android.net.ConnectivityManager::class.java) ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     private fun enqueuePendingProgress(courseId: String, stepNumber: Int) {
         val updated = (getPendingProgress(courseId) + stepNumber).distinct().sorted()
