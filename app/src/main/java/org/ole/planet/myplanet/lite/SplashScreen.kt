@@ -10,8 +10,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ActivityInfo
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
@@ -21,7 +19,6 @@ import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
@@ -36,12 +33,13 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
-class SplashScreen : AppCompatActivity() {
+class SplashScreen : BaseActivity() {
 
     private val connectivityClient: OkHttpClient by lazy { OkHttpClient.Builder().build() }
-    private val connectivityManager by lazy { getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager }
+
     private val userProfileDatabase: UserProfileDatabase by lazy {
         UserProfileDatabase.getInstance(applicationContext)
     }
@@ -55,11 +53,7 @@ class SplashScreen : AppCompatActivity() {
         cacheDeviceIdentifiers()
         enableEdgeToEdge()
         setContentView(R.layout.activity_splash_screen)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        setupEdgeToEdgePadding(findViewById(R.id.main))
         val logo = findViewById<ImageView>(R.id.logoImageView)
         val startOffset = -resources.displayMetrics.heightPixels * 0.5f
         logo.translationY = startOffset
@@ -146,7 +140,7 @@ class SplashScreen : AppCompatActivity() {
         val cachedUsername = withContext(Dispatchers.IO) {
             userProfileDatabase.getProfile()?.username
         }?.takeIf { it.isNotBlank() } ?: return DashboardLaunchMode.NONE
-        if (!isDeviceOnline()) {
+        if (!NetworkUtils.isDeviceOnline(this)) {
             return DashboardLaunchMode.OFFLINE
         }
         val refreshed = userProfileSync.refreshProfile(baseUrl, cachedUsername, storedToken)
@@ -157,21 +151,9 @@ class SplashScreen : AppCompatActivity() {
         return DashboardLaunchMode.NONE
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = connectivityManager ?: return false
-        val activeNetwork = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(activeNetwork) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
+
 
     @SuppressLint("HardwareIds")
     private fun cacheDeviceIdentifiers() {
