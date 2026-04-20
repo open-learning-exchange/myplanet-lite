@@ -364,4 +364,84 @@ class NetworkAuthServiceTest {
         assertEquals(null, token)
     }
 
+
+
+    @Test
+    fun `authenticate io exception returns error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val ioException = java.io.IOException("Custom IO error")
+        whenever(mockApi.authenticate(any(), any())).thenAnswer { throw ioException }
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val credentials = UserCredentials("user", "pass")
+        val result = serviceWithMockApi.authenticate("http://base", credentials)
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error de red"))
+    }
+
+    @Test
+    fun `authenticate socket timeout exception returns error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val timeoutException = java.net.SocketTimeoutException("Timeout")
+        whenever(mockApi.authenticate(any(), any())).thenAnswer { throw timeoutException }
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val credentials = UserCredentials("user", "pass")
+        val result = serviceWithMockApi.authenticate("http://base", credentials)
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error de red"))
+    }
+
+    @Test
+    fun `authenticate http exception returns network error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val errorResponse = Response.error<LoginResponse>(500, "".toResponseBody("application/json".toMediaType()))
+        val httpException = HttpException(errorResponse)
+        whenever(mockApi.authenticate(any(), any())).thenThrow(httpException)
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val credentials = UserCredentials("user", "pass")
+        val result = serviceWithMockApi.authenticate("http://base", credentials)
+
+        assertTrue(result is AuthResult.Failure.NetworkError)
+        val error = result as AuthResult.Failure.NetworkError
+        assertEquals(httpException, error.http)
+    }
+
+    @Test
+    fun `authenticate generic exception returns error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val unexpectedException = RuntimeException("Something bad happened")
+        whenever(mockApi.authenticate(any(), any())).thenThrow(unexpectedException)
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val credentials = UserCredentials("user", "pass")
+        val result = serviceWithMockApi.authenticate("http://base", credentials)
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error"))
+    }
+
+    @Test
+    fun `authenticate unsuccessful response returns error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val errorResponse = Response.error<LoginResponse>(401, "".toResponseBody("application/json".toMediaType()))
+        whenever(mockApi.authenticate(any(), any())).thenReturn(errorResponse)
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val credentials = UserCredentials("user", "pass")
+        val result = serviceWithMockApi.authenticate("http://base", credentials)
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(401, error.code)
+    }
 }
