@@ -172,6 +172,7 @@ class SignupActivity : BaseActivity() {
         private const val BIRTH_DATE_PICKER_TAG = "signup_birth_date_picker"
         const val EXTRA_AUTO_LOGIN = "org.ole.planet.myplanet.lite.signup.AUTO_LOGIN"
         const val EXTRA_USERNAME = "org.ole.planet.myplanet.lite.signup.USERNAME"
+        const val EXTRA_PASSWORD = "org.ole.planet.myplanet.lite.signup.PASSWORD"
         const val EXTRA_SERVER_BASE_URL = "org.ole.planet.myplanet.lite.signup.SERVER_BASE_URL"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
