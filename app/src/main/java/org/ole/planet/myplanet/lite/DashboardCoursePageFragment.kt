@@ -22,7 +22,8 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import kotlin.random.Random
+import java.security.SecureRandom
+import kotlin.random.asKotlinRandom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -951,7 +952,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 exam = step.exam
             )
         }
-        val random = Random(document.id.orEmpty().hashCode())
+        val random = SecureRandom(document.id.orEmpty().toByteArray()).asKotlinRandom()
         val completedSteps = if (steps.isNotEmpty() && stepNum != null) {
             stepNum.coerceAtLeast(0).coerceAtMost(steps.size)
         } else {
