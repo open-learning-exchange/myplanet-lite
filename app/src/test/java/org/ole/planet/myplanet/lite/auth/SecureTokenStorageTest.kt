@@ -16,6 +16,7 @@ import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.mockito.Mockito
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [28])
@@ -23,6 +24,7 @@ class SecureTokenStorageTest {
     private lateinit var context: Context
     private lateinit var secureTokenStorage: SecureTokenStorage
     private lateinit var fakeSharedPreferences: SharedPreferences
+
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
@@ -32,16 +34,19 @@ class SecureTokenStorageTest {
         SecurePreferencesProvider.injectedPreferences = fakeSharedPreferences
         secureTokenStorage = SecureTokenStorage(context, Dispatchers.Unconfined)
     }
+
     @After
     fun tearDown() {
         fakeSharedPreferences.edit().clear().apply()
         SecurePreferencesProvider.resetForTesting()
     }
+
     @Test
     fun `getToken returns null initially`() = runTest {
         val token = secureTokenStorage.getToken()
         assertNull(token)
     }
+
     @Test
     fun `saveToken stores token successfully`() = runTest {
         val testToken = "test_token_123"
@@ -50,6 +55,7 @@ class SecureTokenStorageTest {
         assertEquals(testToken, retrievedToken)
         assertEquals(testToken, fakeSharedPreferences.getString("planet_token", null))
     }
+
     @Test
     fun `clearToken removes token`() = runTest {
         val testToken = "test_token_123"
@@ -80,13 +86,6 @@ class SecureTokenStorageTest {
     }
 
     @Test
-    fun `verify EncryptedSharedPreferences parameters`() = runTest {
-        // Trigger initialization
-        secureTokenStorage.getToken()
-        assertNull(secureTokenStorage.getToken())
-    }
-
-    @Test
     fun `verify dispatcher is used`() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         val storage = SecureTokenStorage(context, testDispatcher)
@@ -99,7 +98,38 @@ class SecureTokenStorageTest {
 
         storage.clearToken()
         testDispatcher.scheduler.advanceUntilIdle()
+    }
 
-        // Test ensures functions don't hang and the custom dispatcher executes.
+    @Test
+    fun `verify EncryptedSharedPreferences creates storage successfully via injected preferences`() = runTest {
+        // Mock SharedPreferences
+        val mockSharedPreferences = Mockito.mock(SharedPreferences::class.java)
+        val mockEditor = Mockito.mock(SharedPreferences.Editor::class.java)
+
+        Mockito.`when`(mockSharedPreferences.edit()).thenReturn(mockEditor)
+        Mockito.`when`(mockEditor.putString(Mockito.anyString(), Mockito.anyString())).thenReturn(mockEditor)
+        Mockito.`when`(mockEditor.remove(Mockito.anyString())).thenReturn(mockEditor)
+
+        // Inject the mocked preferences
+        SecurePreferencesProvider.resetForTesting()
+        SecurePreferencesProvider.injectedPreferences = mockSharedPreferences
+
+        val storage = SecureTokenStorage(context, Dispatchers.Unconfined)
+
+        // This will trigger the lazy evaluation of sharedPreferences which fetches from SecurePreferencesProvider
+        val testToken = "test_token_mock"
+        storage.saveToken(testToken)
+
+        // Verify that the mocked editor was called correctly which indirectly proves
+        // TokenStorage interacted with SharedPreferences
+        Mockito.verify(mockEditor).putString("planet_token", testToken)
+        Mockito.verify(mockEditor).apply()
+
+        storage.getToken()
+        Mockito.verify(mockSharedPreferences).getString("planet_token", null)
+
+        storage.clearToken()
+        Mockito.verify(mockEditor).remove("planet_token")
+        Mockito.verify(mockEditor, Mockito.times(2)).apply()
     }
 }
