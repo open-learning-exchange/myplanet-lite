@@ -29,7 +29,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.SystemBarStyle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
@@ -75,7 +74,7 @@ import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
-class MyPlanetLite : AppCompatActivity() {
+class MyPlanetLite : BaseActivity() {
 
     private var originalLogoWidth = 0
     private var originalLogoHeight = 0
@@ -136,7 +135,7 @@ class MyPlanetLite : AppCompatActivity() {
             val autoLogin = data.getBooleanExtra(SignupActivity.EXTRA_AUTO_LOGIN, false)
             if (autoLogin) {
                 val username = data.getStringExtra(SignupActivity.EXTRA_USERNAME).orEmpty()
-                val password = data.getStringExtra(SignupActivity.EXTRA_PASSWORD).orEmpty()
+                val password = org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.consumeTemporarySignUpPassword(this).orEmpty()
                 loginUsernameInput.setText(username)
                 loginPasswordInput.setText(password)
                 suppressRememberListener = true
@@ -151,7 +150,7 @@ class MyPlanetLite : AppCompatActivity() {
     private var deepLinkPostId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        LanguagePreferences.applySavedLocale(this)
+
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
         enableEdgeToEdge(
@@ -315,14 +314,7 @@ class MyPlanetLite : AppCompatActivity() {
         }
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 
     private fun configureLogin() {
         initializeLoginViews()
