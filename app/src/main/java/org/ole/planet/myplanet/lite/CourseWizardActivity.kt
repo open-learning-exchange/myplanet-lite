@@ -747,7 +747,11 @@ class CourseWizardActivity : BaseActivity() {
                 .show()
             return
         }
-        val authHeader = credentials?.let { Credentials.basic(it.username, it.password) }
+        val authHeader = if (baseUrl?.startsWith("https://", ignoreCase = true) == true) {
+            credentials?.let { Credentials.basic(it.username, it.password) }
+        } else {
+            null
+        }
         val playerView: PlayerView = itemView.findViewById(R.id.courseWizardAudioPlayer)
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(buildAudioDataSourceFactory(authHeader)))
@@ -786,7 +790,11 @@ class CourseWizardActivity : BaseActivity() {
         } else {
             0L
         }
-        val authHeader = credentials?.let { Credentials.basic(it.username, it.password) }
+        val authHeader = if (baseUrl?.startsWith("https://", ignoreCase = true) == true) {
+            credentials?.let { Credentials.basic(it.username, it.password) }
+        } else {
+            null
+        }
         val intent = FullscreenPlayerActivity.createIntent(
             context = this,
             mediaUrls = ArrayList(currentPlaylistUrls),
@@ -804,7 +812,11 @@ class CourseWizardActivity : BaseActivity() {
                 .show()
             return
         }
-        val authHeader = credentials?.let { Credentials.basic(it.username, it.password) }
+        val authHeader = if (baseUrl?.startsWith("https://", ignoreCase = true) == true) {
+            credentials?.let { Credentials.basic(it.username, it.password) }
+        } else {
+            null
+        }
         val intent = FullscreenPdfActivity.createIntent(this, url, authHeader)
         startActivity(intent)
     }
