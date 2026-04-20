@@ -756,7 +756,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 .url(url)
                 .head()
                 .apply {
-                    if (AuthUtils.isSecureAndTrustedUrl(url, base)) {
+                    if (url.startsWith("https://", ignoreCase = true)) {
                         header("Authorization", Credentials.basic(creds.username, creds.password))
                     }
                 }
@@ -793,7 +793,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val request = Request.Builder()
                 .url(url)
                 .apply {
-                    if (AuthUtils.isSecureAndTrustedUrl(url, base)) {
+                    if (url.startsWith("https://", ignoreCase = true)) {
                         header("Authorization", authHeader)
                     }
                 }
@@ -821,7 +821,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val request = Request.Builder()
                 .url(resolvedUrl)
                 .apply {
-                    if (AuthUtils.isSecureAndTrustedUrl(resolvedUrl, base)) {
+                    if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
                         header("Authorization", authHeader)
                     }
                 }
@@ -856,7 +856,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 .url(url)
                 .head()
                 .apply {
-                    if (AuthUtils.isSecureAndTrustedUrl(url, base)) {
+                    if (url.startsWith("https://", ignoreCase = true)) {
                         header("Authorization", authHeader)
                     }
                 }
