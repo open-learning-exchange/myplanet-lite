@@ -134,7 +134,7 @@ class MyPlanetLite : BaseActivity() {
             val autoLogin = data.getBooleanExtra(SignupActivity.EXTRA_AUTO_LOGIN, false)
             if (autoLogin) {
                 val username = data.getStringExtra(SignupActivity.EXTRA_USERNAME).orEmpty()
-                val password = data.getStringExtra(SignupActivity.EXTRA_PASSWORD).orEmpty()
+                val password = org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.consumeTemporarySignUpPassword(this).orEmpty()
                 loginUsernameInput.setText(username)
                 loginPasswordInput.setText(password)
                 suppressRememberListener = true
