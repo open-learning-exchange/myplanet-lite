@@ -39,6 +39,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
@@ -1433,7 +1434,7 @@ class CreateVoiceActivity : BaseActivity() {
             if (altText.isBlank()) {
                 replacement
             } else {
-                applyAltTextToMarkdown(replacement, altText)
+                MarkdownUtils.applyAltText(replacement, altText)
             }
         }
         if (matched) {
@@ -1448,23 +1449,6 @@ class CreateVoiceActivity : BaseActivity() {
         }
         builder.append(replacement)
         return builder.toString()
-    }
-
-    private fun applyAltTextToMarkdown(markdown: String, altText: String): String {
-        val trimmedAlt = altText.trim()
-        if (trimmedAlt.isEmpty()) {
-            return markdown
-        }
-        val openBracket = markdown.indexOf('[')
-        val closeBracket = markdown.indexOf(']')
-        if (openBracket == -1 || closeBracket <= openBracket) {
-            return markdown
-        }
-        return buildString {
-            append(markdown.substring(0, openBracket + 1))
-            append(trimmedAlt)
-            append(markdown.substring(closeBracket))
-        }
     }
 
     private suspend fun loadCachedProfile(): UserProfile? {
