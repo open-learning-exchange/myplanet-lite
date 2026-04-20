@@ -22,7 +22,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -59,7 +58,7 @@ import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
-class SignupActivity : AppCompatActivity() {
+class SignupActivity : BaseActivity() {
 
     private data class SignupLanguageOption(
         val languageTag: String,
@@ -172,6 +171,7 @@ class SignupActivity : AppCompatActivity() {
         private const val STATE_STEP_INDEX = "state_step_index"
         private const val BIRTH_DATE_PICKER_TAG = "signup_birth_date_picker"
         const val EXTRA_AUTO_LOGIN = "org.ole.planet.myplanet.lite.signup.AUTO_LOGIN"
+        const val EXTRA_USERNAME = "org.ole.planet.myplanet.lite.signup.USERNAME"
         const val EXTRA_SERVER_BASE_URL = "org.ole.planet.myplanet.lite.signup.SERVER_BASE_URL"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
@@ -570,6 +570,10 @@ class SignupActivity : AppCompatActivity() {
         val autoLogin = autoLoginCheck.isChecked
         val resultIntent = Intent().apply {
             putExtra(EXTRA_AUTO_LOGIN, autoLogin)
+            if (autoLogin) {
+                putExtra(EXTRA_USERNAME, usernameInput.text?.toString()?.trim().orEmpty())
+                putExtra(EXTRA_PASSWORD, passwordInput.text?.toString().orEmpty())
+            }
         }
         if (autoLogin) {
             val username = usernameInput.text?.toString()?.trim().orEmpty()
@@ -1298,14 +1302,7 @@ class SignupActivity : AppCompatActivity() {
         return formatter.format(Date(selection))
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 
     private fun ensureVisible(scrollView: ScrollView, view: View) {
         scrollView.post {

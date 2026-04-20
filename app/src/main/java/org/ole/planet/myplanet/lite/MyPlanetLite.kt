@@ -26,9 +26,9 @@ import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.SystemBarStyle
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.content.res.AppCompatResources
 import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
@@ -74,7 +74,7 @@ import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
-class MyPlanetLite : AppCompatActivity() {
+class MyPlanetLite : BaseActivity() {
 
     private var originalLogoWidth = 0
     private var originalLogoHeight = 0
@@ -132,20 +132,35 @@ class MyPlanetLite : AppCompatActivity() {
                 applyRememberedCredentials()
                 return@registerForActivityResult
             }
-            applyRememberedCredentials()
+            val autoLogin = data.getBooleanExtra(SignupActivity.EXTRA_AUTO_LOGIN, false)
+            if (autoLogin) {
+                val username = data.getStringExtra(SignupActivity.EXTRA_USERNAME).orEmpty()
+                val password = org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.consumeTemporarySignUpPassword(this).orEmpty()
+                loginUsernameInput.setText(username)
+                loginPasswordInput.setText(password)
+                suppressRememberListener = true
+                rememberMeCheckBox.isChecked = true
+                suppressRememberListener = false
+            } else {
+                applyRememberedCredentials()
+            }
         }
     }
 
     private var deepLinkPostId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        LanguagePreferences.applySavedLocale(this)
+
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                ContextCompat.getColor(this, R.color.white),
+                ContextCompat.getColor(this, R.color.white)
+            )
+        )
         setContentView(R.layout.activity_main)
 
-        setupWindowState()
         initializeState(savedInstanceState)
 
         val logoImageView: ImageView = findViewById(R.id.logoImageView)
@@ -158,12 +173,6 @@ class MyPlanetLite : AppCompatActivity() {
         World.init(applicationContext)
 
         configureLogin()
-    }
-
-    private fun setupWindowState() {
-        @Suppress("DEPRECATION")
-        window.statusBarColor = ContextCompat.getColor(this, R.color.white)
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
     }
 
     private fun initializeState(savedInstanceState: Bundle?) {
@@ -305,14 +314,7 @@ class MyPlanetLite : AppCompatActivity() {
         }
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 
     private fun configureLogin() {
         initializeLoginViews()
