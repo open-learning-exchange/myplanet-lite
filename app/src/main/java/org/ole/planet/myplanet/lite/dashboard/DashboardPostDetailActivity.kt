@@ -219,14 +219,17 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyActionsRow = findViewById(R.id.dashboardReplyActions)
         replyMarkdownToolbar = findViewById(R.id.dashboardReplyMarkdownToolbar)
         replyingToLabel = findViewById(R.id.postDetailReplyingTo)
-        val replyBold: MaterialButton = findViewById(R.id.dashboardReplyMarkdownBold)
-        val replyItalic: MaterialButton = findViewById(R.id.dashboardReplyMarkdownItalic)
-        val replyHeading: MaterialButton = findViewById(R.id.dashboardReplyMarkdownHeading)
-        val replyBullet: MaterialButton = findViewById(R.id.dashboardReplyMarkdownBullet)
-        val replyNumbered: MaterialButton = findViewById(R.id.dashboardReplyMarkdownNumbered)
-        val replyQuote: MaterialButton = findViewById(R.id.dashboardReplyMarkdownQuote)
-        val replyLink: MaterialButton = findViewById(R.id.dashboardReplyMarkdownLink)
-        val replyImage: MaterialButton = findViewById(R.id.dashboardReplyMarkdownImage)
+
+        setupReplyWindowInsets()
+        setupReplyInputListeners()
+        setupReplyMarkdownToolbar()
+
+        updateReplyPreview(replyPreview, "")
+        setMarkdownToolbarEnabled(false)
+        replySendButton.isEnabled = false
+    }
+
+    private fun setupReplyWindowInsets() {
         val baseReplyContainerMarginBottom =
             (replyContainer.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
 
@@ -240,7 +243,9 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             insets
         }
         ViewCompat.requestApplyInsets(replyContainer)
+    }
 
+    private fun setupReplyInputListeners() {
         replyInputLayout.helperText = null
         replyInput.doAfterTextChanged { text ->
             updateReplyPreview(replyPreview, text?.toString())
@@ -273,6 +278,18 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 attemptReply(message)
             }
         }
+    }
+
+    private fun setupReplyMarkdownToolbar() {
+        val replyBold: MaterialButton = findViewById(R.id.dashboardReplyMarkdownBold)
+        val replyItalic: MaterialButton = findViewById(R.id.dashboardReplyMarkdownItalic)
+        val replyHeading: MaterialButton = findViewById(R.id.dashboardReplyMarkdownHeading)
+        val replyBullet: MaterialButton = findViewById(R.id.dashboardReplyMarkdownBullet)
+        val replyNumbered: MaterialButton = findViewById(R.id.dashboardReplyMarkdownNumbered)
+        val replyQuote: MaterialButton = findViewById(R.id.dashboardReplyMarkdownQuote)
+        val replyLink: MaterialButton = findViewById(R.id.dashboardReplyMarkdownLink)
+        val replyImage: MaterialButton = findViewById(R.id.dashboardReplyMarkdownImage)
+
         replyBold.setOnClickListener {
             applyWrappedFormatting("**", "**", "", placeCursorInsideWhenNoSelection = true)
         }
@@ -289,10 +306,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyImage.setOnClickListener {
             handleReplyInsertImageClick()
         }
-        updateReplyPreview(replyPreview, "")
-
-        setMarkdownToolbarEnabled(false)
-        replySendButton.isEnabled = false
     }
 
     private fun loadIntentData(): Boolean {
