@@ -80,7 +80,16 @@ object OfflineCourseStorage {
     }
 
     fun markdownImageFile(context: Context, courseId: String, source: String): File {
-        val digest = sha1(source)
+        val digest = sha256(source)
+        val extension = source.substringAfterLast('.', "").substringBefore('?').substringBefore('#')
+            .takeIf { it.matches(Regex("[A-Za-z0-9]{1,5}")) }
+            ?.lowercase()
+            ?: "img"
+        return File(courseDir(context, courseId), "markdown/$digest.$extension")
+    }
+
+    private fun legacyMarkdownImageFile(context: Context, courseId: String, source: String): File {
+        val digest = legacySha1(source)
         val extension = source.substringAfterLast('.', "").substringBefore('?').substringBefore('#')
             .takeIf { it.matches(Regex("[A-Za-z0-9]{1,5}")) }
             ?.lowercase()
@@ -90,7 +99,17 @@ object OfflineCourseStorage {
 
     fun localMarkdownImageUri(context: Context, courseId: String, source: String): String? {
         val file = markdownImageFile(context, courseId, source)
-        return if (file.exists()) file.toURI().toString() else null
+        if (file.exists()) return file.toURI().toString()
+
+        val legacyFile = legacyMarkdownImageFile(context, courseId, source)
+        if (legacyFile.exists()) {
+            if (legacyFile.renameTo(file)) {
+                return file.toURI().toString()
+            }
+            return legacyFile.toURI().toString()
+        }
+
+        return null
     }
 
     private fun courseDir(context: Context, courseId: String): File {
@@ -101,7 +120,12 @@ object OfflineCourseStorage {
         return File(courseDir(context, courseId), MANIFEST)
     }
 
-    private fun sha1(value: String): String {
+    private fun sha256(value: String): String {
+        val bytes = MessageDigest.getInstance("SHA-256").digest(value.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun legacySha1(value: String): String {
         val bytes = MessageDigest.getInstance("SHA-1").digest(value.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }
     }

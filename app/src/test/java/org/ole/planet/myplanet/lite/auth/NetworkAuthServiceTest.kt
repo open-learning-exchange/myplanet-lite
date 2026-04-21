@@ -22,6 +22,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import retrofit2.HttpException
 import retrofit2.Response
@@ -91,6 +92,42 @@ class NetworkAuthServiceTest {
         val success = result as AuthResult.Success
         assertEquals(null, tokenStorage.token)
         assertEquals(null, success.response.sessionCookie)
+    }
+
+    @Test
+    fun `login success with empty cookie clears token`() = runTest {
+        tokenStorage.saveToken("old_token")
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "")
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.login("user@planet.com", "secret")
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals(null, tokenStorage.token)
+        assertEquals("", success.response.sessionCookie)
+    }
+
+    @Test
+    fun `login success with blank cookie clears token`() = runTest {
+        tokenStorage.saveToken("old_token")
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "   ")
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.login("user@planet.com", "secret")
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals(null, tokenStorage.token)
+        assertEquals("", success.response.sessionCookie)
     }
 
     @Test
@@ -312,6 +349,40 @@ class NetworkAuthServiceTest {
         assertTrue(error.message.contains("Error de red: Custom IO error"))
     }
 
+    @Test
+    fun `login io exception localized message is used`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val ioException = object : java.io.IOException("Regular message") {
+            override fun getLocalizedMessage(): String {
+                return "Localized IO error"
+            }
+        }
+        whenever(mockApi.login(any())).thenAnswer { throw ioException }
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error de red: Localized IO error"))
+    }
+
+    @Test
+    fun `login io exception without message returns network error fallback`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val ioException = java.io.IOException() // localizedMessage and message are null
+        whenever(mockApi.login(any())).thenAnswer { throw ioException }
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error de red: null"))
+    }
+
     @Test(expected = kotlinx.coroutines.CancellationException::class)
     fun `login cancellation exception is rethrown`() = runTest {
         val mockApi = mock<AuthApi>()
@@ -347,6 +418,17 @@ class NetworkAuthServiceTest {
     }
 
     @Test
+    fun `logout invokes clearToken on mocked token storage`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val mockTokenStorage = mock<TokenStorage>()
+        val serviceWithMockStorage = NetworkAuthService(mockApi, mockTokenStorage, Dispatchers.Unconfined)
+
+        serviceWithMockStorage.logout()
+
+        verify(mockTokenStorage).clearToken()
+    }
+
+    @Test
     fun `getStoredToken returns token`() = runTest {
         tokenStorage.saveToken("another_token")
 
@@ -362,6 +444,19 @@ class NetworkAuthServiceTest {
         val token = service.getStoredToken()
 
         assertEquals(null, token)
+    }
+
+    @Test
+    fun `getStoredToken invokes getToken on mocked TokenStorage`() = runTest {
+        val mockTokenStorage = mock<TokenStorage>()
+        whenever(mockTokenStorage.getToken()).thenReturn("mock_token")
+        val mockApi = mock<AuthApi>()
+        val serviceWithMock = NetworkAuthService(mockApi, mockTokenStorage, Dispatchers.Unconfined)
+
+        val token = serviceWithMock.getStoredToken()
+
+        verify(mockTokenStorage).getToken()
+        assertEquals("mock_token", token)
     }
 
 
@@ -444,4 +539,26 @@ class NetworkAuthServiceTest {
         val error = result as AuthResult.Error
         assertEquals(401, error.code)
     }
+
+    @Test
+    fun `parseErrorMessage returns raw body on JSONException`() {
+        val method = NetworkAuthService::class.java.getDeclaredMethod("parseErrorMessage", String::class.java)
+        method.isAccessible = true
+        val result = method.invoke(service, "invalid json {") as String
+        assertEquals("invalid json {", result)
+    }
+    @Test
+    fun `login successful with null body returns error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        whenever(mockApi.login(any())).thenReturn(Response.success(null))
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(200, error.code)
+        assertEquals("Respuesta inválida del servidor", error.message)
+    }
+
 }
