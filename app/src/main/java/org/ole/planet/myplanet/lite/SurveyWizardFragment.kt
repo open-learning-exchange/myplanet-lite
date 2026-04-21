@@ -11,7 +11,6 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.ConnectivityManager
-import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
