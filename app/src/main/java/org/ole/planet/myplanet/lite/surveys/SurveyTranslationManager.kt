@@ -17,7 +17,12 @@ import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
@@ -156,54 +161,65 @@ class SurveyTranslationManager(
         sourceLanguage: String,
         openAiKey: String,
         openAiModel: String,
-    ): Map<Int, TranslatedQuestion> {
-        val translations = mutableMapOf<Int, TranslatedQuestion>()
-        questions.forEachIndexed { index, question ->
-            val cached = cachedQuestionTranslations[index]
-            val translatedBody: String?
-            val translatedChoices: List<String?>
+    ): Map<Int, TranslatedQuestion> = coroutineScope {
+        val semaphore = Semaphore(5)
+        val translations = questions.mapIndexed { index, question ->
+            async {
+                val cached = cachedQuestionTranslations[index]
+                val translatedBody: String?
+                val translatedChoices: List<String?>
 
-            if (cached != null && cached.hasTranslation) {
-                translatedBody = cached.body
-                translatedChoices = cached.choices
-            } else {
-                translatedBody = translationClient.translate(
-                    text = question.body.orEmpty(),
-                    targetLanguage = normalizedTargetLanguage,
-                    apiKey = openAiKey,
-                    model = openAiModel,
-                    sourceLanguage = sourceLanguage,
-                )
-                translatedChoices = question.choices.orEmpty().map { choice ->
-                    choice.text?.let { text ->
+                if (cached != null && cached.hasTranslation) {
+                    translatedBody = cached.body
+                    translatedChoices = cached.choices
+                } else {
+                    translatedBody = semaphore.withPermit {
                         translationClient.translate(
-                            text = text,
+                            text = question.body.orEmpty(),
                             targetLanguage = normalizedTargetLanguage,
                             apiKey = openAiKey,
                             model = openAiModel,
                             sourceLanguage = sourceLanguage,
                         )
                     }
+                    translatedChoices = question.choices.orEmpty().map { choice ->
+                        async {
+                            choice.text?.let { text ->
+                                semaphore.withPermit {
+                                    translationClient.translate(
+                                        text = text,
+                                        targetLanguage = normalizedTargetLanguage,
+                                        apiKey = openAiKey,
+                                        model = openAiModel,
+                                        sourceLanguage = sourceLanguage,
+                                    )
+                                }
+                            }
+                        }
+                    }.awaitAll()
+
+                    if (cacheSurveyId != null && (!translatedBody.isNullOrBlank() || translatedChoices.any { !it.isNullOrBlank() })) {
+                        translationCache.saveTranslation(
+                            cacheSurveyId,
+                            index,
+                            normalizedTargetLanguage,
+                            TranslatedQuestion(translatedBody, translatedChoices),
+                        )
+                    }
                 }
 
-                if (cacheSurveyId != null && (!translatedBody.isNullOrBlank() || translatedChoices.any { !it.isNullOrBlank() })) {
-                    translationCache.saveTranslation(
-                        cacheSurveyId,
-                        index,
-                        normalizedTargetLanguage,
-                        TranslatedQuestion(translatedBody, translatedChoices),
+                if (!translatedBody.isNullOrBlank() || translatedChoices.any { !it.isNullOrBlank() }) {
+                    index to TranslatedQuestion(
+                        body = translatedBody,
+                        choices = translatedChoices,
                     )
+                } else {
+                    null
                 }
             }
+        }.awaitAll()
 
-            if (!translatedBody.isNullOrBlank() || translatedChoices.any { !it.isNullOrBlank() }) {
-                translations[index] = TranslatedQuestion(
-                    body = translatedBody,
-                    choices = translatedChoices,
-                )
-            }
-        }
-        return translations
+        translations.filterNotNull().toMap()
     }
 
     suspend fun translateQuestion(

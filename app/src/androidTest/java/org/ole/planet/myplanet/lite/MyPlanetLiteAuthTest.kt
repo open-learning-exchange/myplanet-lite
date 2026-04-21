@@ -31,6 +31,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.auth.AuthService
 import org.ole.planet.myplanet.lite.auth.LoginResponse
+import org.ole.planet.myplanet.lite.auth.UserCredentials
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 @RunWith(AndroidJUnit4::class)
@@ -128,5 +129,6 @@ class MyPlanetLiteAuthTest {
         override suspend fun login(usernameOrEmail: String, password: String): AuthResult = result
         override suspend fun logout() {}
         override suspend fun getStoredToken(): String? = null
+        override suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult = result
     }
 }

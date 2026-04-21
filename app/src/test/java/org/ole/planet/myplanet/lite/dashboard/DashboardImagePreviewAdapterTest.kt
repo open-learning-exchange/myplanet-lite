@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.view.ViewGroup
 import android.widget.FrameLayout
 import android.widget.ProgressBar
 import androidx.core.view.isVisible

@@ -23,10 +23,11 @@ import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
 import java.text.DecimalFormat
 import java.util.ArrayList
@@ -35,8 +36,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.CreateVoiceActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
@@ -298,13 +297,14 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         viewLifecycleOwner.lifecycleScope.launch {
             var accumulatedPosts = 0
             var shouldContinue = true
+            val fetchLimit = maxOf(pageSize * 5, 100)
             while (shouldContinue) {
                 val result = repository.fetchNews(
                     base,
                     sessionCookie,
                     nextSkip,
                     nextBookmark,
-                    pageSize,
+                    fetchLimit,
                     serverCode,
                     serverParentCode,
                     teamName

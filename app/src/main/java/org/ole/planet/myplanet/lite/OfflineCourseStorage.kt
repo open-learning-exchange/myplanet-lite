@@ -80,7 +80,16 @@ object OfflineCourseStorage {
     }
 
     fun markdownImageFile(context: Context, courseId: String, source: String): File {
-        val digest = sha1(source)
+        val digest = sha256(source)
+        val extension = source.substringAfterLast('.', "").substringBefore('?').substringBefore('#')
+            .takeIf { it.matches(Regex("[A-Za-z0-9]{1,5}")) }
+            ?.lowercase()
+            ?: "img"
+        return File(courseDir(context, courseId), "markdown/$digest.$extension")
+    }
+
+    private fun legacyMarkdownImageFile(context: Context, courseId: String, source: String): File {
+        val digest = legacySha1(source)
         val extension = source.substringAfterLast('.', "").substringBefore('?').substringBefore('#')
             .takeIf { it.matches(Regex("[A-Za-z0-9]{1,5}")) }
             ?.lowercase()
@@ -90,7 +99,17 @@ object OfflineCourseStorage {
 
     fun localMarkdownImageUri(context: Context, courseId: String, source: String): String? {
         val file = markdownImageFile(context, courseId, source)
-        return if (file.exists()) file.toURI().toString() else null
+        if (file.exists()) return file.toURI().toString()
+
+        val legacyFile = legacyMarkdownImageFile(context, courseId, source)
+        if (legacyFile.exists()) {
+            if (legacyFile.renameTo(file)) {
+                return file.toURI().toString()
+            }
+            return legacyFile.toURI().toString()
+        }
+
+        return null
     }
 
     private fun courseDir(context: Context, courseId: String): File {
@@ -101,7 +120,12 @@ object OfflineCourseStorage {
         return File(courseDir(context, courseId), MANIFEST)
     }
 
-    private fun sha1(value: String): String {
+    private fun sha256(value: String): String {
+        val bytes = MessageDigest.getInstance("SHA-256").digest(value.toByteArray())
+        return bytes.joinToString("") { "%02x".format(it) }
+    }
+
+    private fun legacySha1(value: String): String {
         val bytes = MessageDigest.getInstance("SHA-1").digest(value.toByteArray())
         return bytes.joinToString("") { "%02x".format(it) }
     }
@@ -145,43 +169,32 @@ object OfflineCourseStorage {
 
     private fun parseCourse(json: JSONObject): DashboardCoursePageFragment.CourseItem {
         val stepsArray = json.optJSONArray("steps") ?: JSONArray()
-        val steps = buildList {
-            for (i in 0 until stepsArray.length()) {
-                val step = stepsArray.optJSONObject(i) ?: continue
-                val mediaTypesArray = step.optJSONArray("mediaTypes") ?: JSONArray()
-                val mediaTypes = buildList {
-                    for (j in 0 until mediaTypesArray.length()) {
-                        val value = mediaTypesArray.optString(j)
-                        if (value.isNotBlank()) add(value)
-                    }
-                }
-                val resourcesArray = step.optJSONArray("resources") ?: JSONArray()
-                val resources = buildList {
-                    for (j in 0 until resourcesArray.length()) {
-                        val resource = resourcesArray.optJSONObject(j) ?: continue
-                        val id = resource.optString("id")
-                        val filename = resource.optString("filename")
-                        if (id.isBlank() || filename.isBlank()) continue
-                        add(
-                            DashboardCoursePageFragment.CourseItem.LessonResource(
-                                id = id,
-                                filename = filename,
-                                mediaType = resource.optString("mediaType")
-                            )
-                        )
-                    }
-                }
-                add(
-                    DashboardCoursePageFragment.CourseItem.LessonStep(
-                        title = step.optString("title"),
-                        description = step.optString("description"),
-                        mediaTypes = mediaTypes,
-                        resources = resources,
-                        survey = parseSurveyDocument(step.optJSONObject("survey")),
-                        exam = parseSurveyDocument(step.optJSONObject("exam"))
-                    )
+        val steps = (0 until stepsArray.length()).mapNotNull { i ->
+            val step = stepsArray.optJSONObject(i) ?: return@mapNotNull null
+            val mediaTypesArray = step.optJSONArray("mediaTypes") ?: JSONArray()
+            val mediaTypes = (0 until mediaTypesArray.length()).mapNotNull { j ->
+                mediaTypesArray.optString(j).takeIf { it.isNotBlank() }
+            }
+            val resourcesArray = step.optJSONArray("resources") ?: JSONArray()
+            val resources = (0 until resourcesArray.length()).mapNotNull { j ->
+                val resource = resourcesArray.optJSONObject(j) ?: return@mapNotNull null
+                val id = resource.optString("id")
+                val filename = resource.optString("filename")
+                if (id.isBlank() || filename.isBlank()) return@mapNotNull null
+                DashboardCoursePageFragment.CourseItem.LessonResource(
+                    id = id,
+                    filename = filename,
+                    mediaType = resource.optString("mediaType")
                 )
             }
+            DashboardCoursePageFragment.CourseItem.LessonStep(
+                title = step.optString("title"),
+                description = step.optString("description"),
+                mediaTypes = mediaTypes,
+                resources = resources,
+                survey = parseSurveyDocument(step.optJSONObject("survey")),
+                exam = parseSurveyDocument(step.optJSONObject("exam"))
+            )
         }
 
         return DashboardCoursePageFragment.CourseItem(
@@ -240,32 +253,24 @@ object OfflineCourseStorage {
     private fun parseSurveyDocument(json: JSONObject?): SurveyDocument? {
         if (json == null) return null
         val questionsArray = json.optJSONArray("questions") ?: JSONArray()
-        val questions = buildList {
-            for (i in 0 until questionsArray.length()) {
-                val item = questionsArray.optJSONObject(i) ?: continue
-                val choicesArray = item.optJSONArray("choices") ?: JSONArray()
-                val choices = buildList {
-                    for (j in 0 until choicesArray.length()) {
-                        val choice = choicesArray.optJSONObject(j) ?: continue
-                        add(
-                            SurveyChoice(
-                                text = choice.optString("text").takeIf { it.isNotBlank() },
-                                id = choice.optString("id").takeIf { it.isNotBlank() }
-                            )
-                        )
-                    }
-                }
-                add(
-                    SurveyQuestion(
-                        body = item.optString("body").takeIf { it.isNotBlank() },
-                        type = item.optString("type").takeIf { it.isNotBlank() },
-                        correctChoice = jsonToKotlinValue(item.opt("correctChoice")),
-                        marks = item.optInt("marks").takeIf { item.has("marks") && !item.isNull("marks") },
-                        choices = choices,
-                        hasOtherOption = item.optBoolean("hasOtherOption", false)
-                    )
+        val questions = (0 until questionsArray.length()).mapNotNull { i ->
+            val item = questionsArray.optJSONObject(i) ?: return@mapNotNull null
+            val choicesArray = item.optJSONArray("choices") ?: JSONArray()
+            val choices = (0 until choicesArray.length()).mapNotNull { j ->
+                val choice = choicesArray.optJSONObject(j) ?: return@mapNotNull null
+                SurveyChoice(
+                    text = choice.optString("text").takeIf { it.isNotBlank() },
+                    id = choice.optString("id").takeIf { it.isNotBlank() }
                 )
             }
+            SurveyQuestion(
+                body = item.optString("body").takeIf { it.isNotBlank() },
+                type = item.optString("type").takeIf { it.isNotBlank() },
+                correctChoice = jsonToKotlinValue(item.opt("correctChoice")),
+                marks = item.optInt("marks").takeIf { item.has("marks") && !item.isNull("marks") },
+                choices = choices,
+                hasOtherOption = item.optBoolean("hasOtherOption", false)
+            )
         }
         return SurveyDocument(
             id = json.optString("id").takeIf { it.isNotBlank() },

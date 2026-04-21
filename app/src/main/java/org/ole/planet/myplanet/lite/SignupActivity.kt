@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.graphics.Rect
 import android.os.Bundle
 import android.text.InputFilter
@@ -57,6 +56,8 @@ import org.ole.planet.myplanet.lite.profile.GENDER_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
+import org.ole.planet.myplanet.lite.model.ServerConnectivityResult
+import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 
 class SignupActivity : BaseActivity() {
 
@@ -162,6 +163,9 @@ class SignupActivity : BaseActivity() {
         SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
+    private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
+        ServerConnectivityRepository(connectivityClient, moshi)
+    }
 
     private val steps = SignupStep.entries
     private var currentStepIndex = 0
@@ -576,6 +580,16 @@ class SignupActivity : BaseActivity() {
                 putExtra(EXTRA_PASSWORD, passwordInput.text?.toString().orEmpty())
             }
         }
+        if (autoLogin) {
+            val username = usernameInput.text?.toString()?.trim().orEmpty()
+            val password = passwordInput.text?.toString().orEmpty()
+            SecurePreferencesProvider.getEncryptedPreferences(this, MyPlanetLite.SECURE_PREFS_NAME)
+                .edit()
+                .putBoolean(MyPlanetLite.KEY_REMEMBER_CREDENTIALS, true)
+                .putString(MyPlanetLite.KEY_REMEMBERED_USERNAME, username)
+                .putString(MyPlanetLite.KEY_REMEMBERED_PASSWORD, password)
+                .apply()
+        }
         setResult(RESULT_OK, resultIntent)
         finish()
     }
@@ -827,7 +841,7 @@ class SignupActivity : BaseActivity() {
         val job = lifecycleScope.launch {
             applyConnectivityState(step, reachable = false, checking = true)
             val connectivityResult = withContext(Dispatchers.IO) {
-                performServerConnectivityCheck(trimmedBaseUrl)
+                serverConnectivityRepository.checkServerConnectivity(trimmedBaseUrl)
             }
             if (!isActive) {
                 return@launch
@@ -844,27 +858,6 @@ class SignupActivity : BaseActivity() {
 
         serverCheckJob = job
         return job
-    }
-
-    private fun performServerConnectivityCheck(baseUrl: String): ServerConnectivityResult {
-        val requestUrl = buildConfigurationRequestUrl(baseUrl) ?: return ServerConnectivityResult(false)
-        return runCatching {
-            val request = Request.Builder()
-                .url(requestUrl)
-                .get()
-                .build()
-            connectivityClient.newCall(request).execute().use { response ->
-                if (response.code != 200) {
-                    return@use ServerConnectivityResult(false)
-                }
-                val body = response.body.string()
-                if (body.isBlank()) {
-                    return@use ServerConnectivityResult(true)
-                }
-                val metadata = ServerMetadataExtractor.extract(body, moshi)
-                ServerConnectivityResult(true, metadata?.first, metadata?.second)
-            }
-        }.getOrDefault(ServerConnectivityResult(false))
     }
 
     private fun persistServerMetadata(baseUrl: String, parentCode: String?, code: String?) {
@@ -976,14 +969,6 @@ class SignupActivity : BaseActivity() {
                 UsernameAvailability.UNKNOWN
             }
         }
-    }
-
-    private fun buildConfigurationRequestUrl(baseUrl: String): String? {
-        return baseUrl.toHttpUrlOrNull()?.newBuilder()
-            ?.addPathSegments("db/configurations/_all_docs")
-            ?.addQueryParameter("include_docs", "true")
-            ?.build()
-            ?.toString()
     }
 
     private fun buildUsernameLookupUrl(username: String): String? {
@@ -1102,12 +1087,6 @@ class SignupActivity : BaseActivity() {
             put("roles", JSONArray().apply { put("learner") })
         }
     }
-
-    private data class ServerConnectivityResult(
-        val reachable: Boolean,
-        val parentCode: String? = null,
-        val code: String? = null
-    )
 
     private enum class UsernameAvailability { AVAILABLE, TAKEN, UNKNOWN }
 

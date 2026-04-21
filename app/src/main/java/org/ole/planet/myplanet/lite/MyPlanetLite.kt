@@ -10,7 +10,6 @@ package org.ole.planet.myplanet.lite
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.content.pm.ActivityInfo
 import android.os.Build
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
@@ -25,6 +24,7 @@ import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.SystemBarStyle
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -33,7 +33,6 @@ import androidx.core.content.ContextCompat
 import androidx.core.text.HtmlCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.WindowInsetsControllerCompat
 import androidx.core.view.doOnLayout
 import androidx.core.view.doOnPreDraw
 import androidx.core.view.isVisible
@@ -72,6 +71,8 @@ import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
+import org.ole.planet.myplanet.lite.model.ServerConnectivityResult
+import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 
 class MyPlanetLite : BaseActivity() {
 
@@ -124,6 +125,9 @@ class MyPlanetLite : BaseActivity() {
         SecurePreferencesProvider.getEncryptedPreferences(applicationContext, SECURE_PREFS_NAME)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
+    private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
+        ServerConnectivityRepository(connectivityClient, moshi)
+    }
 
     private val signupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -134,7 +138,7 @@ class MyPlanetLite : BaseActivity() {
             val autoLogin = data.getBooleanExtra(SignupActivity.EXTRA_AUTO_LOGIN, false)
             if (autoLogin) {
                 val username = data.getStringExtra(SignupActivity.EXTRA_USERNAME).orEmpty()
-                val password = data.getStringExtra(SignupActivity.EXTRA_PASSWORD).orEmpty()
+                val password = org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.consumeTemporarySignUpPassword(this).orEmpty()
                 loginUsernameInput.setText(username)
                 loginPasswordInput.setText(password)
                 suppressRememberListener = true
@@ -152,10 +156,14 @@ class MyPlanetLite : BaseActivity() {
 
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
-        enableEdgeToEdge()
+        enableEdgeToEdge(
+            statusBarStyle = SystemBarStyle.light(
+                ContextCompat.getColor(this, R.color.white),
+                ContextCompat.getColor(this, R.color.white)
+            )
+        )
         setContentView(R.layout.activity_main)
 
-        setupWindowState()
         initializeState(savedInstanceState)
 
         val logoImageView: ImageView = findViewById(R.id.logoImageView)
@@ -168,12 +176,6 @@ class MyPlanetLite : BaseActivity() {
         World.init(applicationContext)
 
         configureLogin()
-    }
-
-    private fun setupWindowState() {
-        @Suppress("DEPRECATION")
-        window.statusBarColor = ContextCompat.getColor(this, R.color.white)
-        WindowInsetsControllerCompat(window, window.decorView).isAppearanceLightStatusBars = true
     }
 
     private fun initializeState(savedInstanceState: Bundle?) {
@@ -514,7 +516,6 @@ class MyPlanetLite : BaseActivity() {
         if (::rememberMeCheckBox.isInitialized) {
             rememberMeCheckBox.isChecked = remembered != null
         }
-        suppressRememberListener = false
         if (remembered != null) {
             loginUsernameInput.setText(remembered.username)
             loginPasswordInput.setText(remembered.password)
@@ -522,6 +523,7 @@ class MyPlanetLite : BaseActivity() {
             loginUsernameInput.text?.clear()
             loginPasswordInput.text?.clear()
         }
+        suppressRememberListener = false
         shouldAutoLoginOnLaunch = autoLoginEnabled && remembered?.let { creds ->
             creds.username.isNotBlank() && creds.password.length >= MIN_PASSWORD_LENGTH
         } ?: false
@@ -1021,7 +1023,7 @@ class MyPlanetLite : BaseActivity() {
         val androidId = serverPreferences.getString(KEY_DEVICE_ANDROID_ID, null)
         val customDeviceName = serverPreferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)
 
-        val deviceName = resolveDeviceName()
+        val deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName()
         val loginTimeMillis = System.currentTimeMillis()
         val loginTimeString = loginTimeMillis.toString()
 
@@ -1038,21 +1040,6 @@ class MyPlanetLite : BaseActivity() {
                 put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
             }
         }.getOrNull()
-    }
-
-    private fun resolveDeviceName(): String {
-        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
-        val model = Build.MODEL?.trim().orEmpty()
-        return when {
-            manufacturer.isEmpty() && model.isEmpty() -> {
-                val device = Build.DEVICE?.trim().orEmpty()
-                if (device.isNotEmpty()) device else DEFAULT_DEVICE_NAME
-            }
-            manufacturer.isEmpty() -> model
-            model.isEmpty() -> manufacturer
-            model.startsWith(manufacturer, ignoreCase = true) -> model
-            else -> "$manufacturer $model"
-        }
     }
 
     private fun setLoadingState(isLoading: Boolean, loginButton: Button, progress: ProgressBar) {
@@ -1158,9 +1145,9 @@ class MyPlanetLite : BaseActivity() {
         private const val KEY_COUNTRY_CODE = "country_code"
         private const val KEY_SERVER_DISPLAY_NAME = "server_display_name"
         private const val KEY_CUSTOM_SERVERS = "custom_servers"
-        private const val KEY_REMEMBER_CREDENTIALS = "remember_credentials"
-        private const val KEY_REMEMBERED_USERNAME = "remembered_username"
-        private const val KEY_REMEMBERED_PASSWORD = "remembered_password"
+        const val KEY_REMEMBER_CREDENTIALS = "remember_credentials"
+        const val KEY_REMEMBERED_USERNAME = "remembered_username"
+        const val KEY_REMEMBERED_PASSWORD = "remembered_password"
         private const val KEY_SURVEY_TRANSLATIONS_ENABLED = "survey_translations_enabled"
         private const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
@@ -1168,7 +1155,6 @@ class MyPlanetLite : BaseActivity() {
         const val EXTRA_ALLOW_AUTO_LOGIN = "extra_allow_auto_login"
         private const val DEFAULT_COUNTRY_CODE = "GT"
         private const val DEFAULT_SURVEY_TRANSLATION_ENABLED = true
-        private const val DEFAULT_DEVICE_NAME = "Android Device"
         private const val LOGO_SHRUNK_DP = 50f
         private const val APP_VERSION_SHRUNK_BOTTOM_MARGIN_DP = 5f
         private const val LOGIN_SCROLL_SHRUNK_PADDING_TOP_DP = 5f
@@ -1203,12 +1189,6 @@ class MyPlanetLite : BaseActivity() {
     }
 
     private data class ServerConfiguration(val baseUrl: String, val countryCode: String, val displayName: String)
-
-    private data class ServerConnectivityResult(
-        val reachable: Boolean,
-        val parentCode: String? = null,
-        val code: String? = null
-    )
 
     private data class BuiltInServer(val nameRes: Int, val baseUrl: String, val countryCode: String)
 
@@ -1332,7 +1312,7 @@ class MyPlanetLite : BaseActivity() {
         serverStatusIconView.setOnClickListener(null)
         serverStatusJob = lifecycleScope.launch {
             showServerStatusChecking()
-            val result = withContext(Dispatchers.IO) { fetchServerConnectivity(baseUrl) }
+            val result = withContext(Dispatchers.IO) { serverConnectivityRepository.checkServerConnectivity(baseUrl) }
             if (!isActive) {
                 return@launch
             }
@@ -1343,35 +1323,6 @@ class MyPlanetLite : BaseActivity() {
                 showServerDisconnectedState(allowRetry = true)
             }
         }
-    }
-
-    private fun fetchServerConnectivity(baseUrl: String): ServerConnectivityResult {
-        val requestUrl = buildConfigurationRequestUrl(baseUrl) ?: return ServerConnectivityResult(false)
-        return runCatching {
-            val request = Request.Builder()
-                .url(requestUrl)
-                .get()
-                .build()
-            connectivityClient.newCall(request).execute().use { response ->
-                if (response.code != 200) {
-                    return@use ServerConnectivityResult(false)
-                }
-                val body = response.body.string()
-                if (body.isBlank()) {
-                    return@use ServerConnectivityResult(true)
-                }
-                val metadata = ServerMetadataExtractor.extract(body, moshi)
-                ServerConnectivityResult(true, metadata?.first, metadata?.second)
-            }
-        }.getOrDefault(ServerConnectivityResult(false))
-    }
-
-    private fun buildConfigurationRequestUrl(baseUrl: String): String? {
-        return baseUrl.toHttpUrlOrNull()?.newBuilder()
-            ?.addPathSegments("db/configurations/_all_docs")
-            ?.addQueryParameter("include_docs", "true")
-            ?.build()
-            ?.toString()
     }
 
     private fun persistServerMetadata(baseUrl: String, parentCode: String?, code: String?) {
