@@ -1264,7 +1264,7 @@ class CreateVoiceActivity : BaseActivity() {
                 revision = resourceRevision
             )
         } else {
-            val metadata = buildResourceMetadata(context, pending.fileName)
+            val metadata = VoicesComposerRepository.ResourceMetadataRequest.fromContext(context, pending.fileName)
             repository.createResourceDocument(baseUrl, credentials, metadata)
         }
         pending.resourceId = creationResponse.id
@@ -1316,27 +1316,6 @@ class CreateVoiceActivity : BaseActivity() {
             else -> return null
         }
         return trimmed
-    }
-
-    private fun buildResourceMetadata(
-        context: VoiceImageResourceContext,
-        fileName: String
-    ): VoicesComposerRepository.ResourceMetadataRequest {
-        val baseTitle = fileName.substringBeforeLast('.')
-        return VoicesComposerRepository.ResourceMetadataRequest(
-            title = baseTitle.ifBlank { fileName },
-            createdDate = System.currentTimeMillis(),
-            filename = fileName,
-            isPrivate = true,
-            addedBy = context.username,
-            resideOn = context.resideOn,
-            sourcePlanet = context.sourcePlanet,
-            androidId = context.androidId,
-            deviceName = context.deviceName,
-            customDeviceName = context.customDeviceName,
-            mediaType = "image",
-            privateFor = PRIVATE_FOR_COMMUNITY
-        )
     }
 
     private suspend fun buildImageResourceContext(credentials: StoredCredentials): VoiceImageResourceContext {
@@ -1518,6 +1497,7 @@ class CreateVoiceActivity : BaseActivity() {
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
         private const val KEY_SERVER_CODE = "server_code"
         private const val PRIVATE_FOR_COMMUNITY = "community"
+        private const val DEFAULT_DEVICE_NAME = "Android"
 
         const val EXTRA_IS_EDIT_MODE = "extra_is_edit_mode"
         const val EXTRA_EDIT_POST_ID = "extra_edit_post_id"
@@ -1537,18 +1517,4 @@ class CreateVoiceActivity : BaseActivity() {
 data class PreparedVoicePost(
     val message: String,
     val images: List<VoicesComposerRepository.ImagePayload>
-)
-
-data class VoiceImageResourceContext(
-    val username: String,
-    val resideOn: String?,
-    val sourcePlanet: String?,
-    val androidId: String?,
-    val deviceName: String,
-    val customDeviceName: String?
-)
-
-data class ProfileCodes(
-    val planetCode: String?,
-    val parentCode: String?
 )

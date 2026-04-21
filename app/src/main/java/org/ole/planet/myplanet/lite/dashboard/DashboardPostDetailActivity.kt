@@ -1111,7 +1111,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             return markdown
         }
 
-        val metadata = buildResourceMetadata(context, pending.fileName)
+        val metadata = VoicesComposerRepository.ResourceMetadataRequest.fromContext(context, pending.fileName)
         val creationResponse = composerRepository.createResourceDocument(baseUrl, credentials, metadata)
         pending.resourceId = creationResponse.id
         pending.resourceRevision = creationResponse.revision
@@ -1188,27 +1188,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         return builder.toString()
     }
 
-    private fun buildResourceMetadata(
-        context: VoiceImageResourceContext,
-        fileName: String
-    ): VoicesComposerRepository.ResourceMetadataRequest {
-        val baseTitle = fileName.substringBeforeLast('.')
-        return VoicesComposerRepository.ResourceMetadataRequest(
-            title = baseTitle.ifBlank { fileName },
-            createdDate = System.currentTimeMillis(),
-            filename = fileName,
-            isPrivate = true,
-            addedBy = context.username,
-            resideOn = context.resideOn,
-            sourcePlanet = context.sourcePlanet,
-            androidId = context.androidId,
-            deviceName = context.deviceName,
-            customDeviceName = context.customDeviceName,
-            mediaType = "image",
-            privateFor = PRIVATE_FOR_COMMUNITY
-        )
-    }
-
     private suspend fun buildReplyImageResourceContext(credentials: StoredCredentials): VoiceImageResourceContext {
         val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
         val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)?.takeIf { it.isNotBlank() }
@@ -1282,19 +1261,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         return profile
     }
 
-    data class VoiceImageResourceContext(
-        val username: String,
-        val resideOn: String?,
-        val sourcePlanet: String?,
-        val androidId: String?,
-        val deviceName: String?,
-        val customDeviceName: String?
-    )
-
-    data class ProfileCodes(
-        val planetCode: String?,
-        val parentCode: String?
-    )
 
     private fun resolveDeviceName(): String? {
         val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
@@ -1922,6 +1888,8 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         private const val MONTH_MILLIS = 30 * DAY_MILLIS
         private const val YEAR_MILLIS = 12 * MONTH_MILLIS
         private const val PRIVATE_FOR_COMMUNITY = "community"
+        private const val JPEG_QUALITY = 85
+        private const val MAX_IMAGE_DIMENSION = 1280
         private const val PREFS_NAME = "PREFS"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
