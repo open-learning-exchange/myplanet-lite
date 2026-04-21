@@ -118,4 +118,21 @@ object MarkdownUtils {
         }
         return resolved
     }
+
+    fun applyAltText(markdown: String, altText: String): String {
+        val trimmedAlt = altText.trim()
+        if (trimmedAlt.isEmpty()) {
+            return markdown
+        }
+        val openBracket = markdown.indexOf('[')
+        val closeBracket = markdown.indexOf(']')
+        if (openBracket == -1 || closeBracket <= openBracket) {
+            return markdown
+        }
+        return buildString {
+            append(markdown.substring(0, openBracket + 1))
+            append(trimmedAlt)
+            append(markdown.substring(closeBracket))
+        }
+    }
 }

@@ -10,7 +10,6 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputType
@@ -39,11 +38,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
@@ -64,10 +59,7 @@ import okhttp3.OkHttpClient
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsActionsRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences.getServerBaseUrl
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences.getServerCode
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
@@ -1379,6 +1371,33 @@ class CreateVoiceActivity : BaseActivity() {
             val parentCode = json.optString("parentCode").takeIf { it.isNotBlank() }
             ProfileCodes(planetCode, parentCode)
         }.getOrNull()
+    }
+
+    private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
+        val escapedName = Regex.escape(fileName)
+        val pattern = Regex("!\\[([^\\]]*)\\]\\($escapedName\\)")
+        var matched = false
+        val updated = pattern.replace(source) { matchResult ->
+            matched = true
+            val altText = matchResult.groupValues.getOrNull(1).orEmpty()
+            if (altText.isBlank()) {
+                replacement
+            } else {
+                MarkdownUtils.applyAltText(replacement, altText)
+            }
+        }
+        if (matched) {
+            return updated
+        }
+        val builder = StringBuilder(source)
+        if (builder.isNotEmpty()) {
+            if (builder[builder.length - 1] != '\n') {
+                builder.append('\n')
+            }
+            builder.append('\n')
+        }
+        builder.append(replacement)
+        return builder.toString()
     }
 
     private suspend fun loadCachedProfile(): UserProfile? {
