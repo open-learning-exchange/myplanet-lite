@@ -132,4 +132,47 @@ class SecureTokenStorageTest {
         Mockito.verify(mockEditor).remove("planet_token")
         Mockito.verify(mockEditor, Mockito.times(2)).apply()
     }
+
+    @Test
+    fun `saveToken specifically verifies string put and apply on mock editor`() = runTest {
+        val mockSharedPreferences = Mockito.mock(SharedPreferences::class.java)
+        val mockEditor = Mockito.mock(SharedPreferences.Editor::class.java)
+        Mockito.`when`(mockSharedPreferences.edit()).thenReturn(mockEditor)
+        Mockito.`when`(mockEditor.putString(Mockito.anyString(), Mockito.anyString())).thenReturn(mockEditor)
+
+        SecurePreferencesProvider.resetForTesting()
+        SecurePreferencesProvider.injectedPreferences = mockSharedPreferences
+
+        val storage = SecureTokenStorage(context, Dispatchers.Unconfined)
+        val token = "explicit_save_token"
+        storage.saveToken(token)
+
+        Mockito.verify(mockEditor).putString("planet_token", token)
+        Mockito.verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `saveToken handles exception during putString gracefully or propagates`() = runTest {
+        val mockSharedPreferences = Mockito.mock(SharedPreferences::class.java)
+        val mockEditor = Mockito.mock(SharedPreferences.Editor::class.java)
+        Mockito.`when`(mockSharedPreferences.edit()).thenReturn(mockEditor)
+        Mockito.`when`(mockEditor.putString(Mockito.anyString(), Mockito.anyString())).thenThrow(RuntimeException("Storage failed"))
+
+        SecurePreferencesProvider.resetForTesting()
+        SecurePreferencesProvider.injectedPreferences = mockSharedPreferences
+
+        val storage = SecureTokenStorage(context, Dispatchers.Unconfined)
+        val token = "error_token"
+
+        var exceptionThrown = false
+        try {
+            storage.saveToken(token)
+        } catch (e: Exception) {
+            exceptionThrown = true
+            assertEquals("Storage failed", e.message)
+        }
+
+        org.junit.Assert.assertTrue("Exception should be thrown", exceptionThrown)
+        Mockito.verify(mockEditor, Mockito.never()).apply()
+    }
 }
