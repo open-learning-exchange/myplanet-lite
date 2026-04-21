@@ -71,6 +71,8 @@ import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
+import org.ole.planet.myplanet.lite.model.ServerConnectivityResult
+import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 
 class MyPlanetLite : BaseActivity() {
 
@@ -123,6 +125,9 @@ class MyPlanetLite : BaseActivity() {
         SecurePreferencesProvider.getEncryptedPreferences(applicationContext, SECURE_PREFS_NAME)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
+    private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
+        ServerConnectivityRepository(connectivityClient, moshi)
+    }
 
     private val signupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         if (result.resultCode == RESULT_OK) {
@@ -1185,12 +1190,6 @@ class MyPlanetLite : BaseActivity() {
 
     private data class ServerConfiguration(val baseUrl: String, val countryCode: String, val displayName: String)
 
-    private data class ServerConnectivityResult(
-        val reachable: Boolean,
-        val parentCode: String? = null,
-        val code: String? = null
-    )
-
     private data class BuiltInServer(val nameRes: Int, val baseUrl: String, val countryCode: String)
 
     private data class CustomServer(val displayName: String, val baseUrl: String, val countryCode: String) {
@@ -1313,7 +1312,7 @@ class MyPlanetLite : BaseActivity() {
         serverStatusIconView.setOnClickListener(null)
         serverStatusJob = lifecycleScope.launch {
             showServerStatusChecking()
-            val result = withContext(Dispatchers.IO) { fetchServerConnectivity(baseUrl) }
+            val result = withContext(Dispatchers.IO) { serverConnectivityRepository.checkServerConnectivity(baseUrl) }
             if (!isActive) {
                 return@launch
             }
@@ -1324,35 +1323,6 @@ class MyPlanetLite : BaseActivity() {
                 showServerDisconnectedState(allowRetry = true)
             }
         }
-    }
-
-    private fun fetchServerConnectivity(baseUrl: String): ServerConnectivityResult {
-        val requestUrl = buildConfigurationRequestUrl(baseUrl) ?: return ServerConnectivityResult(false)
-        return runCatching {
-            val request = Request.Builder()
-                .url(requestUrl)
-                .get()
-                .build()
-            connectivityClient.newCall(request).execute().use { response ->
-                if (response.code != 200) {
-                    return@use ServerConnectivityResult(false)
-                }
-                val body = response.body.string()
-                if (body.isBlank()) {
-                    return@use ServerConnectivityResult(true)
-                }
-                val metadata = ServerMetadataExtractor.extract(body, moshi)
-                ServerConnectivityResult(true, metadata?.first, metadata?.second)
-            }
-        }.getOrDefault(ServerConnectivityResult(false))
-    }
-
-    private fun buildConfigurationRequestUrl(baseUrl: String): String? {
-        return baseUrl.toHttpUrlOrNull()?.newBuilder()
-            ?.addPathSegments("db/configurations/_all_docs")
-            ?.addQueryParameter("include_docs", "true")
-            ?.build()
-            ?.toString()
     }
 
     private fun persistServerMetadata(baseUrl: String, parentCode: String?, code: String?) {
