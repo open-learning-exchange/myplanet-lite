@@ -418,6 +418,17 @@ class NetworkAuthServiceTest {
     }
 
     @Test
+    fun `logout invokes clearToken on mocked token storage`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val mockTokenStorage = mock<TokenStorage>()
+        val serviceWithMockStorage = NetworkAuthService(mockApi, mockTokenStorage, Dispatchers.Unconfined)
+
+        serviceWithMockStorage.logout()
+
+        verify(mockTokenStorage).clearToken()
+    }
+
+    @Test
     fun `getStoredToken returns token`() = runTest {
         tokenStorage.saveToken("another_token")
 
