@@ -1283,6 +1283,32 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             )
         }
+
+        val otherInputLayout = buildSingleChoiceOptions(
+            context = context,
+            question = question,
+            translation = translation,
+            radioGroup = radioGroup,
+            container = container,
+        )
+        container.addView(radioGroup, 0)
+
+        val savedSelection = (answers[index] as? SurveyAnswer.SingleChoice)?.choice
+        restoreSingleChoiceSelection(radioGroup, otherInputLayout, savedSelection)
+
+        val collector = {
+            collectSingleChoiceAnswer(radioGroup, otherInputLayout, question, index)
+        }
+        return container to collector
+    }
+
+    private fun buildSingleChoiceOptions(
+        context: android.content.Context,
+        question: SurveyQuestion,
+        translation: TranslatedQuestion?,
+        radioGroup: RadioGroup,
+        container: LinearLayout,
+    ): TextInputLayout? {
         val choices = question.choices.orEmpty()
         choices.forEachIndexed { index, choice ->
             val button = RadioButton(context)
@@ -1291,7 +1317,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             button.tag = choice
             radioGroup.addView(button)
         }
-        val otherInputLayout: TextInputLayout?
+        var otherInputLayout: TextInputLayout? = null
         if (question.hasOtherOption) {
             val otherButton = RadioButton(context)
             otherButton.text = getString(R.string.dashboard_survey_wizard_other_option)
@@ -1305,12 +1331,15 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 val isOther = selectedButton?.tag == OTHER_CHOICE_TAG
                 otherInputLayout.isVisible = isOther
             }
-        } else {
-            otherInputLayout = null
         }
-        container.addView(radioGroup, 0)
+        return otherInputLayout
+    }
 
-        val savedSelection = (answers[index] as? SurveyAnswer.SingleChoice)?.choice
+    private fun restoreSingleChoiceSelection(
+        radioGroup: RadioGroup,
+        otherInputLayout: TextInputLayout?,
+        savedSelection: SelectedOption?,
+    ) {
         if (savedSelection != null) {
             val matchedButton = (0 until radioGroup.childCount)
                 .mapNotNull { childIndex -> radioGroup.getChildAt(childIndex) as? RadioButton }
@@ -1330,50 +1359,51 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 otherInputLayout?.editText?.setSelection(savedSelection.text.length)
             }
         }
+    }
 
-        val collector = {
-            val selectedId = radioGroup.checkedRadioButtonId
-            if (selectedId == -1) {
-                showValidationMessage(R.string.dashboard_survey_wizard_choice_required)
-                false
-            } else {
-                val selectedButton = radioGroup.findViewById<RadioButton>(selectedId)
-                val isOther = selectedButton.tag == OTHER_CHOICE_TAG
-                val otherValue = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
-                if (isOther && otherValue.isBlank()) {
-                    showValidationMessage(R.string.dashboard_survey_wizard_input_required)
-                    false
-                } else {
-                    val choice = if (isOther) {
-                        SelectedOption(
-                            id = GENDER_OTHER,
-                            text = otherValue,
-                            isOther = true,
-                        )
-                    } else {
-                        val originalChoice = selectedButton.tag as? SurveyChoice
-                        val label = originalChoice?.text?.takeIf { it.isNotBlank() }
-                            ?: selectedButton.text?.toString()?.takeIf { it.isNotBlank() }
-                            ?: originalChoice?.id
-                            ?: ""
-                        SelectedOption(
-                            id = originalChoice?.id ?: label,
-                            text = label,
-                            isOther = false,
-                        )
-                    }
-                    val answer = SurveyAnswer.SingleChoice(choice = choice)
-                    if (isExam && !isAnswerCorrect(question, answer)) {
-                        showValidationMessage(R.string.dashboard_exam_incorrect_answers)
-                        false
-                    } else {
-                        answers[index] = answer
-                        true
-                    }
-                }
-            }
+    private fun collectSingleChoiceAnswer(
+        radioGroup: RadioGroup,
+        otherInputLayout: TextInputLayout?,
+        question: SurveyQuestion,
+        index: Int,
+    ): Boolean {
+        val selectedId = radioGroup.checkedRadioButtonId
+        if (selectedId == -1) {
+            showValidationMessage(R.string.dashboard_survey_wizard_choice_required)
+            return false
         }
-        return container to collector
+        val selectedButton = radioGroup.findViewById<RadioButton>(selectedId)
+        val isOther = selectedButton.tag == OTHER_CHOICE_TAG
+        val otherValue = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
+        if (isOther && otherValue.isBlank()) {
+            showValidationMessage(R.string.dashboard_survey_wizard_input_required)
+            return false
+        }
+        val choice = if (isOther) {
+            SelectedOption(
+                id = GENDER_OTHER,
+                text = otherValue,
+                isOther = true,
+            )
+        } else {
+            val originalChoice = selectedButton.tag as? SurveyChoice
+            val label = originalChoice?.text?.takeIf { it.isNotBlank() }
+                ?: selectedButton.text?.toString()?.takeIf { it.isNotBlank() }
+                ?: originalChoice?.id
+                ?: ""
+            SelectedOption(
+                id = originalChoice?.id ?: label,
+                text = label,
+                isOther = false,
+            )
+        }
+        val answer = SurveyAnswer.SingleChoice(choice = choice)
+        if (isExam && !isAnswerCorrect(question, answer)) {
+            showValidationMessage(R.string.dashboard_exam_incorrect_answers)
+            return false
+        }
+        answers[index] = answer
+        return true
     }
 
     private fun renderMultiChoiceQuestion(
