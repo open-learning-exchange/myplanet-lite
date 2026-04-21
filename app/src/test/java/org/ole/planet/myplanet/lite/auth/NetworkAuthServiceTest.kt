@@ -320,7 +320,7 @@ class NetworkAuthServiceTest {
     }
 
     @Test
-    fun `login_HttpException401_returnsInvalidCredentials`() = runTest {
+    fun login_HttpException401_returnsInvalidCredentials() = runTest {
         val mockApi = mock<AuthApi>()
         val errorResponse = Response.error<LoginResponse>(
             401,
