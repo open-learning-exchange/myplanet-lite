@@ -72,6 +72,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
@@ -1089,7 +1090,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val preparedImages = mutableListOf<VoicesComposerRepository.ImagePayload>()
 
         for ((pending, markdown) in uploadResults) {
-            val replaced = replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
+            val replaced = MarkdownUtils.replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
             updatedMessage = ensureMarkdownPresent(replaced, markdown)
             val resourceId = pending.resourceId
             if (resourceId != null) {
@@ -1247,50 +1248,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             val parentCode = json.optString("parentCode").takeIf { it.isNotBlank() }
             ProfileCodes(planetCode, parentCode)
         }.getOrNull()
-    }
-
-    private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
-        val escapedName = Regex.escape(fileName)
-        val pattern = Regex("!\\[([^\\]]*)\\]\\($escapedName\\)")
-        var matched = false
-        val updated = pattern.replace(source) { matchResult ->
-            matched = true
-            val altText = matchResult.groupValues.getOrNull(1).orEmpty()
-            if (altText.isBlank()) {
-                replacement
-            } else {
-                applyAltTextToMarkdown(replacement, altText)
-            }
-        }
-        if (matched) {
-            return updated
-        }
-        val builder = StringBuilder(source)
-        if (builder.isNotEmpty()) {
-            if (builder[builder.length - 1] != '\n') {
-                builder.append('\n')
-            }
-            builder.append('\n')
-        }
-        builder.append(replacement)
-        return builder.toString()
-    }
-
-    private fun applyAltTextToMarkdown(markdown: String, altText: String): String {
-        val trimmedAlt = altText.trim()
-        if (trimmedAlt.isEmpty()) {
-            return markdown
-        }
-        val openBracket = markdown.indexOf('[')
-        val closeBracket = markdown.indexOf(']')
-        if (openBracket == -1 || closeBracket <= openBracket) {
-            return markdown
-        }
-        return buildString {
-            append(markdown.substring(0, openBracket + 1))
-            append(trimmedAlt)
-            append(markdown.substring(closeBracket))
-        }
     }
 
     private suspend fun loadCachedProfile(): UserProfile? {
