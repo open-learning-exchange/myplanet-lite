@@ -10,7 +10,6 @@ import android.app.Activity
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputType
@@ -40,11 +39,6 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
@@ -65,10 +59,7 @@ import okhttp3.OkHttpClient
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsActionsRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences.getServerBaseUrl
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences.getServerCode
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
