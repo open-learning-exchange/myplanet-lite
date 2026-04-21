@@ -22,6 +22,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import retrofit2.HttpException
 import retrofit2.Response
@@ -398,6 +399,19 @@ class NetworkAuthServiceTest {
         val token = service.getStoredToken()
 
         assertEquals(null, token)
+    }
+
+    @Test
+    fun `getStoredToken invokes getToken on mocked TokenStorage`() = runTest {
+        val mockTokenStorage = mock<TokenStorage>()
+        whenever(mockTokenStorage.getToken()).thenReturn("mock_token")
+        val mockApi = mock<AuthApi>()
+        val serviceWithMock = NetworkAuthService(mockApi, mockTokenStorage, Dispatchers.Unconfined)
+
+        val token = serviceWithMock.getStoredToken()
+
+        verify(mockTokenStorage).getToken()
+        assertEquals("mock_token", token)
     }
 
 
