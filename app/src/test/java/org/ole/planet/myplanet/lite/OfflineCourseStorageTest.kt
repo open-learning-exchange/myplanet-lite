@@ -230,10 +230,43 @@ class OfflineCourseStorageTest {
         val source = "https://example.com/image.png"
         val file = OfflineCourseStorage.markdownImageFile(context, courseId, source)
 
-        // sha1 of "https://example.com/image.png"
-        // MessageDigest "SHA-1" -> "7b39...png"
+        // sha256 of "https://example.com/image.png"
+        // MessageDigest "SHA-256" -> "..."
         assertTrue(file.absolutePath.endsWith(".png"))
         assertTrue(file.absolutePath.contains(".offline_courses/course-img/markdown/"))
+    }
+
+    @Test
+    fun testLocalMarkdownImageUri_migratesLegacySha1File() {
+        val courseId = "course-img-migrate"
+        val source = "https://example.com/legacy.png"
+
+        // Calculate the legacy SHA-1 digest to write the file where the old logic expected it.
+        val digest = java.security.MessageDigest.getInstance("SHA-1").digest(source.toByteArray())
+        val sha1Hex = digest.joinToString("") { "%02x".format(it) }
+
+        // The old code would create this file
+        val legacyFile = File(File(File(context.filesDir, ".offline_courses"), courseId), "markdown/$sha1Hex.png")
+        legacyFile.parentFile?.mkdirs()
+        legacyFile.writeText("legacy image data")
+
+        // Ensure the new SHA-256 file doesn't exist yet
+        val newFile = OfflineCourseStorage.markdownImageFile(context, courseId, source)
+        assertFalse(newFile.exists())
+
+        // When we request the URI, it should migrate the legacy file
+        val uri = OfflineCourseStorage.localMarkdownImageUri(context, courseId, source)
+
+        assertNotNull(uri)
+        assertTrue(uri?.startsWith("file:/") == true)
+        assertTrue(uri?.endsWith(".png") == true)
+
+        // The new file should exist now
+        assertTrue(newFile.exists())
+        assertEquals("legacy image data", newFile.readText())
+
+        // The legacy file should no longer exist
+        assertFalse(legacyFile.exists())
     }
 
     @Test
