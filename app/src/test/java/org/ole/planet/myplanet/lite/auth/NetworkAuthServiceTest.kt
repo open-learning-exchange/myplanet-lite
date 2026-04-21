@@ -349,6 +349,40 @@ class NetworkAuthServiceTest {
         assertTrue(error.message.contains("Error de red: Custom IO error"))
     }
 
+    @Test
+    fun `login io exception localized message is used`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val ioException = object : java.io.IOException("Regular message") {
+            override fun getLocalizedMessage(): String {
+                return "Localized IO error"
+            }
+        }
+        whenever(mockApi.login(any())).thenAnswer { throw ioException }
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error de red: Localized IO error"))
+    }
+
+    @Test
+    fun `login io exception without message returns network error fallback`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val ioException = java.io.IOException() // localizedMessage and message are null
+        whenever(mockApi.login(any())).thenAnswer { throw ioException }
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error de red: null"))
+    }
+
     @Test(expected = kotlinx.coroutines.CancellationException::class)
     fun `login cancellation exception is rethrown`() = runTest {
         val mockApi = mock<AuthApi>()
