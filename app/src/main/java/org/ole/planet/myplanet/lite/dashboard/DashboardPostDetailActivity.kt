@@ -10,8 +10,6 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
-import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.graphics.Rect
 import android.net.Uri
 import android.os.Build
@@ -44,7 +42,6 @@ import androidx.core.view.isVisible
 import androidx.core.view.updateLayoutParams
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
@@ -53,12 +50,8 @@ import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import java.util.ArrayList
-import java.util.Date
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
@@ -80,7 +73,6 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-
 
 private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
@@ -801,7 +793,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
 
     private suspend fun handleReplyImageSelection(uri: Uri) {
         val pendingResult = withContext(Dispatchers.IO) {
-            runCatching { createPendingVoiceImage(uri) }
+            runCatching { VoiceImageFactory.createPendingVoiceImage(uri, contentResolver, cacheDir, ::generatePendingImageId) }
         }
         pendingResult.onSuccess { pending ->
             pendingReplyImages[pending.id] = pending
@@ -1091,7 +1083,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val preparedImages = mutableListOf<VoicesComposerRepository.ImagePayload>()
 
         for ((pending, markdown) in uploadResults) {
-            val replaced = replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
+            val replaced = MarkdownUtils.replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
             updatedMessage = ensureMarkdownPresent(replaced, markdown)
             val resourceId = pending.resourceId
             if (resourceId != null) {
@@ -1172,7 +1164,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         val loaded = coroutineScope {
             comment.imagePaths.map { path ->
-                async(Dispatchers.IO) { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { generateImageFileName() }, { generatePendingImageId(it) }) }
+                async(Dispatchers.IO) { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { VoiceImageFactory.generateImageFileName() }, { generatePendingImageId(it) }) }
             }.awaitAll().filterNotNull().toMutableList()
         }
         if (loaded.isEmpty()) {
@@ -1213,7 +1205,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             resideOn = resolvedResideOn,
             sourcePlanet = resolvedParent,
             androidId = androidId,
-            deviceName = resolveDeviceName(),
+            deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName(),
             customDeviceName = customDeviceName
         )
     }
@@ -1240,7 +1232,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             if (altText.isBlank()) {
                 replacement
             } else {
-                applyAltTextToMarkdown(replacement, altText)
+                MarkdownUtils.applyAltText(replacement, altText)
             }
         }
         if (matched) {
@@ -1255,23 +1247,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         builder.append(replacement)
         return builder.toString()
-    }
-
-    private fun applyAltTextToMarkdown(markdown: String, altText: String): String {
-        val trimmedAlt = altText.trim()
-        if (trimmedAlt.isEmpty()) {
-            return markdown
-        }
-        val openBracket = markdown.indexOf('[')
-        val closeBracket = markdown.indexOf(']')
-        if (openBracket == -1 || closeBracket <= openBracket) {
-            return markdown
-        }
-        return buildString {
-            append(markdown.substring(0, openBracket + 1))
-            append(trimmedAlt)
-            append(markdown.substring(closeBracket))
-        }
     }
 
     private suspend fun loadCachedProfile(): UserProfile? {
@@ -1297,49 +1272,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             else -> null
         }
         return base
-    }
-
-    private fun createPendingVoiceImage(uri: Uri): PendingVoiceImage {
-        val original = contentResolver.openInputStream(uri)?.use { input ->
-            BitmapFactory.decodeStream(input)
-        } ?: throw IllegalArgumentException("Unable to decode image stream")
-        val processed = prepareBitmapForWeb(original)
-        if (processed !== original) {
-            original.recycle()
-        }
-        val jpegBytes = compressBitmapToJpeg(processed)
-        if (!processed.isRecycled) {
-            processed.recycle()
-        }
-        val fileName = generateImageFileName()
-        val tempFile = File(cacheDir, fileName)
-        FileOutputStream(tempFile).use { output ->
-            output.write(jpegBytes)
-        }
-        val id = generatePendingImageId(fileName)
-        return PendingVoiceImage(id, fileName, tempFile, jpegBytes)
-    }
-
-    private fun prepareBitmapForWeb(source: Bitmap): Bitmap {
-        val maxSide = max(source.width, source.height)
-        if (maxSide <= MAX_IMAGE_DIMENSION) {
-            return source
-        }
-        val scale = MAX_IMAGE_DIMENSION.toFloat() / maxSide.toFloat()
-        val width = (source.width * scale).toInt().coerceAtLeast(1)
-        val height = (source.height * scale).toInt().coerceAtLeast(1)
-        return Bitmap.createScaledBitmap(source, width, height, true)
-    }
-
-    private fun compressBitmapToJpeg(bitmap: Bitmap): ByteArray {
-        val output = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output)
-        return output.toByteArray()
-    }
-
-    private fun generateImageFileName(): String {
-        val formatter = SimpleDateFormat("'post'yyyyMMddHHmmssSSS", Locale.US)
-        return formatter.format(Date()) + ".jpg"
     }
 
     private fun generatePendingImageId(baseName: String): String {
@@ -1955,6 +1887,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         private const val DAY_MILLIS = 24 * HOUR_MILLIS
         private const val MONTH_MILLIS = 30 * DAY_MILLIS
         private const val YEAR_MILLIS = 12 * MONTH_MILLIS
+        private const val PRIVATE_FOR_COMMUNITY = "community"
         private const val JPEG_QUALITY = 85
         private const val MAX_IMAGE_DIMENSION = 1280
         private const val PREFS_NAME = "PREFS"

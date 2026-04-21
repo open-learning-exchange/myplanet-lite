@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite.profile
 
-import org.ole.planet.myplanet.lite.BaseActivity
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -58,6 +56,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.BuildConfig
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
