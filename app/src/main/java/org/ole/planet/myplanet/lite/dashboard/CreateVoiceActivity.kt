@@ -120,6 +120,25 @@ class CreateVoiceActivity : BaseActivity() {
         applyDeviceOrientationLock()
         setContentView(R.layout.activity_create_voice)
 
+        targetTeamId = intent.getStringExtra(EXTRA_TARGET_TEAM_ID)
+        targetTeamName = intent.getStringExtra(EXTRA_TARGET_TEAM_NAME)
+
+        setupViews()
+        setupMarkdownToolbar()
+
+        lifecycleScope.launch {
+            initializeSession()
+        }
+
+        setupEditModeIfNeeded()
+
+        val initialText = createVoiceInput.text?.toString().orEmpty()
+        updatePreview(initialText)
+        updateActionAvailability()
+        renderPreviewImages()
+    }
+
+    private fun setupViews() {
         toolbar = findViewById(R.id.createVoiceToolbar)
         createVoiceEditorLabel = findViewById(R.id.createVoiceEditorLabel)
         createVoiceInput = findViewById(R.id.createVoiceInput)
@@ -127,15 +146,7 @@ class CreateVoiceActivity : BaseActivity() {
         createVoiceProgress = findViewById(R.id.createVoiceProgress)
         createVoicePreviewText = findViewById(R.id.createVoicePreviewText)
         createVoicePreviewImages = findViewById(R.id.createVoicePreviewImages)
-        markdownToolbar = findViewById(R.id.markdownToolbar)
-        val boldButton: MaterialButton = findViewById(R.id.markdownBoldButton)
-        val italicButton: MaterialButton = findViewById(R.id.markdownItalicButton)
-        val headingButton: MaterialButton = findViewById(R.id.markdownHeadingButton)
-        val bulletButton: MaterialButton = findViewById(R.id.markdownBulletButton)
-        val numberedButton: MaterialButton = findViewById(R.id.markdownNumberedButton)
-        val quoteButton: MaterialButton = findViewById(R.id.markdownQuoteButton)
-        val linkButton: MaterialButton = findViewById(R.id.markdownLinkButton)
-        val imageButton: MaterialButton = findViewById(R.id.markdownImageButton)
+
         setSupportActionBar(toolbar)
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         supportActionBar?.setTitle(R.string.create_voice_title)
@@ -161,9 +172,18 @@ class CreateVoiceActivity : BaseActivity() {
             attemptPost()
         }
         applySubmitButtonBottomSpacing()
+    }
 
-        targetTeamId = intent.getStringExtra(EXTRA_TARGET_TEAM_ID)
-        targetTeamName = intent.getStringExtra(EXTRA_TARGET_TEAM_NAME)
+    private fun setupMarkdownToolbar() {
+        markdownToolbar = findViewById(R.id.markdownToolbar)
+        val boldButton: MaterialButton = findViewById(R.id.markdownBoldButton)
+        val italicButton: MaterialButton = findViewById(R.id.markdownItalicButton)
+        val headingButton: MaterialButton = findViewById(R.id.markdownHeadingButton)
+        val bulletButton: MaterialButton = findViewById(R.id.markdownBulletButton)
+        val numberedButton: MaterialButton = findViewById(R.id.markdownNumberedButton)
+        val quoteButton: MaterialButton = findViewById(R.id.markdownQuoteButton)
+        val linkButton: MaterialButton = findViewById(R.id.markdownLinkButton)
+        val imageButton: MaterialButton = findViewById(R.id.markdownImageButton)
 
         boldButton.setOnClickListener {
             applyWrappedFormatting("**", "**", "", placeCursorInsideWhenNoSelection = true)
@@ -189,17 +209,6 @@ class CreateVoiceActivity : BaseActivity() {
         imageButton.setOnClickListener {
             handleInsertImageClick()
         }
-
-        lifecycleScope.launch {
-            initializeSession()
-        }
-
-        setupEditModeIfNeeded()
-
-        val initialText = createVoiceInput.text?.toString().orEmpty()
-        updatePreview(initialText)
-        updateActionAvailability()
-        renderPreviewImages()
     }
 
     private fun applySubmitButtonBottomSpacing() {
