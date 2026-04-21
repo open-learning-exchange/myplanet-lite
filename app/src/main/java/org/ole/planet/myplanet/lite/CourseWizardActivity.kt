@@ -508,11 +508,9 @@ class CourseWizardActivity : BaseActivity() {
         val raw = pendingProgressPrefs.getString(progressKey(courseId), null) ?: return emptyList()
         return runCatching {
             val array = JSONArray(raw)
-            buildList {
-                for (index in 0 until array.length()) {
-                    val step = array.optInt(index)
-                    if (step > 0) add(step)
-                }
+            (0 until array.length()).mapNotNull { index ->
+                val step = array.optInt(index)
+                if (step > 0) step else null
             }
         }.getOrDefault(emptyList())
     }
@@ -538,12 +536,7 @@ class CourseWizardActivity : BaseActivity() {
         titleView: TextView,
         listContainer: LinearLayout
     ) {
-        listContainer.removeAllViews()
-        playlistIndexByResourceId.clear()
-        currentPlaylistUrls.clear()
-        lastPlaybackIndex = 0
-        lastPlaybackPositionMs = 0L
-        releaseAudioPlayers()
+        resetAttachmentState(listContainer)
         val videoResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("video") }
         val imageResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("image") }
         val displayResources = resources.filter { resource ->
@@ -560,6 +553,35 @@ class CourseWizardActivity : BaseActivity() {
         container.visibility = View.VISIBLE
         titleView.visibility = View.VISIBLE
         val inflater = layoutInflater
+        prepareVideoPlaylist(videoResources)
+        if (videoResources.isNotEmpty() && currentPlaylistUrls.isEmpty()) {
+            container.visibility = View.GONE
+            Toast.makeText(this, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+        populateAttachmentList(
+            survey,
+            hasSurvey,
+            exam,
+            hasExam,
+            displayResources,
+            imageResources,
+            inflater,
+            listContainer
+        )
+    }
+
+    private fun resetAttachmentState(listContainer: LinearLayout) {
+        listContainer.removeAllViews()
+        playlistIndexByResourceId.clear()
+        currentPlaylistUrls.clear()
+        lastPlaybackIndex = 0
+        lastPlaybackPositionMs = 0L
+        releaseAudioPlayers()
+    }
+
+    private fun prepareVideoPlaylist(videoResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>) {
         videoResources.forEachIndexed { index, resource ->
             val resolvedUrl = buildResourceUrl(resource)
             if (resolvedUrl != null) {
@@ -567,12 +589,18 @@ class CourseWizardActivity : BaseActivity() {
                 currentPlaylistUrls.add(resolvedUrl)
             }
         }
-        if (videoResources.isNotEmpty() && currentPlaylistUrls.isEmpty()) {
-            container.visibility = View.GONE
-            Toast.makeText(this, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT)
-                .show()
-            return
-        }
+    }
+
+    private fun populateAttachmentList(
+        survey: SurveyDocument?,
+        hasSurvey: Boolean,
+        exam: SurveyDocument?,
+        hasExam: Boolean,
+        displayResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        inflater: android.view.LayoutInflater,
+        listContainer: LinearLayout
+    ) {
         if (survey != null && hasSurvey) {
             bindSurveyAttachment(survey, inflater, listContainer)
         }
