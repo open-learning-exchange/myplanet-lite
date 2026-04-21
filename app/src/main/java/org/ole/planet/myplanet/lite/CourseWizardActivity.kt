@@ -508,11 +508,9 @@ class CourseWizardActivity : BaseActivity() {
         val raw = pendingProgressPrefs.getString(progressKey(courseId), null) ?: return emptyList()
         return runCatching {
             val array = JSONArray(raw)
-            buildList {
-                for (index in 0 until array.length()) {
-                    val step = array.optInt(index)
-                    if (step > 0) add(step)
-                }
+            (0 until array.length()).mapNotNull { index ->
+                val step = array.optInt(index)
+                if (step > 0) step else null
             }
         }.getOrDefault(emptyList())
     }
