@@ -19,7 +19,6 @@ import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import java.util.UUID
-import kotlin.text.Charsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -163,7 +162,7 @@ class SplashScreen : BaseActivity() {
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
 
-        val uniqueAndroidId = storedUniqueId ?: generateUniqueAndroidId(androidId)
+        val uniqueAndroidId = storedUniqueId ?: generateUniqueAndroidId()
         val customDeviceName = resolveCustomDeviceName().trim()
 
         with(preferences.edit()) {
@@ -174,24 +173,8 @@ class SplashScreen : BaseActivity() {
         }
     }
 
-    private fun generateUniqueAndroidId(androidId: String?): String {
-        val source = buildString {
-            if (!androidId.isNullOrBlank()) {
-                append(androidId)
-            }
-            append(':').append(Build.BRAND)
-            append(':').append(Build.DEVICE)
-            append(':').append(Build.FINGERPRINT)
-            append(':').append(Build.HARDWARE)
-            append(':').append(Build.ID)
-            append(':').append(Build.MODEL)
-        }
-
-        return runCatching {
-            UUID.nameUUIDFromBytes(source.toByteArray(Charsets.UTF_8)).toString()
-        }.getOrElse {
-            UUID.randomUUID().toString()
-        }
+    private fun generateUniqueAndroidId(): String {
+        return UUID.randomUUID().toString()
     }
 
     private fun resolveCustomDeviceName(): String {
