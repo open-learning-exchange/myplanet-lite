@@ -1555,23 +1555,9 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         }
 
         (1..9).forEach { value ->
-            val button = MaterialButton(context).apply {
-                text = value.toString()
-                isAllCaps = false
-                textSize = 18f
-                cornerRadius = resources.getDimensionPixelSize(R.dimen.padding_small)
-                insetTop = 0
-                insetBottom = 0
-                layoutParams = GridLayout.LayoutParams().apply {
-                    width = 0
-                    height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                    setMargins(horizontalMargin, 0, horizontalMargin, bottomMargin)
-                }
-                setOnClickListener {
-                    selectedValue = value
-                    applySelection()
-                }
+            val button = createRatingButton(context, value, horizontalMargin, bottomMargin) { selected ->
+                selectedValue = selected
+                applySelection()
             }
             buttons.add(button)
             gridLayout.addView(button)
@@ -1590,6 +1576,32 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             }
         }
         return gridLayout to collector
+    }
+
+    private fun createRatingButton(
+        context: android.content.Context,
+        value: Int,
+        horizontalMargin: Int,
+        bottomMargin: Int,
+        onClick: (Int) -> Unit
+    ): MaterialButton {
+        return MaterialButton(context).apply {
+            text = value.toString()
+            isAllCaps = false
+            textSize = 18f
+            cornerRadius = resources.getDimensionPixelSize(R.dimen.padding_small)
+            insetTop = 0
+            insetBottom = 0
+            layoutParams = GridLayout.LayoutParams().apply {
+                width = 0
+                height = ViewGroup.LayoutParams.WRAP_CONTENT
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                setMargins(horizontalMargin, 0, horizontalMargin, bottomMargin)
+            }
+            setOnClickListener {
+                onClick(value)
+            }
+        }
     }
 
     private fun buildOtherInputField(context: android.content.Context): TextInputLayout {
