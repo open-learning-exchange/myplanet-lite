@@ -115,6 +115,7 @@ dependencies {
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
+    debugImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.core.ktx)
     testImplementation(libs.json)
     testImplementation(libs.junit)
