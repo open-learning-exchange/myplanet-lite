@@ -49,6 +49,14 @@ class SplashScreen : BaseActivity() {
         enableEdgeToEdge()
         setContentView(R.layout.activity_splash_screen)
         setupEdgeToEdgePadding(findViewById(R.id.main))
+        startLogoAnimation()
+        lifecycleScope.launch {
+            delay(SPLASH_DELAY_MS)
+            routeToNextActivity()
+        }
+    }
+
+    private fun startLogoAnimation() {
         val logo = findViewById<ImageView>(R.id.logoImageView)
         val startOffset = -resources.displayMetrics.heightPixels * 0.5f
         logo.translationY = startOffset
@@ -93,34 +101,34 @@ class SplashScreen : BaseActivity() {
                 .setInterpolator(AccelerateDecelerateInterpolator())
                 .start()
         }
-        lifecycleScope.launch {
-            delay(SPLASH_DELAY_MS)
-            val launchMode = attemptDirectDashboardLaunch()
-            val nextIntent = when (launchMode) {
-                DashboardLaunchMode.ONLINE -> Intent(this@SplashScreen, DashboardActivity::class.java)
-                DashboardLaunchMode.OFFLINE -> Intent(this@SplashScreen, DashboardActivity::class.java).apply {
-                    putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
-                }
-                DashboardLaunchMode.NONE -> Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
-                    putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
-                }
-            }
+    }
 
-            if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
-                if (launchMode == DashboardLaunchMode.NONE) {
-                    nextIntent.action = intent.action
-                    nextIntent.data = intent.data
-                } else {
-                    val postId = IntentUtils.extractDeepLinkPostId(intent)
-                    if (postId != null) {
-                        nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
-                    }
-                }
+    private suspend fun routeToNextActivity() {
+        val launchMode = attemptDirectDashboardLaunch()
+        val nextIntent = when (launchMode) {
+            DashboardLaunchMode.ONLINE -> Intent(this@SplashScreen, DashboardActivity::class.java)
+            DashboardLaunchMode.OFFLINE -> Intent(this@SplashScreen, DashboardActivity::class.java).apply {
+                putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
             }
-
-            startActivity(nextIntent)
-            finish()
+            DashboardLaunchMode.NONE -> Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
+                putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
+            }
         }
+
+        if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
+            if (launchMode == DashboardLaunchMode.NONE) {
+                nextIntent.action = intent.action
+                nextIntent.data = intent.data
+            } else {
+                val postId = IntentUtils.extractDeepLinkPostId(intent)
+                if (postId != null) {
+                    nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
+                }
+            }
+        }
+
+        startActivity(nextIntent)
+        finish()
     }
 
     private suspend fun attemptDirectDashboardLaunch(): DashboardLaunchMode {
