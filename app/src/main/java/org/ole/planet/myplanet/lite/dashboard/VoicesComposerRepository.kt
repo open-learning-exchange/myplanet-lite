@@ -9,7 +9,6 @@ package org.ole.planet.myplanet.lite.dashboard
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +19,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-
 
 class VoicesComposerRepository(
     private val client: OkHttpClient,
@@ -195,7 +193,32 @@ class VoicesComposerRepository(
         val customDeviceName: String?,
         val mediaType: String,
         val privateFor: String
-    )
+    ) {
+        companion object {
+            private const val PRIVATE_FOR_COMMUNITY = "community"
+
+            fun fromContext(
+                context: VoiceImageResourceContext,
+                fileName: String
+            ): ResourceMetadataRequest {
+                val baseTitle = fileName.substringBeforeLast('.')
+                return ResourceMetadataRequest(
+                    title = baseTitle.ifBlank { fileName },
+                    createdDate = System.currentTimeMillis(),
+                    filename = fileName,
+                    isPrivate = true,
+                    addedBy = context.username,
+                    resideOn = context.resideOn,
+                    sourcePlanet = context.sourcePlanet,
+                    androidId = context.androidId,
+                    deviceName = context.deviceName,
+                    customDeviceName = context.customDeviceName,
+                    mediaType = "image",
+                    privateFor = PRIVATE_FOR_COMMUNITY
+                )
+            }
+        }
+    }
 
     @JsonClass(generateAdapter = true)
     data class ResourceCreationResponse(
@@ -317,3 +340,17 @@ class VoicesComposerRepository(
         )
     }
 }
+
+data class VoiceImageResourceContext(
+    val username: String,
+    val resideOn: String?,
+    val sourcePlanet: String?,
+    val androidId: String?,
+    val deviceName: String?,
+    val customDeviceName: String?
+)
+
+data class ProfileCodes(
+    val planetCode: String?,
+    val parentCode: String?
+)

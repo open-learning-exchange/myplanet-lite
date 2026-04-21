@@ -40,6 +40,50 @@ object MarkdownUtils {
         return (fromMarkdown + fromHtml).filter { it.isNotBlank() }
     }
 
+    fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
+        val escapedName = Regex.escape(fileName)
+        val pattern = Regex("!\\[([^\\]]*)\\]\\($escapedName\\)")
+        var matched = false
+        val updated = pattern.replace(source) { matchResult ->
+            matched = true
+            val altText = matchResult.groupValues.getOrNull(1).orEmpty()
+            if (altText.isBlank()) {
+                replacement
+            } else {
+                applyAltTextToMarkdown(replacement, altText)
+            }
+        }
+        if (matched) {
+            return updated
+        }
+        val builder = StringBuilder(source)
+        if (builder.isNotEmpty()) {
+            if (builder[builder.length - 1] != '\n') {
+                builder.append('\n')
+            }
+            builder.append('\n')
+        }
+        builder.append(replacement)
+        return builder.toString()
+    }
+
+    private fun applyAltTextToMarkdown(markdown: String, altText: String): String {
+        val trimmedAlt = altText.trim()
+        if (trimmedAlt.isEmpty()) {
+            return markdown
+        }
+        val openBracket = markdown.indexOf('[')
+        val closeBracket = markdown.indexOf(']')
+        if (openBracket == -1 || closeBracket <= openBracket) {
+            return markdown
+        }
+        return buildString {
+            append(markdown.substring(0, openBracket + 1))
+            append(trimmedAlt)
+            append(markdown.substring(closeBracket))
+        }
+    }
+
     fun resolveOfflineMarkdownImages(
         context: Context,
         markdown: String,
@@ -73,5 +117,22 @@ object MarkdownUtils {
             "![$alt]($selected)"
         }
         return resolved
+    }
+
+    fun applyAltText(markdown: String, altText: String): String {
+        val trimmedAlt = altText.trim()
+        if (trimmedAlt.isEmpty()) {
+            return markdown
+        }
+        val openBracket = markdown.indexOf('[')
+        val closeBracket = markdown.indexOf(']')
+        if (openBracket == -1 || closeBracket <= openBracket) {
+            return markdown
+        }
+        return buildString {
+            append(markdown.substring(0, openBracket + 1))
+            append(trimmedAlt)
+            append(markdown.substring(closeBracket))
+        }
     }
 }

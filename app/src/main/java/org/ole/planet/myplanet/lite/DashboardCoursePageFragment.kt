@@ -9,7 +9,6 @@ package org.ole.planet.myplanet.lite
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
-import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
@@ -23,8 +22,8 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import com.google.android.material.color.MaterialColors
-import kotlin.random.Random
+import java.security.SecureRandom
+import kotlin.random.asKotlinRandom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -38,12 +37,13 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 
 class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses_page) {
@@ -752,11 +752,13 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         var total = 0L
         resources.forEach { resource ->
             val url = buildServerResourceUrl(base, resource) ?: return@forEach
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
                 .head()
-                .header("Authorization", Credentials.basic(creds.username, creds.password))
-                .build()
+            if (url.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", Credentials.basic(creds.username, creds.password))
+            }
+            val request = requestBuilder.build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
@@ -786,10 +788,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val url = buildServerResourceUrl(base, resource) ?: return false
             val target = OfflineCourseStorage.resourceFile(requireContext(), course.id, resource.id, resource.filename)
             target.parentFile?.mkdirs()
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
-                .header("Authorization", authHeader)
-                .build()
+            if (url.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.build()
             val success = runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@use false
@@ -810,10 +814,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val resolvedUrl = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
             val target = OfflineCourseStorage.markdownImageFile(requireContext(), course.id, source)
             target.parentFile?.mkdirs()
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(resolvedUrl)
-                .header("Authorization", authHeader)
-                .build()
+            if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@use false
@@ -840,11 +846,13 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         val authHeader = Credentials.basic(creds.username, creds.password)
         sources.forEach { source ->
             val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
                 .head()
-                .header("Authorization", authHeader)
-                .build()
+            if (url.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
@@ -944,7 +952,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 exam = step.exam
             )
         }
-        val random = Random(document.id.orEmpty().hashCode())
+        val random = SecureRandom(document.id.orEmpty().toByteArray()).asKotlinRandom()
         val completedSteps = if (steps.isNotEmpty() && stepNum != null) {
             stepNum.coerceAtLeast(0).coerceAtMost(steps.size)
         } else {
