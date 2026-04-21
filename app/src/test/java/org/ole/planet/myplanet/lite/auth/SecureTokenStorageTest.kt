@@ -67,6 +67,34 @@ class SecureTokenStorageTest {
     }
 
     @Test
+    fun `clearToken_removesExistingToken_successfully`() = runTest {
+        val testToken = "test_token_123"
+        secureTokenStorage.saveToken(testToken)
+
+        // Verify token is saved
+        assertEquals(testToken, secureTokenStorage.getToken())
+
+        // Call clearToken to remove it
+        secureTokenStorage.clearToken()
+
+        // Assert token was successfully removed
+        assertNull(secureTokenStorage.getToken())
+    }
+
+    @Test
+    fun `clearToken when no token exists does not throw`() = runTest {
+        // Ensure it starts empty
+        assertNull(fakeSharedPreferences.getString("planet_token", null))
+
+        // Clearing empty storage shouldn't throw an exception
+        secureTokenStorage.clearToken()
+
+        // Should remain empty
+        assertNull(fakeSharedPreferences.getString("planet_token", null))
+        assertNull(secureTokenStorage.getToken())
+    }
+
+    @Test
     fun `saveToken overwrites previous token`() = runTest {
         val testToken1 = "test_token_123"
         val testToken2 = "test_token_456"
