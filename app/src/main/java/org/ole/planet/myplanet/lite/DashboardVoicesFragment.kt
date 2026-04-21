@@ -297,13 +297,14 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         viewLifecycleOwner.lifecycleScope.launch {
             var accumulatedPosts = 0
             var shouldContinue = true
+            val fetchLimit = maxOf(pageSize * 5, 100)
             while (shouldContinue) {
                 val result = repository.fetchNews(
                     base,
                     sessionCookie,
                     nextSkip,
                     nextBookmark,
-                    pageSize,
+                    fetchLimit,
                     serverCode,
                     serverParentCode,
                     teamName

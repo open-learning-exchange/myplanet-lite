@@ -19,7 +19,6 @@ import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import java.util.UUID
-import kotlin.text.Charsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -163,7 +162,7 @@ class SplashScreen : BaseActivity() {
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
 
-        val uniqueAndroidId = storedUniqueId ?: generateUniqueAndroidId(androidId)
+        val uniqueAndroidId = storedUniqueId ?: generateUniqueAndroidId()
         val customDeviceName = resolveCustomDeviceName().trim()
 
         with(preferences.edit()) {
@@ -174,24 +173,8 @@ class SplashScreen : BaseActivity() {
         }
     }
 
-    private fun generateUniqueAndroidId(androidId: String?): String {
-        val source = buildString {
-            if (!androidId.isNullOrBlank()) {
-                append(androidId)
-            }
-            append(':').append(Build.BRAND)
-            append(':').append(Build.DEVICE)
-            append(':').append(Build.FINGERPRINT)
-            append(':').append(Build.HARDWARE)
-            append(':').append(Build.ID)
-            append(':').append(Build.MODEL)
-        }
-
-        return runCatching {
-            UUID.nameUUIDFromBytes(source.toByteArray(Charsets.UTF_8)).toString()
-        }.getOrElse {
-            UUID.randomUUID().toString()
-        }
+    private fun generateUniqueAndroidId(): String {
+        return UUID.randomUUID().toString()
     }
 
     private fun resolveCustomDeviceName(): String {
@@ -211,23 +194,7 @@ class SplashScreen : BaseActivity() {
             return systemName
         }
 
-        return formatManufacturerModel()
-    }
-
-    private fun formatManufacturerModel(): String {
-        val manufacturer = Build.MANUFACTURER.trim()
-        val model = Build.MODEL.trim()
-
-        return when {
-            manufacturer.isEmpty() && model.isEmpty() -> {
-                val device = Build.DEVICE.trim()
-                if (device.isNotEmpty()) device else DEFAULT_DEVICE_NAME
-            }
-            manufacturer.isEmpty() -> model
-            model.isEmpty() -> manufacturer
-            model.startsWith(manufacturer, ignoreCase = true) -> model
-            else -> "$manufacturer $model"
-        }
+        return org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName()
     }
 
     companion object {
@@ -236,7 +203,6 @@ class SplashScreen : BaseActivity() {
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_UNIQUE_ANDROID_ID = "device_unique_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
-        private const val DEFAULT_DEVICE_NAME = "Android Device"
     }
 
     private enum class DashboardLaunchMode {
