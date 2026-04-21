@@ -1,14 +1,18 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Intent
+import android.content.SharedPreferences
 import androidx.fragment.app.Fragment
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.appbar.MaterialToolbar
+import org.junit.After
 import org.junit.Assert.*
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.mock
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import com.google.mlkit.common.sdkinternal.MlKitContext
@@ -18,12 +22,20 @@ class SurveyWizardActivityTest {
 
     @Before
     fun setUp() {
+        val mockPrefs = mock(SharedPreferences::class.java)
+        SecurePreferencesProvider.injectedPreferences = mockPrefs
+
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         try {
             MlKitContext.initializeIfNeeded(context)
         } catch (e: Exception) {
             // Ignore if already initialized
         }
+    }
+
+    @After
+    fun tearDown() {
+        SecurePreferencesProvider.injectedPreferences = null
     }
 
     @Test
