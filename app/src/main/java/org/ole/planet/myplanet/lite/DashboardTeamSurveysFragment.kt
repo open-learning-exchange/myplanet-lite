@@ -236,7 +236,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         withContext(Dispatchers.IO) {
             completionCounts.clear()
             val ids = documents.mapNotNull { it.id }
-            ids.forEach { completionCounts[it] = 0 }
+            completionCounts.putAll(ids.associateWith { 0 })
             if (ids.isNotEmpty()) {
                 val result = repository.fetchSurveyCompletionCountsBatched(base, credentials, sessionCookie, team, ids)
                 completionCounts.putAll(result.getOrDefault(emptyMap()))

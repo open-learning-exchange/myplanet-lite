@@ -22,6 +22,7 @@ import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import retrofit2.HttpException
 import retrofit2.Response
@@ -91,6 +92,42 @@ class NetworkAuthServiceTest {
         val success = result as AuthResult.Success
         assertEquals(null, tokenStorage.token)
         assertEquals(null, success.response.sessionCookie)
+    }
+
+    @Test
+    fun `login success with empty cookie clears token`() = runTest {
+        tokenStorage.saveToken("old_token")
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "")
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.login("user@planet.com", "secret")
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals(null, tokenStorage.token)
+        assertEquals("", success.response.sessionCookie)
+    }
+
+    @Test
+    fun `login success with blank cookie clears token`() = runTest {
+        tokenStorage.saveToken("old_token")
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "   ")
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.login("user@planet.com", "secret")
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals(null, tokenStorage.token)
+        assertEquals("", success.response.sessionCookie)
     }
 
     @Test
@@ -398,6 +435,19 @@ class NetworkAuthServiceTest {
         assertEquals(null, token)
     }
 
+    @Test
+    fun `getStoredToken invokes getToken on mocked TokenStorage`() = runTest {
+        val mockTokenStorage = mock<TokenStorage>()
+        whenever(mockTokenStorage.getToken()).thenReturn("mock_token")
+        val mockApi = mock<AuthApi>()
+        val serviceWithMock = NetworkAuthService(mockApi, mockTokenStorage, Dispatchers.Unconfined)
+
+        val token = serviceWithMock.getStoredToken()
+
+        verify(mockTokenStorage).getToken()
+        assertEquals("mock_token", token)
+    }
+
 
 
     @Test
@@ -477,5 +527,13 @@ class NetworkAuthServiceTest {
         assertTrue(result is AuthResult.Error)
         val error = result as AuthResult.Error
         assertEquals(401, error.code)
+    }
+
+    @Test
+    fun `parseErrorMessage returns raw body on JSONException`() {
+        val method = NetworkAuthService::class.java.getDeclaredMethod("parseErrorMessage", String::class.java)
+        method.isAccessible = true
+        val result = method.invoke(service, "invalid json {") as String
+        assertEquals("invalid json {", result)
     }
 }

@@ -1232,7 +1232,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             resideOn = resolvedResideOn,
             sourcePlanet = resolvedParent,
             androidId = androidId,
-            deviceName = resolveDeviceName(),
+            deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName(),
             customDeviceName = customDeviceName
         )
     }
@@ -1318,18 +1318,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val planetCode: String?,
         val parentCode: String?
     )
-
-    private fun resolveDeviceName(): String? {
-        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
-        val model = Build.MODEL?.trim().orEmpty()
-        val base = when {
-            manufacturer.isNotEmpty() && model.isNotEmpty() -> "$manufacturer $model"
-            model.isNotEmpty() -> model
-            manufacturer.isNotEmpty() -> manufacturer
-            else -> null
-        }
-        return base
-    }
 
     private fun createPendingVoiceImage(uri: Uri): PendingVoiceImage {
         val original = contentResolver.openInputStream(uri)?.use { input ->
