@@ -2,11 +2,12 @@ package org.ole.planet.myplanet.lite
 
 import android.content.Intent
 import android.net.Uri
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import org.ole.planet.myplanet.lite.util.IntentUtils
+import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class IntentSecurityTest {

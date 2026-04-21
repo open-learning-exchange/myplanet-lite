@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.graphics.Rect
 import android.os.Bundle
 import android.text.InputFilter
@@ -575,6 +574,16 @@ class SignupActivity : BaseActivity() {
                 putExtra(EXTRA_USERNAME, usernameInput.text?.toString()?.trim().orEmpty())
                 putExtra(EXTRA_PASSWORD, passwordInput.text?.toString().orEmpty())
             }
+        }
+        if (autoLogin) {
+            val username = usernameInput.text?.toString()?.trim().orEmpty()
+            val password = passwordInput.text?.toString().orEmpty()
+            SecurePreferencesProvider.getEncryptedPreferences(this, MyPlanetLite.SECURE_PREFS_NAME)
+                .edit()
+                .putBoolean(MyPlanetLite.KEY_REMEMBER_CREDENTIALS, true)
+                .putString(MyPlanetLite.KEY_REMEMBERED_USERNAME, username)
+                .putString(MyPlanetLite.KEY_REMEMBERED_PASSWORD, password)
+                .apply()
         }
         setResult(RESULT_OK, resultIntent)
         finish()

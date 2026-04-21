@@ -8,16 +8,13 @@ package org.ole.planet.myplanet.lite
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.os.Bundle
-import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import android.view.View
 import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import org.ole.planet.myplanet.lite.BaseActivity
 import androidx.core.content.IntentCompat
 import androidx.core.content.edit
 import androidx.core.net.toUri
@@ -39,19 +36,21 @@ import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
 import io.noties.markwon.image.glide.GlideImagesPlugin
+import java.util.Locale
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
 import org.json.JSONArray
+import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.NetworkUtils
-import java.util.Locale
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : BaseActivity() {
@@ -539,12 +538,7 @@ class CourseWizardActivity : BaseActivity() {
         titleView: TextView,
         listContainer: LinearLayout
     ) {
-        listContainer.removeAllViews()
-        playlistIndexByResourceId.clear()
-        currentPlaylistUrls.clear()
-        lastPlaybackIndex = 0
-        lastPlaybackPositionMs = 0L
-        releaseAudioPlayers()
+        resetAttachmentState(listContainer)
         val videoResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("video") }
         val imageResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("image") }
         val displayResources = resources.filter { resource ->
@@ -561,6 +555,35 @@ class CourseWizardActivity : BaseActivity() {
         container.visibility = View.VISIBLE
         titleView.visibility = View.VISIBLE
         val inflater = layoutInflater
+        prepareVideoPlaylist(videoResources)
+        if (videoResources.isNotEmpty() && currentPlaylistUrls.isEmpty()) {
+            container.visibility = View.GONE
+            Toast.makeText(this, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+        populateAttachmentList(
+            survey,
+            hasSurvey,
+            exam,
+            hasExam,
+            displayResources,
+            imageResources,
+            inflater,
+            listContainer
+        )
+    }
+
+    private fun resetAttachmentState(listContainer: LinearLayout) {
+        listContainer.removeAllViews()
+        playlistIndexByResourceId.clear()
+        currentPlaylistUrls.clear()
+        lastPlaybackIndex = 0
+        lastPlaybackPositionMs = 0L
+        releaseAudioPlayers()
+    }
+
+    private fun prepareVideoPlaylist(videoResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>) {
         videoResources.forEachIndexed { index, resource ->
             val resolvedUrl = buildResourceUrl(resource)
             if (resolvedUrl != null) {
@@ -568,148 +591,179 @@ class CourseWizardActivity : BaseActivity() {
                 currentPlaylistUrls.add(resolvedUrl)
             }
         }
-        if (videoResources.isNotEmpty() && currentPlaylistUrls.isEmpty()) {
-            container.visibility = View.GONE
-            Toast.makeText(this, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT)
-                .show()
-            return
+    }
+
+    private fun populateAttachmentList(
+        survey: SurveyDocument?,
+        hasSurvey: Boolean,
+        exam: SurveyDocument?,
+        hasExam: Boolean,
+        displayResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        inflater: android.view.LayoutInflater,
+        listContainer: LinearLayout
+    ) {
+        if (survey != null && hasSurvey) {
+            bindSurveyAttachment(survey, inflater, listContainer)
         }
-        if (hasSurvey) {
-            val itemView = inflater.inflate(
-                R.layout.item_course_wizard_attachment,
-                listContainer,
-                false
-            )
-            val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
-            val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
-            val iconView: android.widget.ImageView =
-                itemView.findViewById(R.id.courseWizardAttachmentIcon)
-            val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-            titleText.text = survey.name.orEmpty().ifBlank {
-                getString(R.string.dashboard_surveys_title)
-            }
-            subtitle.text = getString(R.string.dashboard_surveys_title)
-            iconView.setImageResource(R.drawable.ic_surveys_24)
-            iconView.contentDescription = getString(R.string.dashboard_surveys_title)
-            playButton.contentDescription = getString(R.string.course_wizard_open_survey)
-            val openSurvey = {
-                SurveyWizardActivity.newIntent(
-                    this,
-                    survey,
-                    survey.teamId,
-                    null,
-                    courseId
-                ).also { startActivity(it) }
-            }
-            itemView.setOnClickListener { openSurvey() }
-            playButton.setOnClickListener { openSurvey() }
-            listContainer.addView(itemView)
-        }
-        if (hasExam) {
-            val itemView = inflater.inflate(
-                R.layout.item_course_wizard_attachment,
-                listContainer,
-                false
-            )
-            val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
-            val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
-            val iconView: android.widget.ImageView =
-                itemView.findViewById(R.id.courseWizardAttachmentIcon)
-            val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-            titleText.text = exam.name.orEmpty().ifBlank {
-                getString(R.string.dashboard_exam_title)
-            }
-            subtitle.text = getString(R.string.dashboard_exam_title)
-            iconView.setImageResource(R.drawable.ic_course_step_exam_24)
-            iconView.contentDescription = getString(R.string.dashboard_exam_title)
-            playButton.contentDescription = getString(R.string.course_wizard_open_exam)
-            val openExam = openExam@{
-                pendingExamStepIndex = currentIndex
-                SurveyWizardActivity.newIntent(
-                    this,
-                    exam,
-                    exam.teamId,
-                    null,
-                    courseId,
-                    isExam = true
-                ).also { examLauncher.launch(it) }
-            }
-            itemView.setOnClickListener { openExam() }
-            playButton.setOnClickListener { openExam() }
-            listContainer.addView(itemView)
+        if (exam != null && hasExam) {
+            bindExamAttachment(exam, inflater, listContainer)
         }
         displayResources.forEach { resource ->
-            val isAudio = resource.mediaType.lowercase(Locale.ROOT).contains("audio")
-            val itemView = if (isAudio) {
-                inflater.inflate(
-                    R.layout.item_course_wizard_audio_attachment,
-                    listContainer,
-                    false
-                )
-            } else {
-                inflater.inflate(
-                    R.layout.item_course_wizard_attachment,
-                    listContainer,
-                    false
-                )
-            }
-            val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
-            val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
-            val iconView: android.widget.ImageView =
-                itemView.findViewById(R.id.courseWizardAttachmentIcon)
-            titleText.text = resource.filename
-            subtitle.text = resource.mediaType
-            val isVideo = resource.mediaType.lowercase(Locale.ROOT).contains("video")
-            val isImage = resource.mediaType.lowercase(Locale.ROOT).contains("image")
-            when {
-                isVideo -> {
-                    val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-                    iconView.setImageResource(R.drawable.ic_course_resource_video_24)
-                    iconView.contentDescription = getString(R.string.course_wizard_attachment_video)
-                    playButton.contentDescription = getString(R.string.course_wizard_play_video)
-                }
-                isImage -> {
-                    val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-                    iconView.setImageResource(R.drawable.ic_course_step_image_24)
-                    iconView.contentDescription = getString(R.string.course_wizard_attachment_image)
-                    playButton.contentDescription = getString(R.string.course_wizard_open_image)
-                }
-                isAudio -> {
-                    iconView.setImageResource(R.drawable.ic_course_step_audio_24)
-                    iconView.contentDescription = getString(R.string.course_wizard_attachment_audio)
-                    bindAudioPlayer(itemView, resource)
-                }
-                else -> {
-                    val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-                    iconView.setImageResource(R.drawable.ic_course_step_pdf_24)
-                    iconView.contentDescription = getString(R.string.course_wizard_attachment_pdf)
-                    playButton.contentDescription = getString(R.string.course_wizard_open_pdf)
-                }
-            }
-            val openResource = {
-                if (isVideo) {
-                    if (playlistIndexByResourceId.containsKey(resource.id)) {
-                        selectResource(resource)
-                    } else {
-                        Toast.makeText(
-                            this,
-                            getString(R.string.course_wizard_play_error),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } else if (isImage) {
-                    openImageResource(resource, imageResources)
-                } else {
-                    openPdfResource(resource)
-                }
-            }
-            if (!isAudio) {
-                val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-                itemView.setOnClickListener { openResource() }
-                playButton.setOnClickListener { openResource() }
-            }
-            listContainer.addView(itemView)
+            bindResourceAttachment(resource, imageResources, inflater, listContainer)
         }
+    }
+
+    private fun bindSurveyAttachment(
+        survey: SurveyDocument,
+        inflater: android.view.LayoutInflater,
+        listContainer: LinearLayout
+    ) {
+        val itemView = inflater.inflate(
+            R.layout.item_course_wizard_attachment,
+            listContainer,
+            false
+        )
+        val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
+        val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
+        val iconView: android.widget.ImageView =
+            itemView.findViewById(R.id.courseWizardAttachmentIcon)
+        val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+        titleText.text = survey.name.orEmpty().ifBlank {
+            getString(R.string.dashboard_surveys_title)
+        }
+        subtitle.text = getString(R.string.dashboard_surveys_title)
+        iconView.setImageResource(R.drawable.ic_surveys_24)
+        iconView.contentDescription = getString(R.string.dashboard_surveys_title)
+        playButton.contentDescription = getString(R.string.course_wizard_open_survey)
+        val openSurvey = {
+            SurveyWizardActivity.newIntent(
+                this,
+                survey,
+                survey.teamId,
+                null,
+                courseId
+            ).also { startActivity(it) }
+        }
+        itemView.setOnClickListener { openSurvey() }
+        playButton.setOnClickListener { openSurvey() }
+        listContainer.addView(itemView)
+    }
+
+    private fun bindExamAttachment(
+        exam: SurveyDocument,
+        inflater: android.view.LayoutInflater,
+        listContainer: LinearLayout
+    ) {
+        val itemView = inflater.inflate(
+            R.layout.item_course_wizard_attachment,
+            listContainer,
+            false
+        )
+        val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
+        val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
+        val iconView: android.widget.ImageView =
+            itemView.findViewById(R.id.courseWizardAttachmentIcon)
+        val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+        titleText.text = exam.name.orEmpty().ifBlank {
+            getString(R.string.dashboard_exam_title)
+        }
+        subtitle.text = getString(R.string.dashboard_exam_title)
+        iconView.setImageResource(R.drawable.ic_course_step_exam_24)
+        iconView.contentDescription = getString(R.string.dashboard_exam_title)
+        playButton.contentDescription = getString(R.string.course_wizard_open_exam)
+        val openExam = {
+            pendingExamStepIndex = currentIndex
+            SurveyWizardActivity.newIntent(
+                this,
+                exam,
+                exam.teamId,
+                null,
+                courseId,
+                isExam = true
+            ).also { examLauncher.launch(it) }
+        }
+        itemView.setOnClickListener { openExam() }
+        playButton.setOnClickListener { openExam() }
+        listContainer.addView(itemView)
+    }
+
+    private fun bindResourceAttachment(
+        resource: DashboardCoursePageFragment.CourseItem.LessonResource,
+        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        inflater: android.view.LayoutInflater,
+        listContainer: LinearLayout
+    ) {
+        val isAudio = resource.mediaType.lowercase(Locale.ROOT).contains("audio")
+        val itemView = if (isAudio) {
+            inflater.inflate(
+                R.layout.item_course_wizard_audio_attachment,
+                listContainer,
+                false
+            )
+        } else {
+            inflater.inflate(
+                R.layout.item_course_wizard_attachment,
+                listContainer,
+                false
+            )
+        }
+        val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
+        val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
+        val iconView: android.widget.ImageView =
+            itemView.findViewById(R.id.courseWizardAttachmentIcon)
+        titleText.text = resource.filename
+        subtitle.text = resource.mediaType
+        val isVideo = resource.mediaType.lowercase(Locale.ROOT).contains("video")
+        val isImage = resource.mediaType.lowercase(Locale.ROOT).contains("image")
+        when {
+            isVideo -> {
+                val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+                iconView.setImageResource(R.drawable.ic_course_resource_video_24)
+                iconView.contentDescription = getString(R.string.course_wizard_attachment_video)
+                playButton.contentDescription = getString(R.string.course_wizard_play_video)
+            }
+            isImage -> {
+                val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+                iconView.setImageResource(R.drawable.ic_course_step_image_24)
+                iconView.contentDescription = getString(R.string.course_wizard_attachment_image)
+                playButton.contentDescription = getString(R.string.course_wizard_open_image)
+            }
+            isAudio -> {
+                iconView.setImageResource(R.drawable.ic_course_step_audio_24)
+                iconView.contentDescription = getString(R.string.course_wizard_attachment_audio)
+                bindAudioPlayer(itemView, resource)
+            }
+            else -> {
+                val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+                iconView.setImageResource(R.drawable.ic_course_step_pdf_24)
+                iconView.contentDescription = getString(R.string.course_wizard_attachment_pdf)
+                playButton.contentDescription = getString(R.string.course_wizard_open_pdf)
+            }
+        }
+        val openResource = {
+            if (isVideo) {
+                if (playlistIndexByResourceId.containsKey(resource.id)) {
+                    selectResource(resource)
+                } else {
+                    Toast.makeText(
+                        this,
+                        getString(R.string.course_wizard_play_error),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } else if (isImage) {
+                openImageResource(resource, imageResources)
+            } else {
+                openPdfResource(resource)
+            }
+        }
+        if (!isAudio) {
+            val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+            itemView.setOnClickListener { openResource() }
+            playButton.setOnClickListener { openResource() }
+        }
+        listContainer.addView(itemView)
     }
 
     private fun bindAudioPlayer(
@@ -722,7 +776,11 @@ class CourseWizardActivity : BaseActivity() {
                 .show()
             return
         }
-        val authHeader = credentials?.let { Credentials.basic(it.username, it.password) }
+        val authHeader = if (baseUrl?.startsWith("https://", ignoreCase = true) == true) {
+            credentials?.let { Credentials.basic(it.username, it.password) }
+        } else {
+            null
+        }
         val playerView: PlayerView = itemView.findViewById(R.id.courseWizardAudioPlayer)
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(buildAudioDataSourceFactory(authHeader)))
@@ -761,7 +819,11 @@ class CourseWizardActivity : BaseActivity() {
         } else {
             0L
         }
-        val authHeader = credentials?.let { Credentials.basic(it.username, it.password) }
+        val authHeader = if (baseUrl?.startsWith("https://", ignoreCase = true) == true) {
+            credentials?.let { Credentials.basic(it.username, it.password) }
+        } else {
+            null
+        }
         val intent = FullscreenPlayerActivity.createIntent(
             context = this,
             mediaUrls = ArrayList(currentPlaylistUrls),
@@ -779,7 +841,11 @@ class CourseWizardActivity : BaseActivity() {
                 .show()
             return
         }
-        val authHeader = credentials?.let { Credentials.basic(it.username, it.password) }
+        val authHeader = if (baseUrl?.startsWith("https://", ignoreCase = true) == true) {
+            credentials?.let { Credentials.basic(it.username, it.password) }
+        } else {
+            null
+        }
         val intent = FullscreenPdfActivity.createIntent(this, url, authHeader)
         startActivity(intent)
     }
