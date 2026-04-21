@@ -112,6 +112,7 @@ dependencies {
 
     // testImplementation
     // testing
+    debugImplementation("androidx.fragment:fragment-testing:1.8.9")
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
