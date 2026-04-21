@@ -320,6 +320,21 @@ class NetworkAuthServiceTest {
     }
 
     @Test
+    fun login_HttpException401_returnsInvalidCredentials() = runTest {
+        val mockApi = mock<AuthApi>()
+        val errorResponse = Response.error<LoginResponse>(
+            401,
+            "Unauthorized".toResponseBody("text/plain".toMediaType())
+        )
+        whenever(mockApi.login(any())).thenThrow(HttpException(errorResponse))
+
+        val serviceWithMockApi = NetworkAuthService(mockApi, tokenStorage, Dispatchers.Unconfined)
+        val result = serviceWithMockApi.login("user", "pass")
+
+        assertEquals(AuthResult.Failure.InvalidCredentials, result)
+    }
+
+    @Test
     fun `login http exception 404 returns error`() = runTest {
         val mockApi = mock<AuthApi>()
         val errorResponse = Response.error<LoginResponse>(
