@@ -20,8 +20,13 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
+<<<<<<< test-parse-error-message-13351406347152029566
         versionCode = 197
         versionName = "0.1.97"
+=======
+        versionCode = 196
+        versionName = "0.1.96"
+>>>>>>> main
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
