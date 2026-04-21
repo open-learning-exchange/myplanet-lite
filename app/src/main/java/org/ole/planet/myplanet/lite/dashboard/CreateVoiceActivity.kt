@@ -64,6 +64,7 @@ import okhttp3.OkHttpClient
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.R
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsActionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository
@@ -1182,7 +1183,7 @@ class CreateVoiceActivity : BaseActivity() {
 
         for ((pending, markdown) in uploadResults) {
             val normalizedPath = normalizeImagePath(markdown)
-            val replaced = replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
+            val replaced = MarkdownUtils.replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
             if (!normalizedMessageImages.contains(normalizedPath)) {
                 updatedMessage = ensureMarkdownPresent(replaced, markdown)
                 normalizedMessageImages += normalizedPath
@@ -1363,7 +1364,7 @@ class CreateVoiceActivity : BaseActivity() {
             resideOn = resolvedResideOn,
             sourcePlanet = resolvedParent,
             androidId = androidId,
-            deviceName = resolveDeviceName(),
+            deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName(),
             customDeviceName = customDeviceName
         )
     }
@@ -1378,50 +1379,6 @@ class CreateVoiceActivity : BaseActivity() {
             val parentCode = json.optString("parentCode").takeIf { it.isNotBlank() }
             ProfileCodes(planetCode, parentCode)
         }.getOrNull()
-    }
-
-    private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
-        val escapedName = Regex.escape(fileName)
-        val pattern = Regex("!\\[([^\\]]*)\\]\\($escapedName\\)")
-        var matched = false
-        val updated = pattern.replace(source) { matchResult ->
-            matched = true
-            val altText = matchResult.groupValues.getOrNull(1).orEmpty()
-            if (altText.isBlank()) {
-                replacement
-            } else {
-                applyAltTextToMarkdown(replacement, altText)
-            }
-        }
-        if (matched) {
-            return updated
-        }
-        val builder = StringBuilder(source)
-        if (builder.isNotEmpty()) {
-            if (builder[builder.length - 1] != '\n') {
-                builder.append('\n')
-            }
-            builder.append('\n')
-        }
-        builder.append(replacement)
-        return builder.toString()
-    }
-
-    private fun applyAltTextToMarkdown(markdown: String, altText: String): String {
-        val trimmedAlt = altText.trim()
-        if (trimmedAlt.isEmpty()) {
-            return markdown
-        }
-        val openBracket = markdown.indexOf('[')
-        val closeBracket = markdown.indexOf(']')
-        if (openBracket == -1 || closeBracket <= openBracket) {
-            return markdown
-        }
-        return buildString {
-            append(markdown.substring(0, openBracket + 1))
-            append(trimmedAlt)
-            append(markdown.substring(closeBracket))
-        }
     }
 
     private suspend fun loadCachedProfile(): UserProfile? {
@@ -1533,21 +1490,6 @@ class CreateVoiceActivity : BaseActivity() {
         return result.takeIf { it.isNotEmpty() }
     }
 
-    private fun resolveDeviceName(): String {
-        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
-        val model = Build.MODEL?.trim().orEmpty()
-        return when {
-            manufacturer.isEmpty() && model.isEmpty() -> {
-                val device = Build.DEVICE?.trim().orEmpty()
-                if (device.isNotEmpty()) device else DEFAULT_DEVICE_NAME
-            }
-            manufacturer.isEmpty() -> model
-            model.isEmpty() -> manufacturer
-            model.startsWith(manufacturer, ignoreCase = true) -> model
-            else -> "$manufacturer $model"
-        }
-    }
-
     companion object {
         private const val PREVIEW_DEBOUNCE_MS = 150L
         private const val MAX_HEADING_LEVEL = 6
@@ -1557,7 +1499,6 @@ class CreateVoiceActivity : BaseActivity() {
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
         private const val KEY_SERVER_CODE = "server_code"
         private const val PRIVATE_FOR_COMMUNITY = "community"
-        private const val DEFAULT_DEVICE_NAME = "Android"
 
         const val EXTRA_IS_EDIT_MODE = "extra_is_edit_mode"
         const val EXTRA_EDIT_POST_ID = "extra_edit_post_id"
