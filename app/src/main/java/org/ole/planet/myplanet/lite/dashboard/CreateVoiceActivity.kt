@@ -991,12 +991,8 @@ class CreateVoiceActivity : BaseActivity() {
     }
 
     private fun findIndentLength(line: String): Int {
-        for (index in line.indices) {
-            if (!line[index].isWhitespace()) {
-                return index
-            }
-        }
-        return line.length
+        val index = line.indexOfFirst { !it.isWhitespace() }
+        return if (index == -1) line.length else index
     }
 
     private suspend fun handleImageSelection(uri: Uri) {
