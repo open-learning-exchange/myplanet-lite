@@ -94,6 +94,42 @@ class NetworkAuthServiceTest {
     }
 
     @Test
+    fun `login success with empty cookie clears token`() = runTest {
+        tokenStorage.saveToken("old_token")
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "")
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.login("user@planet.com", "secret")
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals(null, tokenStorage.token)
+        assertEquals("", success.response.sessionCookie)
+    }
+
+    @Test
+    fun `login success with blank cookie clears token`() = runTest {
+        tokenStorage.saveToken("old_token")
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "   ")
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.login("user@planet.com", "secret")
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals(null, tokenStorage.token)
+        assertEquals("", success.response.sessionCookie)
+    }
+
+    @Test
     fun `login success with null body returns invalid response error`() = runTest {
         mockWebServer.enqueue(
             MockResponse()
@@ -443,5 +479,81 @@ class NetworkAuthServiceTest {
         assertTrue(result is AuthResult.Error)
         val error = result as AuthResult.Error
         assertEquals(401, error.code)
+    }
+
+    @Test
+    fun `authenticate success stores token`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "AuthSession=xyz789; Path=/")
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.authenticate(mockWebServer.url("/").toString(), UserCredentials("user@planet.com", "secret"))
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals("AuthSession=xyz789; Path=/", tokenStorage.token)
+        assertEquals("AuthSession=xyz789; Path=/", success.response.sessionCookie)
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("/db/_session", request.path)
+        val body = request.body.readUtf8()
+        assertTrue(body.contains("\"name\":\"user@planet.com\""))
+        assertTrue(body.contains("\"password\":\"secret\""))
+    }
+
+    @Test
+    fun `authenticate success without cookie clears token`() = runTest {
+        tokenStorage.saveToken("old_token")
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.authenticate(mockWebServer.url("/").toString(), UserCredentials("user@planet.com", "secret"))
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals(null, tokenStorage.token)
+        assertEquals(null, success.response.sessionCookie)
+    }
+
+    @Test
+    fun `authenticate success with empty cookie clears token`() = runTest {
+        tokenStorage.saveToken("old_token")
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "")
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.authenticate(mockWebServer.url("/").toString(), UserCredentials("user@planet.com", "secret"))
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals(null, tokenStorage.token)
+        assertEquals("", success.response.sessionCookie)
+    }
+
+    @Test
+    fun `authenticate success with blank cookie clears token`() = runTest {
+        tokenStorage.saveToken("old_token")
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .addHeader("Set-Cookie", "   ")
+                .setBody("""{"ok":true,"name":"user@planet.com","roles":["learner"]}""")
+        )
+
+        val result = service.authenticate(mockWebServer.url("/").toString(), UserCredentials("user@planet.com", "secret"))
+
+        assertTrue(result is AuthResult.Success)
+        val success = result as AuthResult.Success
+        assertEquals(null, tokenStorage.token)
+        assertEquals("", success.response.sessionCookie)
     }
 }
