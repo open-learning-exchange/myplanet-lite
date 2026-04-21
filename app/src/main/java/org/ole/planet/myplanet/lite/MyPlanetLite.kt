@@ -1018,7 +1018,7 @@ class MyPlanetLite : BaseActivity() {
         val androidId = serverPreferences.getString(KEY_DEVICE_ANDROID_ID, null)
         val customDeviceName = serverPreferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)
 
-        val deviceName = resolveDeviceName()
+        val deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName()
         val loginTimeMillis = System.currentTimeMillis()
         val loginTimeString = loginTimeMillis.toString()
 
@@ -1035,21 +1035,6 @@ class MyPlanetLite : BaseActivity() {
                 put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
             }
         }.getOrNull()
-    }
-
-    private fun resolveDeviceName(): String {
-        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
-        val model = Build.MODEL?.trim().orEmpty()
-        return when {
-            manufacturer.isEmpty() && model.isEmpty() -> {
-                val device = Build.DEVICE?.trim().orEmpty()
-                if (device.isNotEmpty()) device else DEFAULT_DEVICE_NAME
-            }
-            manufacturer.isEmpty() -> model
-            model.isEmpty() -> manufacturer
-            model.startsWith(manufacturer, ignoreCase = true) -> model
-            else -> "$manufacturer $model"
-        }
     }
 
     private fun setLoadingState(isLoading: Boolean, loginButton: Button, progress: ProgressBar) {
@@ -1165,7 +1150,6 @@ class MyPlanetLite : BaseActivity() {
         const val EXTRA_ALLOW_AUTO_LOGIN = "extra_allow_auto_login"
         private const val DEFAULT_COUNTRY_CODE = "GT"
         private const val DEFAULT_SURVEY_TRANSLATION_ENABLED = true
-        private const val DEFAULT_DEVICE_NAME = "Android Device"
         private const val LOGO_SHRUNK_DP = 50f
         private const val APP_VERSION_SHRUNK_BOTTOM_MARGIN_DP = 5f
         private const val LOGIN_SCROLL_SHRUNK_PADDING_TOP_DP = 5f
