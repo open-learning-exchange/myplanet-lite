@@ -20,13 +20,9 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-<<<<<<< add-fullscreen-player-activity-test-7353607186483957450
+
         versionCode = 232
         versionName = "0.2.32"
-=======
-        versionCode = 231
-        versionName = "0.2.31"
->>>>>>> main
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
