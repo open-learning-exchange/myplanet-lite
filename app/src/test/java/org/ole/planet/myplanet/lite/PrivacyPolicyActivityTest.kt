@@ -4,7 +4,6 @@ import android.content.Context
 import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.appbar.MaterialToolbar
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -14,6 +13,7 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.mockito.Mockito
+import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestRunner::class)
 class PrivacyPolicyActivityTest {
@@ -72,7 +72,8 @@ class PrivacyPolicyActivityTest {
 
         val toolbar: MaterialToolbar = activity.findViewById(R.id.privacyPolicyToolbar)
 
-        toolbar.navigationOnClickListener?.onClick(toolbar)
+        val shadowToolbar = shadowOf(toolbar as androidx.appcompat.widget.Toolbar)
+        shadowToolbar.navigationOnClickListener.onClick(toolbar)
 
         assertTrue("Activity should be finishing after back navigation", activity.isFinishing)
     }
