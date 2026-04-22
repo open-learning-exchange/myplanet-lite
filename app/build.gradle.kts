@@ -11,7 +11,7 @@ val mockkAgent: Configuration by configurations.creating
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
-    compileSdk = 36
+    compileSdk = 37
     buildFeatures {
         buildConfig = true
         viewBinding = true
