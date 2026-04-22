@@ -240,6 +240,11 @@ class DashboardActivity : BaseActivity() {
             drawerLayout.openDrawer(GravityCompat.START)
         }
 
+        setupProfileDrawer(profileDrawer)
+        setupSettingsDrawer(settingsDrawer, surveyTranslationMenuItem)
+    }
+
+    private fun setupProfileDrawer(profileDrawer: NavigationView) {
         profileDrawer.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.menu_profile -> {
@@ -271,7 +276,12 @@ class DashboardActivity : BaseActivity() {
                 else -> false
             }
         }
+    }
 
+    private fun setupSettingsDrawer(
+        settingsDrawer: NavigationView,
+        surveyTranslationMenuItem: MenuItem
+    ) {
         val initialSurveyTranslationEnabled = isSurveyTranslationActive()
         surveyTranslationMenuItem.isChecked = initialSurveyTranslationEnabled
         surveyTranslationToggle?.apply {
