@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.lite
 
 import android.content.Context
 import android.widget.TextView
+import android.widget.ImageButton
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.appbar.MaterialToolbar
 import org.junit.Assert.assertNotNull
@@ -13,7 +14,6 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
 import org.mockito.Mockito
-import org.robolectric.Shadows.shadowOf
 
 @RunWith(RobolectricTestRunner::class)
 class PrivacyPolicyActivityTest {
@@ -72,8 +72,17 @@ class PrivacyPolicyActivityTest {
 
         val toolbar: MaterialToolbar = activity.findViewById(R.id.privacyPolicyToolbar)
 
-        val shadowToolbar = shadowOf(toolbar as androidx.appcompat.widget.Toolbar)
-        shadowToolbar.navigationOnClickListener.onClick(toolbar)
+        // Find the navigation button (usually an ImageButton)
+        var navigationButton: ImageButton? = null
+        for (i in 0 until toolbar.childCount) {
+            val child = toolbar.getChildAt(i)
+            if (child is ImageButton) {
+                navigationButton = child
+                break
+            }
+        }
+
+        navigationButton?.performClick()
 
         assertTrue("Activity should be finishing after back navigation", activity.isFinishing)
     }
