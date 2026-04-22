@@ -1431,6 +1431,26 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             )
         }
         val checkboxes = mutableListOf<android.widget.CheckBox>()
+        buildMultiChoiceCheckboxes(context, question, translation, container, checkboxes)
+
+        val (otherBox, otherInputLayout) = buildMultiChoiceOtherOption(context, question, container)
+
+        val savedSelections = (answers[index] as? SurveyAnswer.MultipleChoice)?.choices.orEmpty()
+        restoreMultiChoiceSelections(checkboxes, otherBox, otherInputLayout, savedSelections)
+
+        val collector = {
+            collectMultiChoiceAnswer(checkboxes, otherBox, otherInputLayout, question, index)
+        }
+        return container to collector
+    }
+
+    private fun buildMultiChoiceCheckboxes(
+        context: android.content.Context,
+        question: SurveyQuestion,
+        translation: TranslatedQuestion?,
+        container: LinearLayout,
+        checkboxes: MutableList<android.widget.CheckBox>,
+    ) {
         question.choices.orEmpty().forEachIndexed { index, choice ->
             val box = android.widget.CheckBox(context)
             val translatedLabel = translation?.choices?.getOrNull(index)
@@ -1439,25 +1459,33 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             container.addView(box)
             checkboxes.add(box)
         }
-        val otherInputLayout: TextInputLayout?
-        val otherBox: android.widget.CheckBox?
-        if (question.hasOtherOption) {
-            otherBox = android.widget.CheckBox(context)
-            otherBox.text = getString(R.string.dashboard_survey_wizard_other_option)
-            otherBox.tag = OTHER_CHOICE_TAG
-            container.addView(otherBox)
-            otherInputLayout = buildOtherInputField(context)
-            otherInputLayout.isVisible = false
-            container.addView(otherInputLayout)
-            otherBox.setOnCheckedChangeListener { _, isChecked ->
-                otherInputLayout.isVisible = isChecked
-            }
-        } else {
-            otherInputLayout = null
-            otherBox = null
-        }
+    }
 
-        val savedSelections = (answers[index] as? SurveyAnswer.MultipleChoice)?.choices.orEmpty()
+    private fun buildMultiChoiceOtherOption(
+        context: android.content.Context,
+        question: SurveyQuestion,
+        container: LinearLayout,
+    ): Pair<android.widget.CheckBox?, TextInputLayout?> {
+        if (!question.hasOtherOption) return null to null
+        val otherBox = android.widget.CheckBox(context)
+        otherBox.text = getString(R.string.dashboard_survey_wizard_other_option)
+        otherBox.tag = OTHER_CHOICE_TAG
+        container.addView(otherBox)
+        val otherInputLayout = buildOtherInputField(context)
+        otherInputLayout.isVisible = false
+        container.addView(otherInputLayout)
+        otherBox.setOnCheckedChangeListener { _, isChecked ->
+            otherInputLayout.isVisible = isChecked
+        }
+        return otherBox to otherInputLayout
+    }
+
+    private fun restoreMultiChoiceSelections(
+        checkboxes: List<android.widget.CheckBox>,
+        otherBox: android.widget.CheckBox?,
+        otherInputLayout: TextInputLayout?,
+        savedSelections: List<SelectedOption>,
+    ) {
         checkboxes.forEach { box ->
             val choice = box.tag as? SurveyChoice
             val isSelected = savedSelections.any { saved ->
@@ -1472,52 +1500,55 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             otherInputLayout?.editText?.setText(savedOther.text)
             otherInputLayout?.editText?.setSelection(savedOther.text.length)
         }
+    }
 
-        val collector = {
-            val selectedChoices = checkboxes.filter { it.isChecked }
-                .map { checkbox ->
-                    val choice = checkbox.tag as? SurveyChoice
-                    val label = choice?.text?.takeIf { it.isNotBlank() }
-                        ?: checkbox.text?.toString()?.takeIf { it.isNotBlank() }
-                        ?: choice?.id
-                        ?: ""
-                    SelectedOption(
-                        id = choice?.id ?: label,
-                        text = label,
-                        isOther = false,
-                    )
-                }
-            val otherChecked = otherBox?.isChecked == true
-            val otherText = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
-            if (selectedChoices.isEmpty() && !otherChecked) {
-                showValidationMessage(R.string.dashboard_survey_wizard_choice_required)
-                false
-            } else if (otherChecked && otherText.isBlank()) {
-                showValidationMessage(R.string.dashboard_survey_wizard_input_required)
-                false
-            } else {
-                val combined = mutableListOf<SelectedOption>()
-                combined.addAll(selectedChoices)
-                if (otherChecked && otherText.isNotBlank()) {
-                    combined.add(
-                        SelectedOption(
-                            id = GENDER_OTHER,
-                            text = otherText,
-                            isOther = true,
-                        ),
-                    )
-                }
-                val answer = SurveyAnswer.MultipleChoice(choices = combined)
-                if (isExam && !isAnswerCorrect(question, answer)) {
-                    showValidationMessage(R.string.dashboard_exam_incorrect_answers)
-                    false
-                } else {
-                    answers[index] = answer
-                    true
-                }
+    private fun collectMultiChoiceAnswer(
+        checkboxes: List<android.widget.CheckBox>,
+        otherBox: android.widget.CheckBox?,
+        otherInputLayout: TextInputLayout?,
+        question: SurveyQuestion,
+        index: Int,
+    ): Boolean {
+        val selectedChoices = checkboxes.filter { it.isChecked }
+            .map { checkbox ->
+                val choice = checkbox.tag as? SurveyChoice
+                val label = choice?.text?.takeIf { it.isNotBlank() }
+                    ?: checkbox.text?.toString()?.takeIf { it.isNotBlank() }
+                    ?: choice?.id
+                    ?: ""
+                SelectedOption(
+                    id = choice?.id ?: label,
+                    text = label,
+                    isOther = false,
+                )
             }
+        val otherChecked = otherBox?.isChecked == true
+        val otherText = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
+        if (selectedChoices.isEmpty() && !otherChecked) {
+            showValidationMessage(R.string.dashboard_survey_wizard_choice_required)
+            return false
+        } else if (otherChecked && otherText.isBlank()) {
+            showValidationMessage(R.string.dashboard_survey_wizard_input_required)
+            return false
         }
-        return container to collector
+        val combined = mutableListOf<SelectedOption>()
+        combined.addAll(selectedChoices)
+        if (otherChecked && otherText.isNotBlank()) {
+            combined.add(
+                SelectedOption(
+                    id = GENDER_OTHER,
+                    text = otherText,
+                    isOther = true,
+                ),
+            )
+        }
+        val answer = SurveyAnswer.MultipleChoice(choices = combined)
+        if (isExam && !isAnswerCorrect(question, answer)) {
+            showValidationMessage(R.string.dashboard_exam_incorrect_answers)
+            return false
+        }
+        answers[index] = answer
+        return true
     }
 
     private fun renderRatingQuestion(index: Int): Pair<View, () -> Boolean> {
