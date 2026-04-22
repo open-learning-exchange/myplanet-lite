@@ -28,39 +28,10 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.BirthDateString
+import org.ole.planet.myplanet.lite.util.DateStringAdapter
 import org.ole.planet.myplanet.lite.util.nullIfBlank
 
-@Retention(AnnotationRetention.RUNTIME)
-@JsonQualifier
-annotation class BirthDateString
-
-class DateStringAdapter {
-    private val dateFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.US)
-
-    @FromJson
-    @BirthDateString
-    fun fromJson(dateString: String?): Long? {
-        return if (dateString == null) {
-            null
-        } else {
-            try {
-                dateFormat.parse(dateString)?.time
-            } catch (_: ParseException) {
-                // It might already be a long
-                dateString.toLongOrNull()
-            }
-        }
-    }
-
-    @ToJson
-    fun toJson(@BirthDateString value: Long?): String? {
-        return if (value == null) {
-            null
-        } else {
-            dateFormat.format(value)
-        }
-    }
-}
 
 class DashboardTeamsRepository(
     private val client: OkHttpClient = OkHttpClient.Builder().build(),
