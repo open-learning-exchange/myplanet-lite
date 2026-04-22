@@ -41,11 +41,13 @@ class DashboardNewsRepositoryTest {
         val result = repository.fetchNews(
             baseUrl = "",
             sessionCookie = "cookie",
-            skip = 0,
-            bookmark = null,
-            limit = 10,
-            createdOn = null,
-            parentCode = null
+            query = DashboardNewsRepository.NewsQuery(
+                skip = 0,
+                bookmark = null,
+                limit = 10,
+                createdOn = null,
+                parentCode = null
+            )
         )
 
         assertTrue(result.isFailure)
@@ -60,11 +62,13 @@ class DashboardNewsRepositoryTest {
         val result = repository.fetchNews(
             baseUrl = mockWebServer.url("/").toString(),
             sessionCookie = "cookie",
-            skip = 0,
-            bookmark = null,
-            limit = 10,
-            createdOn = null,
-            parentCode = null
+            query = DashboardNewsRepository.NewsQuery(
+                skip = 0,
+                bookmark = null,
+                limit = 10,
+                createdOn = null,
+                parentCode = null
+            )
         )
 
         assertTrue(result.isFailure)
@@ -79,11 +83,13 @@ class DashboardNewsRepositoryTest {
         val result = repository.fetchNews(
             baseUrl = mockWebServer.url("/").toString(),
             sessionCookie = "cookie",
-            skip = 0,
-            bookmark = null,
-            limit = 10,
-            createdOn = null,
-            parentCode = null
+            query = DashboardNewsRepository.NewsQuery(
+                skip = 0,
+                bookmark = null,
+                limit = 10,
+                createdOn = null,
+                parentCode = null
+            )
         )
 
         assertTrue(result.isFailure)
@@ -118,11 +124,13 @@ class DashboardNewsRepositoryTest {
         val result = repository.fetchNews(
             baseUrl = mockWebServer.url("/").toString(),
             sessionCookie = "cookie",
-            skip = 0,
-            bookmark = null,
-            limit = 10,
-            createdOn = "planet1",
-            parentCode = "parent1"
+            query = DashboardNewsRepository.NewsQuery(
+                skip = 0,
+                bookmark = null,
+                limit = 10,
+                createdOn = "planet1",
+                parentCode = "parent1"
+            )
         )
 
         assertTrue(result.isSuccess)
@@ -152,12 +160,14 @@ class DashboardNewsRepositoryTest {
         repository.fetchNews(
             baseUrl = mockWebServer.url("/").toString(),
             sessionCookie = "session_id=123",
-            skip = 5,
-            bookmark = "my_bookmark",
-            limit = 20,
-            createdOn = "test_planet",
-            parentCode = "test_parent",
-            teamName = "test_team"
+            query = DashboardNewsRepository.NewsQuery(
+                skip = 5,
+                bookmark = "my_bookmark",
+                limit = 20,
+                createdOn = "test_planet",
+                parentCode = "test_parent",
+                teamName = "test_team"
+            )
         )
 
         val request = mockWebServer.takeRequest()
