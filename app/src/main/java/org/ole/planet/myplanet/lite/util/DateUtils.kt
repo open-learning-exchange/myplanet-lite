@@ -26,7 +26,7 @@ object DateUtils {
                 ?: runCatching { LocalDate.parse(value) }.getOrNull()
 
             date?.format(java.time.format.DateTimeFormatter.ofPattern(targetPattern, Locale.getDefault()))
-                ?: value
+                ?: fallback
         } else {
             val inputPatterns = listOf(
                 "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
@@ -45,7 +45,7 @@ object DateUtils {
                 }.getOrNull()?.let { date ->
                     outputFormat.format(date)
                 }
-            } ?: value
+            } ?: fallback
         }
     }
 }

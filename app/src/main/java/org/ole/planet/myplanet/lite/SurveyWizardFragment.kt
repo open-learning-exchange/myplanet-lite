@@ -11,8 +11,6 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
@@ -53,7 +51,6 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionAnswer
@@ -71,8 +68,10 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
@@ -104,7 +103,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     private var detectedSurveyLanguage: String? = null
     private var translatedTitle: String? = null
     private var translatedDescription: String? = null
-    private var outboxStore: DashboardSurveyOutboxStore? = null
+    private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
     private val connectivityManager by lazy {
         context?.getSystemService(ConnectivityManager::class.java)
     }
@@ -178,7 +177,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         lifecycleScope.launch {
             initializeSession()
             attemptSurveyTranslation()
-            outboxStore = DashboardSurveyOutboxStore(requireContext().applicationContext)
             flushPendingSurveySubmissions()
         }
 
@@ -634,7 +632,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             lastUpdateTime = System.currentTimeMillis(),
             source = serverCode,
             parentCode = parentCode,
-            deviceName = resolveDeviceName(),
+            deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName(),
             customDeviceName = resolveCustomDeviceName(),
         )
     }
@@ -660,7 +658,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         survey: SurveyDocument,
         username: String
     ) {
-        val isOnline = isDeviceOnline()
+        val isOnline = NetworkUtils.isDeviceOnline(requireContext())
         if (!isOnline) {
             setSubmitting(false)
             queueSubmissionForOutbox(submission, survey)
@@ -692,9 +690,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     }
 
     private fun queueSubmissionForOutbox(submission: SurveySubmission, survey: SurveyDocument) {
-        val store = outboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext)
         viewLifecycleOwner.lifecycleScope.launch {
-            val saved = store.saveSubmission(
+            val saved = localSurveyRepository.saveSubmission(
                 submission = submission,
                 surveyId = survey.id,
                 surveyName = survey.name,
@@ -715,25 +712,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     }
 
     private suspend fun flushPendingSurveySubmissions() {
-        val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
-        if (!isDeviceOnline()) {
-            return
-        }
-        val store = outboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext)
-        outboxStore = store
-        val pendingEntries = store.getPendingForTeam(null).sortedBy { it.createdAt }
-        if (pendingEntries.isEmpty()) return
-        pendingEntries.forEach { entry ->
-            val result = submissionRepository.submitSurvey(
-                normalizedBase,
-                credentials,
-                sessionCookie,
-                entry.submission,
-            )
-            if (result.isSuccess) {
-                store.deleteEntry(entry.id)
-            }
-        }
+        localSurveyRepository.flushPendingSurveyOutbox()
     }
 
     private fun buildSubmissionParentId(survey: SurveyDocument): String? {
@@ -855,21 +834,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         return trimmed.substringBefore("/").trim().takeIf { it.isNotBlank() }
     }
 
-    private fun resolveDeviceName(): String {
-        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
-        val model = Build.MODEL?.trim().orEmpty()
-        return when {
-            manufacturer.isEmpty() && model.isEmpty() -> {
-                val device = Build.DEVICE?.trim().orEmpty()
-                if (device.isNotEmpty()) device else DEFAULT_DEVICE_NAME
-            }
-            manufacturer.isEmpty() -> model
-            model.isEmpty() -> manufacturer
-            model.startsWith(manufacturer, ignoreCase = true) -> model
-            else -> "$manufacturer $model"
-        }
-    }
-
     private fun resolveCustomDeviceName(): String? {
         val prefs = SecurePreferencesProvider.getServerPreferences(requireContext().applicationContext)
         return prefs.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)?.trim()?.takeIf { it.isNotBlank() }
@@ -882,12 +846,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         requireActivity().finish()
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = connectivityManager ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     private fun setSubmitting(submitting: Boolean) {
         isSubmitting = submitting
@@ -1169,6 +1128,38 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         return container to collector
     }
 
+    private fun createDropdownLayout(context: android.content.Context, hintText: String): Pair<TextInputLayout, AutoCompleteTextView> {
+        val layout = TextInputLayout(context).apply {
+            hint = hintText
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+        val input = AutoCompleteTextView(context).apply {
+            inputType = InputType.TYPE_NULL
+            keyListener = null
+            setOnClickListener { showDropDown() }
+            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
+        }
+        layout.addView(input)
+        return layout to input
+    }
+
+    private fun levelArrayForLanguage(languageLabel: String?): Int {
+        val normalized = languageLabel?.trim()?.lowercase(Locale.ROOT)
+        return when (normalized) {
+            getString(R.string.language_name_spanish).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_es
+            getString(R.string.language_name_french).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_fr
+            getString(R.string.language_name_portuguese).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_pt
+            getString(R.string.language_name_arabic).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_ar
+            getString(R.string.language_name_somali).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_so
+            getString(R.string.language_name_nepali).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_ne
+            getString(R.string.language_name_hindi).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_hi
+            else -> R.array.signup_level_options_language_en
+        }
+    }
+
     private fun renderLanguageLevelStep(): Pair<View, () -> Boolean> {
         val context = requireContext()
         val container = LinearLayout(context).apply {
@@ -1179,53 +1170,19 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             )
         }
 
-        val languageLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_language_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val languageInput = AutoCompleteTextView(context).apply {
-            inputType = InputType.TYPE_NULL
-            keyListener = null
-            setOnClickListener { showDropDown() }
-            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
-        }
+        val (languageLayout, languageInput) = createDropdownLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_language_label)
+        )
+        val (levelLayout, levelInput) = createDropdownLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_level_label)
+        )
+
         val languages = resources.getStringArray(R.array.signup_language_options).toList()
         val languageAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, languages)
         languageInput.setAdapter(languageAdapter)
         respondent.language?.let { languageInput.setText(it, false) }
-        languageLayout.addView(languageInput)
-
-        val levelLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_level_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val levelInput = AutoCompleteTextView(context).apply {
-            inputType = InputType.TYPE_NULL
-            keyListener = null
-            setOnClickListener { showDropDown() }
-            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
-        }
-        levelLayout.addView(levelInput)
-
-        fun levelArrayForLanguage(languageLabel: String?): Int {
-            val normalized = languageLabel?.trim()?.lowercase(Locale.ROOT)
-            return when (normalized) {
-                getString(R.string.language_name_spanish).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_es
-                getString(R.string.language_name_french).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_fr
-                getString(R.string.language_name_portuguese).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_pt
-                getString(R.string.language_name_arabic).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_ar
-                getString(R.string.language_name_somali).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_so
-                getString(R.string.language_name_nepali).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_ne
-                getString(R.string.language_name_hindi).lowercase(Locale.ROOT) -> R.array.signup_level_options_language_hi
-                else -> R.array.signup_level_options_language_en
-            }
-        }
 
         var currentLevelOptions: List<String> = emptyList()
 
@@ -1325,6 +1282,32 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 ViewGroup.LayoutParams.WRAP_CONTENT,
             )
         }
+
+        val otherInputLayout = buildSingleChoiceOptions(
+            context = context,
+            question = question,
+            translation = translation,
+            radioGroup = radioGroup,
+            container = container,
+        )
+        container.addView(radioGroup, 0)
+
+        val savedSelection = (answers[index] as? SurveyAnswer.SingleChoice)?.choice
+        restoreSingleChoiceSelection(radioGroup, otherInputLayout, savedSelection)
+
+        val collector = {
+            collectSingleChoiceAnswer(radioGroup, otherInputLayout, question, index)
+        }
+        return container to collector
+    }
+
+    private fun buildSingleChoiceOptions(
+        context: android.content.Context,
+        question: SurveyQuestion,
+        translation: TranslatedQuestion?,
+        radioGroup: RadioGroup,
+        container: LinearLayout,
+    ): TextInputLayout? {
         val choices = question.choices.orEmpty()
         choices.forEachIndexed { index, choice ->
             val button = RadioButton(context)
@@ -1333,7 +1316,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             button.tag = choice
             radioGroup.addView(button)
         }
-        val otherInputLayout: TextInputLayout?
+        var otherInputLayout: TextInputLayout? = null
         if (question.hasOtherOption) {
             val otherButton = RadioButton(context)
             otherButton.text = getString(R.string.dashboard_survey_wizard_other_option)
@@ -1347,12 +1330,15 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 val isOther = selectedButton?.tag == OTHER_CHOICE_TAG
                 otherInputLayout.isVisible = isOther
             }
-        } else {
-            otherInputLayout = null
         }
-        container.addView(radioGroup, 0)
+        return otherInputLayout
+    }
 
-        val savedSelection = (answers[index] as? SurveyAnswer.SingleChoice)?.choice
+    private fun restoreSingleChoiceSelection(
+        radioGroup: RadioGroup,
+        otherInputLayout: TextInputLayout?,
+        savedSelection: SelectedOption?,
+    ) {
         if (savedSelection != null) {
             val matchedButton = (0 until radioGroup.childCount)
                 .mapNotNull { childIndex -> radioGroup.getChildAt(childIndex) as? RadioButton }
@@ -1372,50 +1358,51 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 otherInputLayout?.editText?.setSelection(savedSelection.text.length)
             }
         }
+    }
 
-        val collector = {
-            val selectedId = radioGroup.checkedRadioButtonId
-            if (selectedId == -1) {
-                showValidationMessage(R.string.dashboard_survey_wizard_choice_required)
-                false
-            } else {
-                val selectedButton = radioGroup.findViewById<RadioButton>(selectedId)
-                val isOther = selectedButton.tag == OTHER_CHOICE_TAG
-                val otherValue = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
-                if (isOther && otherValue.isBlank()) {
-                    showValidationMessage(R.string.dashboard_survey_wizard_input_required)
-                    false
-                } else {
-                    val choice = if (isOther) {
-                        SelectedOption(
-                            id = GENDER_OTHER,
-                            text = otherValue,
-                            isOther = true,
-                        )
-                    } else {
-                        val originalChoice = selectedButton.tag as? SurveyChoice
-                        val label = originalChoice?.text?.takeIf { it.isNotBlank() }
-                            ?: selectedButton.text?.toString()?.takeIf { it.isNotBlank() }
-                            ?: originalChoice?.id
-                            ?: ""
-                        SelectedOption(
-                            id = originalChoice?.id ?: label,
-                            text = label,
-                            isOther = false,
-                        )
-                    }
-                    val answer = SurveyAnswer.SingleChoice(choice = choice)
-                    if (isExam && !isAnswerCorrect(question, answer)) {
-                        showValidationMessage(R.string.dashboard_exam_incorrect_answers)
-                        false
-                    } else {
-                        answers[index] = answer
-                        true
-                    }
-                }
-            }
+    private fun collectSingleChoiceAnswer(
+        radioGroup: RadioGroup,
+        otherInputLayout: TextInputLayout?,
+        question: SurveyQuestion,
+        index: Int,
+    ): Boolean {
+        val selectedId = radioGroup.checkedRadioButtonId
+        if (selectedId == -1) {
+            showValidationMessage(R.string.dashboard_survey_wizard_choice_required)
+            return false
         }
-        return container to collector
+        val selectedButton = radioGroup.findViewById<RadioButton>(selectedId)
+        val isOther = selectedButton.tag == OTHER_CHOICE_TAG
+        val otherValue = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
+        if (isOther && otherValue.isBlank()) {
+            showValidationMessage(R.string.dashboard_survey_wizard_input_required)
+            return false
+        }
+        val choice = if (isOther) {
+            SelectedOption(
+                id = GENDER_OTHER,
+                text = otherValue,
+                isOther = true,
+            )
+        } else {
+            val originalChoice = selectedButton.tag as? SurveyChoice
+            val label = originalChoice?.text?.takeIf { it.isNotBlank() }
+                ?: selectedButton.text?.toString()?.takeIf { it.isNotBlank() }
+                ?: originalChoice?.id
+                ?: ""
+            SelectedOption(
+                id = originalChoice?.id ?: label,
+                text = label,
+                isOther = false,
+            )
+        }
+        val answer = SurveyAnswer.SingleChoice(choice = choice)
+        if (isExam && !isAnswerCorrect(question, answer)) {
+            showValidationMessage(R.string.dashboard_exam_incorrect_answers)
+            return false
+        }
+        answers[index] = answer
+        return true
     }
 
     private fun renderMultiChoiceQuestion(
@@ -1633,9 +1620,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         private const val OTHER_CHOICE_TAG = "other_choice"
         private const val BIRTH_DATE_PICKER_TAG = "survey_birth_date_picker"
         private const val DEFAULT_EXAM_PASSING_PERCENTAGE = 100
-        private const val PREFS_NAME = "server_preferences"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
-        private const val DEFAULT_DEVICE_NAME = "Android Device"
 
         fun newInstance(
             document: SurveyDocument,

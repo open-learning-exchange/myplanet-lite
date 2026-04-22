@@ -8,13 +8,13 @@ package org.ole.planet.myplanet.lite.surveys
 
 import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class SurveyTranslationCache(
     context: Context,
@@ -41,7 +41,7 @@ class SurveyTranslationCache(
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < DATABASE_VERSION) {
-            db.execSQL("DROP TABLE IF EXISTS $TABLE_TRANSLATIONS")
+            db.execSQL("DROP TABLE IF EXISTS survey_translations")
             onCreate(db)
         }
     }
@@ -103,10 +103,6 @@ class SurveyTranslationCache(
                 SQLiteDatabase.CONFLICT_REPLACE,
             )
         }
-    }
-
-    private fun Cursor.getStringOrNull(index: Int): String? {
-        return if (isNull(index)) null else getString(index)
     }
 
     private companion object {

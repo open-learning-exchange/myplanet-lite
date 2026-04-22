@@ -7,7 +7,7 @@
     <string name="login_password_label">पासवर्ड</string>
     <string name="login_action">साइन इन</string>
     <string name="login_username_error">अपना उपयोगकर्ता नाम दर्ज करें</string>
-    <string name="login_password_error">पासवर्ड कम से कम 4 अक्षरों का होना चाहिए</string>
+    <string name="login_password_error">अपना पासवर्ड दर्ज करें</string>
     <string name="login_invalid_credentials">गलत उपयोगकर्ता नाम या पासवर्ड</string>
     <string name="login_generic_error">साइन इन नहीं हो सका। कृपया पुनः प्रयास करें।</string>
     <string name="logo">लोगो</string>
@@ -68,7 +68,7 @@
     <string name="signup_email_label">ईमेल</string>
     <string name="signup_email_error_invalid">मान्य ईमेल पता दर्ज करें</string>
     <string name="signup_password_error_mismatch">पासवर्ड मेल खाने चाहिए</string>
-    <string name="signup_password_error_length">पासवर्ड कम से कम 6 अक्षरों का होना चाहिए</string>
+    <string name="signup_password_error_length">एक पासवर्ड दर्ज करें</string>
     <string name="signup_username_error_invalid">ऐसा उपयोगकर्ता नाम दर्ज करें जो अक्षर से शुरू हो और केवल अक्षर व संख्या उपयोग करे</string>
     <string name="signup_first_name_error_required">अपना पहला नाम दर्ज करें</string>
     <string name="signup_last_name_error_required">अपना अंतिम नाम दर्ज करें</string>
@@ -137,7 +137,7 @@
     <string name="signup_step_contact_title">हम आपसे कैसे संपर्क करें?</string>
     <string name="signup_step_contact_subtitle">अपना ईमेल और मोबाइल नंबर साझा करें।</string>
     <string name="signup_step_password_title">पासवर्ड बनाएं</string>
-    <string name="signup_step_password_subtitle">कम से कम छह अक्षर या संख्या उपयोग करें।</string>
+    <string name="signup_step_password_subtitle">कम से कम एक अक्षर या संख्या उपयोग करें।</string>
     <string name="signup_step_language_title">भाषा और स्तर</string>
     <string name="signup_step_language_subtitle">वह भाषा और स्तर चुनें जिसे आप पसंद करते हैं।</string>
     <string name="signup_step_license_title">लाइसेंस स्वीकार करें</string>

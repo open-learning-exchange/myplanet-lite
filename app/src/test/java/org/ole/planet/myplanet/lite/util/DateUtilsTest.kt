@@ -64,16 +64,16 @@ class DateUtilsTest {
     }
 
     @Test
-    fun `formatBirthDate returns original value for invalid date format (Pre-O)`() {
+    fun `formatBirthDate returns fallback for invalid date format (Pre-O)`() {
         DateUtils.sdkInt = Build.VERSION_CODES.N
         val input = "Invalid-Date-String"
-        assertEquals(input, DateUtils.formatBirthDate(input, fallbackString))
+        assertEquals(fallbackString, DateUtils.formatBirthDate(input, fallbackString))
     }
 
     @Test
-    fun `formatBirthDate returns original value for invalid date format (O and above)`() {
+    fun `formatBirthDate returns fallback for invalid date format (O and above)`() {
         DateUtils.sdkInt = Build.VERSION_CODES.O
         val input = "Invalid-Date-String"
-        assertEquals(input, DateUtils.formatBirthDate(input, fallbackString))
+        assertEquals(fallbackString, DateUtils.formatBirthDate(input, fallbackString))
     }
 }

@@ -25,6 +25,8 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -36,6 +38,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.JoinTeamR
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.MembershipDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 
 class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
@@ -119,6 +122,19 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         }
     }
 
+    private data class AvailableTeamsData(
+        val teams: List<TeamDocument>,
+        val counts: Map<String, Int>
+    )
+
+    private data class TeamsLoadResult(
+        val membershipsByTeamId: Map<String, MembershipDocument>,
+        val joinRequestsByTeamId: Map<String, JoinRequestDocument>,
+        val memberTeams: List<TeamDocument>,
+        val memberCounts: Map<String, Int>,
+        val availableTeamsData: AvailableTeamsData
+    )
+
     private fun loadTeams() {
         val base = baseUrl
         val username = currentUsername
@@ -150,67 +166,126 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         memberCounts.clear()
         updateLoadingVisibility()
         viewLifecycleOwner.lifecycleScope.launch {
-            val membershipResult = repository.fetchMemberships(base, credentials, sessionCookie, username)
-            val memberships = membershipResult.getOrElse {
-                handleLoadError()
-                return@launch
+            try {
+                val result = fetchAllTeamsData(base, username, credentials, sessionCookie)
+                val data = result.getOrElse {
+                    handleLoadError()
+                    return@launch
+                }
+
+                membershipsByTeamId = data.membershipsByTeamId
+                joinRequestsByTeamId = data.joinRequestsByTeamId
+                pendingJoinRequests = joinRequestsByTeamId.keys - membershipsByTeamId.keys
+
+                memberTeams = data.memberTeams
+                memberCounts.putAll(data.memberCounts)
+
+                val availableData = data.availableTeamsData
+                availableTeams.addAll(availableData.teams)
+                memberCounts.putAll(availableData.counts)
+                availableData.teams.mapNotNull { it.id }.forEach { id ->
+                    memberCounts.putIfAbsent(id, 0)
+                }
+
+                availableSkip = availableData.teams.size
+                hasMoreAvailableTeams = availableData.teams.size >= pageSize
+
+                renderTeams(memberTeams, availableTeams, memberCounts)
+            } finally {
+                isLoading = false
+                updateLoadingVisibility()
             }
-            membershipsByTeamId = memberships.mapNotNull { membership ->
-                val teamId = membership.teamId?.takeIf { it.isNotBlank() }
-                teamId?.let { id -> id to membership }
+        }
+    }
+
+    private suspend fun fetchAllTeamsData(
+        base: String,
+        username: String,
+        credentials: StoredCredentials,
+        sessionCookie: String?
+    ): Result<TeamsLoadResult> {
+        return runCatching {
+            val membershipsResult = repository.fetchMemberships(base, credentials, sessionCookie, username)
+            val memberships = membershipsResult.getOrThrow()
+
+            val membershipsByTeamId = memberships.mapNotNull { membership ->
+                membership.teamId?.takeIf { it.isNotBlank() }?.let { id -> id to membership }
             }.toMap()
+
             val teamIds = membershipsByTeamId.keys.toList()
-
-            val pendingMembershipIds = membershipsByTeamId.keys
-
             val userId = "org.couchdb.user:$username"
-            val joinRequestsResult = repository.fetchJoinRequests(
+
+            coroutineScope {
+                val joinRequestsDeferred = async {
+                    repository.fetchJoinRequests(base, credentials, sessionCookie, userId)
+                }
+                val teamsDeferred = async {
+                    repository.fetchTeams(base, credentials, sessionCookie, teamIds)
+                }
+                val memberCountsDeferred = async {
+                    if (teamIds.isNotEmpty()) {
+                        repository.fetchMemberCounts(base, credentials, sessionCookie, teamIds)
+                    } else {
+                        Result.success(emptyMap<String, Int>())
+                    }
+                }
+                val availableTeamsDeferred = async {
+                    fetchAvailableTeamsData(base, credentials, sessionCookie, teamIds, 0, pageSize)
+                }
+
+                val remoteJoinRequests = joinRequestsDeferred.await().getOrElse { emptyList() }
+                val joinRequestsByTeamId = remoteJoinRequests.mapNotNull { doc ->
+                    doc.teamId?.takeIf { it.isNotBlank() }?.let { it to doc }
+                }.toMap()
+
+                val memberTeams = teamsDeferred.await().getOrThrow()
+
+                val memberCounts = mutableMapOf<String, Int>()
+                memberCountsDeferred.await().getOrNull()?.let { counts ->
+                    memberCounts.putAll(counts)
+                }
+                memberTeams.mapNotNull { it.id }.forEach { id ->
+                    memberCounts.putIfAbsent(id, 0)
+                }
+
+                val availableTeamsData = availableTeamsDeferred.await().getOrThrow()
+
+                TeamsLoadResult(
+                    membershipsByTeamId = membershipsByTeamId,
+                    joinRequestsByTeamId = joinRequestsByTeamId,
+                    memberTeams = memberTeams,
+                    memberCounts = memberCounts,
+                    availableTeamsData = availableTeamsData
+                )
+            }
+        }
+    }
+
+    private suspend fun fetchAvailableTeamsData(
+        base: String,
+        credentials: StoredCredentials,
+        sessionCookie: String?,
+        excludedTeamIds: List<String>,
+        skip: Int,
+        limit: Int
+    ): Result<AvailableTeamsData> {
+        return runCatching {
+            val teamsResult = repository.fetchAvailableTeams(
                 base,
                 credentials,
                 sessionCookie,
-                userId
+                excludedTeamIds,
+                skip = skip,
+                limit = limit
             )
-            val remoteJoinRequests = joinRequestsResult.getOrElse { emptyList() }
-            joinRequestsByTeamId = remoteJoinRequests.mapNotNull { doc ->
-                val teamId = doc.teamId
-                if (teamId.isNullOrBlank()) return@mapNotNull null
-                teamId to doc
-            }.toMap()
-            val pendingTeamIds = remoteJoinRequests.mapNotNull { it.teamId }
-            pendingJoinRequests = pendingTeamIds.toSet() - pendingMembershipIds
-
-            val teamsResult = repository.fetchTeams(base, credentials, sessionCookie, teamIds)
-            memberTeams = teamsResult.getOrElse {
-                handleLoadError()
-                return@launch
+            val teams = teamsResult.getOrThrow()
+            val teamIds = teams.mapNotNull { it.id }.filter { it.isNotBlank() }
+            val counts = if (teamIds.isNotEmpty()) {
+                repository.fetchMemberCounts(base, credentials, sessionCookie, teamIds).getOrDefault(emptyMap())
+            } else {
+                emptyMap()
             }
-
-            val currentTeamIds = memberTeams.mapNotNull { it.id }.filter { it.isNotBlank() }
-            if (currentTeamIds.isNotEmpty()) {
-                val countsResult = repository.fetchMemberCounts(base, credentials, sessionCookie, currentTeamIds)
-                countsResult.getOrNull()?.let { counts ->
-                    counts.forEach { (id, count) ->
-                        memberCounts[id] = count
-                    }
-                    // For teams with 0 members that were in the query but not in results
-                    currentTeamIds.forEach { id ->
-                        if (!memberCounts.containsKey(id)) {
-                            memberCounts[id] = 0
-                        }
-                    }
-                }
-            }
-
-            val availableLoaded = fetchAvailableTeamsPage(reset = true)
-            if (!availableLoaded) {
-                handleLoadError()
-                isLoading = false
-                updateLoadingVisibility()
-                return@launch
-            }
-
-            isLoading = false
-            updateLoadingVisibility()
+            AvailableTeamsData(teams, counts)
         }
     }
 
@@ -241,42 +316,26 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
             hasMoreAvailableTeams = true
         }
 
-        val availableTeamsResult = repository.fetchAvailableTeams(
+        val result = fetchAvailableTeamsData(
             base,
             credentials,
             sessionCookie,
             membershipsByTeamId.keys.toList(),
             skip = availableSkip,
-            limit = pageSize,
+            limit = pageSize
         )
-        val newTeams = availableTeamsResult.getOrElse { return false }
 
-        if (newTeams.isEmpty()) {
-            hasMoreAvailableTeams = false
+        val data = result.getOrElse { return false }
+        val newTeams = data.teams
+
+        availableTeams.addAll(newTeams)
+        memberCounts.putAll(data.counts)
+        newTeams.mapNotNull { it.id }.forEach { id ->
+            memberCounts.putIfAbsent(id, 0)
         }
 
         availableSkip += newTeams.size
-        if (newTeams.size < pageSize) {
-            hasMoreAvailableTeams = false
-        }
-
-        availableTeams.addAll(newTeams)
-
-        val newTeamIds = newTeams.mapNotNull { it.id }.filter { it.isNotBlank() }
-        if (newTeamIds.isNotEmpty()) {
-            val countsResult = repository.fetchMemberCounts(base, credentials, sessionCookie, newTeamIds)
-            countsResult.getOrNull()?.let { counts ->
-                counts.forEach { (id, count) ->
-                    memberCounts[id] = count
-                }
-                // For teams with 0 members that were in the query but not in results
-                newTeamIds.forEach { id ->
-                    if (!memberCounts.containsKey(id)) {
-                        memberCounts[id] = 0
-                    }
-                }
-            }
-        }
+        hasMoreAvailableTeams = newTeams.size >= pageSize
 
         renderTeams(memberTeams, availableTeams, memberCounts)
         return true
@@ -355,7 +414,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
 
         val teamId = team.id
         val displayName = resolveTeamName(team)
-        card.tag = teamId
+        card.tag = TeamViewHolder(teamId, bookmarkButton)
         initialsView.text = buildInitials(displayName)
         nameView.text = displayName
         membersView.text = resolveMembersLabel(team, memberCounts)
@@ -555,13 +614,16 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         }
     }
 
+    private data class TeamViewHolder(val teamId: String?, val bookmark: ImageButton?)
+
     private fun updateBookmarkSelection() {
         val selectedId = selectedTeamId
         if (!::myTeamsContainer.isInitialized) return
         for (i in 0 until myTeamsContainer.childCount) {
             val card = myTeamsContainer.getChildAt(i)
-            val bookmark = card.findViewById<ImageButton?>(R.id.teamBookmark)
-            val teamId = card.tag as? String
+            val viewHolder = card.tag as? TeamViewHolder
+            val bookmark = viewHolder?.bookmark
+            val teamId = viewHolder?.teamId
             if (bookmark != null && teamId != null) {
                 bookmark.setImageResource(
                     if (teamId == selectedId) R.drawable.ic_bookmark_selected_24 else R.drawable.ic_bookmark_24

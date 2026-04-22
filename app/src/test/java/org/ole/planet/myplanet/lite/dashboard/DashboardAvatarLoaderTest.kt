@@ -5,9 +5,12 @@ import android.graphics.Bitmap
 import android.widget.ImageView
 import androidx.test.core.app.ApplicationProvider
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import okhttp3.Interceptor
+import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -55,13 +58,15 @@ class DashboardAvatarLoaderTest {
         scope: CoroutineScope,
         baseUrl: String = mockWebServer.url("/").toString(),
         sessionCookie: String? = "test_cookie",
-        credentials: StoredCredentials? = StoredCredentials("test_user", "test_pass")
+        credentials: StoredCredentials? = StoredCredentials("test_user", "test_pass"),
+        client: OkHttpClient = OkHttpClient.Builder().build()
     ): DashboardAvatarLoader {
         return DashboardAvatarLoader(
             baseUrl = baseUrl,
             sessionCookie = sessionCookie,
             credentials = credentials,
-            scope = scope
+            scope = scope,
+            client = client
         )
     }
 
@@ -201,5 +206,25 @@ class DashboardAvatarLoaderTest {
     fun `destroy unregisters listener`() = kotlinx.coroutines.runBlocking {
         loader = createLoader(this)
         loader.destroy()
+    }
+
+    @Test
+    fun `fetchAvatarBitmap handles IOException by returning null`() = kotlinx.coroutines.runBlocking {
+        val errorClient = OkHttpClient.Builder()
+            .addInterceptor(Interceptor {
+                throw IOException("Test network error")
+            })
+            .build()
+
+        loader = createLoader(this, client = errorClient)
+        val imageView = createMockImageView()
+
+        loader.bind(imageView, "errorUser", true)
+
+        waitForIo()
+
+        // Verify that setImageBitmap is not called with any bitmap (or it failed gracefully)
+        verify(imageView).setImageResource(R.drawable.ic_person_placeholder_24)
+        verify(imageView).tag = "erroruser"
     }
 }

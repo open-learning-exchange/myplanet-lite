@@ -41,6 +41,26 @@ object ProfileCredentialsStore {
             null
         }
     }
+
+    fun saveTemporarySignUpPassword(context: Context, password: String) {
+        val securePrefs = SecurePreferencesProvider.getEncryptedPreferences(
+            context.applicationContext,
+            MyPlanetLite.SECURE_PREFS_NAME
+        )
+        securePrefs.edit().putString("temp_signup_password", password).apply()
+    }
+
+    fun consumeTemporarySignUpPassword(context: Context): String? {
+        val securePrefs = SecurePreferencesProvider.getEncryptedPreferences(
+            context.applicationContext,
+            MyPlanetLite.SECURE_PREFS_NAME
+        )
+        val pwd = securePrefs.getString("temp_signup_password", null)
+        if (pwd != null) {
+            securePrefs.edit().remove("temp_signup_password").apply()
+        }
+        return pwd
+    }
 }
 
 data class StoredCredentials(val username: String, val password: String)

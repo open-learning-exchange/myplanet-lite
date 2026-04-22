@@ -14,9 +14,10 @@ import androidx.core.widget.ImageViewCompat
 import java.io.IOException
 import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -28,10 +29,10 @@ class DashboardAvatarLoader(
     private val baseUrl: String,
     private val sessionCookie: String?,
     private val credentials: StoredCredentials?,
-    private val scope: CoroutineScope
+    private val scope: CoroutineScope,
+    private val client: OkHttpClient = SharedBitmapDependencies.client
 ) {
 
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
     private val cache = sharedCache
     private val avatarUpdateListener = AvatarUpdateNotifier.register(
         AvatarUpdateNotifier.Listener { username ->
@@ -66,8 +67,21 @@ class DashboardAvatarLoader(
         }
         imageView.tag = cacheKey
         scope.launch {
-            val bitmap = withContext(Dispatchers.IO) {
-                runCatching { fetchAvatarBitmap(username) }.getOrNull()
+            val deferred = synchronized(inFlightRequests) {
+                inFlightRequests.getOrPut(cacheKey) {
+                    inFlightScope.async {
+                        runCatching { fetchAvatarBitmap(username) }.getOrNull()
+                    }
+                }
+            }
+            val bitmap = try {
+                deferred.await()
+            } finally {
+                synchronized(inFlightRequests) {
+                    if (inFlightRequests[cacheKey] == deferred) {
+                        inFlightRequests.remove(cacheKey)
+                    }
+                }
             }
             if (bitmap != null && imageView.tag == cacheKey) {
                 cache.put(cacheKey, bitmap)
@@ -115,6 +129,8 @@ class DashboardAvatarLoader(
     private companion object {
         private const val CACHE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB cache for avatars
         private val missingAvatars = mutableSetOf<String>()
+        private val inFlightScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
+        private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
         private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
             override fun sizeOf(key: String, value: Bitmap): Int {
                 return value.byteCount

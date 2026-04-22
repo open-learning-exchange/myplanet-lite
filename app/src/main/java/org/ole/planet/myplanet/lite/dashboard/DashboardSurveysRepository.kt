@@ -11,6 +11,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
@@ -20,12 +21,13 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
-class DashboardSurveysRepository {
-
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
+class DashboardSurveysRepository(
+    private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
-        .build()
+        .build(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+) {
     private val findRequestAdapter = moshi.adapter(SurveysFindRequest::class.java)
     private val findResponseAdapter = moshi.adapter(SurveysFindResponse::class.java)
     private val completionsRequestAdapter = moshi.adapter(SurveyCompletionsRequest::class.java)
@@ -37,7 +39,7 @@ class DashboardSurveysRepository {
         sessionCookie: String?,
         teamId: String,
     ): Result<List<SurveyDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -126,7 +128,7 @@ class DashboardSurveysRepository {
         teamId: String,
         surveyId: String,
     ): Result<Int> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -177,7 +179,7 @@ class DashboardSurveysRepository {
         teamId: String,
         surveyIds: List<String>,
     ): Result<Map<String, Int>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -188,48 +190,45 @@ class DashboardSurveysRepository {
                 }
 
                 val counts = mutableMapOf<String, Int>()
-
-                // Chunk IDs to avoid huge payloads
-                surveyIds.chunked(50).forEach { chunk ->
-                    val parentMatches = chunk.flatMap { surveyId ->
-                        listOf(
-                            mapOf("parentId" to surveyId),
-                            mapOf("parentId" to mapOf("\$regex" to "^${surveyId}@"))
-                        )
-                    }
-
-                    val selector = SurveyCompletionsSelector(
-                        type = "survey",
-                        status = "complete",
-                        teamId = teamId,
-                        parentMatches = parentMatches,
+                val parentMatches = surveyIds.flatMap { surveyId ->
+                    listOf(
+                        mapOf("parentId" to surveyId),
+                        mapOf("parentId" to mapOf("\$regex" to "^${surveyId}@"))
                     )
-                    val payload = completionsRequestAdapter.toJson(
-                        SurveyCompletionsRequest(
-                            selector = selector,
-                            limit = 50000, // Increase limit for batched requests
-                        ),
-                    )
-                    val requestBuilder = Request.Builder()
-                        .url("$normalizedBase/db/submissions/_find")
-                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-                    credentials?.let { creds ->
-                        requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
+                }
+
+                val selector = SurveyCompletionsSelector(
+                    type = "survey",
+                    status = "complete",
+                    teamId = teamId,
+                    parentMatches = parentMatches,
+                )
+                val payload = completionsRequestAdapter.toJson(
+                    SurveyCompletionsRequest(
+                        selector = selector,
+                        limit = 50000,
+                    ),
+                )
+                val requestBuilder = Request.Builder()
+                    .url("$normalizedBase/db/submissions/_find")
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                credentials?.let { creds ->
+                    requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
+                }
+                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                    requestBuilder.addHeader("Cookie", cookie)
+                }
+
+                client.newCall(requestBuilder.build()).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}")
                     }
-                    sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                        requestBuilder.addHeader("Cookie", cookie)
-                    }
-                    client.newCall(requestBuilder.build()).execute().use { response ->
-                        if (!response.isSuccessful) {
-                            throw IOException("Unexpected response ${response.code}")
-                        }
-                        val body = response.body.string()
-                        val docs = completionsResponseAdapter.fromJson(body)?.docs ?: emptyList()
-                        docs.forEach { doc ->
-                            val parentId = doc["parentId"] as? String ?: return@forEach
-                            val baseId = parentId.substringBefore("@")
-                            counts[baseId] = counts.getOrDefault(baseId, 0) + 1
-                        }
+                    val body = response.body.string()
+                    val docs = completionsResponseAdapter.fromJson(body)?.docs ?: emptyList()
+                    docs.forEach { doc ->
+                        val parentId = doc["parentId"] as? String ?: return@forEach
+                        val baseId = parentId.substringBefore("@")
+                        counts[baseId] = counts.getOrDefault(baseId, 0) + 1
                     }
                 }
                 counts

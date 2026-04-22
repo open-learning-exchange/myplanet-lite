@@ -11,8 +11,11 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
+import org.ole.planet.myplanet.lite.util.getBlobOrNull
+import org.ole.planet.myplanet.lite.util.getStringOrNull
 
-private const val DATABASE_NAME = "user_profile.db"
+private const val DATABASE_NAME = ".user_profile_data.db"
+private const val LEGACY_DATABASE_NAME = "user_profile.db"
 private const val DATABASE_VERSION = 4
 private const val TABLE_PROFILE = "user_profile"
 private const val COLUMN_ID = "id"
@@ -39,23 +42,23 @@ class UserProfileDatabase private constructor(context: Context) :
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
-            CREATE TABLE $TABLE_PROFILE (
-                $COLUMN_ID INTEGER PRIMARY KEY,
-                $COLUMN_USERNAME TEXT NOT NULL,
-                $COLUMN_FIRST_NAME TEXT,
-                $COLUMN_MIDDLE_NAME TEXT,
-                $COLUMN_LAST_NAME TEXT,
-                $COLUMN_EMAIL TEXT,
-                $COLUMN_LANGUAGE TEXT,
-                $COLUMN_PHONE_NUMBER TEXT,
-                $COLUMN_BIRTH_DATE TEXT,
-                $COLUMN_GENDER TEXT,
-                $COLUMN_LEVEL TEXT,
-                $COLUMN_AVATAR BLOB,
-                $COLUMN_REVISION TEXT,
-                $COLUMN_DERIVED_KEY TEXT,
-                $COLUMN_RAW_DOCUMENT TEXT,
-                $COLUMN_IS_USER_ADMIN INTEGER NOT NULL DEFAULT 0
+            CREATE TABLE user_profile (
+                id INTEGER PRIMARY KEY,
+                username TEXT NOT NULL,
+                first_name TEXT,
+                middle_name TEXT,
+                last_name TEXT,
+                email TEXT,
+                language TEXT,
+                phone_number TEXT,
+                birth_date TEXT,
+                gender TEXT,
+                level TEXT,
+                avatar BLOB,
+                revision TEXT,
+                derived_key TEXT,
+                raw_document TEXT,
+                is_user_admin INTEGER NOT NULL DEFAULT 0
             )
             """.trimIndent()
         )
@@ -63,14 +66,14 @@ class UserProfileDatabase private constructor(context: Context) :
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < 2) {
-            db.execSQL("ALTER TABLE $TABLE_PROFILE ADD COLUMN $COLUMN_REVISION TEXT")
-            db.execSQL("ALTER TABLE $TABLE_PROFILE ADD COLUMN $COLUMN_DERIVED_KEY TEXT")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN revision TEXT")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN derived_key TEXT")
         }
         if (oldVersion < 3) {
-            db.execSQL("ALTER TABLE $TABLE_PROFILE ADD COLUMN $COLUMN_RAW_DOCUMENT TEXT")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN raw_document TEXT")
         }
         if (oldVersion < 4) {
-            db.execSQL("ALTER TABLE $TABLE_PROFILE ADD COLUMN $COLUMN_IS_USER_ADMIN INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("ALTER TABLE user_profile ADD COLUMN is_user_admin INTEGER NOT NULL DEFAULT 0")
         }
     }
 
@@ -149,23 +152,24 @@ class UserProfileDatabase private constructor(context: Context) :
         db.delete(TABLE_PROFILE, null, null)
     }
 
-    private fun Cursor.getStringOrNull(columnName: String): String? {
-        val index = getColumnIndexOrThrow(columnName)
-        return if (isNull(index)) null else getString(index)
-    }
-
-    private fun Cursor.getBlobOrNull(columnName: String): ByteArray? {
-        val index = getColumnIndexOrThrow(columnName)
-        return if (isNull(index)) null else getBlob(index)
-    }
-
     companion object {
         @Volatile
         private var instance: UserProfileDatabase? = null
 
         fun getInstance(context: Context): UserProfileDatabase {
             return instance ?: synchronized(this) {
+                if (instance == null) {
+                    migrateLegacyDatabase(context)
+                }
                 instance ?: UserProfileDatabase(context).also { instance = it }
+            }
+        }
+
+        private fun migrateLegacyDatabase(context: Context) {
+            val legacyDbFile = context.getDatabasePath(LEGACY_DATABASE_NAME)
+            if (legacyDbFile.exists()) {
+                val newDbFile = context.getDatabasePath(DATABASE_NAME)
+                legacyDbFile.renameTo(newDbFile)
             }
         }
     }

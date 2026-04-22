@@ -11,6 +11,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
@@ -18,12 +19,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
-class DashboardNewsActionsRepository {
-
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
+class DashboardNewsActionsRepository(
+    private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
-        .build()
+        .build(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
+
     private val deleteRequestAdapter = moshi.adapter(DeleteNewsRequest::class.java)
     private val updateRequestAdapter = moshi.adapter(UpdateNewsRequest::class.java)
     private val responseAdapter = moshi.adapter(DeleteNewsResponse::class.java)
@@ -35,7 +38,7 @@ class DashboardNewsActionsRepository {
         teamId: String? = null,
         teamName: String? = null
     ): Result<DeleteNewsResponse> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -89,7 +92,7 @@ class DashboardNewsActionsRepository {
         teamId: String? = null,
         teamName: String? = null
     ): Result<DeleteNewsResponse> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -180,7 +183,8 @@ class DashboardNewsActionsRepository {
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
 
-        private fun resolveViewInEntries(
+        @androidx.annotation.VisibleForTesting
+        internal fun resolveViewInEntries(
             document: DashboardNewsRepository.NewsDocument,
             teamId: String?,
             teamName: String?
@@ -202,7 +206,8 @@ class DashboardNewsActionsRepository {
             return buildViewInEntries(document.createdOn, document.parentCode, teamId, teamName)
         }
 
-        private fun buildViewInEntries(
+        @androidx.annotation.VisibleForTesting
+        internal fun buildViewInEntries(
             createdOn: String?,
             parentCode: String?,
             teamId: String?,

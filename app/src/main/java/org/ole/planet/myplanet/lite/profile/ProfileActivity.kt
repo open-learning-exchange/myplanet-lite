@@ -6,7 +6,6 @@
 
 package org.ole.planet.myplanet.lite.profile
 
-import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
@@ -22,7 +21,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
@@ -58,6 +56,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.BuildConfig
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -66,7 +65,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.model.LanguageOption
 import org.ole.planet.myplanet.lite.util.nullIfBlank
 
-class ProfileActivity : AppCompatActivity() {
+class ProfileActivity : BaseActivity() {
 
     private val selectAvatarLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let { processAvatarSelection(it) }
@@ -382,7 +381,7 @@ class ProfileActivity : AppCompatActivity() {
 
         return ProfileFormValues(
             firstName = firstNameInput.text?.toString()?.trim().nullIfBlank(),
-            middleName = middleNameInput.text?.toString()?.trim().nullIfBlank(),
+            middleName = middleNameInput.text?.toString()?.trim().orEmpty(),
             lastName = lastNameInput.text?.toString()?.trim().nullIfBlank(),
             email = emailInput.text?.toString()?.trim().nullIfBlank(),
             phoneNumber = phoneInput.text?.toString()?.trim().nullIfBlank(),
@@ -586,7 +585,7 @@ class ProfileActivity : AppCompatActivity() {
 
     private fun applyFormValuesToDocument(document: JSONObject, values: ProfileFormValues) {
         document.putOrRemove("firstName", values.firstName)
-        document.putOrRemove("middleName", values.middleName)
+        document.put("middleName", values.middleName.orEmpty())
         document.putOrRemove("lastName", values.lastName)
         document.putOrRemove("email", values.email)
         document.putOrRemove("phoneNumber", values.phoneNumber)
@@ -950,14 +949,7 @@ class ProfileActivity : AppCompatActivity() {
         return stream.toByteArray()
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 
     private fun JSONObject.putOrRemove(key: String, value: String?) {
         if (value.isNullOrBlank()) {

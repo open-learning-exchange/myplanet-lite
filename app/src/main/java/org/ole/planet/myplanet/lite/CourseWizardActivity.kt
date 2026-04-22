@@ -8,8 +8,6 @@ package org.ole.planet.myplanet.lite
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.widget.ImageButton
@@ -17,8 +15,9 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.IntentCompat
+import androidx.core.content.edit
+import androidx.core.net.toUri
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -37,22 +36,24 @@ import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
 import io.noties.markwon.image.glide.GlideImagesPlugin
-import java.util.ArrayList
 import java.util.Locale
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
 import org.json.JSONArray
+import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
-class CourseWizardActivity : AppCompatActivity() {
+class CourseWizardActivity : BaseActivity() {
     private val pendingProgressPrefs by lazy {
         val masterKey = MasterKey.Builder(applicationContext)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -64,22 +65,25 @@ class CourseWizardActivity : AppCompatActivity() {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
-        val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, Context.MODE_PRIVATE)
+        val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, MODE_PRIVATE)
         val allLegacy = legacyPrefs.all
         if (allLegacy.isNotEmpty()) {
-            val editor = encryptedPrefs.edit()
-            for ((key, value) in allLegacy) {
-                when (value) {
-                    is String -> editor.putString(key, value)
-                    is Int -> editor.putInt(key, value)
-                    is Boolean -> editor.putBoolean(key, value)
-                    is Float -> editor.putFloat(key, value)
-                    is Long -> editor.putLong(key, value)
-                    is Set<*> -> @Suppress("UNCHECKED_CAST") editor.putStringSet(key, value as Set<String>)
+            encryptedPrefs.edit {
+                for ((key, value) in allLegacy) {
+                    when (value) {
+                        is String -> putString(key, value)
+                        is Int -> putInt(key, value)
+                        is Boolean -> putBoolean(key, value)
+                        is Float -> putFloat(key, value)
+                        is Long -> putLong(key, value)
+                        is Set<*> -> @Suppress("UNCHECKED_CAST") putStringSet(
+                            key,
+                            value as Set<String>
+                        )
+                    }
                 }
             }
-            editor.apply()
-            legacyPrefs.edit().clear().apply()
+            applicationContext.deleteSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS)
         }
         encryptedPrefs
     }
@@ -104,7 +108,7 @@ class CourseWizardActivity : AppCompatActivity() {
     private var lastPlaybackPositionMs = 0L
     private val coursesRepository = DashboardCoursesRepository()
     private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
-    private val surveyOutboxStore by lazy { DashboardSurveyOutboxStore(applicationContext) }
+    private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(applicationContext) }
     private var hasAutoCompletedFirstStep = false
     private val audioPlayers = mutableListOf<ExoPlayer>()
     private val completedExamSteps = mutableSetOf<Int>()
@@ -143,7 +147,7 @@ class CourseWizardActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        applyDeviceOrientationLock()
         WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_course_wizard)
         markwon = Markwon.builder(this)
@@ -254,7 +258,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return fallbackIndex
         val creds = credentials ?: return fallbackIndex
         val id = courseId?.takeIf { it.isNotBlank() } ?: return fallbackIndex
-        val pendingMaxStep = getPendingProgress(id).maxOrNull()
+        getPendingProgress(id).maxOrNull()
         val progressDocuments = coursesRepository.fetchCoursesProgressDocuments(
             normalizedBase,
             creds,
@@ -354,7 +358,7 @@ class CourseWizardActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun advanceToNextStep(
+    private fun advanceToNextStep(
         stepPositionView: TextView,
         stepTitleView: TextView,
         descriptionView: TextView,
@@ -386,7 +390,7 @@ class CourseWizardActivity : AppCompatActivity() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
         val id = courseId?.takeIf { it.isNotBlank() } ?: return
-        if (!isDeviceOnline()) {
+        if (!NetworkUtils.isDeviceOnline(this)) {
             enqueuePendingProgress(id, targetStepNumber)
             return
         }
@@ -410,7 +414,7 @@ class CourseWizardActivity : AppCompatActivity() {
             createdDate = cachedProgressDocument?.createdDate ?: now,
             updatedDate = now
         )
-        val saveResult = coursesRepository.saveCourseProgress(normalizedBase, creds, document)
+        val saveResult = coursesRepository.saveCourseProgress(normalizedBase, creds, listOf(document))
         if (saveResult.isFailure) {
             enqueuePendingProgress(id, targetStepNumber)
         } else {
@@ -436,99 +440,77 @@ class CourseWizardActivity : AppCompatActivity() {
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
         val creds = credentials ?: return
         val id = courseId?.takeIf { it.isNotBlank() } ?: return
-        if (!isDeviceOnline()) return
+        if (!NetworkUtils.isDeviceOnline(this)) return
         val pendingSteps = getPendingProgress(id)
         if (pendingSteps.isEmpty()) return
-        var existingDoc = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
+
+        val existingDoc = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id))
             .getOrNull()?.get(id)
-        pendingSteps.sorted().forEach { step ->
-            val existingStep = existingDoc?.stepNum ?: 0
-            if (existingStep >= step) {
-                removePendingProgress(id, step)
-                return@forEach
-            }
-            val now = System.currentTimeMillis()
-            val document = DashboardCoursesRepository.CourseProgressUpdateDocument(
-                id = existingDoc?.id,
-                rev = existingDoc?.rev,
-                userId = "org.couchdb.user:${creds.username}",
+        val existingStep = existingDoc?.stepNum ?: 0
+        val maxPendingStep = pendingSteps.maxOrNull() ?: 0
+
+        if (maxPendingStep <= existingStep) {
+            pendingSteps.forEach { removePendingProgress(id, it) }
+            return
+        }
+
+        val now = System.currentTimeMillis()
+        val document = DashboardCoursesRepository.CourseProgressUpdateDocument(
+            id = existingDoc?.id,
+            rev = existingDoc?.rev,
+            userId = "org.couchdb.user:${creds.username}",
+            courseId = id,
+            stepNum = maxPendingStep,
+            passed = true,
+            createdOn = existingDoc?.createdOn
+                ?: DashboardServerPreferences.getServerCode(applicationContext),
+            parentCode = existingDoc?.parentCode
+                ?: DashboardServerPreferences.getServerParentCode(applicationContext),
+            createdDate = existingDoc?.createdDate ?: now,
+            updatedDate = now
+        )
+
+        val result = coursesRepository.saveCourseProgress(normalizedBase, creds, listOf(document))
+        if (result.isSuccess) {
+            pendingSteps.forEach { removePendingProgress(id, it) }
+            val persistedDoc = result.getOrNull()
+                ?.firstOrNull { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
+            val resolvedId = persistedDoc?.id ?: existingDoc?.id
+            val resolvedRev = persistedDoc?.rev ?: existingDoc?.rev
+            cachedProgressDocument = DashboardCoursesRepository.CourseProgressDocument(
+                id = resolvedId,
+                rev = resolvedRev,
                 courseId = id,
-                stepNum = step,
+                stepNum = maxPendingStep,
                 passed = true,
-                createdOn = existingDoc?.createdOn
-                    ?: DashboardServerPreferences.getServerCode(applicationContext),
-                parentCode = existingDoc?.parentCode
-                    ?: DashboardServerPreferences.getServerParentCode(applicationContext),
-                createdDate = existingDoc?.createdDate ?: now,
-                updatedDate = now
+                createdDate = document.createdDate,
+                updatedDate = now,
+                createdOn = document.createdOn,
+                parentCode = document.parentCode
             )
-            val result = coursesRepository.saveCourseProgress(normalizedBase, creds, document)
-            if (result.isSuccess) {
-                removePendingProgress(id, step)
-                val persistedDoc = result.getOrNull()
-                    ?.firstOrNull { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
-                val resolvedId = persistedDoc?.id ?: existingDoc?.id
-                val resolvedRev = persistedDoc?.rev ?: existingDoc?.rev
-                existingDoc = DashboardCoursesRepository.CourseProgressDocument(
-                    id = resolvedId,
-                    rev = resolvedRev,
-                    courseId = id,
-                    stepNum = step,
-                    passed = true,
-                    createdDate = document.createdDate,
-                    updatedDate = now,
-                    createdOn = document.createdOn,
-                    parentCode = document.parentCode
-                )
-                cachedProgressDocument = existingDoc
-            }
         }
     }
 
     private suspend fun flushPendingExamSubmissions() {
-        val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
-        val creds = credentials ?: return
-        if (!isDeviceOnline()) return
-        val pendingEntries = surveyOutboxStore.getPendingForTeam(null)
-            .filter { it.submission.type.equals("exam", ignoreCase = true) }
-            .sortedBy { it.createdAt }
-        if (pendingEntries.isEmpty()) return
-        pendingEntries.forEach { entry ->
-            val result = surveySubmissionRepository.submitSurvey(
-                normalizedBase,
-                creds,
-                null,
-                entry.submission
-            )
-            if (result.isSuccess) {
-                surveyOutboxStore.deleteEntry(entry.id)
-            }
-        }
+        localSurveyRepository.flushPendingSurveyOutbox("exam")
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = getSystemService(android.net.ConnectivityManager::class.java) ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     private fun enqueuePendingProgress(courseId: String, stepNumber: Int) {
         val updated = (getPendingProgress(courseId) + stepNumber).distinct().sorted()
         val array = JSONArray()
         updated.forEach { array.put(it) }
-        pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
+        pendingProgressPrefs.edit { putString(progressKey(courseId), array.toString()) }
     }
 
     private fun getPendingProgress(courseId: String): List<Int> {
         val raw = pendingProgressPrefs.getString(progressKey(courseId), null) ?: return emptyList()
         return runCatching {
             val array = JSONArray(raw)
-            buildList {
-                for (index in 0 until array.length()) {
-                    val step = array.optInt(index)
-                    if (step > 0) add(step)
-                }
+            (0 until array.length()).mapNotNull { index ->
+                val step = array.optInt(index)
+                if (step > 0) step else null
             }
         }.getOrDefault(emptyList())
     }
@@ -536,12 +518,12 @@ class CourseWizardActivity : AppCompatActivity() {
     private fun removePendingProgress(courseId: String, stepNumber: Int) {
         val remaining = getPendingProgress(courseId).filterNot { it == stepNumber }
         if (remaining.isEmpty()) {
-            pendingProgressPrefs.edit().remove(progressKey(courseId)).apply()
+            pendingProgressPrefs.edit { remove(progressKey(courseId)) }
             return
         }
         val array = JSONArray()
         remaining.forEach { array.put(it) }
-        pendingProgressPrefs.edit().putString(progressKey(courseId), array.toString()).apply()
+        pendingProgressPrefs.edit { putString(progressKey(courseId), array.toString()) }
     }
 
     private fun progressKey(courseId: String): String = "course_progress_$courseId"
@@ -554,12 +536,7 @@ class CourseWizardActivity : AppCompatActivity() {
         titleView: TextView,
         listContainer: LinearLayout
     ) {
-        listContainer.removeAllViews()
-        playlistIndexByResourceId.clear()
-        currentPlaylistUrls.clear()
-        lastPlaybackIndex = 0
-        lastPlaybackPositionMs = 0L
-        releaseAudioPlayers()
+        resetAttachmentState(listContainer)
         val videoResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("video") }
         val imageResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("image") }
         val displayResources = resources.filter { resource ->
@@ -567,10 +544,8 @@ class CourseWizardActivity : AppCompatActivity() {
             mediaType.contains("video") || mediaType.contains("pdf") || mediaType.contains("image") ||
                     mediaType.contains("audio")
         }
-        val surveyDocument = survey
-        val examDocument = exam
-        val hasSurvey = surveyDocument?.questions?.isNotEmpty() == true
-        val hasExam = examDocument?.questions?.isNotEmpty() == true
+        val hasSurvey = survey?.questions?.isNotEmpty() == true
+        val hasExam = exam?.questions?.isNotEmpty() == true
         if (displayResources.isEmpty() && !hasSurvey && !hasExam) {
             container.visibility = View.GONE
             return
@@ -578,6 +553,35 @@ class CourseWizardActivity : AppCompatActivity() {
         container.visibility = View.VISIBLE
         titleView.visibility = View.VISIBLE
         val inflater = layoutInflater
+        prepareVideoPlaylist(videoResources)
+        if (videoResources.isNotEmpty() && currentPlaylistUrls.isEmpty()) {
+            container.visibility = View.GONE
+            Toast.makeText(this, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT)
+                .show()
+            return
+        }
+        populateAttachmentList(
+            survey,
+            hasSurvey,
+            exam,
+            hasExam,
+            displayResources,
+            imageResources,
+            inflater,
+            listContainer
+        )
+    }
+
+    private fun resetAttachmentState(listContainer: LinearLayout) {
+        listContainer.removeAllViews()
+        playlistIndexByResourceId.clear()
+        currentPlaylistUrls.clear()
+        lastPlaybackIndex = 0
+        lastPlaybackPositionMs = 0L
+        releaseAudioPlayers()
+    }
+
+    private fun prepareVideoPlaylist(videoResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>) {
         videoResources.forEachIndexed { index, resource ->
             val resolvedUrl = buildResourceUrl(resource)
             if (resolvedUrl != null) {
@@ -585,149 +589,179 @@ class CourseWizardActivity : AppCompatActivity() {
                 currentPlaylistUrls.add(resolvedUrl)
             }
         }
-        if (videoResources.isNotEmpty() && currentPlaylistUrls.isEmpty()) {
-            container.visibility = View.GONE
-            Toast.makeText(this, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT)
-                .show()
-            return
+    }
+
+    private fun populateAttachmentList(
+        survey: SurveyDocument?,
+        hasSurvey: Boolean,
+        exam: SurveyDocument?,
+        hasExam: Boolean,
+        displayResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        inflater: android.view.LayoutInflater,
+        listContainer: LinearLayout
+    ) {
+        if (survey != null && hasSurvey) {
+            bindSurveyAttachment(survey, inflater, listContainer)
         }
-        if (hasSurvey) {
-            val itemView = inflater.inflate(
-                R.layout.item_course_wizard_attachment,
-                listContainer,
-                false
-            )
-            val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
-            val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
-            val iconView: android.widget.ImageView =
-                itemView.findViewById(R.id.courseWizardAttachmentIcon)
-            val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-            titleText.text = surveyDocument.name.orEmpty().ifBlank {
-                getString(R.string.dashboard_surveys_title)
-            }
-            subtitle.text = getString(R.string.dashboard_surveys_title)
-            iconView.setImageResource(R.drawable.ic_surveys_24)
-            iconView.contentDescription = getString(R.string.dashboard_surveys_title)
-            playButton.contentDescription = getString(R.string.course_wizard_open_survey)
-            val openSurvey = {
-                SurveyWizardActivity.newIntent(
-                    this,
-                    surveyDocument,
-                    surveyDocument.teamId,
-                    null,
-                    courseId
-                ).also { startActivity(it) }
-            }
-            itemView.setOnClickListener { openSurvey() }
-            playButton.setOnClickListener { openSurvey() }
-            listContainer.addView(itemView)
-        }
-        if (hasExam) {
-            val examPayload = requireNotNull(examDocument)
-            val itemView = inflater.inflate(
-                R.layout.item_course_wizard_attachment,
-                listContainer,
-                false
-            )
-            val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
-            val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
-            val iconView: android.widget.ImageView =
-                itemView.findViewById(R.id.courseWizardAttachmentIcon)
-            val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-            titleText.text = examPayload.name.orEmpty().ifBlank {
-                getString(R.string.dashboard_exam_title)
-            }
-            subtitle.text = getString(R.string.dashboard_exam_title)
-            iconView.setImageResource(R.drawable.ic_course_step_exam_24)
-            iconView.contentDescription = getString(R.string.dashboard_exam_title)
-            playButton.contentDescription = getString(R.string.course_wizard_open_exam)
-            val openExam = openExam@{
-                pendingExamStepIndex = currentIndex
-                SurveyWizardActivity.newIntent(
-                    this,
-                    examPayload,
-                    examPayload.teamId,
-                    null,
-                    courseId,
-                    isExam = true
-                ).also { examLauncher.launch(it) }
-            }
-            itemView.setOnClickListener { openExam() }
-            playButton.setOnClickListener { openExam() }
-            listContainer.addView(itemView)
+        if (exam != null && hasExam) {
+            bindExamAttachment(exam, inflater, listContainer)
         }
         displayResources.forEach { resource ->
-            val isAudio = resource.mediaType.lowercase(Locale.ROOT).contains("audio")
-            val itemView = if (isAudio) {
-                inflater.inflate(
-                    R.layout.item_course_wizard_audio_attachment,
-                    listContainer,
-                    false
-                )
-            } else {
-                inflater.inflate(
-                    R.layout.item_course_wizard_attachment,
-                    listContainer,
-                    false
-                )
-            }
-            val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
-            val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
-            val iconView: android.widget.ImageView =
-                itemView.findViewById(R.id.courseWizardAttachmentIcon)
-            titleText.text = resource.filename
-            subtitle.text = resource.mediaType
-            val isVideo = resource.mediaType.lowercase(Locale.ROOT).contains("video")
-            val isImage = resource.mediaType.lowercase(Locale.ROOT).contains("image")
-            when {
-                isVideo -> {
-                    val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-                    iconView.setImageResource(R.drawable.ic_course_resource_video_24)
-                    iconView.contentDescription = getString(R.string.course_wizard_attachment_video)
-                    playButton.contentDescription = getString(R.string.course_wizard_play_video)
-                }
-                isImage -> {
-                    val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-                    iconView.setImageResource(R.drawable.ic_course_step_image_24)
-                    iconView.contentDescription = getString(R.string.course_wizard_attachment_image)
-                    playButton.contentDescription = getString(R.string.course_wizard_open_image)
-                }
-                isAudio -> {
-                    iconView.setImageResource(R.drawable.ic_course_step_audio_24)
-                    iconView.contentDescription = getString(R.string.course_wizard_attachment_audio)
-                    bindAudioPlayer(itemView, resource)
-                }
-                else -> {
-                    val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-                    iconView.setImageResource(R.drawable.ic_course_step_pdf_24)
-                    iconView.contentDescription = getString(R.string.course_wizard_attachment_pdf)
-                    playButton.contentDescription = getString(R.string.course_wizard_open_pdf)
-                }
-            }
-            val openResource = {
-                if (isVideo) {
-                    if (playlistIndexByResourceId.containsKey(resource.id)) {
-                        selectResource(resource)
-                    } else {
-                        Toast.makeText(
-                            this,
-                            getString(R.string.course_wizard_play_error),
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                } else if (isImage) {
-                    openImageResource(resource, imageResources)
-                } else {
-                    openPdfResource(resource)
-                }
-            }
-            if (!isAudio) {
-                val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
-                itemView.setOnClickListener { openResource() }
-                playButton.setOnClickListener { openResource() }
-            }
-            listContainer.addView(itemView)
+            bindResourceAttachment(resource, imageResources, inflater, listContainer)
         }
+    }
+
+    private fun bindSurveyAttachment(
+        survey: SurveyDocument,
+        inflater: android.view.LayoutInflater,
+        listContainer: LinearLayout
+    ) {
+        val itemView = inflater.inflate(
+            R.layout.item_course_wizard_attachment,
+            listContainer,
+            false
+        )
+        val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
+        val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
+        val iconView: android.widget.ImageView =
+            itemView.findViewById(R.id.courseWizardAttachmentIcon)
+        val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+        titleText.text = survey.name.orEmpty().ifBlank {
+            getString(R.string.dashboard_surveys_title)
+        }
+        subtitle.text = getString(R.string.dashboard_surveys_title)
+        iconView.setImageResource(R.drawable.ic_surveys_24)
+        iconView.contentDescription = getString(R.string.dashboard_surveys_title)
+        playButton.contentDescription = getString(R.string.course_wizard_open_survey)
+        val openSurvey = {
+            SurveyWizardActivity.newIntent(
+                this,
+                survey,
+                survey.teamId,
+                null,
+                courseId
+            ).also { startActivity(it) }
+        }
+        itemView.setOnClickListener { openSurvey() }
+        playButton.setOnClickListener { openSurvey() }
+        listContainer.addView(itemView)
+    }
+
+    private fun bindExamAttachment(
+        exam: SurveyDocument,
+        inflater: android.view.LayoutInflater,
+        listContainer: LinearLayout
+    ) {
+        val itemView = inflater.inflate(
+            R.layout.item_course_wizard_attachment,
+            listContainer,
+            false
+        )
+        val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
+        val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
+        val iconView: android.widget.ImageView =
+            itemView.findViewById(R.id.courseWizardAttachmentIcon)
+        val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+        titleText.text = exam.name.orEmpty().ifBlank {
+            getString(R.string.dashboard_exam_title)
+        }
+        subtitle.text = getString(R.string.dashboard_exam_title)
+        iconView.setImageResource(R.drawable.ic_course_step_exam_24)
+        iconView.contentDescription = getString(R.string.dashboard_exam_title)
+        playButton.contentDescription = getString(R.string.course_wizard_open_exam)
+        val openExam = {
+            pendingExamStepIndex = currentIndex
+            SurveyWizardActivity.newIntent(
+                this,
+                exam,
+                exam.teamId,
+                null,
+                courseId,
+                isExam = true
+            ).also { examLauncher.launch(it) }
+        }
+        itemView.setOnClickListener { openExam() }
+        playButton.setOnClickListener { openExam() }
+        listContainer.addView(itemView)
+    }
+
+    private fun bindResourceAttachment(
+        resource: DashboardCoursePageFragment.CourseItem.LessonResource,
+        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        inflater: android.view.LayoutInflater,
+        listContainer: LinearLayout
+    ) {
+        val isAudio = resource.mediaType.lowercase(Locale.ROOT).contains("audio")
+        val itemView = if (isAudio) {
+            inflater.inflate(
+                R.layout.item_course_wizard_audio_attachment,
+                listContainer,
+                false
+            )
+        } else {
+            inflater.inflate(
+                R.layout.item_course_wizard_attachment,
+                listContainer,
+                false
+            )
+        }
+        val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
+        val subtitle: TextView = itemView.findViewById(R.id.courseWizardAttachmentSubtitle)
+        val iconView: android.widget.ImageView =
+            itemView.findViewById(R.id.courseWizardAttachmentIcon)
+        titleText.text = resource.filename
+        subtitle.text = resource.mediaType
+        val isVideo = resource.mediaType.lowercase(Locale.ROOT).contains("video")
+        val isImage = resource.mediaType.lowercase(Locale.ROOT).contains("image")
+        when {
+            isVideo -> {
+                val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+                iconView.setImageResource(R.drawable.ic_course_resource_video_24)
+                iconView.contentDescription = getString(R.string.course_wizard_attachment_video)
+                playButton.contentDescription = getString(R.string.course_wizard_play_video)
+            }
+            isImage -> {
+                val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+                iconView.setImageResource(R.drawable.ic_course_step_image_24)
+                iconView.contentDescription = getString(R.string.course_wizard_attachment_image)
+                playButton.contentDescription = getString(R.string.course_wizard_open_image)
+            }
+            isAudio -> {
+                iconView.setImageResource(R.drawable.ic_course_step_audio_24)
+                iconView.contentDescription = getString(R.string.course_wizard_attachment_audio)
+                bindAudioPlayer(itemView, resource)
+            }
+            else -> {
+                val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+                iconView.setImageResource(R.drawable.ic_course_step_pdf_24)
+                iconView.contentDescription = getString(R.string.course_wizard_attachment_pdf)
+                playButton.contentDescription = getString(R.string.course_wizard_open_pdf)
+            }
+        }
+        val openResource = {
+            if (isVideo) {
+                if (playlistIndexByResourceId.containsKey(resource.id)) {
+                    selectResource(resource)
+                } else {
+                    Toast.makeText(
+                        this,
+                        getString(R.string.course_wizard_play_error),
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
+            } else if (isImage) {
+                openImageResource(resource, imageResources)
+            } else {
+                openPdfResource(resource)
+            }
+        }
+        if (!isAudio) {
+            val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
+            itemView.setOnClickListener { openResource() }
+            playButton.setOnClickListener { openResource() }
+        }
+        listContainer.addView(itemView)
     }
 
     private fun bindAudioPlayer(
@@ -740,7 +774,11 @@ class CourseWizardActivity : AppCompatActivity() {
                 .show()
             return
         }
-        val authHeader = credentials?.let { Credentials.basic(it.username, it.password) }
+        val authHeader = if (baseUrl?.startsWith("https://", ignoreCase = true) == true) {
+            credentials?.let { Credentials.basic(it.username, it.password) }
+        } else {
+            null
+        }
         val playerView: PlayerView = itemView.findViewById(R.id.courseWizardAudioPlayer)
         val player = ExoPlayer.Builder(this)
             .setMediaSourceFactory(DefaultMediaSourceFactory(buildAudioDataSourceFactory(authHeader)))
@@ -779,7 +817,11 @@ class CourseWizardActivity : AppCompatActivity() {
         } else {
             0L
         }
-        val authHeader = credentials?.let { Credentials.basic(it.username, it.password) }
+        val authHeader = if (baseUrl?.startsWith("https://", ignoreCase = true) == true) {
+            credentials?.let { Credentials.basic(it.username, it.password) }
+        } else {
+            null
+        }
         val intent = FullscreenPlayerActivity.createIntent(
             context = this,
             mediaUrls = ArrayList(currentPlaylistUrls),
@@ -797,7 +839,11 @@ class CourseWizardActivity : AppCompatActivity() {
                 .show()
             return
         }
-        val authHeader = credentials?.let { Credentials.basic(it.username, it.password) }
+        val authHeader = if (baseUrl?.startsWith("https://", ignoreCase = true) == true) {
+            credentials?.let { Credentials.basic(it.username, it.password) }
+        } else {
+            null
+        }
         val intent = FullscreenPdfActivity.createIntent(this, url, authHeader)
         startActivity(intent)
     }
@@ -841,7 +887,7 @@ class CourseWizardActivity : AppCompatActivity() {
             return localFile.toURI().toString()
         }
         val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return null
-        val parsed = Uri.parse(normalizedBase)
+        val parsed = normalizedBase.toUri()
         val scheme = parsed.scheme ?: return null
         val authority = parsed.encodedAuthority ?: return null
         return parsed.buildUpon()
@@ -874,56 +920,7 @@ class CourseWizardActivity : AppCompatActivity() {
     }
 
     private fun resolveOfflineMarkdownImages(markdown: String): String {
-        val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return markdown
-        var resolved = markdown
-        val markdownPattern = Regex("""!\[([^\]]*)]\(([^)\s]+)(?:\s+"[^"]*")?\)""")
-        resolved = markdownPattern.replace(resolved) { match ->
-            val alt = match.groupValues[1]
-            val source = normalizeMarkdownImageSource(match.groupValues[2])
-            val local = OfflineCourseStorage.localMarkdownImageUri(this, safeCourseId, source)
-            val selected = local ?: resolveMarkdownSourceUrl(source) ?: source
-            "![$alt]($selected)"
-        }
-        val htmlPattern = Regex("""<img\b[^>]*>""", RegexOption.IGNORE_CASE)
-        val srcAttributePattern = Regex("""\bsrc\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
-        val altAttributePattern = Regex("""\balt\s*=\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE)
-        resolved = htmlPattern.replace(resolved) { match ->
-            val imageTag = match.value
-            val source = normalizeMarkdownImageSource(
-                srcAttributePattern.find(imageTag)?.groupValues?.get(1).orEmpty()
-            )
-            if (source.isBlank()) {
-                return@replace imageTag
-            }
-            val alt = altAttributePattern.find(imageTag)?.groupValues?.get(1).orEmpty()
-            val local = OfflineCourseStorage.localMarkdownImageUri(this, safeCourseId, source)
-            val selected = local ?: resolveMarkdownSourceUrl(source) ?: source
-            "![$alt]($selected)"
-        }
-        return resolved
-    }
-
-    private fun resolveMarkdownSourceUrl(source: String): String? {
-        val trimmed = source.trim()
-        if (trimmed.isBlank()) return null
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
-        if (trimmed.startsWith("file://")) return trimmed
-        val normalizedBase = baseUrl?.trim()?.trimEnd('/').orEmpty()
-        if (normalizedBase.isBlank()) return null
-        val normalizedPath = trimmed.trimStart('/')
-        val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
-        return "$normalizedBase/$finalPath"
-    }
-
-    private fun normalizeMarkdownImageSource(rawSource: String): String {
-        var value = rawSource.trim()
-        if (value.startsWith("<") && value.endsWith(">")) {
-            value = value.removePrefix("<").removeSuffix(">")
-        }
-        if (value.contains(" ")) {
-            value = value.substringBefore(" ")
-        }
-        return value.trim()
+        return MarkdownUtils.resolveOfflineMarkdownImages(this, markdown, courseId, baseUrl)
     }
 
     data class StepDisplay(

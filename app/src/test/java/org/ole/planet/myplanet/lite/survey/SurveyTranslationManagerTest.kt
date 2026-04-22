@@ -1,10 +1,11 @@
-package org.ole.planet.myplanet.lite.surveys
+package org.ole.planet.myplanet.lite.survey
 
 import android.content.Context
 import com.google.mlkit.nl.languageid.LanguageIdentifier
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.mockito.kotlin.any
@@ -19,6 +20,9 @@ import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository
 import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository.AiKeys
 import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository.AiModels
 import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository.ConfigurationDocument
+import org.ole.planet.myplanet.lite.surveys.OpenAiTranslationClient
+import org.ole.planet.myplanet.lite.surveys.SurveyTranslationCache
+import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 
 class SurveyTranslationManagerTest {
 
@@ -143,6 +147,24 @@ class SurveyTranslationManagerTest {
     }
 
     @Test
+    fun `translateQuestion returns null when languages share same base tag`() = runTest {
+        val survey = mockSurvey()
+        whenever(translationCache.getTranslations("survey123", "es")).thenReturn(emptyMap())
+        whenever(configurationRepository.fetchConfiguration("http://test.com")).thenReturn(Result.success(mockConfig()))
+
+        val result = manager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 0,
+            targetLanguage = "es-MX",
+            detectedLanguage = "es-ES"
+        )
+
+        assertNull(result)
+        verify(translationClient, never()).translate(any(), any(), any(), any(), any())
+    }
+
+    @Test
     fun `translateQuestion returns null if question index is out of bounds`() = runTest {
         val survey = mockSurvey(questions = listOf(SurveyQuestion(body = "Q1")))
         whenever(translationCache.getTranslations("survey123", "es")).thenReturn(emptyMap())
@@ -216,5 +238,21 @@ class SurveyTranslationManagerTest {
         )
         assertEquals(expected, result)
         verify(translationCache).saveTranslation("survey123", 0, "es", expected)
+    }
+
+    @Test
+    fun `translateSurvey returns cached questions when configuration fetch fails`() = runTest {
+        val cachedQuestion = SurveyTranslationManager.TranslatedQuestion(body = "Pregunta cacheada")
+        whenever(translationCache.getTranslations("survey123", "es")).thenReturn(mapOf(0 to cachedQuestion))
+        whenever(configurationRepository.fetchConfiguration("http://test.com")).thenReturn(Result.failure(Exception("Network Error")))
+
+        val result = manager.translateSurvey(
+            baseUrl = "http://test.com",
+            survey = mockSurvey(questions = listOf(SurveyQuestion(body = "Original"))),
+            targetLanguage = "es"
+        )
+
+        assertEquals(cachedQuestion, result.translations[0])
+        assertTrue(result.translations.isNotEmpty())
     }
 }

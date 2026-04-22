@@ -6,8 +6,6 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.widget.CheckBox
 import android.widget.LinearLayout
@@ -15,7 +13,6 @@ import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
@@ -34,12 +31,14 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 
-class DashboardOutboxDetailActivity : AppCompatActivity() {
+class DashboardOutboxDetailActivity : BaseActivity() {
 
     private lateinit var toolbar: MaterialToolbar
     private lateinit var teamView: TextView
@@ -50,7 +49,7 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
     private lateinit var deleteButton: MaterialButton
     private lateinit var emptyView: TextView
     private val outboxStore by lazy { DashboardSurveyOutboxStore(applicationContext) }
-    private val connectivityManager by lazy { getSystemService(ConnectivityManager::class.java) }
+
     private val httpClient by lazy { OkHttpClient.Builder().build() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -123,18 +122,14 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
             sendButton.setOnClickListener {
                 attemptSend(entry)
             }
-            sendButton.isEnabled = isOnline()
+            sendButton.isEnabled = NetworkUtils.isDeviceOnline(this@DashboardOutboxDetailActivity)
             deleteButton.setOnClickListener {
                 confirmDelete(entry)
             }
         }
     }
 
-    private fun isOnline(): Boolean {
-        val network = connectivityManager?.activeNetwork ?: return false
-        val capabilities = connectivityManager?.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     private fun formatAnswerValue(value: Any?): String {
         return when (value) {
@@ -275,7 +270,7 @@ class DashboardOutboxDetailActivity : AppCompatActivity() {
     }
 
     private fun attemptSend(entry: DashboardSurveyOutboxStore.OutboxEntry) {
-        if (!isOnline()) {
+        if (!NetworkUtils.isDeviceOnline(this@DashboardOutboxDetailActivity)) {
             Toast.makeText(this, R.string.dashboard_outbox_offline_cannot_send, Toast.LENGTH_SHORT).show()
             return
         }

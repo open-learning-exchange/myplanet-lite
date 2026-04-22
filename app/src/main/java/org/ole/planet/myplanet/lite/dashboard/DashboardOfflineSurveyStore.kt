@@ -8,7 +8,6 @@ package org.ole.planet.myplanet.lite.dashboard
 
 import android.content.ContentValues
 import android.content.Context
-import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.squareup.moshi.Moshi
@@ -16,6 +15,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class DashboardOfflineSurveyStore(
     context: Context,
@@ -40,7 +40,7 @@ class DashboardOfflineSurveyStore(
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         if (oldVersion < DATABASE_VERSION) {
-            db.execSQL("DROP TABLE IF EXISTS $TABLE_SURVEYS")
+            db.execSQL("DROP TABLE IF EXISTS surveys")
             onCreate(db)
         }
     }
@@ -127,11 +127,6 @@ class DashboardOfflineSurveyStore(
                 }
             }
         }
-    }
-
-    private fun Cursor.getStringOrNull(columnName: String): String? {
-        val index = getColumnIndexOrThrow(columnName)
-        return if (isNull(index)) null else getString(index)
     }
 
     private companion object {

@@ -24,6 +24,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
@@ -79,6 +80,7 @@ class DashboardTeamMembersFragment : Fragment() {
     private var currentTeamPlanetCode: String? = null
     private var currentTeamType: String? = null
     private var isCurrentUserTeamLeader: Boolean = false
+    private var currentUsername: String? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -253,7 +255,7 @@ class DashboardTeamMembersFragment : Fragment() {
                         username.equals(normalizedCurrentUsername, ignoreCase = true)
                     )
             }
-            adapter.currentUsername = normalizedCurrentUsername
+            currentUsername = normalizedCurrentUsername
             updateLeaderActionsVisibility()
             searchQuery = binding.dashboardTeamMembersSearchInput.text?.toString().orEmpty()
             applySearchFilter()
@@ -273,13 +275,13 @@ class DashboardTeamMembersFragment : Fragment() {
     private fun applySearchFilter() {
         val query = searchQuery.trim().lowercase()
         if (currentMembers.isEmpty()) {
-            adapter.submitList(emptyList())
+            updateTeamMembersAdapterList(emptyList())
             binding.dashboardTeamMembersSearchEmptyView.isVisible = false
             binding.dashboardTeamMembersList.isVisible = false
             return
         }
         if (query.isEmpty()) {
-            adapter.submitList(currentMembers)
+            updateTeamMembersAdapterList(currentMembers)
             binding.dashboardTeamMembersSearchEmptyView.isVisible = false
             binding.dashboardTeamMembersList.isVisible = true
             return
@@ -289,7 +291,7 @@ class DashboardTeamMembersFragment : Fragment() {
             val username = member.username?.lowercase().orEmpty()
             name.contains(query) || username.contains(query)
         }
-        adapter.submitList(filtered)
+        updateTeamMembersAdapterList(filtered)
         val hasResults = filtered.isNotEmpty()
         binding.dashboardTeamMembersSearchEmptyView.isVisible = !hasResults
         binding.dashboardTeamMembersList.isVisible = hasResults
@@ -303,14 +305,18 @@ class DashboardTeamMembersFragment : Fragment() {
         currentMembers = emptyList()
         currentTeamPlanetCode = null
         currentTeamType = null
-        adapter.submitList(emptyList())
+        updateTeamMembersAdapterList(emptyList())
         isCurrentUserTeamLeader = false
         updateLeaderActionsVisibility()
     }
 
     private fun updateLeaderActionsVisibility() {
         binding.fabAddMember.isVisible = isCurrentUserTeamLeader
-        adapter.showRemoveAction = isCurrentUserTeamLeader
+    }
+
+    private fun updateTeamMembersAdapterList(list: List<TeamMemberDetails>) {
+        val uiModels = list.map { TeamMemberUiModel(it, isCurrentUserTeamLeader, currentUsername) }
+        adapter.submitList(uiModels)
     }
 
     private fun confirmMemberRemoval(member: TeamMemberDetails) {
@@ -419,6 +425,13 @@ class DashboardTeamMembersFragment : Fragment() {
         private var pendingReset = false
         private var pagingDialog: AlertDialog? = null
         private lateinit var inviteAdapter: InviteMembersAdapter
+        private val currentCandidates = mutableListOf<InviteCandidate>()
+        private val disabledCandidates = mutableSetOf<String>()
+
+        private fun submitCandidates() {
+            val uiModels = currentCandidates.map { InviteCandidateUiModel(it, disabledCandidates.contains(it.username)) }
+            inviteAdapter.submitList(uiModels)
+        }
 
         fun show() {
             inviteAdapter = InviteMembersAdapter(avatarLoader) { candidate ->
@@ -473,7 +486,8 @@ class DashboardTeamMembersFragment : Fragment() {
                 ).show()
                 return
             }
-            inviteAdapter.disableCandidate(candidate.username)
+            disabledCandidates.add(candidate.username)
+            submitCandidates()
             viewLifecycleOwner.lifecycleScope.launch {
                 val result = repository.addTeamMember(
                     baseUrl = base,
@@ -495,7 +509,8 @@ class DashboardTeamMembersFragment : Fragment() {
                         Toast.LENGTH_SHORT
                     ).show()
                 }.onFailure {
-                    inviteAdapter.enableCandidate(candidate.username)
+                    disabledCandidates.remove(candidate.username)
+                    submitCandidates()
                     Toast.makeText(
                         requireContext(),
                         getString(
@@ -540,7 +555,9 @@ class DashboardTeamMembersFragment : Fragment() {
                 nextSkip = 0
                 hasMorePages = true
                 pendingReset = false
-                inviteAdapter.replaceCandidates(emptyList())
+                currentCandidates.clear()
+                disabledCandidates.clear()
+                submitCandidates()
             }
             if (nextSkip == 0) {
                 dialogBinding.inviteMembersLoading.isVisible = true
@@ -567,10 +584,13 @@ class DashboardTeamMembersFragment : Fragment() {
                 toInviteCandidate(user)
             }
             if (reset) {
-                inviteAdapter.replaceCandidates(candidates)
+                currentCandidates.clear()
+                disabledCandidates.clear()
+                currentCandidates.addAll(candidates)
             } else {
-                inviteAdapter.appendCandidates(candidates)
+                currentCandidates.addAll(candidates)
             }
+            submitCandidates()
             if (candidates.size < INVITE_PAGE_SIZE) {
                 hasMorePages = false
             } else {
@@ -653,24 +673,20 @@ class DashboardTeamMembersFragment : Fragment() {
     }
 }
 
+
+private data class TeamMemberUiModel(
+    val member: TeamMemberDetails,
+    val showRemoveAction: Boolean,
+    val currentUsername: String?
+)
+
 private class TeamMembersAdapter(
     private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
     private val onMemberClicked: (TeamMemberDetails) -> Unit,
     private val onRemoveMemberClicked: (TeamMemberDetails) -> Unit
-) : RecyclerView.Adapter<TeamMemberViewHolder>() {
-
-    private val items: MutableList<TeamMemberDetails> = mutableListOf()
-    var showRemoveAction: Boolean = false
-        set(value) {
-            field = value
-            notifyDataSetChanged()
-        }
-
-    var currentUsername: String? = null
-        set(value) {
-            field = value
-            notifyDataSetChanged()
-        }
+) : ListAdapter<TeamMemberUiModel, TeamMemberViewHolder>(
+    org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback({ oldItem, newItem -> oldItem.member.username == newItem.member.username })
+) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamMemberViewHolder {
         val inflater = LayoutInflater.from(parent.context)
@@ -679,15 +695,8 @@ private class TeamMembersAdapter(
     }
 
     override fun onBindViewHolder(holder: TeamMemberViewHolder, position: Int) {
-        holder.bind(items[position], showRemoveAction, currentUsername)
-    }
-
-    override fun getItemCount(): Int = items.size
-
-    fun submitList(members: List<TeamMemberDetails>) {
-        items.clear()
-        items.addAll(members)
-        notifyDataSetChanged()
+        val uiModel = getItem(position)
+        holder.bind(uiModel.member, uiModel.showRemoveAction, uiModel.currentUsername)
     }
 }
 
@@ -753,13 +762,21 @@ private data class InviteCandidate(
     val colorRes: Int,
 )
 
+
+private data class InviteCandidateUiModel(
+    val candidate: InviteCandidate,
+    val isDisabled: Boolean
+)
+
 private class InviteMembersAdapter(
     private val avatarLoader: DashboardAvatarLoader?,
     private val onAddClicked: (InviteCandidate) -> Unit
-) : RecyclerView.Adapter<InviteMemberViewHolder>() {
-
-    private val allCandidates: MutableList<InviteCandidate> = mutableListOf()
-    private val disabledUsernames: MutableSet<String> = mutableSetOf()
+) : ListAdapter<InviteCandidateUiModel, InviteMemberViewHolder>(
+    org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback(
+        areItemsTheSame = { oldItem, newItem -> oldItem.candidate.username == newItem.candidate.username },
+        getChangePayload = { oldItem, newItem -> if (oldItem.isDisabled != newItem.isDisabled) true else null }
+    )
+) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): InviteMemberViewHolder {
         val inflater = LayoutInflater.from(parent.context)
@@ -768,40 +785,18 @@ private class InviteMembersAdapter(
     }
 
     override fun onBindViewHolder(holder: InviteMemberViewHolder, position: Int) {
-        val candidate = allCandidates[position]
-        holder.bind(candidate, disabledUsernames.contains(candidate.username))
+        val uiModel = getItem(position)
+        holder.bind(uiModel.candidate, uiModel.isDisabled)
     }
 
-    override fun getItemCount(): Int = allCandidates.size
-
-    fun replaceCandidates(candidates: List<InviteCandidate>) {
-        allCandidates.clear()
-        disabledUsernames.clear()
-        allCandidates.addAll(candidates)
-        notifyDataSetChanged()
-    }
-
-    fun appendCandidates(candidates: List<InviteCandidate>) {
-        allCandidates.addAll(candidates)
-        notifyDataSetChanged()
-    }
-
-    fun disableCandidate(username: String) {
-        disabledUsernames.add(username)
-        val index = allCandidates.indexOfFirst { it.username.equals(username, ignoreCase = true) }
-        if (index >= 0) {
-            notifyItemChanged(index)
+    override fun onBindViewHolder(holder: InviteMemberViewHolder, position: Int, payloads: MutableList<Any>) {
+        if (payloads.isNotEmpty()) {
+            val uiModel = getItem(position)
+            holder.bindPayload(uiModel.isDisabled)
+        } else {
+            super.onBindViewHolder(holder, position, payloads)
         }
     }
-
-    fun enableCandidate(username: String) {
-        disabledUsernames.removeIf { it.equals(username, ignoreCase = true) }
-        val index = allCandidates.indexOfFirst { it.username.equals(username, ignoreCase = true) }
-        if (index >= 0) {
-            notifyItemChanged(index)
-        }
-    }
-
 }
 
 private class InviteMemberViewHolder(
@@ -820,12 +815,16 @@ private class InviteMemberViewHolder(
         )
         val shouldAttemptLoad = candidate.hasAvatar || candidate.username.isNotBlank()
         avatarLoader?.bind(binding.inviteMemberAvatar, candidate.username, shouldAttemptLoad)
-        binding.inviteMemberAdd.isEnabled = !isDisabled
-        binding.inviteMemberAdd.alpha = if (isDisabled) 0.5f else 1f
+        bindPayload(isDisabled)
         binding.inviteMemberAdd.setOnClickListener {
             if (binding.inviteMemberAdd.isEnabled) {
                 onAddClicked(candidate)
             }
         }
+    }
+
+    fun bindPayload(isDisabled: Boolean) {
+        binding.inviteMemberAdd.isEnabled = !isDisabled
+        binding.inviteMemberAdd.alpha = if (isDisabled) 0.5f else 1f
     }
 }

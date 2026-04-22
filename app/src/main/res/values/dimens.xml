@@ -48,4 +48,5 @@
     <dimen name="dashboard_courses_chip_spacing">8dp</dimen>
     <dimen name="create_voice_preview_image_thumbnail_size">96dp</dimen>
     <dimen name="create_voice_image_preview_dialog_padding">16dp</dimen>
+    <dimen name="create_voice_submit_bottom_margin">24dp</dimen>
 </resources>

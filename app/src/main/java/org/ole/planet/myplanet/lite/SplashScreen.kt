@@ -7,12 +7,7 @@
 package org.ole.planet.myplanet.lite
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
-import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
@@ -21,12 +16,8 @@ import android.view.animation.OvershootInterpolator
 import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.lifecycleScope
 import java.util.UUID
-import kotlin.text.Charsets
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -36,12 +27,13 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
-class SplashScreen : AppCompatActivity() {
+class SplashScreen : BaseActivity() {
 
     private val connectivityClient: OkHttpClient by lazy { OkHttpClient.Builder().build() }
-    private val connectivityManager by lazy { getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager }
+
     private val userProfileDatabase: UserProfileDatabase by lazy {
         UserProfileDatabase.getInstance(applicationContext)
     }
@@ -55,11 +47,7 @@ class SplashScreen : AppCompatActivity() {
         cacheDeviceIdentifiers()
         enableEdgeToEdge()
         setContentView(R.layout.activity_splash_screen)
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
+        setupEdgeToEdgePadding(findViewById(R.id.main))
         val logo = findViewById<ImageView>(R.id.logoImageView)
         val startOffset = -resources.displayMetrics.heightPixels * 0.5f
         logo.translationY = startOffset
@@ -146,7 +134,7 @@ class SplashScreen : AppCompatActivity() {
         val cachedUsername = withContext(Dispatchers.IO) {
             userProfileDatabase.getProfile()?.username
         }?.takeIf { it.isNotBlank() } ?: return DashboardLaunchMode.NONE
-        if (!isDeviceOnline()) {
+        if (!NetworkUtils.isDeviceOnline(this)) {
             return DashboardLaunchMode.OFFLINE
         }
         val refreshed = userProfileSync.refreshProfile(baseUrl, cachedUsername, storedToken)
@@ -157,21 +145,9 @@ class SplashScreen : AppCompatActivity() {
         return DashboardLaunchMode.NONE
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = connectivityManager ?: return false
-        val activeNetwork = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(activeNetwork) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
+
 
     @SuppressLint("HardwareIds")
     private fun cacheDeviceIdentifiers() {
@@ -185,7 +161,7 @@ class SplashScreen : AppCompatActivity() {
             ?.trim()
             ?.takeIf { it.isNotEmpty() }
 
-        val uniqueAndroidId = storedUniqueId ?: generateUniqueAndroidId(androidId)
+        val uniqueAndroidId = storedUniqueId ?: generateUniqueAndroidId()
         val customDeviceName = resolveCustomDeviceName().trim()
 
         with(preferences.edit()) {
@@ -196,24 +172,8 @@ class SplashScreen : AppCompatActivity() {
         }
     }
 
-    private fun generateUniqueAndroidId(androidId: String?): String {
-        val source = buildString {
-            if (!androidId.isNullOrBlank()) {
-                append(androidId)
-            }
-            append(':').append(Build.BRAND)
-            append(':').append(Build.DEVICE)
-            append(':').append(Build.FINGERPRINT)
-            append(':').append(Build.HARDWARE)
-            append(':').append(Build.ID)
-            append(':').append(Build.MODEL)
-        }
-
-        return runCatching {
-            UUID.nameUUIDFromBytes(source.toByteArray(Charsets.UTF_8)).toString()
-        }.getOrElse {
-            UUID.randomUUID().toString()
-        }
+    private fun generateUniqueAndroidId(): String {
+        return UUID.randomUUID().toString()
     }
 
     private fun resolveCustomDeviceName(): String {
@@ -233,33 +193,15 @@ class SplashScreen : AppCompatActivity() {
             return systemName
         }
 
-        return formatManufacturerModel()
-    }
-
-    private fun formatManufacturerModel(): String {
-        val manufacturer = Build.MANUFACTURER.trim()
-        val model = Build.MODEL.trim()
-
-        return when {
-            manufacturer.isEmpty() && model.isEmpty() -> {
-                val device = Build.DEVICE.trim()
-                if (device.isNotEmpty()) device else DEFAULT_DEVICE_NAME
-            }
-            manufacturer.isEmpty() -> model
-            model.isEmpty() -> manufacturer
-            model.startsWith(manufacturer, ignoreCase = true) -> model
-            else -> "$manufacturer $model"
-        }
+        return org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName()
     }
 
     companion object {
         private const val SPLASH_DELAY_MS = 2000L
-        private const val PREFS_NAME = "server_preferences"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_UNIQUE_ANDROID_ID = "device_unique_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
-        private const val DEFAULT_DEVICE_NAME = "Android Device"
     }
 
     private enum class DashboardLaunchMode {

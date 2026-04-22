@@ -87,6 +87,8 @@ class DashboardTeamsRepository(
     private val membershipBulkAddAdapter = moshi.adapter(BulkMembershipAddRequest::class.java)
     private val usersFindResponseAdapter = moshi.adapter(UsersFindResponse::class.java)
 
+    private val teamMemberDetailsCache = java.util.concurrent.ConcurrentHashMap<String, List<TeamMemberDetails>>()
+
     suspend fun addTeamMember(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -146,6 +148,8 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.remove(teamId)
+                    Unit
                 }
             }
         }
@@ -242,6 +246,8 @@ class DashboardTeamsRepository(
     ): Result<List<TeamMemberDetails>> {
         return withContext(dispatcher) {
             runCatching {
+                teamMemberDetailsCache[teamId]?.let { return@runCatching it }
+
                 val memberships = fetchTeamMembers(baseUrl, credentials, sessionCookie, teamId)
                     .getOrThrow()
                 val normalizedBase = baseUrl.trim().trimEnd('/')
@@ -257,7 +263,7 @@ class DashboardTeamsRepository(
 
                 val profileMap = profiles.associateBy { it._id }
 
-                validMemberships.mapNotNull { member ->
+                val details = validMemberships.mapNotNull { member ->
                     val userId = member.userId ?: return@mapNotNull null
                     val username = userId.substringAfter("org.couchdb.user:")
                     if (username.isBlank()) {
@@ -278,6 +284,9 @@ class DashboardTeamsRepository(
                         membership = member,
                     )
                 }
+
+                teamMemberDetailsCache[teamId] = details
+                details
             }
         }
     }
@@ -388,6 +397,8 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.remove(teamId)
+                    Unit
                 }
             }
         }
@@ -588,45 +599,43 @@ class DashboardTeamsRepository(
                     throw IOException("Missing server base URL")
                 }
 
-                val results = mutableMapOf<String, Int>()
-                if (teamIds.isEmpty()) return@runCatching results
+                if (teamIds.isEmpty()) return@runCatching emptyMap()
 
-                teamIds.chunked(50).forEach { chunk ->
-                    val selector = MultipleMemberCountSelector(
-                        teamId = IdsInClause(ids = chunk),
-                        docType = "membership",
-                        status = StatusClause(
-                            or = listOf(
-                                StatusCondition(exists = false),
-                                StatusCondition(notEquals = "archived")
-                            )
+                val selector = MultipleMemberCountSelector(
+                    teamId = IdsInClause(ids = teamIds),
+                    docType = "membership",
+                    status = StatusClause(
+                        or = listOf(
+                            StatusCondition(exists = false),
+                            StatusCondition(notEquals = "archived")
                         )
                     )
-                    val payload = multipleMemberCountRequestAdapter.toJson(
-                        MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"))
-                    )
-                    val requestBuilder = Request.Builder()
-                        .url("$normalizedBase/db/teams/_find")
-                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-                    credentials?.let {
-                        requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
-                    }
-                    sessionCookie.nullIfBlank()?.let { cookie ->
-                        requestBuilder.addHeader("Cookie", cookie)
-                    }
+                )
+                val payload = multipleMemberCountRequestAdapter.toJson(
+                    MultipleMemberCountFindRequest(selector = selector, fields = listOf("_id", "teamId"), limit = 50000)
+                )
+                val requestBuilder = Request.Builder()
+                    .url("$normalizedBase/db/teams/_find")
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                credentials?.let {
+                    requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
+                }
+                sessionCookie.nullIfBlank()?.let { cookie ->
+                    requestBuilder.addHeader("Cookie", cookie)
+                }
 
-                    client.newCall(requestBuilder.build()).execute().use { response ->
-                        if (!response.isSuccessful) {
-                            throw IOException("Unexpected response ${response.code}")
-                        }
-                        val body = response.body.string()
-                        val docs = multipleMemberCountResponseAdapter.fromJson(body)?.docs ?: emptyList()
+                val allDocs = client.newCall(requestBuilder.build()).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}")
+                    }
+                    val body = response.body.string()
+                    multipleMemberCountResponseAdapter.fromJson(body)?.docs ?: emptyList()
+                }
 
-                        docs.forEach { doc ->
-                            doc.teamId?.let { tId ->
-                                results[tId] = (results[tId] ?: 0) + 1
-                            }
-                        }
+                val results = mutableMapOf<String, Int>()
+                allDocs.forEach { doc ->
+                    doc.teamId?.let { tId ->
+                        results[tId] = (results[tId] ?: 0) + 1
                     }
                 }
                 results
@@ -668,6 +677,8 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.remove(request.teamId)
+                    Unit
                 }
             }
         }
@@ -774,6 +785,7 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.clear()
                 }
             }
         }
@@ -816,6 +828,7 @@ class DashboardTeamsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
+                    teamMemberDetailsCache.clear()
                 }
             }
         }
@@ -859,7 +872,8 @@ class DashboardTeamsRepository(
     @JsonClass(generateAdapter = true)
     data class MultipleMemberCountFindRequest(
         val selector: MultipleMemberCountSelector,
-        val fields: List<String>
+        val fields: List<String>,
+        val limit: Int? = null
     )
 
     @JsonClass(generateAdapter = true)

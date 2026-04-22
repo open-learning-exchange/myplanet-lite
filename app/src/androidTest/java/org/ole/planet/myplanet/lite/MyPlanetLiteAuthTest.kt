@@ -19,7 +19,6 @@ import androidx.test.espresso.matcher.ViewMatchers.isRoot
 import androidx.test.espresso.matcher.ViewMatchers.withId
 import androidx.test.espresso.matcher.ViewMatchers.withText
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.lifecycle.Lifecycle
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import org.hamcrest.Description
@@ -32,6 +31,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.auth.AuthService
 import org.ole.planet.myplanet.lite.auth.LoginResponse
+import org.ole.planet.myplanet.lite.auth.UserCredentials
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 @RunWith(AndroidJUnit4::class)
@@ -52,7 +52,7 @@ class MyPlanetLiteAuthTest {
     @After
     fun tearDown() {
         AuthDependencies.overrideAuthService(null)
-        SecurePreferencesProvider.injectedPreferences = null
+        SecurePreferencesProvider.resetForTesting()
     }
 
     @Test
@@ -60,7 +60,6 @@ class MyPlanetLiteAuthTest {
         AuthDependencies.overrideAuthService(FakeService(AuthResult.Success(LoginResponse(ok = true))))
 
         ActivityScenario.launch(MyPlanetLite::class.java).use { scenario ->
-            scenario.moveToState(Lifecycle.State.RESUMED)
             scenario.onActivity { activity ->
                 activity.findViewById<Button>(R.id.loginButton).apply {
                     isEnabled = true
@@ -83,7 +82,6 @@ class MyPlanetLiteAuthTest {
         AuthDependencies.overrideAuthService(FakeService(AuthResult.Error(code = 401, message = "")))
 
         ActivityScenario.launch(MyPlanetLite::class.java).use { scenario ->
-            scenario.moveToState(Lifecycle.State.RESUMED)
             scenario.onActivity { activity ->
                 activity.findViewById<TextInputEditText>(R.id.usernameInput).setText("user@planet.com")
                 activity.findViewById<TextInputEditText>(R.id.passwordInput).setText("badpass")
@@ -131,5 +129,6 @@ class MyPlanetLiteAuthTest {
         override suspend fun login(usernameOrEmail: String, password: String): AuthResult = result
         override suspend fun logout() {}
         override suspend fun getStoredToken(): String? = null
+        override suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult = result
     }
 }

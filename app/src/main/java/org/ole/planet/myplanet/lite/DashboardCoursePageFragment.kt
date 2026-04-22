@@ -22,8 +22,8 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import com.google.android.material.color.MaterialColors
-import kotlin.random.Random
+import java.security.SecureRandom
+import kotlin.random.asKotlinRandom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -37,12 +37,14 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 
 class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses_page) {
 
@@ -70,7 +72,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private val httpClient = OkHttpClient()
     private val activeDownloads = mutableMapOf<String, Job>()
     private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
-    private var surveyOutboxStore: DashboardSurveyOutboxStore? = null
+    private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
@@ -79,6 +81,19 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         baseUrl = DashboardServerPreferences.getServerBaseUrl(requireContext())
         credentials = ProfileCredentialsStore.getStoredCredentials(requireContext())
 
+        setupViews(view)
+        setupAdapter()
+        setupRecyclerView()
+        setupRefreshLayout()
+
+        registerJoinListener()
+        maybeHandlePendingJoinRefresh()
+
+        performInitialLoad()
+        setupPagination()
+    }
+
+    private fun setupViews(view: View) {
         recyclerView = view.findViewById(R.id.dashboardCoursesRecycler)
         emptyView = view.findViewById(R.id.dashboardCoursesEmptyView)
         refreshLayout = view.findViewById(R.id.dashboardCoursesRefresh)
@@ -86,6 +101,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         courseCategories = listOf(
             CourseCategory(id = null, name = getString(R.string.dashboard_courses_category_all))
         )
+    }
+
+    private fun setupAdapter() {
         adapter = CourseAdapter(
             showProgress = tabPosition == 0,
             showDownloadButton = tabPosition == 0,
@@ -111,18 +129,6 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 confirmDeleteDownloadedCourse(course)
             }
         }
-        val spanCount = 2
-        val layoutManager = GridLayoutManager(requireContext(), spanCount)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                return if (adapter.isHeader(position)) spanCount else 1
-            }
-        }
-
-        recyclerView.layoutManager = layoutManager
-        recyclerView.adapter = adapter
-        recyclerView.addItemDecoration(SpacingDecoration(spanCount))
-
         adapter.onCourseClick = { course ->
             val isEnrolledCourse = tabPosition == 0 || myCourseIds.contains(course.id)
             DashboardCourseDetailsBottomSheet.show(
@@ -144,7 +150,23 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 }
             )
         }
+    }
 
+    private fun setupRecyclerView() {
+        val spanCount = 2
+        val layoutManager = GridLayoutManager(requireContext(), spanCount)
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                return if (adapter.isHeader(position)) spanCount else 1
+            }
+        }
+
+        recyclerView.layoutManager = layoutManager
+        recyclerView.adapter = adapter
+        recyclerView.addItemDecoration(SpacingDecoration(spanCount))
+    }
+
+    private fun setupRefreshLayout() {
         refreshLayout.setOnRefreshListener {
             refreshLayout.isRefreshing = false
             showLoadingOverlay(true)
@@ -156,11 +178,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 refreshTeamCourses(adapter, refreshLayout, forceReload = true)
             }
         }
+    }
 
-        registerJoinListener()
-
-        maybeHandlePendingJoinRefresh()
-
+    private fun performInitialLoad() {
         showLoadingOverlay(true)
         if (tabPosition == 0) {
             refreshUserCourses(adapter, refreshLayout)
@@ -171,7 +191,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         }
 
         loadCourseCategories()
+    }
 
+    private fun setupPagination() {
         if (tabPosition == 1) {
             recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
                 override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -296,7 +318,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         viewLifecycleOwner.lifecycleScope.launch {
             val base = baseUrl
             val creds = credentials
-            val isOnline = isDeviceOnline()
+            val isOnline = NetworkUtils.isDeviceOnline(requireContext())
             if (!isOnline) {
                 val offlineCourses = OfflineCourseStorage.loadDownloadedCourses(requireContext())
                 adapter.submitCourses(offlineCourses)
@@ -702,7 +724,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 val deleted = OfflineCourseStorage.deleteCourse(requireContext(), course.id)
                 if (deleted) {
                     adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
-                    if (!isDeviceOnline() && tabPosition == 0) {
+                    if (!NetworkUtils.isDeviceOnline(requireContext()) && tabPosition == 0) {
                         refreshUserCourses(adapter, refreshLayout)
                     }
                 } else {
@@ -716,30 +738,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             .show()
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = requireContext().getSystemService(android.net.ConnectivityManager::class.java) ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     private suspend fun flushPendingSurveyOutbox() {
-        val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
-        val creds = credentials ?: return
-        if (!isDeviceOnline()) return
-        val authService = AuthDependencies.provideAuthService(requireContext().applicationContext, base)
-        val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
-        val store = surveyOutboxStore ?: DashboardSurveyOutboxStore(requireContext().applicationContext).also {
-            surveyOutboxStore = it
-        }
-        val pendingEntries = store.getPendingForTeam(null).sortedBy { it.createdAt }
-        if (pendingEntries.isEmpty()) return
-        pendingEntries.forEach { entry ->
-            val result = surveySubmissionRepository.submitSurvey(base, creds, sessionCookie, entry.submission)
-            if (result.isSuccess) {
-                store.deleteEntry(entry.id)
-            }
-        }
+        localSurveyRepository.flushPendingSurveyOutbox()
     }
 
     private suspend fun estimateResourcesSize(
@@ -750,11 +752,13 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         var total = 0L
         resources.forEach { resource ->
             val url = buildServerResourceUrl(base, resource) ?: return@forEach
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
                 .head()
-                .header("Authorization", Credentials.basic(creds.username, creds.password))
-                .build()
+            if (url.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", Credentials.basic(creds.username, creds.password))
+            }
+            val request = requestBuilder.build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
@@ -784,10 +788,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val url = buildServerResourceUrl(base, resource) ?: return false
             val target = OfflineCourseStorage.resourceFile(requireContext(), course.id, resource.id, resource.filename)
             target.parentFile?.mkdirs()
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(url)
-                .header("Authorization", authHeader)
-                .build()
+            if (url.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.build()
             val success = runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@use false
@@ -805,13 +811,15 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             onProgress(downloaded to totalItems)
         }
         markdownImageSources.forEach { source ->
-            val resolvedUrl = resolveMarkdownSourceUrl(base, source) ?: return@forEach
+            val resolvedUrl = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
             val target = OfflineCourseStorage.markdownImageFile(requireContext(), course.id, source)
             target.parentFile?.mkdirs()
-            val request = Request.Builder()
+            val requestBuilder = Request.Builder()
                 .url(resolvedUrl)
-                .header("Authorization", authHeader)
-                .build()
+            if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) return@use false
@@ -837,12 +845,14 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         var total = 0L
         val authHeader = Credentials.basic(creds.username, creds.password)
         sources.forEach { source ->
-            val url = resolveMarkdownSourceUrl(base, source) ?: return@forEach
-            val request = Request.Builder()
+            val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
+            val requestBuilder = Request.Builder()
                 .url(url)
                 .head()
-                .header("Authorization", authHeader)
-                .build()
+            if (url.startsWith("https://", ignoreCase = true)) {
+                requestBuilder.header("Authorization", authHeader)
+            }
+            val request = requestBuilder.build()
             runCatching {
                 httpClient.newCall(request).execute().use { response ->
                     val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
@@ -854,42 +864,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     }
 
     private fun extractMarkdownImageSources(course: CourseItem): List<String> {
-        val markdownPattern = Regex("""!\[[^\]]*]\(([^)]+)\)""")
-        val htmlPattern = Regex("""<img[^>]+src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
-        fun extractFromText(text: String): List<String> {
-            val fromMarkdown = markdownPattern.findAll(text)
-                .map { normalizeMarkdownImageSource(it.groupValues[1]) }
-                .toList()
-            val fromHtml = htmlPattern.findAll(text)
-                .map { normalizeMarkdownImageSource(it.groupValues[1]) }
-                .toList()
-            return (fromMarkdown + fromHtml).filter { it.isNotBlank() }
-        }
-        val fromCourseDescription = extractFromText(course.description)
-        val fromSteps = course.steps.flatMap { step -> extractFromText(step.description) }
+        val fromCourseDescription = MarkdownUtils.extractImageSourcesFromText(course.description)
+        val fromSteps = course.steps.flatMap { step -> MarkdownUtils.extractImageSourcesFromText(step.description) }
         return (fromCourseDescription + fromSteps).distinct()
-    }
-
-    private fun normalizeMarkdownImageSource(rawSource: String): String {
-        var value = rawSource.trim()
-        if (value.startsWith("<") && value.endsWith(">")) {
-            value = value.removePrefix("<").removeSuffix(">")
-        }
-        if (value.contains(" ")) {
-            value = value.substringBefore(" ")
-        }
-        return value.trim()
-    }
-
-    private fun resolveMarkdownSourceUrl(base: String, source: String): String? {
-        val trimmed = source.trim()
-        if (trimmed.isBlank()) return null
-        if (trimmed.startsWith("http://") || trimmed.startsWith("https://")) return trimmed
-        val normalizedBase = base.trim().trimEnd('/')
-        if (normalizedBase.isBlank()) return null
-        val normalizedPath = trimmed.trimStart('/')
-        val finalPath = if (normalizedPath.startsWith("db/")) normalizedPath else "db/$normalizedPath"
-        return "$normalizedBase/$finalPath"
     }
 
     private fun buildServerResourceUrl(base: String, resource: CourseItem.LessonResource): String? {
@@ -975,7 +952,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 exam = step.exam
             )
         }
-        val random = Random(document.id.orEmpty().hashCode())
+        val random = SecureRandom(document.id.orEmpty().toByteArray()).asKotlinRandom()
         val completedSteps = if (steps.isNotEmpty() && stepNum != null) {
             stepNum.coerceAtLeast(0).coerceAtMost(steps.size)
         } else {
@@ -1136,11 +1113,45 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         }
 
         fun submitCourses(newItems: List<CourseItem>) {
+            val oldDisplayed = displayedItems.toList()
+
             items.clear()
             items.addAll(newItems.distinctBy { it.id })
             displayedItems.clear()
             displayedItems.addAll(items)
-            notifyDataSetChanged()
+
+            val newDisplayed = displayedItems.toList()
+
+            val diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(object : androidx.recyclerview.widget.DiffUtil.Callback() {
+                override fun getOldListSize() = oldDisplayed.size
+                override fun getNewListSize() = newDisplayed.size
+
+                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                    return oldDisplayed[oldItemPosition].id == newDisplayed[newItemPosition].id
+                }
+
+                override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
+                    return oldDisplayed[oldItemPosition] == newDisplayed[newItemPosition]
+                }
+            })
+
+            diffResult.dispatchUpdatesTo(object : androidx.recyclerview.widget.ListUpdateCallback {
+                override fun onInserted(position: Int, count: Int) {
+                    notifyItemRangeInserted(position + 1, count)
+                }
+
+                override fun onRemoved(position: Int, count: Int) {
+                    notifyItemRangeRemoved(position + 1, count)
+                }
+
+                override fun onMoved(fromPosition: Int, toPosition: Int) {
+                    notifyItemMoved(fromPosition + 1, toPosition + 1)
+                }
+
+                override fun onChanged(position: Int, count: Int, payload: Any?) {
+                    notifyItemRangeChanged(position + 1, count, payload)
+                }
+            })
         }
 
         fun appendCourses(newItems: List<CourseItem>) {
@@ -1297,26 +1308,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 itemView.findViewById(R.id.dashboardCourseDownloadProgressIndicator)
             private val progressIndicator: com.google.android.material.progressindicator.LinearProgressIndicator =
                 itemView.findViewById(R.id.dashboardCourseProgressIndicator)
-            private val defaultPadding = intArrayOf(
-                imageView.paddingLeft,
-                imageView.paddingTop,
-                imageView.paddingRight,
-                imageView.paddingBottom
-            )
-            private val defaultScaleType = imageView.scaleType
-
             private fun showDefaultIcon() {
                 imageView.visibility = View.VISIBLE
-                imageView.setImageResource(R.drawable.ic_courses_24)
-                val primary = MaterialColors.getColor(itemView, androidx.appcompat.R.attr.colorPrimary)
-                imageView.imageTintList = android.content.res.ColorStateList.valueOf(primary)
-                imageView.setPadding(
-                    defaultPadding[0],
-                    defaultPadding[1],
-                    defaultPadding[2],
-                    defaultPadding[3]
-                )
-                imageView.scaleType = defaultScaleType
+                imageView.setImageResource(R.drawable.no_image)
+                imageView.imageTintList = null
+                imageView.setPadding(0, 0, 0, 0)
+                imageView.scaleType = ImageView.ScaleType.CENTER_INSIDE
             }
 
             fun bind(course: CourseItem) {

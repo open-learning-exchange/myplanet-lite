@@ -9,8 +9,8 @@ package org.ole.planet.myplanet.lite.dashboard
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
@@ -20,12 +20,11 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
-class VoicesComposerRepository {
-
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
-    private val moshi: Moshi = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
-        .build()
+class VoicesComposerRepository(
+    private val client: OkHttpClient,
+    private val moshi: Moshi,
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
     private val requestAdapter = moshi.adapter(CreateVoiceRequest::class.java)
     private val responseAdapter = moshi.adapter(CreateVoiceResponse::class.java)
     private val resourceMetadataAdapter = moshi.adapter(ResourceMetadataRequest::class.java)
@@ -46,7 +45,7 @@ class VoicesComposerRepository {
         teamId: String? = null,
         teamName: String? = null
     ): Result<CreateVoiceResponse> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -98,7 +97,7 @@ class VoicesComposerRepository {
         credentials: StoredCredentials,
         metadata: ResourceMetadataRequest
     ): ResourceCreationResponse {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             val normalizedBase = baseUrl.trim().trimEnd('/')
             if (normalizedBase.isEmpty()) {
                 throw IOException("Missing server base URL")
@@ -130,7 +129,7 @@ class VoicesComposerRepository {
         revision: String,
         bytes: ByteArray
     ): ResourceUploadResponse {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             val normalizedBase = baseUrl.trim().trimEnd('/')
             if (normalizedBase.isEmpty()) {
                 throw IOException("Missing server base URL")
@@ -194,7 +193,32 @@ class VoicesComposerRepository {
         val customDeviceName: String?,
         val mediaType: String,
         val privateFor: String
-    )
+    ) {
+        companion object {
+            private const val PRIVATE_FOR_COMMUNITY = "community"
+
+            fun fromContext(
+                context: VoiceImageResourceContext,
+                fileName: String
+            ): ResourceMetadataRequest {
+                val baseTitle = fileName.substringBeforeLast('.')
+                return ResourceMetadataRequest(
+                    title = baseTitle.ifBlank { fileName },
+                    createdDate = System.currentTimeMillis(),
+                    filename = fileName,
+                    isPrivate = true,
+                    addedBy = context.username,
+                    resideOn = context.resideOn,
+                    sourcePlanet = context.sourcePlanet,
+                    androidId = context.androidId,
+                    deviceName = context.deviceName,
+                    customDeviceName = context.customDeviceName,
+                    mediaType = "image",
+                    privateFor = PRIVATE_FOR_COMMUNITY
+                )
+            }
+        }
+    }
 
     @JsonClass(generateAdapter = true)
     data class ResourceCreationResponse(
@@ -316,3 +340,17 @@ class VoicesComposerRepository {
         )
     }
 }
+
+data class VoiceImageResourceContext(
+    val username: String,
+    val resideOn: String?,
+    val sourcePlanet: String?,
+    val androidId: String?,
+    val deviceName: String?,
+    val customDeviceName: String?
+)
+
+data class ProfileCodes(
+    val planetCode: String?,
+    val parentCode: String?
+)

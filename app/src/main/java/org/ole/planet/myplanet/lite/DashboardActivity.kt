@@ -8,11 +8,9 @@ package org.ole.planet.myplanet.lite
 
 import android.content.Context
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.graphics.BitmapFactory
 import android.net.ConnectivityManager
 import android.net.Network
-import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -49,9 +47,10 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
-class DashboardActivity : AppCompatActivity() {
+class DashboardActivity : BaseActivity() {
 
     private lateinit var avatarView: ImageView
     private lateinit var drawerAvatar: ImageView
@@ -92,7 +91,7 @@ class DashboardActivity : AppCompatActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        LanguagePreferences.applySavedLocale(this)
+
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
         deepLinkHandled = savedInstanceState?.getBoolean(STATE_DEEP_LINK_HANDLED) ?: false
@@ -345,7 +344,7 @@ class DashboardActivity : AppCompatActivity() {
         })
 
         handleDeepLinkNavigation()
-        val initialConnectivity = isDeviceOnline()
+        val initialConnectivity = NetworkUtils.isDeviceOnline(this)
         applyConnectivityState(isConnected = initialConnectivity, showMessages = intent?.getBooleanExtra(EXTRA_OFFLINE_MODE, false) == true || !initialConnectivity)
         registerConnectivityCallback()
     }
@@ -679,7 +678,6 @@ class DashboardActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_DEEP_LINK_POST_ID = "extra_deep_link_post_id"
         private const val STATE_DEEP_LINK_HANDLED = "state_deep_link_handled"
-        private const val PREFS_NAME = "server_preferences"
         private const val KEY_VOICE_PAGE_SIZE = "voice_page_size"
         private const val KEY_SURVEY_TRANSLATIONS_ENABLED = "survey_translations_enabled"
         private const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
@@ -709,14 +707,7 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 
     private fun registerConnectivityCallback() {
         connectivityManager?.let { manager ->
@@ -724,12 +715,7 @@ class DashboardActivity : AppCompatActivity() {
         }
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = connectivityManager ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     private fun applyConnectivityState(isConnected: Boolean, showMessages: Boolean = false) {
         if (isConnected) {

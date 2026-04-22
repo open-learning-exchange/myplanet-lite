@@ -7,11 +7,9 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.app.Activity
-import android.content.pm.ActivityInfo
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.InputType
@@ -24,9 +22,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.os.BundleCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updateLayoutParams
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
@@ -35,12 +35,9 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.squareup.moshi.Moshi
+import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.io.FileOutputStream
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
@@ -54,22 +51,24 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsActionsRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences.getServerBaseUrl
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences.getServerCode
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
-class CreateVoiceActivity : AppCompatActivity() {
+class CreateVoiceActivity : BaseActivity() {
 
     private lateinit var toolbar: MaterialToolbar
     private lateinit var markwon: Markwon
@@ -81,10 +80,14 @@ class CreateVoiceActivity : AppCompatActivity() {
     private lateinit var createVoiceEditorLabel: TextView
     private lateinit var markdownToolbar: LinearLayout
 
-    private val repository = VoicesComposerRepository()
+    private val repository = VoicesComposerRepository(
+        client = OkHttpClient.Builder().build(),
+        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+    )
     private val newsActionsRepository = DashboardNewsActionsRepository()
     private val httpClient = OkHttpClient.Builder().build()
     private val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
+    private val decodedBitmaps = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
         uri?.let {
             lifecycleScope.launch {
@@ -157,6 +160,7 @@ class CreateVoiceActivity : AppCompatActivity() {
         createVoiceSubmitButton.setOnClickListener {
             attemptPost()
         }
+        applySubmitButtonBottomSpacing()
 
         targetTeamId = intent.getStringExtra(EXTRA_TARGET_TEAM_ID)
         targetTeamName = intent.getStringExtra(EXTRA_TARGET_TEAM_NAME)
@@ -198,6 +202,19 @@ class CreateVoiceActivity : AppCompatActivity() {
         renderPreviewImages()
     }
 
+    private fun applySubmitButtonBottomSpacing() {
+        val baseBottomMargin = resources.getDimensionPixelSize(R.dimen.create_voice_submit_bottom_margin)
+        val boostedBottomMargin = baseBottomMargin + (baseBottomMargin / 2)
+        ViewCompat.setOnApplyWindowInsetsListener(createVoiceSubmitButton) { view, insets ->
+            val navBarInset = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom
+            view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+                bottomMargin = boostedBottomMargin + navBarInset
+            }
+            insets
+        }
+        ViewCompat.requestApplyInsets(createVoiceSubmitButton)
+    }
+
     override fun onDestroy() {
         previewJob?.cancel()
         pendingImages.values.forEach { pending ->
@@ -206,6 +223,12 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
         }
         pendingImages.clear()
+        decodedBitmaps.values.forEach { bitmap ->
+            if (!bitmap.isRecycled) {
+                bitmap.recycle()
+            }
+        }
+        decodedBitmaps.clear()
         super.onDestroy()
     }
 
@@ -529,7 +552,9 @@ class CreateVoiceActivity : AppCompatActivity() {
             }
             wrapper.addView(preview)
             lifecycleScope.launch(Dispatchers.Default) {
-                val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+                val bitmap = decodedBitmaps.getOrPut(pending.id) {
+                    BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+                }
                 withContext(Dispatchers.Main) {
                     preview.setImageBitmap(bitmap)
                 }
@@ -572,7 +597,9 @@ class CreateVoiceActivity : AppCompatActivity() {
             setPadding(padding, padding, padding, padding)
         }
         lifecycleScope.launch(Dispatchers.Default) {
-            val bitmap = BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+            val bitmap = decodedBitmaps.getOrPut(pending.id) {
+                BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+            }
             withContext(Dispatchers.Main) {
                 imageView.setImageBitmap(bitmap)
             }
@@ -592,6 +619,11 @@ class CreateVoiceActivity : AppCompatActivity() {
 
         idsToRemove.forEach { id ->
             val removed = pendingImages.remove(id) ?: return@forEach
+            decodedBitmaps.remove(id)?.let { bitmap ->
+                if (!bitmap.isRecycled) {
+                    bitmap.recycle()
+                }
+            }
             removeImageMarkdownReferences(removed)
             if (removed.file.exists()) {
                 removed.file.delete()
@@ -950,17 +982,13 @@ class CreateVoiceActivity : AppCompatActivity() {
     }
 
     private fun findIndentLength(line: String): Int {
-        for (index in line.indices) {
-            if (!line[index].isWhitespace()) {
-                return index
-            }
-        }
-        return line.length
+        val index = line.indexOfFirst { !it.isWhitespace() }
+        return if (index == -1) line.length else index
     }
 
     private suspend fun handleImageSelection(uri: Uri) {
         val pendingResult = withContext(Dispatchers.IO) {
-            runCatching { createPendingVoiceImage(uri) }
+            runCatching { VoiceImageFactory.createPendingVoiceImage(uri, contentResolver, cacheDir, ::generatePendingImageId) }
         }
         pendingResult.onSuccess { pending ->
             pendingImages[pending.id] = pending
@@ -980,9 +1008,12 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         val base = baseUrl ?: return
         val loaded = coroutineScope {
+            val semaphore = Semaphore(10)
             editInitialImagePaths.map { path ->
                 async(Dispatchers.IO) {
-                    runCatching { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { generateImageFileName() }, { generatePendingImageId(it) }) }.getOrNull()
+                    semaphore.withPermit {
+                        runCatching { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { VoiceImageFactory.generateImageFileName() }, { generatePendingImageId(it) }) }.getOrNull()
+                    }
                 }
             }.awaitAll().filterNotNull()
         }
@@ -1065,27 +1096,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         return builder.toString() to seen
     }
 
-    private fun createPendingVoiceImage(uri: Uri): PendingVoiceImage {
-        val original = contentResolver.openInputStream(uri)?.use { input ->
-            BitmapFactory.decodeStream(input)
-        } ?: throw IllegalArgumentException("Unable to decode image stream")
-        val processed = prepareBitmapForWeb(original)
-        if (processed !== original) {
-            original.recycle()
-        }
-        val jpegBytes = compressBitmapToJpeg(processed)
-        if (!processed.isRecycled) {
-            processed.recycle()
-        }
-        val fileName = generateImageFileName()
-        val tempFile = File(cacheDir, fileName)
-        FileOutputStream(tempFile).use { output ->
-            output.write(jpegBytes)
-        }
-        val id = generatePendingImageId(fileName)
-        return PendingVoiceImage(id, fileName, tempFile, jpegBytes)
-    }
-
     private fun insertTemporaryImagePlaceholder(fileName: String) {
         val editable = createVoiceInput.text ?: return
         val placeholder = "![]($fileName)"
@@ -1101,28 +1111,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         val updated = builder.toString()
         editable.replace(0, editable.length, updated)
         createVoiceInput.setSelection(updated.length)
-    }
-
-    private fun prepareBitmapForWeb(source: Bitmap): Bitmap {
-        val maxSide = max(source.width, source.height)
-        if (maxSide <= MAX_IMAGE_DIMENSION) {
-            return source
-        }
-        val scale = MAX_IMAGE_DIMENSION.toFloat() / maxSide.toFloat()
-        val width = (source.width * scale).roundToInt().coerceAtLeast(1)
-        val height = (source.height * scale).roundToInt().coerceAtLeast(1)
-        return Bitmap.createScaledBitmap(source, width, height, true)
-    }
-
-    private fun compressBitmapToJpeg(bitmap: Bitmap): ByteArray {
-        val output = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, JPEG_QUALITY, output)
-        return output.toByteArray()
-    }
-
-    private fun generateImageFileName(): String {
-        val formatter = SimpleDateFormat("'post'yyyyMMddHHmmssSSS", Locale.US)
-        return formatter.format(Date()) + ".jpg"
     }
 
     private fun generatePendingImageId(baseName: String): String {
@@ -1183,7 +1171,7 @@ class CreateVoiceActivity : AppCompatActivity() {
 
         for ((pending, markdown) in uploadResults) {
             val normalizedPath = normalizeImagePath(markdown)
-            val replaced = replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
+            val replaced = MarkdownUtils.replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
             if (!normalizedMessageImages.contains(normalizedPath)) {
                 updatedMessage = ensureMarkdownPresent(replaced, markdown)
                 normalizedMessageImages += normalizedPath
@@ -1272,7 +1260,7 @@ class CreateVoiceActivity : AppCompatActivity() {
                 revision = resourceRevision
             )
         } else {
-            val metadata = buildResourceMetadata(context, pending.fileName)
+            val metadata = VoicesComposerRepository.ResourceMetadataRequest.fromContext(context, pending.fileName)
             repository.createResourceDocument(baseUrl, credentials, metadata)
         }
         pending.resourceId = creationResponse.id
@@ -1326,27 +1314,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         return trimmed
     }
 
-    private fun buildResourceMetadata(
-        context: VoiceImageResourceContext,
-        fileName: String
-    ): VoicesComposerRepository.ResourceMetadataRequest {
-        val baseTitle = fileName.substringBeforeLast('.')
-        return VoicesComposerRepository.ResourceMetadataRequest(
-            title = baseTitle.ifBlank { fileName },
-            createdDate = System.currentTimeMillis(),
-            filename = fileName,
-            isPrivate = true,
-            addedBy = context.username,
-            resideOn = context.resideOn,
-            sourcePlanet = context.sourcePlanet,
-            androidId = context.androidId,
-            deviceName = context.deviceName,
-            customDeviceName = context.customDeviceName,
-            mediaType = "image",
-            privateFor = PRIVATE_FOR_COMMUNITY
-        )
-    }
-
     private suspend fun buildImageResourceContext(credentials: StoredCredentials): VoiceImageResourceContext {
         val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
         val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)?.takeIf { it.isNotBlank() }
@@ -1364,7 +1331,7 @@ class CreateVoiceActivity : AppCompatActivity() {
             resideOn = resolvedResideOn,
             sourcePlanet = resolvedParent,
             androidId = androidId,
-            deviceName = resolveDeviceName(),
+            deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName(),
             customDeviceName = customDeviceName
         )
     }
@@ -1391,7 +1358,7 @@ class CreateVoiceActivity : AppCompatActivity() {
             if (altText.isBlank()) {
                 replacement
             } else {
-                applyAltTextToMarkdown(replacement, altText)
+                MarkdownUtils.applyAltText(replacement, altText)
             }
         }
         if (matched) {
@@ -1406,23 +1373,6 @@ class CreateVoiceActivity : AppCompatActivity() {
         }
         builder.append(replacement)
         return builder.toString()
-    }
-
-    private fun applyAltTextToMarkdown(markdown: String, altText: String): String {
-        val trimmedAlt = altText.trim()
-        if (trimmedAlt.isEmpty()) {
-            return markdown
-        }
-        val openBracket = markdown.indexOf('[')
-        val closeBracket = markdown.indexOf(']')
-        if (openBracket == -1 || closeBracket <= openBracket) {
-            return markdown
-        }
-        return buildString {
-            append(markdown.substring(0, openBracket + 1))
-            append(trimmedAlt)
-            append(markdown.substring(closeBracket))
-        }
     }
 
     private suspend fun loadCachedProfile(): UserProfile? {
@@ -1534,28 +1484,10 @@ class CreateVoiceActivity : AppCompatActivity() {
         return result.takeIf { it.isNotEmpty() }
     }
 
-    private fun resolveDeviceName(): String {
-        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
-        val model = Build.MODEL?.trim().orEmpty()
-        return when {
-            manufacturer.isEmpty() && model.isEmpty() -> {
-                val device = Build.DEVICE?.trim().orEmpty()
-                if (device.isNotEmpty()) device else DEFAULT_DEVICE_NAME
-            }
-            manufacturer.isEmpty() -> model
-            model.isEmpty() -> manufacturer
-            model.startsWith(manufacturer, ignoreCase = true) -> model
-            else -> "$manufacturer $model"
-        }
-    }
-
     companion object {
         private const val PREVIEW_DEBOUNCE_MS = 150L
         private const val MAX_HEADING_LEVEL = 6
-        private const val MAX_IMAGE_DIMENSION = 1280
-        private const val JPEG_QUALITY = 85
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
-        private const val PREFS_NAME = "server_preferences"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
@@ -1572,14 +1504,7 @@ class CreateVoiceActivity : AppCompatActivity() {
         const val EXTRA_TARGET_TEAM_NAME = "extra_target_team_name"
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 }
 
 
@@ -1588,18 +1513,4 @@ class CreateVoiceActivity : AppCompatActivity() {
 data class PreparedVoicePost(
     val message: String,
     val images: List<VoicesComposerRepository.ImagePayload>
-)
-
-data class VoiceImageResourceContext(
-    val username: String,
-    val resideOn: String?,
-    val sourcePlanet: String?,
-    val androidId: String?,
-    val deviceName: String,
-    val customDeviceName: String?
-)
-
-data class ProfileCodes(
-    val planetCode: String?,
-    val parentCode: String?
 )

@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Intent
-import android.content.pm.ActivityInfo
 import android.graphics.Rect
 import android.os.Bundle
 import android.text.InputFilter
@@ -22,7 +21,6 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.enableEdgeToEdge
-import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.edit
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -53,13 +51,13 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
-class SignupActivity : AppCompatActivity() {
+class SignupActivity : BaseActivity() {
 
     private data class SignupLanguageOption(
         val languageTag: String,
@@ -163,6 +161,9 @@ class SignupActivity : AppCompatActivity() {
         SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
+    private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
+        ServerConnectivityRepository(connectivityClient, moshi)
+    }
 
     private val steps = SignupStep.entries
     private var currentStepIndex = 0
@@ -175,7 +176,6 @@ class SignupActivity : AppCompatActivity() {
         const val EXTRA_USERNAME = "org.ole.planet.myplanet.lite.signup.USERNAME"
         const val EXTRA_PASSWORD = "org.ole.planet.myplanet.lite.signup.PASSWORD"
         const val EXTRA_SERVER_BASE_URL = "org.ole.planet.myplanet.lite.signup.SERVER_BASE_URL"
-        private const val PREFS_NAME = "server_preferences"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
         private const val KEY_SERVER_CODE = "server_code"
@@ -578,6 +578,16 @@ class SignupActivity : AppCompatActivity() {
                 putExtra(EXTRA_PASSWORD, passwordInput.text?.toString().orEmpty())
             }
         }
+        if (autoLogin) {
+            val username = usernameInput.text?.toString()?.trim().orEmpty()
+            val password = passwordInput.text?.toString().orEmpty()
+            SecurePreferencesProvider.getEncryptedPreferences(this, MyPlanetLite.SECURE_PREFS_NAME)
+                .edit()
+                .putBoolean(MyPlanetLite.KEY_REMEMBER_CREDENTIALS, true)
+                .putString(MyPlanetLite.KEY_REMEMBERED_USERNAME, username)
+                .putString(MyPlanetLite.KEY_REMEMBERED_PASSWORD, password)
+                .apply()
+        }
         setResult(RESULT_OK, resultIntent)
         finish()
     }
@@ -829,7 +839,7 @@ class SignupActivity : AppCompatActivity() {
         val job = lifecycleScope.launch {
             applyConnectivityState(step, reachable = false, checking = true)
             val connectivityResult = withContext(Dispatchers.IO) {
-                performServerConnectivityCheck(trimmedBaseUrl)
+                serverConnectivityRepository.checkServerConnectivity(trimmedBaseUrl)
             }
             if (!isActive) {
                 return@launch
@@ -846,27 +856,6 @@ class SignupActivity : AppCompatActivity() {
 
         serverCheckJob = job
         return job
-    }
-
-    private fun performServerConnectivityCheck(baseUrl: String): ServerConnectivityResult {
-        val requestUrl = buildConfigurationRequestUrl(baseUrl) ?: return ServerConnectivityResult(false)
-        return runCatching {
-            val request = Request.Builder()
-                .url(requestUrl)
-                .get()
-                .build()
-            connectivityClient.newCall(request).execute().use { response ->
-                if (response.code != 200) {
-                    return@use ServerConnectivityResult(false)
-                }
-                val body = response.body.string()
-                if (body.isBlank()) {
-                    return@use ServerConnectivityResult(true)
-                }
-                val metadata = ServerMetadataExtractor.extract(body, moshi)
-                ServerConnectivityResult(true, metadata?.first, metadata?.second)
-            }
-        }.getOrDefault(ServerConnectivityResult(false))
     }
 
     private fun persistServerMetadata(baseUrl: String, parentCode: String?, code: String?) {
@@ -978,14 +967,6 @@ class SignupActivity : AppCompatActivity() {
                 UsernameAvailability.UNKNOWN
             }
         }
-    }
-
-    private fun buildConfigurationRequestUrl(baseUrl: String): String? {
-        return baseUrl.toHttpUrlOrNull()?.newBuilder()
-            ?.addPathSegments("db/configurations/_all_docs")
-            ?.addQueryParameter("include_docs", "true")
-            ?.build()
-            ?.toString()
     }
 
     private fun buildUsernameLookupUrl(username: String): String? {
@@ -1105,12 +1086,6 @@ class SignupActivity : AppCompatActivity() {
         }
     }
 
-    private data class ServerConnectivityResult(
-        val reachable: Boolean,
-        val parentCode: String? = null,
-        val code: String? = null
-    )
-
     private enum class UsernameAvailability { AVAILABLE, TAKEN, UNKNOWN }
 
     private enum class SignupSubmissionResult { SUCCESS, USERNAME_TAKEN, FAILED }
@@ -1195,7 +1170,7 @@ class SignupActivity : AppCompatActivity() {
     private fun validatePasswords(): Boolean {
         val password = passwordInput.text?.toString().orEmpty()
         val passwordsMatch = updatePasswordErrorState(showEmptyError = true)
-        return if (password.length < 6) {
+        return if (password.length < 1) {
             passwordLayout.error = getString(R.string.signup_password_error_length)
             if (confirmPasswordLayout.error == getString(R.string.signup_password_error_mismatch)) {
                 confirmPasswordLayout.error = null
@@ -1295,14 +1270,7 @@ class SignupActivity : AppCompatActivity() {
         return formatter.format(Date(selection))
     }
 
-    private fun applyDeviceOrientationLock() {
-        val isTablet = resources.configuration.smallestScreenWidthDp >= 600
-        requestedOrientation = if (isTablet) {
-            ActivityInfo.SCREEN_ORIENTATION_FULL_SENSOR
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_PORTRAIT
-        }
-    }
+
 
     private fun ensureVisible(scrollView: ScrollView, view: View) {
         scrollView.post {
