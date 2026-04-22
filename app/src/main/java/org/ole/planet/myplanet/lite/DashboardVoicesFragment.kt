@@ -302,12 +302,14 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 val result = repository.fetchNews(
                     base,
                     sessionCookie,
-                    nextSkip,
-                    nextBookmark,
-                    fetchLimit,
-                    serverCode,
-                    serverParentCode,
-                    teamName
+                    DashboardNewsRepository.NewsQuery(
+                        skip = nextSkip,
+                        bookmark = nextBookmark,
+                        limit = fetchLimit,
+                        createdOn = serverCode,
+                        parentCode = serverParentCode,
+                        teamName = teamName
+                    )
                 )
                 val addedPosts = result.fold(
                     onSuccess = { page ->

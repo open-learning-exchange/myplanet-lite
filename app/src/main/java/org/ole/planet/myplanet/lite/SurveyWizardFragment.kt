@@ -11,7 +11,6 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.net.ConnectivityManager
-import android.os.Build
 import android.os.Bundle
 import android.text.InputType
 import android.view.View
@@ -141,35 +140,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        titleView = view.findViewById(R.id.surveyWizardTitle)
-        descriptionView = view.findViewById(R.id.surveyWizardDescription)
-        counterView = view.findViewById(R.id.surveyWizardCounter)
-        progressBar = view.findViewById(R.id.surveyWizardProgress)
-        translationOverlay = view.findViewById(R.id.surveyWizardTranslationOverlay)
-        translationProgressBar = view.findViewById(R.id.surveyWizardTranslationProgress)
-        translationNoticeView = view.findViewById(R.id.surveyWizardTranslationNotice)
-        questionBodyView = view.findViewById(R.id.surveyWizardQuestionBody)
-        questionContainer = view.findViewById(R.id.surveyWizardQuestionContainer)
-        previousButton = view.findViewById(R.id.surveyWizardPreviousButton)
-        nextButton = view.findViewById(R.id.surveyWizardNextButton)
-        val contentView: View = view.findViewById(R.id.surveyWizardContent)
-        val initialPaddingStart = contentView.paddingStart
-        val initialPaddingTop = contentView.paddingTop
-        val initialPaddingEnd = contentView.paddingEnd
-        val initialPaddingBottom = contentView.paddingBottom
-
-        ViewCompat.setOnApplyWindowInsetsListener(contentView) { content, insets ->
-            val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
-            val bottomInset = maxOf(systemInsets.bottom, imeInsets.bottom)
-            content.setPadding(
-                initialPaddingStart,
-                initialPaddingTop,
-                initialPaddingEnd,
-                initialPaddingBottom + bottomInset
-            )
-            insets
-        }
+        bindViews(view)
+        setupInsets(view)
 
         translationNoticeView.setOnClickListener {
             startActivity(Intent(requireContext(), PrivacyPolicyActivity::class.java))
@@ -197,6 +169,10 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
         showStep(currentIndex)
 
+        setupNavigationButtons()
+    }
+
+    private fun setupNavigationButtons() {
         previousButton.setOnClickListener {
             activeCollector?.invoke()
             if (currentIndex > 0) {
@@ -216,6 +192,41 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 }
             }
         }
+    }
+
+    private fun setupInsets(view: View) {
+        val contentView: View = view.findViewById(R.id.surveyWizardContent)
+        val initialPaddingStart = contentView.paddingStart
+        val initialPaddingTop = contentView.paddingTop
+        val initialPaddingEnd = contentView.paddingEnd
+        val initialPaddingBottom = contentView.paddingBottom
+
+        ViewCompat.setOnApplyWindowInsetsListener(contentView) { content, insets ->
+            val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val bottomInset = maxOf(systemInsets.bottom, imeInsets.bottom)
+            content.setPadding(
+                initialPaddingStart,
+                initialPaddingTop,
+                initialPaddingEnd,
+                initialPaddingBottom + bottomInset
+            )
+            insets
+        }
+    }
+
+    private fun bindViews(view: View) {
+        titleView = view.findViewById(R.id.surveyWizardTitle)
+        descriptionView = view.findViewById(R.id.surveyWizardDescription)
+        counterView = view.findViewById(R.id.surveyWizardCounter)
+        progressBar = view.findViewById(R.id.surveyWizardProgress)
+        translationOverlay = view.findViewById(R.id.surveyWizardTranslationOverlay)
+        translationProgressBar = view.findViewById(R.id.surveyWizardTranslationProgress)
+        translationNoticeView = view.findViewById(R.id.surveyWizardTranslationNotice)
+        questionBodyView = view.findViewById(R.id.surveyWizardQuestionBody)
+        questionContainer = view.findViewById(R.id.surveyWizardQuestionContainer)
+        previousButton = view.findViewById(R.id.surveyWizardPreviousButton)
+        nextButton = view.findViewById(R.id.surveyWizardNextButton)
     }
 
     override fun onStart() {
