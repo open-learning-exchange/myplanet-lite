@@ -31,12 +31,7 @@ class DashboardNewsRepository(
     suspend fun fetchNews(
         baseUrl: String,
         sessionCookie: String?,
-        skip: Int,
-        bookmark: String?,
-        limit: Int,
-        createdOn: String?,
-        parentCode: String?,
-        teamName: String? = null
+        query: NewsQuery
     ): Result<NewsPage> {
         return withContext(dispatcher) {
             runCatching {
@@ -46,16 +41,16 @@ class DashboardNewsRepository(
                 }
                 val requestUrl = "$normalizedBase/db/news/_find"
                 val selector = mutableMapOf<String, Any>()
-                createdOn?.takeIf { it.isNotBlank() }?.let { code ->
+                query.createdOn?.takeIf { it.isNotBlank() }?.let { code ->
                     selector["createdOn"] = code
-                    val viewInClause = if (!teamName.isNullOrBlank()) {
+                    val viewInClause = if (!query.teamName.isNullOrBlank()) {
                         mapOf(
                             "section" to "teams",
-                            "name" to teamName,
+                            "name" to query.teamName,
                             "mode" to "team"
                         )
                     } else {
-                        parentCode?.takeIf { it.isNotBlank() }?.let { parent ->
+                        query.parentCode?.takeIf { it.isNotBlank() }?.let { parent ->
                             mapOf(
                                 "section" to "community",
                                 "_id" to "$code@$parent"
@@ -68,10 +63,10 @@ class DashboardNewsRepository(
                 }
                 val payload = NewsFindRequest(
                     selector = selector,
-                    limit = limit,
+                    limit = query.limit,
                     sort = listOf(mapOf("time" to "desc")),
-                    skip = skip,
-                    bookmark = bookmark
+                    skip = query.skip,
+                    bookmark = query.bookmark
                 )
                 val json = requestAdapter.toJson(payload)
                 val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -102,7 +97,7 @@ class DashboardNewsRepository(
                     NewsPage(
                         items = filtered,
                         consumed = consumed,
-                        hasMore = docs.size == limit,
+                        hasMore = docs.size == query.limit,
                         bookmark = parsed.bookmark,
                         commentCounts = commentCounts
                     )
@@ -248,5 +243,14 @@ class DashboardNewsRepository(
         val hasMore: Boolean,
         val bookmark: String?,
         val commentCounts: Map<String, Int>
+    )
+
+    data class NewsQuery(
+        val skip: Int,
+        val bookmark: String?,
+        val limit: Int,
+        val createdOn: String?,
+        val parentCode: String?,
+        val teamName: String? = null
     )
 }
