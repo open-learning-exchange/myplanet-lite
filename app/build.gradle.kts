@@ -11,7 +11,7 @@ val mockkAgent: Configuration by configurations.creating
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
-    compileSdk = 36
+    compileSdk = 37
     buildFeatures {
         buildConfig = true
         viewBinding = true
@@ -20,8 +20,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 216
-        versionName = "0.2.16"
+        versionCode = 217
+        versionName = "0.2.17"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
