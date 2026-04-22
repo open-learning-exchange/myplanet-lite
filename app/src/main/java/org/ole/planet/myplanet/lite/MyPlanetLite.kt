@@ -10,7 +10,6 @@ package org.ole.planet.myplanet.lite
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
-import android.os.Build
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
 import android.view.LayoutInflater
@@ -64,15 +63,13 @@ import org.json.JSONException
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
+import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
-import org.ole.planet.myplanet.lite.model.ServerConnectivityResult
-import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 
 class MyPlanetLite : BaseActivity() {
 
