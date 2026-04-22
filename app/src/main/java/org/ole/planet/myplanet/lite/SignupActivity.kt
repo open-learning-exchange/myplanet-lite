@@ -51,13 +51,11 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
-import org.ole.planet.myplanet.lite.model.ServerConnectivityResult
-import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 
 class SignupActivity : BaseActivity() {
 
@@ -416,10 +414,14 @@ class SignupActivity : BaseActivity() {
         initializeLanguageSelection()
     }
 
-    private fun setupFocusAndValidationListeners() {
-        levelInput.doAfterTextChanged {
-            levelLayout.error = null
+    private fun TextView.clearErrorOnTextChange(layout: TextInputLayout) {
+        doAfterTextChanged {
+            layout.error = null
         }
+    }
+
+    private fun setupFocusAndValidationListeners() {
+        levelInput.clearErrorOnTextChange(levelLayout)
 
         val focusableInputs = listOf(
             usernameInput,
@@ -453,26 +455,15 @@ class SignupActivity : BaseActivity() {
             ensureVisible(scrollView, genderGroup)
         }
 
+        usernameInput.clearErrorOnTextChange(usernameLayout)
         usernameInput.doAfterTextChanged {
-            usernameLayout.error = null
             verifyServerAvailability(SignupStep.USERNAME, force = true)
         }
 
-        firstNameInput.doAfterTextChanged {
-            firstNameLayout.error = null
-        }
-
-        lastNameInput.doAfterTextChanged {
-            lastNameLayout.error = null
-        }
-
-        emailInput.doAfterTextChanged {
-            emailLayout.error = null
-        }
-
-        phoneInput.doAfterTextChanged {
-            phoneLayout.error = null
-        }
+        firstNameInput.clearErrorOnTextChange(firstNameLayout)
+        lastNameInput.clearErrorOnTextChange(lastNameLayout)
+        emailInput.clearErrorOnTextChange(emailLayout)
+        phoneInput.clearErrorOnTextChange(phoneLayout)
 
         birthDateInput.keyListener = null
         birthDateInput.setOnClickListener {
