@@ -21,17 +21,13 @@ object SecurePreferencesProvider {
     private const val ENCRYPTED_PREFS_NAME = "encrypted_server_preferences"
     private const val LEGACY_PREFS_NAME = "server_preferences"
 
-    @Suppress("unused")
-    @Volatile
-    private var instance: SharedPreferences? = null
-
     private val cachedInstances = mutableMapOf<String, SharedPreferences>()
 
     fun getServerPreferences(context: Context): SharedPreferences {
         injectedPreferences?.let { return it }
 
         return synchronized(this) {
-            instance ?: run {
+            cachedInstances[ENCRYPTED_PREFS_NAME] ?: run {
                 val encryptedPrefs = getEncryptedPreferences(
                     context = context,
                     prefsName = ENCRYPTED_PREFS_NAME
@@ -45,7 +41,6 @@ object SecurePreferencesProvider {
                     encryptedPrefs
                 }
                 created.also {
-                    instance = it
                     cachedInstances[ENCRYPTED_PREFS_NAME] = it
                 }
             }
@@ -141,7 +136,6 @@ object SecurePreferencesProvider {
     fun resetForTesting() {
         synchronized(this) {
             injectedPreferences = null
-            instance = null
             cachedInstances.clear()
         }
     }
