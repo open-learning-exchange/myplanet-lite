@@ -65,25 +65,30 @@ class CourseWizardActivity : BaseActivity() {
             EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
             EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
         )
-        val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, MODE_PRIVATE)
-        val allLegacy = legacyPrefs.all
-        if (allLegacy.isNotEmpty()) {
-            encryptedPrefs.edit {
-                for ((key, value) in allLegacy) {
-                    when (value) {
-                        is String -> putString(key, value)
-                        is Int -> putInt(key, value)
-                        is Boolean -> putBoolean(key, value)
-                        is Float -> putFloat(key, value)
-                        is Long -> putLong(key, value)
-                        is Set<*> -> @Suppress("UNCHECKED_CAST") putStringSet(
-                            key,
-                            value as Set<String>
-                        )
+        val legacyFile = java.io.File(applicationContext.applicationInfo.dataDir, "shared_prefs/$PREF_LEGACY_PENDING_COURSE_PROGRESS.xml")
+        if (legacyFile.exists()) {
+            val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, MODE_PRIVATE)
+            val allLegacy = legacyPrefs.all
+            if (allLegacy.isNotEmpty()) {
+                encryptedPrefs.edit {
+                    for ((key, value) in allLegacy) {
+                        when (value) {
+                            is String -> putString(key, value)
+                            is Int -> putInt(key, value)
+                            is Boolean -> putBoolean(key, value)
+                            is Float -> putFloat(key, value)
+                            is Long -> putLong(key, value)
+                            is Set<*> -> @Suppress("UNCHECKED_CAST") putStringSet(
+                                key,
+                                value as Set<String>
+                            )
+                        }
                     }
                 }
             }
+            legacyPrefs.edit().clear().apply()
             applicationContext.deleteSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS)
+            legacyFile.delete()
         }
         encryptedPrefs
     }
