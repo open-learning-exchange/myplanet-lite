@@ -627,51 +627,26 @@ class MyPlanetLite : BaseActivity() {
         }
     }
 
+    private data class ServerDialogViews(
+        val serverUrlLayout: TextInputLayout,
+        val serverUrlInput: MaterialAutoCompleteTextView,
+        val serverNameLayout: TextInputLayout,
+        val serverNameInput: TextInputEditText,
+        val countryLayout: TextInputLayout,
+        val countryInput: MaterialAutoCompleteTextView
+    )
+
     private fun showServerConfigurationDialog(
         serverInput: MaterialAutoCompleteTextView,
         serverLayout: TextInputLayout
     ) {
         serverLayout.error = null
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_server_configuration, null)
-        val serverUrlLayout: TextInputLayout = dialogView.findViewById(R.id.serverUrlInputLayout)
-        val serverUrlInput: MaterialAutoCompleteTextView = dialogView.findViewById(R.id.serverUrlInput)
-        val serverNameLayout: TextInputLayout = dialogView.findViewById(R.id.serverNameInputLayout)
-        val serverNameInput: TextInputEditText = dialogView.findViewById(R.id.serverNameInput)
-        val countryLayout: TextInputLayout = dialogView.findViewById(R.id.countryInputLayout)
-        val countryInput: MaterialAutoCompleteTextView = dialogView.findViewById(R.id.countryInput)
+        val views = setupServerConfigurationViews(dialogView)
 
-        val excludedCountryCodes = setOf("CN", "HK", "TW", "IL", "PS")
-        val countryList = World.getAllCountries()
-            .filterNot { excludedCountryCodes.contains(it.alpha2.uppercase(Locale.ROOT)) }
-            .sortedBy { it.name }
-        val countryNames = countryList.map { it.name }
+        val countryList = getFilteredCountries()
         val currentConfig = loadServerConfiguration()
-        val serverSuggestionsAdapter = ArrayAdapter<String>(
-            this,
-            android.R.layout.simple_list_item_1,
-            buildServerSuggestions(currentConfig)
-        )
-        serverUrlInput.setAdapter(serverSuggestionsAdapter)
-        countryInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, countryNames))
-        serverUrlInput.setOnClickListener { serverUrlInput.showDropDownWhenSafe() }
-        serverUrlInput.setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) {
-                serverUrlInput.showDropDownWhenSafe()
-            }
-        }
-        countryInput.setOnClickListener { countryInput.showDropDownWhenSafe() }
-        countryInput.setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) {
-                countryInput.showDropDownWhenSafe()
-            }
-        }
-
-        serverUrlInput.setText(currentConfig.baseUrl, false)
-        serverNameInput.setText(currentConfig.displayName)
-        val selectedCountryIndex = countryList.indexOfFirst { it.alpha2.equals(currentConfig.countryCode, ignoreCase = true) }
-        if (selectedCountryIndex >= 0) {
-            countryInput.setText(countryList[selectedCountryIndex].name, false)
-        }
+        val serverSuggestionsAdapter = setupCountryAndServerAdapters(views, countryList, currentConfig)
 
         val dialog = AlertDialog.Builder(this)
             .setTitle(R.string.server_configuration_title)
@@ -682,46 +657,115 @@ class MyPlanetLite : BaseActivity() {
 
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-                serverUrlLayout.error = null
-                serverNameLayout.error = null
-                countryLayout.error = null
-
-                val url = serverUrlInput.text?.toString()?.trim().orEmpty()
-                val normalizedUrl = normalizeServerUrl(url)
-                val serverName = serverNameInput.text?.toString()?.trim().orEmpty()
-                val countryName = countryInput.text?.toString()?.trim().orEmpty()
-                val selectedCountry = countryList.firstOrNull { it.name.equals(countryName, ignoreCase = true) }
-
-                if (normalizedUrl.isEmpty()) {
-                    serverUrlLayout.error = getString(R.string.server_configuration_url_error)
-                    return@setOnClickListener
-                }
-                if (serverName.isEmpty()) {
-                    serverNameLayout.error = getString(R.string.server_configuration_name_error)
-                    return@setOnClickListener
-                }
-                val nonNullCountry = selectedCountry ?: run {
-                    countryLayout.error = getString(R.string.server_configuration_country_error)
-                    return@setOnClickListener
-                }
-
-                val added = addCustomServer(serverName, normalizedUrl, nonNullCountry.alpha2)
-                if (added) {
-                    saveServerConfiguration(normalizedUrl, nonNullCountry.alpha2, serverName)
-                    Toast.makeText(this, R.string.server_configuration_added, Toast.LENGTH_SHORT).show()
-                    refreshServerOptions(serverInput, serverLayout)
-                    val updatedConfig = loadServerConfiguration()
-                    serverSuggestionsAdapter.clear()
-                    serverSuggestionsAdapter.addAll(buildServerSuggestions(updatedConfig))
-                    serverSuggestionsAdapter.notifyDataSetChanged()
-                    dialog.dismiss()
-                } else {
-                    serverUrlLayout.error = getString(R.string.server_configuration_duplicate_error)
-                }
+                handleServerConfigurationSave(
+                    views, countryList, serverInput, serverLayout, serverSuggestionsAdapter, dialog
+                )
             }
         }
 
         dialog.show()
+    }
+
+    private fun setupServerConfigurationViews(dialogView: View): ServerDialogViews {
+        return ServerDialogViews(
+            serverUrlLayout = dialogView.findViewById(R.id.serverUrlInputLayout),
+            serverUrlInput = dialogView.findViewById(R.id.serverUrlInput),
+            serverNameLayout = dialogView.findViewById(R.id.serverNameInputLayout),
+            serverNameInput = dialogView.findViewById(R.id.serverNameInput),
+            countryLayout = dialogView.findViewById(R.id.countryInputLayout),
+            countryInput = dialogView.findViewById(R.id.countryInput)
+        )
+    }
+
+    private fun getFilteredCountries(): List<com.blongho.country_data.Country> {
+        val excludedCountryCodes = setOf("CN", "HK", "TW", "IL", "PS")
+        return World.getAllCountries()
+            .filterNot { excludedCountryCodes.contains(it.alpha2.uppercase(Locale.ROOT)) }
+            .sortedBy { it.name }
+    }
+
+    private fun setupCountryAndServerAdapters(
+        views: ServerDialogViews,
+        countryList: List<com.blongho.country_data.Country>,
+        currentConfig: ServerConfiguration
+    ): ArrayAdapter<String> {
+        val serverSuggestionsAdapter = ArrayAdapter<String>(
+            this,
+            android.R.layout.simple_list_item_1,
+            buildServerSuggestions(currentConfig)
+        )
+        views.serverUrlInput.setAdapter(serverSuggestionsAdapter)
+
+        val countryNames = countryList.map { it.name }
+        views.countryInput.setAdapter(ArrayAdapter(this, android.R.layout.simple_list_item_1, countryNames))
+
+        views.serverUrlInput.setOnClickListener { views.serverUrlInput.showDropDownWhenSafe() }
+        views.serverUrlInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                views.serverUrlInput.showDropDownWhenSafe()
+            }
+        }
+        views.countryInput.setOnClickListener { views.countryInput.showDropDownWhenSafe() }
+        views.countryInput.setOnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                views.countryInput.showDropDownWhenSafe()
+            }
+        }
+
+        views.serverUrlInput.setText(currentConfig.baseUrl, false)
+        views.serverNameInput.setText(currentConfig.displayName)
+        val selectedCountryIndex = countryList.indexOfFirst { it.alpha2.equals(currentConfig.countryCode, ignoreCase = true) }
+        if (selectedCountryIndex >= 0) {
+            views.countryInput.setText(countryList[selectedCountryIndex].name, false)
+        }
+
+        return serverSuggestionsAdapter
+    }
+
+    private fun handleServerConfigurationSave(
+        views: ServerDialogViews,
+        countryList: List<com.blongho.country_data.Country>,
+        serverInput: MaterialAutoCompleteTextView,
+        serverLayout: TextInputLayout,
+        serverSuggestionsAdapter: ArrayAdapter<String>,
+        dialog: AlertDialog
+    ) {
+        views.serverUrlLayout.error = null
+        views.serverNameLayout.error = null
+        views.countryLayout.error = null
+
+        val url = views.serverUrlInput.text?.toString()?.trim().orEmpty()
+        val normalizedUrl = normalizeServerUrl(url)
+        val serverName = views.serverNameInput.text?.toString()?.trim().orEmpty()
+        val countryName = views.countryInput.text?.toString()?.trim().orEmpty()
+        val selectedCountry = countryList.firstOrNull { it.name.equals(countryName, ignoreCase = true) }
+
+        if (normalizedUrl.isEmpty()) {
+            views.serverUrlLayout.error = getString(R.string.server_configuration_url_error)
+            return
+        }
+        if (serverName.isEmpty()) {
+            views.serverNameLayout.error = getString(R.string.server_configuration_name_error)
+            return
+        }
+        val nonNullCountry = selectedCountry ?: run {
+            views.countryLayout.error = getString(R.string.server_configuration_country_error)
+            return
+        }
+
+        val added = addCustomServer(serverName, normalizedUrl, nonNullCountry.alpha2)
+        if (added) {
+            saveServerConfiguration(normalizedUrl, nonNullCountry.alpha2, serverName)
+            Toast.makeText(this, R.string.server_configuration_added, Toast.LENGTH_SHORT).show()
+            refreshServerOptions(serverInput, serverLayout)
+            val updatedConfig = loadServerConfiguration()
+            serverSuggestionsAdapter.clear()
+            serverSuggestionsAdapter.addAll(buildServerSuggestions(updatedConfig))
+            serverSuggestionsAdapter.notifyDataSetChanged()
+            dialog.dismiss()
+        } else {
+            views.serverUrlLayout.error = getString(R.string.server_configuration_duplicate_error)
+        }
     }
 
     private fun loadServerConfiguration(): ServerConfiguration {
