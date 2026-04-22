@@ -125,6 +125,12 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupViews(view)
+        setupRecyclerView()
+        setupObserversAndLoadInitial()
+    }
+
+    private fun setupViews(view: View) {
         recyclerView = view.findViewById(R.id.postsRecyclerView)
         loadingView = view.findViewById(R.id.postsLoading)
         emptyView = view.findViewById(R.id.postsEmptyView)
@@ -134,7 +140,9 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             openCreateVoiceComposer()
         }
         fab.enableDrag()
+    }
 
+    private fun setupRecyclerView() {
         markwon = Markwon.builder(requireContext()).build()
         adapter = DashboardNewsAdapter(
             markwon,
@@ -189,7 +197,9 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 }
             }
         })
+    }
 
+    private fun setupObserversAndLoadInitial() {
         viewLifecycleOwner.lifecycleScope.launch {
             initializeSession()
             val profile = loadCurrentUserProfile()
@@ -302,12 +312,14 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 val result = repository.fetchNews(
                     base,
                     sessionCookie,
-                    nextSkip,
-                    nextBookmark,
-                    fetchLimit,
-                    serverCode,
-                    serverParentCode,
-                    teamName
+                    DashboardNewsRepository.NewsQuery(
+                        skip = nextSkip,
+                        bookmark = nextBookmark,
+                        limit = fetchLimit,
+                        createdOn = serverCode,
+                        parentCode = serverParentCode,
+                        teamName = teamName
+                    )
                 )
                 val addedPosts = result.fold(
                     onSuccess = { page ->
