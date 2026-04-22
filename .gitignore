@@ -158,3 +158,5 @@ gradle/gradle-daemon-jvm.properties
 benchmark.kt
 
 app/baseline_time.txt
+
+plan.md
