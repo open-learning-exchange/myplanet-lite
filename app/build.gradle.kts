@@ -20,7 +20,6 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-
         versionCode = 243
         versionName = "0.2.43"
 
