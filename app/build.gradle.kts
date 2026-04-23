@@ -112,7 +112,6 @@ dependencies {
 
     // testImplementation
     // testing
-    testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
     debugImplementation(libs.androidx.fragment.testing)
@@ -136,4 +135,19 @@ dependencies {
     androidTestImplementation(libs.core.ktx)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.mockwebserver)
+
+    // Force consistent versions
+    configurations.all {
+        resolutionStrategy {
+            force(
+                libs.androidx.test.core,
+                libs.androidx.test.monitor,
+                libs.androidx.test.runner,
+                libs.androidx.espresso.core,
+                libs.androidx.espresso.intents,
+                libs.androidx.junit,
+                libs.core.ktx
+            )
+        }
+    }
 }
