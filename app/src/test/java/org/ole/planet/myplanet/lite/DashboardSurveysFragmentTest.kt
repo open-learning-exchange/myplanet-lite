@@ -13,6 +13,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.lite.dashboard.DashboardOfflineSurveyStore
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferencesTest
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
@@ -37,6 +39,8 @@ class DashboardSurveysFragmentTest {
     @After
     fun tearDown() {
         SecurePreferencesProvider.injectedPreferences = null
+        DashboardSurveyOutboxStore.resetForTesting(context)
+        DashboardOfflineSurveyStore.resetForTesting(context)
     }
 
     @Test

@@ -21,6 +21,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.assertFalse
+import org.ole.planet.myplanet.lite.dashboard.DashboardOfflineSurveyStore
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 
 @RunWith(RobolectricTestRunner::class)
@@ -42,6 +44,8 @@ class DashboardTeamSurveysFragmentTest {
     @After
     fun tearDown() {
         SecurePreferencesProvider.injectedPreferences = null
+        DashboardSurveyOutboxStore.resetForTesting(ApplicationProvider.getApplicationContext())
+        DashboardOfflineSurveyStore.resetForTesting(ApplicationProvider.getApplicationContext())
     }
 
     @Test
