@@ -50,87 +50,79 @@ class DashboardTeamSurveysFragmentTest {
             putString("arg_team_id", "team123")
             putString("arg_team_name", "Team Alpha")
         }
-        val scenario = launchFragmentInContainer<DashboardTeamSurveysFragment>(
+        launchFragmentInContainer<DashboardTeamSurveysFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_MyPlanetLite
-        )
-
-        scenario.onFragment { fragment ->
-            assertNotNull(fragment)
-
-            assertTrue(fragment.isSurveyFeedFor("team123", "Team Alpha"))
-            assertFalse(fragment.isSurveyFeedFor("team123", "Team Beta"))
-            assertFalse(fragment.isSurveyFeedFor("team456", "Team Alpha"))
+        ).use { scenario ->
+            scenario.onFragment { fragment ->
+                assertNotNull(fragment)
+                assertTrue(fragment.isSurveyFeedFor("team123", "Team Alpha"))
+                assertFalse(fragment.isSurveyFeedFor("team123", "Team Beta"))
+                assertFalse(fragment.isSurveyFeedFor("team456", "Team Alpha"))
+            }
         }
     }
 
     @Test
     fun testLoadSurveys_MissingServer() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-
         // Ensure no server URL is stored
         whenever(mockPrefs.getString("server_url", null)).thenReturn(null)
-
         val bundle = Bundle().apply {
             putString("arg_team_id", "team123")
             putString("arg_team_name", "Team Alpha")
         }
-        val scenario = launchFragmentInContainer<DashboardTeamSurveysFragment>(
+        launchFragmentInContainer<DashboardTeamSurveysFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_MyPlanetLite
-        )
-
-        scenario.onFragment { fragment ->
-            val errorView = fragment.view?.findViewById<TextView>(R.id.dashboardSurveysError)
-            assertNotNull(errorView)
-            assertTrue(errorView!!.isVisible)
-            assertEquals(context.getString(R.string.dashboard_surveys_missing_server), errorView.text)
+        ).use { scenario ->
+            scenario.onFragment { fragment ->
+                val errorView = fragment.view?.findViewById<TextView>(R.id.dashboardSurveysError)
+                assertNotNull(errorView)
+                assertTrue(errorView!!.isVisible)
+                assertEquals(context.getString(R.string.dashboard_surveys_missing_server), errorView.text)
+            }
         }
     }
 
     @Test
     fun testLoadSurveys_MissingTeam() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-
         // Mock server URL so it passes the first check
         whenever(mockPrefs.getString("server_url", null)).thenReturn("http://test.com")
-
         // No team arguments
-        val scenario = launchFragmentInContainer<DashboardTeamSurveysFragment>(
+        launchFragmentInContainer<DashboardTeamSurveysFragment>(
             themeResId = R.style.Theme_MyPlanetLite
-        )
-
-        scenario.onFragment { fragment ->
-            val errorView = fragment.view?.findViewById<TextView>(R.id.dashboardSurveysError)
-            assertNotNull(errorView)
-            assertTrue(errorView!!.isVisible)
-            assertEquals(context.getString(R.string.dashboard_surveys_missing_team), errorView.text)
+        ).use { scenario ->
+            scenario.onFragment { fragment ->
+                val errorView = fragment.view?.findViewById<TextView>(R.id.dashboardSurveysError)
+                assertNotNull(errorView)
+                assertTrue(errorView!!.isVisible)
+                assertEquals(context.getString(R.string.dashboard_surveys_missing_team), errorView.text)
+            }
         }
     }
 
     @Test
     fun testLoadSurveys_MissingCredentials() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
-
         // Mock server URL
         whenever(mockPrefs.getString("server_url", null)).thenReturn("http://test.com")
-
         // Do not mock credentials, so it returns null
-
         val bundle = Bundle().apply {
             putString("arg_team_id", "team123")
             putString("arg_team_name", "Team Alpha")
         }
-        val scenario = launchFragmentInContainer<DashboardTeamSurveysFragment>(
+        launchFragmentInContainer<DashboardTeamSurveysFragment>(
             fragmentArgs = bundle,
             themeResId = R.style.Theme_MyPlanetLite
-        )
-
-        scenario.onFragment { fragment ->
-            val errorView = fragment.view?.findViewById<TextView>(R.id.dashboardSurveysError)
-            assertNotNull(errorView)
-            assertTrue(errorView!!.isVisible)
-            assertEquals(context.getString(R.string.dashboard_surveys_missing_credentials), errorView.text)
+        ).use { scenario ->
+            scenario.onFragment { fragment ->
+                val errorView = fragment.view?.findViewById<TextView>(R.id.dashboardSurveysError)
+                assertNotNull(errorView)
+                assertTrue(errorView!!.isVisible)
+                assertEquals(context.getString(R.string.dashboard_surveys_missing_credentials), errorView.text)
+            }
         }
     }
 }

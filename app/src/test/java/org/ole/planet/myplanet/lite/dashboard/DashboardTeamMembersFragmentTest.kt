@@ -99,16 +99,15 @@ class DashboardTeamMembersFragmentTest {
         """.trimIndent()
         mockWebServer.enqueue(MockResponse().setBody(usersResponse).setResponseCode(200))
 
-        val scenario = launchFragmentInContainer<DashboardTeamMembersFragment>(themeResId = MaterialR.style.Theme_MaterialComponents_Light)
-
-        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
-
-        scenario.onFragment { fragment ->
-            assertNotNull(fragment)
-            val recyclerView = fragment.view?.findViewById<RecyclerView>(R.id.dashboardTeamMembersList)
-            assertNotNull(recyclerView)
-            assertEquals(View.VISIBLE, recyclerView?.visibility)
-            assertEquals(1, recyclerView?.adapter?.itemCount)
+        launchFragmentInContainer<DashboardTeamMembersFragment>(themeResId = MaterialR.style.Theme_MaterialComponents_Light).use { scenario ->
+            ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+            scenario.onFragment { fragment ->
+                assertNotNull(fragment)
+                val recyclerView = fragment.view?.findViewById<RecyclerView>(R.id.dashboardTeamMembersList)
+                assertNotNull(recyclerView)
+                assertEquals(View.VISIBLE, recyclerView?.visibility)
+                assertEquals(1, recyclerView?.adapter?.itemCount)
+            }
         }
     }
 }
