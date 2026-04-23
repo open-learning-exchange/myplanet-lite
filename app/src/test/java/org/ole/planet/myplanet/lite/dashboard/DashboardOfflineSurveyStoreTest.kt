@@ -23,14 +23,14 @@ class DashboardOfflineSurveyStoreTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardOfflineSurveyStore(context)
+        store = DashboardOfflineSurveyStore.getInstance(context)
         // Clear db before test
         store.writableDatabase.delete("surveys", null, null)
     }
 
     @After
     fun teardown() {
-        store.close()
+        DashboardOfflineSurveyStore.resetForTesting(ApplicationProvider.getApplicationContext())
     }
 
     @Test
