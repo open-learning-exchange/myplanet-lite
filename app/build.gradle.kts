@@ -20,13 +20,9 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-<<<<<<< add-dashboard-course-page-fragment-test-17362843214510994114
+
         versionCode = 243
         versionName = "0.2.43"
-=======
-        versionCode = 242
-        versionName = "0.2.42"
->>>>>>> main
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -117,11 +113,7 @@ dependencies {
 
     // testImplementation
     // testing
-<<<<<<< add-dashboard-course-page-fragment-test-17362843214510994114
     debugImplementation(libs.androidx.fragment.testing)
-    testImplementation(libs.androidx.core)
-=======
->>>>>>> main
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
     debugImplementation(libs.androidx.fragment.testing)
