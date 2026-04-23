@@ -90,7 +90,7 @@
     <string name="signup_connection_error_input">Couldn\'t connect to the server.</string>
     <string name="signup_username_checking">Checking username availability…</string>
     <string name="signup_username_error_taken">This username is already in use.</string>
-    <string name="dashboard_offline_mode_only_surveys">Offline mode: only surveys and downloaded courses are available.</string>
+    <string name="dashboard_offline_mode_only_surveys">Offline mode: only surveys, downloaded courses, and downloaded resources are available.</string>
     <string name="dashboard_online_mode_restored">Connection restored: all panels are enabled.</string>
     <string name="dashboard_survey_download">Download</string>
     <string name="dashboard_survey_downloaded">Downloaded</string>

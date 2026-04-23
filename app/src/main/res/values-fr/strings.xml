@@ -88,7 +88,7 @@
     <string name="signup_connection_error_input">Impossible de se connecter au serveur.</string>
     <string name="signup_username_checking">Vérification de la disponibilité du nom d\'utilisateur…</string>
     <string name="signup_username_error_taken">Ce nom d\'utilisateur est déjà utilisé.</string>
-    <string name="dashboard_offline_mode_only_surveys">Mode hors ligne : seules les enquêtes et les cours téléchargés sont disponibles.</string>
+    <string name="dashboard_offline_mode_only_surveys">Mode hors ligne : seules les enquêtes, les cours téléchargés et les ressources téléchargées sont disponibles.</string>
     <string name="dashboard_online_mode_restored">Connexion rétablie : tous les panneaux sont activés.</string>
     <string name="dashboard_survey_download">Télécharger</string>
     <string name="dashboard_survey_downloaded">Téléchargée</string>

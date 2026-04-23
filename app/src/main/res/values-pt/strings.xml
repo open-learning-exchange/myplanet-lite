@@ -88,7 +88,7 @@
     <string name="signup_connection_error_input">Não foi possível conectar ao servidor.</string>
     <string name="signup_username_checking">Verificando disponibilidade do nome de usuário…</string>
     <string name="signup_username_error_taken">Este nome de usuário já está em uso.</string>
-    <string name="dashboard_offline_mode_only_surveys">Modo offline: apenas pesquisas e cursos baixados estão disponíveis.</string>
+    <string name="dashboard_offline_mode_only_surveys">Modo offline: apenas pesquisas, cursos baixados e recursos baixados estão disponíveis.</string>
     <string name="dashboard_online_mode_restored">Conexão restaurada: todos os painéis estão habilitados.</string>
     <string name="dashboard_survey_download">Baixar</string>
     <string name="dashboard_survey_downloaded">Baixado</string>

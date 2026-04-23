@@ -493,7 +493,7 @@
 
     <string name="search_hint">खोज्नुहोस्</string>
     <string name="add_member_button_description">सदस्य थप्नुहोस्</string>
-    <string name="dashboard_offline_mode_only_surveys">अफलाइन मोड: केवल सर्वेक्षणहरू र डाउनलोड गरिएका पाठ्यक्रमहरू उपलब्ध छन्।</string>
+    <string name="dashboard_offline_mode_only_surveys">अफलाइन मोड: केवल सर्वेक्षणहरू, डाउनलोड गरिएका पाठ्यक्रमहरू र डाउनलोड गरिएका स्रोतहरू उपलब्ध छन्।</string>
     <string name="dashboard_online_mode_restored">जडान पुनःस्थापित: सबै प्यानलहरू सक्षम छन्।</string>
     <string name="dashboard_survey_download">डाउनलोड</string>
     <string name="dashboard_survey_downloaded">डाउनलोड गरियो</string>

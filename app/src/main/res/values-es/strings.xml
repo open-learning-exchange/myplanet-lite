@@ -90,7 +90,7 @@
     <string name="signup_connection_error_input">No se pudo conectar al servidor.</string>
     <string name="signup_username_checking">Verificando la disponibilidad del usuario…</string>
     <string name="signup_username_error_taken">Este usuario ya está en uso.</string>
-    <string name="dashboard_offline_mode_only_surveys">Modo sin conexión: solo las encuestas y los cursos descargados están disponibles.</string>
+    <string name="dashboard_offline_mode_only_surveys">Modo sin conexión: solo las encuestas, los cursos descargados y los recursos descargados están disponibles.</string>
     <string name="dashboard_online_mode_restored">Conexión restablecida: todos los paneles están habilitados.</string>
     <string name="dashboard_survey_download">Descargar</string>
     <string name="dashboard_survey_downloaded">Descargada</string>

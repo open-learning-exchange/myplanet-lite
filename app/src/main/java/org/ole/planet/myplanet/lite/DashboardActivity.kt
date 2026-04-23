@@ -78,6 +78,7 @@ class DashboardActivity : BaseActivity() {
     private var isHandlingSurveyTranslationToggle = false
     private var surveyTranslationToggle: SwitchCompat? = null
     private var isOfflineMode = false
+    private var isOfflineForcedByLaunch = false
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             runOnUiThread {
@@ -363,9 +364,14 @@ class DashboardActivity : BaseActivity() {
             refreshProfileSummary()
         })
 
+        isOfflineForcedByLaunch = intent?.getBooleanExtra(EXTRA_OFFLINE_MODE, false) == true
+        isOfflineMode = isOfflineForcedByLaunch
         handleDeepLinkNavigation()
         val initialConnectivity = NetworkUtils.isDeviceOnline(this)
-        applyConnectivityState(isConnected = initialConnectivity, showMessages = intent?.getBooleanExtra(EXTRA_OFFLINE_MODE, false) == true || !initialConnectivity)
+        applyConnectivityState(
+            isConnected = initialConnectivity,
+            showMessages = isOfflineMode || !initialConnectivity
+        )
         if (initialConnectivity || currentSection == DashboardSection.SURVEYS) {
             showSection(currentSection)
         }
@@ -781,7 +787,7 @@ class DashboardActivity : BaseActivity() {
 
 
     private fun applyConnectivityState(isConnected: Boolean, showMessages: Boolean = false) {
-        if (isConnected) {
+        if (isConnected && !isOfflineForcedByLaunch) {
             if (isOfflineMode) {
                 isOfflineMode = false
                 updateBottomNavigationState()
@@ -802,4 +808,6 @@ class DashboardActivity : BaseActivity() {
     private fun showOfflineModeMessage() {
         Toast.makeText(this, R.string.dashboard_offline_mode_only_surveys, Toast.LENGTH_SHORT).show()
     }
+
+    fun isOfflineModeActive(): Boolean = isOfflineMode
 }

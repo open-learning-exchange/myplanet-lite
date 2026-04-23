@@ -493,7 +493,7 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
 
     <string name="search_hint">Raadi</string>
     <string name="add_member_button_description">Ku dar xubin</string>
-    <string name="dashboard_offline_mode_only_surveys">Habka offline: kaliya sahanno iyo koorsooyin la soo dejiyey ayaa la heli karaa.</string>
+    <string name="dashboard_offline_mode_only_surveys">Habka offline: kaliya sahanno, koorsooyin la soo dejiyey, iyo agab la soo dejiyey ayaa la heli karaa.</string>
     <string name="dashboard_online_mode_restored">Xiriirku wuu soo noqday: dhammaan guddiyadu waa la furtay.</string>
     <string name="dashboard_survey_download">Soo deji</string>
     <string name="dashboard_survey_downloaded">La soo dejiyey</string>

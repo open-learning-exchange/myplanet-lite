@@ -88,7 +88,7 @@
     <string name="signup_connection_error_input">تعذّر الاتصال بالخادم.</string>
     <string name="signup_username_checking">جارٍ التحقق من توفر اسم المستخدم…</string>
     <string name="signup_username_error_taken">اسم المستخدم هذا مستخدم بالفعل.</string>
-    <string name="dashboard_offline_mode_only_surveys">وضع عدم الاتصال: تتوفر فقط الاستبيانات والدورات التي تم تنزيلها.</string>
+    <string name="dashboard_offline_mode_only_surveys">وضع عدم الاتصال: تتوفر فقط الاستبيانات والدورات والموارد التي تم تنزيلها.</string>
     <string name="dashboard_online_mode_restored">تمت استعادة الاتصال: تم تمكين كل اللوحات.</string>
     <string name="dashboard_survey_download">تنزيل</string>
     <string name="dashboard_survey_downloaded">تم التنزيل</string>

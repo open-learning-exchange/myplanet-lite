@@ -506,7 +506,8 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         val date: String,
         val createdDate: Long?,
         val isDownloaded: Boolean,
-        val isDownloadable: Boolean
+        val isDownloadable: Boolean,
+        val isTeamResource: Boolean
     )
 
     private enum class ResourceSortBy {
@@ -524,9 +525,17 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         val content = contentView ?: return
         val empty = emptyView ?: return
         val list = resourcesList ?: return
-        addResourceFab?.isVisible = !isTeamResourcesTab || hasSelectedTeam()
+        val offlineMode = (activity as? DashboardActivity)?.isOfflineModeActive() == true
+        addResourceFab?.isVisible = !offlineMode && (!isTeamResourcesTab || hasSelectedTeam())
 
         if (isTeamResourcesTab) {
+            if (offlineMode) {
+                content.isVisible = true
+                empty.isVisible = false
+                showDownloadedResourcesOnly(list)
+                swipeRefreshLayout?.isRefreshing = false
+                return
+            }
             if (!hasSelectedTeam()) {
                 content.isVisible = false
                 empty.text = getString(R.string.dashboard_teams_select_team_hint)
@@ -553,6 +562,11 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
 
         content.isVisible = true
         empty.isVisible = false
+        if (offlineMode) {
+            showDownloadedResourcesOnly(list)
+            swipeRefreshLayout?.isRefreshing = false
+            return
+        }
         if (forceRefresh || !hasLoadedMainResources) {
             resetMainResourcesAndLoad()
             return
@@ -564,6 +578,19 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
             currentAdapter.replaceResources(mainResourcesItems)
         }
         swipeRefreshLayout?.isRefreshing = false
+    }
+
+    private fun showDownloadedResourcesOnly(list: RecyclerView) {
+        val downloadedResources = loadDownloadedResourcesFiltered().toMutableList()
+        sortResources(downloadedResources)
+        if (isTeamResourcesTab) {
+            teamResourcesItems.clear()
+            teamResourcesItems.addAll(downloadedResources)
+        } else {
+            mainResourcesItems.clear()
+            mainResourcesItems.addAll(downloadedResources)
+        }
+        list.adapter = ResourceExplorerAdapter(downloadedResources, ::openResource, ::onSecondaryAction)
     }
 
     private fun resetMainResourcesAndLoad() {
@@ -624,8 +651,9 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
                     type = resource.mediaType?.uppercase(Locale.ROOT) ?: "PDF",
                     date = resource.createdDate.toDisplayDate(),
                     createdDate = resource.createdDate,
-                    isDownloaded = findLocalResourceFile(id, filename)?.exists() == true,
-                    isDownloadable = parseIsDownloadable(resource.isDownloadable)
+                    isDownloaded = findLocalResourceFile(id, filename, isTeamResource = false)?.exists() == true,
+                    isDownloadable = parseIsDownloadable(resource.isDownloadable),
+                    isTeamResource = false
                 )
             }.filter { item ->
                 val key = item.uniqueKey()
@@ -703,8 +731,9 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
                     type = resource.mediaType?.uppercase(Locale.ROOT) ?: "PDF",
                     date = resource.createdDate.toDisplayDate(),
                     createdDate = resource.createdDate,
-                    isDownloaded = findLocalResourceFile(id, filename)?.exists() == true,
-                    isDownloadable = parseIsDownloadable(resource.isDownloadable)
+                    isDownloaded = findLocalResourceFile(id, filename, isTeamResource = true)?.exists() == true,
+                    isDownloadable = parseIsDownloadable(resource.isDownloadable),
+                    isTeamResource = true
                 )
             }
             val remoteKeys = allRemoteItems.map { it.resourceIdentityKey() }.toSet()
@@ -775,7 +804,7 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
     }
 
     private fun deleteDownloadedResource(item: ResourceUi) {
-        findLocalResourceFile(item.id, item.filename)?.delete()
+        findLocalResourceFile(item.id, item.filename, item.isTeamResource)?.delete()
         removeDownloadedResource(item)
         markResourceDownloadState(item, downloaded = false)
     }
@@ -811,7 +840,9 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
     private fun saveDownloadedResourceFile(item: ResourceUi, bytes: ByteArray): File? {
         return runCatching {
             val context = requireContext().applicationContext
-            val dir = File(context.filesDir, "resources/${item.id}").apply { mkdirs() }
+            val normalizedResourceFolder = item.id.takeIf { it.isNotBlank() } ?: "_no_id"
+            val tabFolder = if (item.isTeamResource) "team" else "community"
+            val dir = File(context.filesDir, "resources/$tabFolder/$normalizedResourceFolder").apply { mkdirs() }
             File(dir, item.filename).apply { writeBytes(bytes) }
         }.getOrNull()
     }
@@ -827,7 +858,8 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
             val obj = json.optJSONObject(i) ?: continue
             val id = obj.optString("id").orEmpty()
             val filename = obj.optString("filename").orEmpty()
-            val local = findLocalResourceFile(id, filename)
+            val isTeamResource = obj.optBoolean("isTeamResource", false)
+            val local = findLocalResourceFile(id, filename, isTeamResource)
             if (local?.exists() != true) {
                 continue
             }
@@ -840,7 +872,8 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
                     date = obj.optString("date").ifBlank { "-" },
                     createdDate = obj.optLong("createdDate").takeIf { it > 0L },
                     isDownloaded = true,
-                    isDownloadable = true
+                    isDownloadable = true,
+                    isTeamResource = isTeamResource
                 )
             )
         }
@@ -850,12 +883,13 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
     private fun loadDownloadedResourcesFiltered(): List<ResourceUi> {
         val query = searchQuery.trim()
         return loadDownloadedResources().filter { item ->
+            val matchesTab = item.isTeamResource == isTeamResourcesTab
             val matchesQuery = query.isBlank() ||
                 item.name.contains(query, ignoreCase = true) ||
                 item.filename.contains(query, ignoreCase = true)
             val matchesType = selectedMediaType.isNullOrBlank() ||
                 item.type.equals(selectedMediaType, ignoreCase = true)
-            matchesQuery && matchesType
+            matchesTab && matchesQuery && matchesType
         }
     }
 
@@ -868,7 +902,11 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         val filtered = mutableListOf<JSONObject>()
         for (i in 0 until existing.length()) {
             val obj = existing.optJSONObject(i) ?: continue
-            val key = "${obj.optString("id")}::${obj.optString("filename")}"
+            val key = storedResourceKey(
+                id = obj.optString("id"),
+                filename = obj.optString("filename"),
+                isTeamResource = obj.optBoolean("isTeamResource", false)
+            )
             if (key != item.uniqueKey()) {
                 filtered.add(obj)
             }
@@ -881,6 +919,7 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
                 put("type", item.type)
                 put("date", item.date)
                 put("createdDate", item.createdDate)
+                put("isTeamResource", item.isTeamResource)
             }
         )
         val next = JSONArray()
@@ -899,7 +938,11 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         val next = JSONArray()
         for (i in 0 until existing.length()) {
             val obj = existing.optJSONObject(i) ?: continue
-            val key = "${obj.optString("id")}::${obj.optString("filename")}"
+            val key = storedResourceKey(
+                id = obj.optString("id"),
+                filename = obj.optString("filename"),
+                isTeamResource = obj.optBoolean("isTeamResource", false)
+            )
             if (key != item.uniqueKey()) {
                 next.put(obj)
             }
@@ -949,7 +992,7 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
     }
 
     private fun resolveResourceUri(item: ResourceUi): String? {
-        val localFile = findLocalResourceFile(item.id, item.filename)
+        val localFile = findLocalResourceFile(item.id, item.filename, item.isTeamResource)
         if (localFile?.exists() == true) {
             return localFile.toURI().toString()
         }
@@ -970,21 +1013,40 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
             .toString()
     }
 
-    private fun findLocalResourceFile(resourceId: String, filename: String): File? {
-        if (resourceId.isBlank() || filename.isBlank()) {
+    private fun findLocalResourceFile(resourceId: String, filename: String, isTeamResource: Boolean): File? {
+        if (filename.isBlank()) {
             return null
         }
         val context = context ?: return null
         val publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
-        val candidates = mutableListOf(
-            File(context.filesDir, "resources/$resourceId/$filename"),
-            File(publicDownloads, filename)
-        )
+        val tabFolder = if (isTeamResource) "team" else "community"
+        val candidates = mutableListOf<File>()
+        if (resourceId.isNotBlank()) {
+            candidates += File(context.filesDir, "resources/$tabFolder/$resourceId/$filename")
+            candidates += File(context.filesDir, "resources/$resourceId/$filename")
+        } else {
+            candidates += File(context.filesDir, "resources/$tabFolder/_no_id/$filename")
+            candidates += File(context.filesDir, "resources/_no_id/$filename")
+            candidates += File(context.filesDir, "resources/$filename")
+        }
+        candidates += File(publicDownloads, filename)
         context.getExternalFilesDir(null)?.let {
-            candidates.add(File(it, "resources/$resourceId/$filename"))
+            if (resourceId.isNotBlank()) {
+                candidates.add(File(it, "resources/$tabFolder/$resourceId/$filename"))
+                candidates.add(File(it, "resources/$resourceId/$filename"))
+            } else {
+                candidates.add(File(it, "resources/$tabFolder/_no_id/$filename"))
+                candidates.add(File(it, "resources/_no_id/$filename"))
+            }
         }
         context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.let {
-            candidates.add(File(it, "resources/$resourceId/$filename"))
+            if (resourceId.isNotBlank()) {
+                candidates.add(File(it, "resources/$tabFolder/$resourceId/$filename"))
+                candidates.add(File(it, "resources/$resourceId/$filename"))
+            } else {
+                candidates.add(File(it, "resources/$tabFolder/_no_id/$filename"))
+                candidates.add(File(it, "resources/_no_id/$filename"))
+            }
         }
         return candidates.firstOrNull { it.exists() }
     }
@@ -1002,7 +1064,12 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         return formatter.format(Date(this))
     }
 
-    private fun ResourceUi.uniqueKey(): String = "$id::$filename"
+    private fun ResourceUi.uniqueKey(): String = storedResourceKey(id, filename, isTeamResource)
+
+    private fun storedResourceKey(id: String, filename: String, isTeamResource: Boolean): String {
+        val bucket = if (isTeamResource) "team" else "community"
+        return "$bucket::$id::$filename"
+    }
 
     private fun ResourceUi.resourceIdentityKey(): String {
         return id.takeIf { it.isNotBlank() } ?: uniqueKey()
