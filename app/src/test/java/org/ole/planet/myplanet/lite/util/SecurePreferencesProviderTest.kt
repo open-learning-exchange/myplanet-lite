@@ -50,7 +50,7 @@ class SecurePreferencesProviderTest {
     }
 
     @Test
-    fun `getServerPreferences returns instance when already created`() {
+    fun `getServerPreferences returns cached instance when already created`() {
         SecurePreferencesProvider.injectedPreferences = mockPrefs
 
         val result = SecurePreferencesProvider.getServerPreferences(mockContext)
@@ -58,7 +58,7 @@ class SecurePreferencesProviderTest {
     }
 
     @Test
-    fun `getServerPreferences creates EncryptedSharedPreferences when instance is null`() {
+    fun `getServerPreferences creates EncryptedSharedPreferences when not cached`() {
         val legacyPrefs = mock(SharedPreferences::class.java)
         `when`(mockContext.getSharedPreferences("server_preferences", Context.MODE_PRIVATE)).thenReturn(legacyPrefs)
         `when`(legacyPrefs.all).thenReturn(emptyMap<String, Any?>())
