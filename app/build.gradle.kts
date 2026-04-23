@@ -126,7 +126,6 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
-    debugImplementation(libs.androidx.fragment.testing)
 
     // androidTestImplementation
     // testing
