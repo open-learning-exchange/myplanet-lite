@@ -530,8 +530,8 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyContainer.isVisible = true
         replyInput.requestFocus()
         replyInput.post {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-            imm?.showSoftInput(replyInput, InputMethodManager.SHOW_IMPLICIT)
+            val imm = getSystemService(InputMethodManager::class.java)
+            imm?.showSoftInput(replyInput, 0)
         }
     }
 
@@ -559,8 +559,8 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyContainer.isVisible = true
         replyInput.requestFocus()
         replyInput.post {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-            imm?.showSoftInput(replyInput, InputMethodManager.SHOW_IMPLICIT)
+            val imm = getSystemService(InputMethodManager::class.java)
+            imm?.showSoftInput(replyInput, 0)
         }
         updateReplyPreview(replyPreview, replyInput.text?.toString())
     }
@@ -1053,7 +1053,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
     }
 
     private fun hideReplyKeyboard() {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        val imm = getSystemService(InputMethodManager::class.java)
         imm?.hideSoftInputFromWindow(replyInput.windowToken, 0)
     }
 
