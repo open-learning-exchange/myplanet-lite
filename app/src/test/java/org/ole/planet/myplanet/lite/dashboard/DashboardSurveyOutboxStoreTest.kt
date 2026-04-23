@@ -28,13 +28,13 @@ class DashboardSurveyOutboxStoreTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardSurveyOutboxStore(context)
+        store = DashboardSurveyOutboxStore.getInstance(context)
         store.writableDatabase.delete("outbox_submissions", null, null)
     }
 
     @After
     fun teardown() {
-        store.close()
+        DashboardSurveyOutboxStore.resetForTesting(ApplicationProvider.getApplicationContext())
     }
 
     private fun createSubmission() = SurveySubmission(

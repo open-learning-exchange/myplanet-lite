@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Context
+import android.os.Build
 import android.widget.ImageButton
 import androidx.lifecycle.Lifecycle
 import androidx.media3.ui.PlayerView
@@ -12,8 +13,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.R])
 class FullscreenPlayerActivityTest {
 
     @Test

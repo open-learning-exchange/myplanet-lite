@@ -20,8 +20,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 241
-        versionName = "0.2.41"
+        versionCode = 242
+        versionName = "0.2.42"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -112,7 +112,6 @@ dependencies {
 
     // testImplementation
     // testing
-    testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
     debugImplementation(libs.androidx.fragment.testing)
@@ -135,4 +134,19 @@ dependencies {
     androidTestImplementation(libs.core.ktx)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.mockwebserver)
+
+    // Force consistent versions
+    configurations.all {
+        resolutionStrategy {
+            force(
+                libs.androidx.test.core,
+                libs.androidx.test.monitor,
+                libs.androidx.test.runner,
+                libs.androidx.espresso.core,
+                libs.androidx.espresso.intents,
+                libs.androidx.junit,
+                libs.core.ktx
+            )
+        }
+    }
 }

@@ -48,7 +48,7 @@ class DashboardOutboxDetailActivity : BaseActivity() {
     private lateinit var sendButton: MaterialButton
     private lateinit var deleteButton: MaterialButton
     private lateinit var emptyView: TextView
-    private val outboxStore by lazy { DashboardSurveyOutboxStore(applicationContext) }
+    private val outboxStore by lazy { DashboardSurveyOutboxStore.getInstance(applicationContext) }
 
     private val httpClient by lazy { OkHttpClient.Builder().build() }
 
