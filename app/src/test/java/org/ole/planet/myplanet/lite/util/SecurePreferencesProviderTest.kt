@@ -117,10 +117,11 @@ class SecurePreferencesProviderTest {
                 "migrateLegacyPreferences",
                 Context::class.java,
                 SharedPreferences::class.java,
-                SharedPreferences::class.java
+                SharedPreferences::class.java,
+                String::class.java
             )
             method.isAccessible = true
-            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs) as Job
+            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs, "server_preferences") as Job
             job.join()
 
             verify(mockEncryptedEditor).putString("string_key", "value")
@@ -150,10 +151,11 @@ class SecurePreferencesProviderTest {
                 "migrateLegacyPreferences",
                 Context::class.java,
                 SharedPreferences::class.java,
-                SharedPreferences::class.java
+                SharedPreferences::class.java,
+                String::class.java
             )
             method.isAccessible = true
-            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs) as Job
+            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs, "server_preferences") as Job
             job.join()
 
             verify(mockEncryptedPrefs, never()).edit()
