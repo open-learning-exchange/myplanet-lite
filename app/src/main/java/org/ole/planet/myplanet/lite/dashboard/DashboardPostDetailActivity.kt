@@ -3,6 +3,7 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
  */
+
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.annotation.SuppressLint
@@ -76,9 +77,12 @@ import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
 }
+
 class DashboardPostDetailActivity : AppCompatActivity() {
+
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: View
+
     private val repository = DashboardNewsRepository(
         client = OkHttpClient.Builder().build(),
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
@@ -91,6 +95,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
     private val httpClient = OkHttpClient.Builder().build()
     private lateinit var adapter: PostDetailAdapter
     private lateinit var markwon: Markwon
+
     private lateinit var replyContainer: View
     private lateinit var replyInputLayout: TextInputLayout
     private lateinit var replyInput: EditText
@@ -105,6 +110,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
     private lateinit var replyMarkdownToolbar: LinearLayout
     private lateinit var replyingToLabel: TextView
     private lateinit var backCallback: OnBackPressedCallback
+
     private val pendingReplyImages = LinkedHashMap<String, PendingVoiceImage>()
     private var replyPendingNewlineIndex: Int? = null
     private var isHandlingReplyListContinuation = false
@@ -122,6 +128,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 finish()
             }
         }
+
     private var avatarLoader: DashboardAvatarLoader? = null
     private var imageLoader: DashboardPostImageLoader? = null
     private var shareHelper: PostShareHelper? = null
@@ -141,11 +148,14 @@ class DashboardPostDetailActivity : AppCompatActivity() {
     private var isPostingReply: Boolean = false
     private var isReplyComposerExpanded: Boolean = false
     private var replyContextHandle: String? = null
+
     private lateinit var headerItem: PostDetailItem.Header
     private var avatarUpdateListener: AvatarUpdateNotifier.Listener? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dashboard_post_detail)
+
         setupToolbar()
         setupViews()
         setupBackNavigation()
@@ -154,6 +164,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         setupAdapter()
         loadInitialData()
     }
+
     private fun setupToolbar() {
         val toolbar: MaterialToolbar = findViewById(R.id.postDetailToolbar)
         setSupportActionBar(toolbar)
@@ -174,11 +185,13 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             toolbar.touchDelegate = TouchDelegate(hitRect, navButton)
         }
     }
+
     private fun setupViews() {
         markwon = Markwon.builder(this).build()
         recyclerView = findViewById(R.id.postDetailRecyclerView)
         loadingView = findViewById(R.id.postDetailLoading)
     }
+
     private fun setupBackNavigation() {
         backCallback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -191,6 +204,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         onBackPressedDispatcher.addCallback(this, backCallback)
     }
+
     private fun setupReplyComposer() {
         replyContainer = findViewById(R.id.postDetailReplyContainer)
         replyInputLayout = findViewById(R.id.dashboardReplyInputLayout)
@@ -205,16 +219,20 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyActionsRow = findViewById(R.id.dashboardReplyActions)
         replyMarkdownToolbar = findViewById(R.id.dashboardReplyMarkdownToolbar)
         replyingToLabel = findViewById(R.id.postDetailReplyingTo)
+
         setupReplyWindowInsets()
         setupReplyInputListeners()
         setupReplyMarkdownToolbar()
+
         updateReplyPreview(replyPreview, "")
         setMarkdownToolbarEnabled(false)
         replySendButton.isEnabled = false
     }
+
     private fun setupReplyWindowInsets() {
         val baseReplyContainerMarginBottom =
             (replyContainer.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+
         ViewCompat.setOnApplyWindowInsetsListener(replyContainer) { view, insets ->
             val systemBarsBottom = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
             val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
@@ -226,6 +244,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         ViewCompat.requestApplyInsets(replyContainer)
     }
+
     private fun setupReplyInputListeners() {
         replyInputLayout.helperText = null
         replyInput.doAfterTextChanged { text ->
@@ -269,6 +288,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val replyQuote: MaterialButton = findViewById(R.id.dashboardReplyMarkdownQuote)
         val replyLink: MaterialButton = findViewById(R.id.dashboardReplyMarkdownLink)
         val replyImage: MaterialButton = findViewById(R.id.dashboardReplyMarkdownImage)
+
         replyBold.setOnClickListener {
             applyWrappedFormatting("**", "**", "", placeCursorInsideWhenNoSelection = true)
         }
@@ -286,6 +306,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             handleReplyInsertImageClick()
         }
     }
+
     private fun loadIntentData(): Boolean {
         val postId = intent.getStringExtra(EXTRA_POST_ID)
         if (postId.isNullOrBlank()) {
@@ -304,6 +325,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         document = intent.extras?.let { bundle ->
             BundleCompat.getSerializable(bundle, EXTRA_DOCUMENT, NewsDocument::class.java)
         }
+
         headerItem = PostDetailItem.Header(
             id = postId,
             author = author,
@@ -319,10 +341,12 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             canDelete = false,
             canShare = false
         )
+
         updateReplyingToLabel(username)
         updateReplyComposerVisibility()
         return true
     }
+
     private fun setupAdapter() {
         adapter = PostDetailAdapter(
             markwon,
@@ -361,10 +385,12 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 attemptDeleteComment(comment)
             }
         )
+
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
         submitItems(currentComments)
     }
+
     private fun loadInitialData() {
         lifecycleScope.launch {
             initializeSession()
@@ -397,11 +423,14 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             loadComments(headerItem.id)
         }
     }
+
     override fun onSupportNavigateUp(): Boolean {
         onBackPressedDispatcher.onBackPressed()
         return true
     }
+
     private var cachedProfile: UserProfile? = null
+
     private fun handleAvatarUpdated(username: String) {
         if (!::adapter.isInitialized) {
             return
@@ -426,6 +455,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             }
         }
     }
+
     private suspend fun initializeSession() {
         val context = applicationContext
         baseUrl = DashboardServerPreferences.getServerBaseUrl(context)
@@ -437,6 +467,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             sessionCookie = authService.getStoredToken()
         }
     }
+
     private suspend fun loadComments(postId: String) {
         val base = baseUrl ?: return
         loadingView.isVisible = true
@@ -463,6 +494,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         loadingView.isVisible = false
     }
+
     private fun updateItems(comments: List<PostDetailItem.Comment>) {
         headerItem = headerItem.copy(
             commentCount = comments.size,
@@ -471,6 +503,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         currentComments = comments
         submitItems(currentComments)
     }
+
     private fun refreshHeaderActions() {
         val username = headerItem.username
         val hasSession = !sessionCookie.isNullOrBlank()
@@ -486,6 +519,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         updateReplyComposerVisibility()
         submitItems(currentComments)
     }
+
     private fun promptReply() {
         if (!headerItem.canReply || isPostingReply) {
             return
@@ -499,6 +533,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             imm?.showSoftInput(replyInput, 0)
         }
     }
+
     private fun startEditingComment(comment: PostDetailItem.Comment) {
         if (isPostingReply) {
             return
@@ -528,6 +563,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         updateReplyPreview(replyPreview, replyInput.text?.toString())
     }
+    
     private fun exitCommentEditMode(clearFields: Boolean = false) {
         if (!isEditingComment) {
             if (clearFields) {
@@ -548,6 +584,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             updateReplyPreview(replyPreview, "")
         }
     }
+
     private fun attemptReply(message: String) {
         if (message.isBlank()) {
             Toast.makeText(this, R.string.dashboard_post_reply_empty, Toast.LENGTH_SHORT).show()
@@ -693,6 +730,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         return merged.values.toList()
     }
+
     private fun updateReplyPreviewImages() {
         val images = pendingReplyImages.values.toList()
         if (!isReplyComposerExpanded || images.isEmpty()) {
@@ -700,6 +738,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             replyPreviewImagesRow.isVisible = false
             return
         }
+
         replyPreviewImages.removeAllViews()
         val size = resources.getDimensionPixelSize(R.dimen.dashboard_reply_preview_image_size)
         val spacing = resources.getDimensionPixelSize(R.dimen.dashboard_reply_preview_image_spacing)
@@ -717,17 +756,20 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         replyPreviewImagesRow.isVisible = true
     }
+
     private fun updateReplyComposerVisibility() {
         val canReply = headerItem.canReply
         replyInputLayout.isEnabled = canReply && !isPostingReply
         applyReplyExpansionState()
         updateReplyActionAvailability(replyInput.text)
     }
+
     private fun updateReplyActionAvailability(text: CharSequence?) {
         val hasContent = !text.isNullOrBlank()
         val canSend = (headerItem.canReply || isEditingComment) && !isPostingReply && hasContent && isReplyComposerExpanded
         replySendButton.isEnabled = canSend
     }
+
     private fun clearPendingReplyImages() {
         pendingReplyImages.values.forEach { pending ->
             if (pending.file.exists()) {
@@ -737,22 +779,27 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         pendingReplyImages.clear()
         updateReplyPreviewImages()
     }
+
     private fun setReplyPosting(posting: Boolean) {
         isPostingReply = posting
         updateReplyComposerVisibility()
     }
+
     private fun setMarkdownToolbarEnabled(enabled: Boolean) {
         replyMarkdownToolbar.isEnabled = enabled
         for (index in 0 until replyMarkdownToolbar.childCount) {
             replyMarkdownToolbar.getChildAt(index)?.isEnabled = enabled
         }
     }
+
     private fun handleReplyInsertImageClick() {
         launchReplyImagePicker()
     }
+
     private fun launchReplyImagePicker() {
         replyImagePickerLauncher.launch("image/*")
     }
+
     private suspend fun handleReplyImageSelection(uri: Uri) {
         val pendingResult = withContext(Dispatchers.IO) {
             runCatching { VoiceImageFactory.createPendingVoiceImage(uri, contentResolver, cacheDir, ::generatePendingImageId) }
@@ -765,6 +812,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             Toast.makeText(this, R.string.create_voice_image_processing_error, Toast.LENGTH_SHORT).show()
         }
     }
+
     private fun insertReplyImageMarkdown(fileName: String) {
         val editText = replyInput
         val editable = editText.text ?: return
@@ -785,6 +833,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val cursor = (insertStart + snippet.length).coerceAtMost(editable.length)
         editText.setSelection(cursor)
     }
+
     private fun collapseReplyComposerIfExpanded(): Boolean {
         if (!isReplyComposerExpanded) {
             return false
@@ -797,6 +846,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         updateReplyActionAvailability(replyInput.text)
         return true
     }
+
     private fun expandReplyComposer() {
         if (isReplyComposerExpanded) {
             return
@@ -804,6 +854,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         isReplyComposerExpanded = true
         applyReplyExpansionState()
     }
+
     private fun applyReplyExpansionState() {
         val canReply = headerItem.canReply
         val expanded = canReply && isReplyComposerExpanded
@@ -821,6 +872,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         setMarkdownToolbarEnabled(expanded && !isPostingReply)
         updateReplyingToVisibility(expanded)
     }
+
     private fun applyWrappedFormatting(prefix: String, suffix: String, placeholder: String, placeCursorInsideWhenNoSelection: Boolean = false) {
         if (!headerItem.canReply || isPostingReply) {
             return
@@ -846,6 +898,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val boundedCursor = min(max(newCursor, 0), editable.length)
         replyInput.setSelection(boundedCursor)
     }
+
     private fun applyReplyHeadingFormatting() {
         if (!headerItem.canReply || isPostingReply) {
             return
@@ -877,6 +930,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val selection = (lineStart + replacement.length).coerceAtMost(editable.length)
         editText.setSelection(selection)
     }
+
     private fun applyLinePrefix(prefix: String) {
         if (!headerItem.canReply || isPostingReply) {
             return
@@ -889,8 +943,10 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val cursor = min(selectionStart + prefix.length, editable.length)
         replyInput.setSelection(cursor)
     }
+
     private val replyListContinuationWatcher = object : TextWatcher {
         override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             if (isHandlingReplyListContinuation) {
                 return
@@ -904,6 +960,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 replyPendingNewlineIndex = start + newlineOffset
             }
         }
+
         override fun afterTextChanged(s: Editable?) {
             if (isHandlingReplyListContinuation) {
                 return
@@ -914,6 +971,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             handleReplyListContinuation(s, newlineIndex)
         }
     }
+
     private fun handleReplyListContinuation(editable: Editable, newlineIndex: Int) {
         if (newlineIndex <= 0 || newlineIndex > editable.length) {
             return
@@ -939,6 +997,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             }
             return
         }
+
         val numberMatch = NUMBERED_LIST_REGEX.matchEntire(contentAfterIndent)
         if (numberMatch != null) {
             val number = numberMatch.groupValues.getOrNull(1)?.toIntOrNull() ?: return
@@ -952,6 +1011,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             }
         }
     }
+    
     private fun insertReplyListPrefix(editable: Editable, newlineIndex: Int, prefix: String) {
         val insertPosition = (newlineIndex + 1).coerceAtMost(editable.length)
         isHandlingReplyListContinuation = true
@@ -959,6 +1019,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyInput.setSelection((insertPosition + prefix.length).coerceAtMost(editable.length))
         isHandlingReplyListContinuation = false
     }
+
     private fun removeReplyListPrefix(editable: Editable, start: Int, markerLength: Int) {
         val end = (start + markerLength).coerceAtMost(editable.length)
         isHandlingReplyListContinuation = true
@@ -966,6 +1027,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyInput.setSelection(start.coerceAtMost(editable.length))
         isHandlingReplyListContinuation = false
     }
+    
     private fun findReplyLineStart(editable: Editable, index: Int): Int {
         val boundedIndex = index.coerceIn(0, editable.length)
         for (i in boundedIndex - 1 downTo 0) {
@@ -975,6 +1037,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         return 0
     }
+
     private fun findIndentLength(line: String): Int {
         for (i in line.indices) {
             if (!line[i].isWhitespace()) {
@@ -1000,6 +1063,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             replyingToLabel.isVisible = false
         }
     }
+
     private suspend fun prepareReplyImagesForPosting(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -1009,6 +1073,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             return PreparedVoicePost(originalMessage, emptyList())
         }
         val context = buildReplyImageResourceContext(credentials)
+
         val uploads = pendingReplyImages.values.filter { it.resourceId == null }
         val uploadResults = coroutineScope {
             uploads.map { pending ->
@@ -1018,8 +1083,10 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 }
             }.awaitAll()
         }
+
         var updatedMessage = originalMessage
         val preparedImages = mutableListOf<VoicesComposerRepository.ImagePayload>()
+
         for ((pending, markdown) in uploadResults) {
             val replaced = MarkdownUtils.replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
             updatedMessage = ensureMarkdownPresent(replaced, markdown)
@@ -1034,6 +1101,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         return PreparedVoicePost(updatedMessage, preparedImages)
     }
+
     private suspend fun ensureReplyImageUpload(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -1047,6 +1115,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             pending.uploadedMarkdown = markdown
             return markdown
         }
+
         val metadata = VoicesComposerRepository.ResourceMetadataRequest.fromContext(context, pending.fileName)
         val creationResponse = composerRepository.createResourceDocument(baseUrl, credentials, metadata)
         pending.resourceId = creationResponse.id
@@ -1068,9 +1137,11 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         pending.uploadedMarkdown = relativeMarkdown
         return relativeMarkdown
     }
+
     private fun transformReplyMarkdownForPreview(markdown: String): String {
         var processed = markdown.replace("\n", "  \n")
         val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() }
+
         if (!base.isNullOrEmpty()) {
             val resourcesPattern = Regex("!\\[[^\\]]*\\]\\((resources/[^)]+)\\)")
             processed = resourcesPattern.replace(processed) { matchResult ->
@@ -1079,6 +1150,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 "![]($absolute)"
             }
         }
+
         pendingReplyImages.values.forEach { pending ->
             val pattern = Regex("(!\\[[^\\]]*\\]\\()${Regex.escape(pending.fileName)}(\\))")
             processed = pattern.replace(processed) { matchResult ->
@@ -1089,6 +1161,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         return processed
     }
+
     private suspend fun loadExistingCommentImages(comment: PostDetailItem.Comment) {
         val base = baseUrl ?: return
         if (comment.imagePaths.isEmpty()) {
@@ -1118,6 +1191,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         builder.append(markdown)
         return builder.toString()
     }
+
     private suspend fun buildReplyImageResourceContext(credentials: StoredCredentials): VoiceImageResourceContext {
         val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
         val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)?.takeIf { it.isNotBlank() }
@@ -1150,6 +1224,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             ProfileCodes(planetCode, parentCode)
         }.getOrNull()
     }
+
     private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
         val escapedName = Regex.escape(fileName)
         val pattern = Regex("!\\[([^\\]]*)\\]\\($escapedName\\)")
@@ -1176,6 +1251,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         builder.append(replacement)
         return builder.toString()
     }
+
     private suspend fun loadCachedProfile(): UserProfile? {
         val existing = cachedProfile
         if (existing != null) {
@@ -1198,6 +1274,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         return base
     }
+
     private fun generatePendingImageId(baseName: String): String {
         var candidate = baseName
         var counter = 1
@@ -1207,6 +1284,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         return candidate
     }
+
     override fun onDestroy() {
         super.onDestroy()
         recyclerView.adapter = null
@@ -1278,6 +1356,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun attemptDeleteComment(comment: PostDetailItem.Comment) {
         val base = baseUrl
         val doc = comment.document
@@ -1309,12 +1388,14 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun submitItems(comments: List<PostDetailItem.Comment>) {
         val newItems = ArrayList<PostDetailItem>(1 + comments.size)
         newItems.add(headerItem)
         newItems.addAll(comments)
         adapter.submitList(newItems)
     }
+
     private fun mapToCommentItem(document: NewsDocument): PostDetailItem.Comment? {
         val id = document.id ?: return null
         val username = document.user?.name?.takeIf { it.isNotBlank() }
@@ -1348,6 +1429,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             document = document
         )
     }
+
     private fun mapCommentImages(document: NewsDocument): List<String> {
         val fromImages = document.images
             ?.mapNotNull { image ->
@@ -1359,6 +1441,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val fromMessage = collectImagePaths(document.message)
         return mergeImagePaths(fromImages + fromMessage)
     }
+
     private fun collectImagePaths(markdown: String?): List<String> {
         if (markdown.isNullOrBlank()) {
             return emptyList()
@@ -1370,6 +1453,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             }
             .toList()
     }
+
     private fun mergeImagePaths(paths: List<String>): List<String> {
         if (paths.isEmpty()) {
             return emptyList()
@@ -1384,6 +1468,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         return merged
     }
+
     private fun normalizeImagePath(path: String): String {
         val extracted = extractImagePath(path) ?: path
         val trimmed = extracted.trim()
@@ -1398,6 +1483,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         return reduced.lowercase(Locale.US)
     }
+
     private fun extractImagePath(markdown: String?): String? {
         if (markdown.isNullOrBlank()) {
             return null
@@ -1406,6 +1492,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         val match = pattern.find(markdown)
         return match?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
     }
+
     private fun buildResourcePath(resourceId: String?, filename: String?): String? {
         val id = resourceId?.trim().takeUnless { it.isNullOrEmpty() }
         val name = filename?.trim().takeUnless { it.isNullOrEmpty() }
@@ -1414,6 +1501,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         }
         return "resources/$id/$name"
     }
+
     private fun openImagePreview(imagePaths: List<String>, startIndex: Int) {
         if (imagePaths.isEmpty()) {
             return
@@ -1426,6 +1514,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         intent.putExtra(DashboardImagePreviewActivity.EXTRA_START_INDEX, startIndex)
         startActivity(intent)
     }
+
     private fun launchEditVoice(item: PostDetailItem.Header) {
         val intent = Intent(this, CreateVoiceActivity::class.java)
         intent.putExtra(CreateVoiceActivity.EXTRA_IS_EDIT_MODE, true)
@@ -1440,6 +1529,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         selectedTeamName?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_TEAM_NAME, it) }
         editVoiceLauncher.launch(intent)
     }
+
     private class PostDetailAdapter(
         private val markwon: Markwon,
         private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
@@ -1452,12 +1542,14 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         private val onCommentEditClicked: (PostDetailItem.Comment) -> Unit,
         private val onCommentDeleteClicked: (PostDetailItem.Comment) -> Unit
     ) : androidx.recyclerview.widget.ListAdapter<PostDetailItem, RecyclerView.ViewHolder>(DIFF_CALLBACK) {
+
         override fun getItemViewType(position: Int): Int {
             return when (getItem(position)) {
                 is PostDetailItem.Header -> VIEW_TYPE_HEADER
                 is PostDetailItem.Comment -> VIEW_TYPE_COMMENT
             }
         }
+
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): RecyclerView.ViewHolder {
             val inflater = android.view.LayoutInflater.from(parent.context)
             return when (viewType) {
@@ -1489,6 +1581,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 }
             }
         }
+
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = getItem(position)
             when {
@@ -1499,6 +1592,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 }
             }
         }
+
         private class HeaderViewHolder(
             view: View,
             private val markwon: Markwon,
@@ -1510,6 +1604,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             private val onEditClicked: (PostDetailItem.Header) -> Unit,
             private val onReplyClicked: () -> Unit
         ) : RecyclerView.ViewHolder(view) {
+
             private val authorView: TextView = view.findViewById(R.id.postDetailAuthor)
             private val metadataView: TextView = view.findViewById(R.id.postDetailMetadata)
             private val bodyView: TextView = view.findViewById(R.id.postDetailBody)
@@ -1519,6 +1614,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             private val commentsEmpty: TextView = view.findViewById(R.id.postDetailCommentsEmpty)
             private val dividerView: View = view.findViewById(R.id.postDetailDivider)
             private val overflowMenu: View = view.findViewById(R.id.postDetailOverflowMenu)
+
             fun bind(item: PostDetailItem.Header) {
                 authorView.text = item.author
                 val relativeTime = formatRelativeTime(itemView.context, item.timestamp)
@@ -1539,6 +1635,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 dividerView.isVisible = count > 0
                 bindActions(item)
             }
+
             @SuppressLint("RestrictedApi")
             private fun bindActions(item: PostDetailItem.Header) {
                 val hasActions = item.canReply || item.canEdit || item.canDelete || item.canShare
@@ -1547,6 +1644,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                     overflowMenu.setOnClickListener(null)
                     return
                 }
+
                 overflowMenu.setOnClickListener {
                     val themedContext = ContextThemeWrapper(itemView.context, R.style.Widget_MyPlanet_PopupMenu)
                     val popup = PopupMenu(themedContext, overflowMenu)
@@ -1558,30 +1656,37 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                     if (popup.menu is MenuBuilder) {
                         (popup.menu as MenuBuilder).setOptionalIconsVisible(true)
                     }
+
                     popup.setOnMenuItemClickListener { menuItem ->
                         when (menuItem.itemId) {
                             R.id.action_reply -> {
                                 onReplyClicked()
                                 true
                             }
+
                             R.id.action_edit -> {
                                 onEditClicked(item)
                                 true
                             }
+
                             R.id.action_delete -> {
                                 onDeleteClicked()
                                 true
                             }
+
                             R.id.action_share -> {
                                 onShareClicked(item)
                                 true
                             }
+
                             else -> false
                         }
                     }
+
                     popup.show()
                 }
             }
+
             private fun bindImages(item: PostDetailItem.Header) {
                 val imagePaths = item.imagePaths
                 if (imagePaths.isEmpty()) {
@@ -1615,6 +1720,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             companion object {
             }
         }
+
         private class CommentViewHolder(
             view: View,
             private val markwon: Markwon,
@@ -1624,6 +1730,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             private val onEditClicked: (PostDetailItem.Comment) -> Unit,
             private val onDeleteClicked: (PostDetailItem.Comment) -> Unit
         ) : RecyclerView.ViewHolder(view) {
+
             private val authorView: TextView = view.findViewById(R.id.commentAuthor)
             private val metadataView: TextView = view.findViewById(R.id.commentMetadata)
             private val bodyView: TextView = view.findViewById(R.id.commentBody)
@@ -1631,6 +1738,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             private val imagesContainer: LinearLayout = view.findViewById(R.id.commentImagesContainer)
             private val dividerView: View = view.findViewById(R.id.commentDivider)
             private val overflowMenu: View = view.findViewById(R.id.commentOverflowMenu)
+
             fun bind(item: PostDetailItem.Comment, isLast: Boolean) {
                 authorView.text = item.author
                 val relativeTime = formatRelativeTime(itemView.context, item.timestamp)
@@ -1674,6 +1782,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 bindActions(item)
                 dividerView.isVisible = !isLast
             }
+
             @SuppressLint("RestrictedApi")
             private fun bindActions(item: PostDetailItem.Comment) {
                 val hasActions = item.canEdit || item.canDelete
@@ -1697,10 +1806,12 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                                 onEditClicked(item)
                                 true
                             }
+
                             R.id.action_delete -> {
                                 onDeleteClicked(item)
                                 true
                             }
+
                             else -> false
                         }
                     }
@@ -1708,9 +1819,11 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 }
             }
         }
+
         companion object {
             private const val VIEW_TYPE_HEADER = 0
             private const val VIEW_TYPE_COMMENT = 1
+
             private val DIFF_CALLBACK = org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback<PostDetailItem>({ oldItem, newItem ->
                 when {
                     oldItem is PostDetailItem.Header && newItem is PostDetailItem.Header -> oldItem.id == newItem.id
@@ -1720,6 +1833,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             })
         }
     }
+
     private sealed class PostDetailItem {
         data class Header(
             val id: String,
@@ -1736,6 +1850,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             val canDelete: Boolean,
             val canShare: Boolean
         ) : PostDetailItem()
+
         data class Comment(
             val id: String,
             val author: String,
@@ -1749,6 +1864,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
             val document: NewsDocument?
         ) : PostDetailItem()
     }
+
     companion object {
         const val EXTRA_POST_ID = "extra_post_id"
         const val EXTRA_AUTHOR = "extra_author"
@@ -1762,6 +1878,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         const val EXTRA_TEAM_ID = "extra_team_id"
         const val EXTRA_TEAM_NAME = "extra_team_name"
         const val EXTRA_DELETED_POST_ID = "extra_deleted_post_id"
+
         private const val COMMENTS_LIMIT = 50
         private const val MINUTE_MILLIS = 60_000L
         private const val HOUR_MILLIS = 60 * MINUTE_MILLIS
@@ -1779,6 +1896,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         private const val COLLAPSED_REPLY_MIN_LINES = 1
         private const val EXPANDED_REPLY_MIN_LINES = 3
         private const val MAX_HEADING_LEVEL = 6
+
         private fun formatRelativeTime(context: Context, timestamp: Long): String {
             val now = System.currentTimeMillis()
             val diffMillis = max(0L, now - timestamp)
