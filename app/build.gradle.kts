@@ -11,7 +11,7 @@ val mockkAgent: Configuration by configurations.creating
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
-    compileSdk = 36
+    compileSdk = 37
     buildFeatures {
         buildConfig = true
         viewBinding = true
@@ -115,6 +115,7 @@ dependencies {
     testImplementation(libs.androidx.core)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
+    debugImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.core.ktx)
     testImplementation(libs.json)
     testImplementation(libs.junit)
@@ -125,6 +126,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
+    debugImplementation(libs.androidx.fragment.testing)
 
     // androidTestImplementation
     // testing
