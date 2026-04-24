@@ -37,7 +37,6 @@ ucrop = "2.2.8"
 worldcountrydata = "1.5.3"
 
 [libraries]
-androidx-fragment-testing = { module = "androidx.fragment:fragment-testing", version.ref = "fragmentTesting" }
 androidx-activity = { group = "androidx.activity", name = "activity", version.ref = "activity" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 androidx-constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
