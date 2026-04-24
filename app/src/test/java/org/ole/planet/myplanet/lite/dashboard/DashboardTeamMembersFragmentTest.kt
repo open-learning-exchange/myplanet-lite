@@ -99,6 +99,10 @@ class DashboardTeamMembersFragmentTest {
         """.trimIndent()
         mockWebServer.enqueue(MockResponse().setBody(usersResponse).setResponseCode(200))
         mockWebServer.enqueue(MockResponse().setResponseCode(404))
+        // Enqueue extra responses to handle potential redundant requests during fragment lifecycle
+        mockWebServer.enqueue(MockResponse().setBody(membershipsResponse).setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setBody(usersResponse).setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setResponseCode(404))
 
         launchFragmentInContainer<DashboardTeamMembersFragment>(themeResId = MaterialR.style.Theme_MaterialComponents_Light).use { scenario ->
             repeat(5) { ShadowLooper.runUiThreadTasksIncludingDelayedTasks() }

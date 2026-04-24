@@ -117,7 +117,9 @@ class DashboardTeamMembersFragment : Fragment() {
 
         viewLifecycleOwner.lifecycleScope.launch {
             loadConnectionInfo()
-            refreshSelectionState()
+            if (currentTeamId == null) {
+                refreshSelectionState()
+            }
         }
     }
 
