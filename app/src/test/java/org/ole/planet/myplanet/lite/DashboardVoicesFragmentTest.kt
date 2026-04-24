@@ -12,6 +12,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.shadows.ShadowLooper
 import org.mockito.Mockito
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import androidx.lifecycle.Lifecycle
@@ -58,6 +59,7 @@ class DashboardVoicesFragmentTest {
             scenario.onFragment { fragment ->
                 block(fragment)
             }
+            ShadowLooper.idleMainLooper()
         }
 
         SecurePreferencesProvider.injectedPreferences = null

@@ -108,7 +108,11 @@ class UserProfileDatabase private constructor(context: Context) :
     }
 
     fun getProfile(): UserProfile? {
-        val db = readableDatabase
+        val db = try {
+            readableDatabase
+        } catch (e: IllegalStateException) {
+            return null
+        }
         var cursor: Cursor? = null
         return try {
             cursor = db.query(
@@ -142,6 +146,8 @@ class UserProfileDatabase private constructor(context: Context) :
             } else {
                 null
             }
+        } catch (e: IllegalStateException) {
+            null
         } finally {
             cursor?.close()
         }

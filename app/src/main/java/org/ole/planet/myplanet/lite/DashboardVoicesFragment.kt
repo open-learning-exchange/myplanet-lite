@@ -111,6 +111,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     private var teamId: String? = null
     private var teamName: String? = null
 
+    private var initJob: kotlinx.coroutines.Job? = null
+    private var fetchJob: kotlinx.coroutines.Job? = null
     private var isLoading = false
     private var hasMore = true
     private var nextSkip = 0
@@ -200,7 +202,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     }
 
     private fun setupObserversAndLoadInitial() {
-        viewLifecycleOwner.lifecycleScope.launch {
+        initJob?.cancel()
+        initJob = viewLifecycleOwner.lifecycleScope.launch {
             initializeSession()
             val profile = loadCurrentUserProfile()
             currentUsername = profile?.username
@@ -236,6 +239,10 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        initJob?.cancel()
+        initJob = null
+        fetchJob?.cancel()
+        fetchJob = null
         recyclerView.adapter = null
         avatarLoader?.destroy()
         avatarLoader = null
@@ -304,7 +311,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
         isLoading = true
         updateLoadingVisibility()
-        viewLifecycleOwner.lifecycleScope.launch {
+        fetchJob?.cancel()
+        fetchJob = viewLifecycleOwner.lifecycleScope.launch {
             var accumulatedPosts = 0
             var shouldContinue = true
             val fetchLimit = maxOf(pageSize * 5, 100)
