@@ -42,17 +42,18 @@ class DashboardTeamsFragmentTest {
 
     @Test
     fun `no team selected shows empty view`() {
-        val scenario = launchFragmentInContainer<DashboardTeamsFragment>(themeResId = R.style.Theme_MyPlanetLite)
-        scenario.onFragment { fragment ->
-            val emptyView = fragment.view?.findViewById<TextView>(R.id.teamsEmptyView)
-            val teamContentContainer = fragment.view?.findViewById<FrameLayout>(R.id.teamContentContainer)
+        launchFragmentInContainer<DashboardTeamsFragment>(themeResId = R.style.Theme_MyPlanetLite).use { scenario ->
+            scenario.onFragment { fragment ->
+                val emptyView = fragment.view?.findViewById<TextView>(R.id.teamsEmptyView)
+                val teamContentContainer = fragment.view?.findViewById<FrameLayout>(R.id.teamContentContainer)
 
-            assertNotNull(emptyView)
-            assertTrue(emptyView!!.isVisible)
-            assertEquals(fragment.getString(R.string.dashboard_teams_select_team_hint), emptyView.text.toString())
+                assertNotNull(emptyView)
+                assertTrue(emptyView!!.isVisible)
+                assertEquals(fragment.getString(R.string.dashboard_teams_select_team_hint), emptyView.text.toString())
 
-            assertNotNull(teamContentContainer)
-            assertFalse(teamContentContainer!!.isVisible)
+                assertNotNull(teamContentContainer)
+                assertFalse(teamContentContainer!!.isVisible)
+            }
         }
     }
 
@@ -61,32 +62,33 @@ class DashboardTeamsFragmentTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         DashboardTeamSelectionPreferences.setSelectedTeam(context, "team1", "Team 1")
 
-        val scenario = launchFragmentInContainer<DashboardTeamsFragment>(themeResId = R.style.Theme_MyPlanetLite)
-        scenario.onFragment { fragment ->
-            val emptyView = fragment.view?.findViewById<TextView>(R.id.teamsEmptyView)
-            val teamContentContainer = fragment.view?.findViewById<FrameLayout>(R.id.teamContentContainer)
+        launchFragmentInContainer<DashboardTeamsFragment>(themeResId = R.style.Theme_MyPlanetLite).use { scenario ->
+            scenario.onFragment { fragment ->
+                val emptyView = fragment.view?.findViewById<TextView>(R.id.teamsEmptyView)
+                val teamContentContainer = fragment.view?.findViewById<FrameLayout>(R.id.teamContentContainer)
 
-            assertNotNull(emptyView)
-            assertFalse(emptyView!!.isVisible)
+                assertNotNull(emptyView)
+                assertFalse(emptyView!!.isVisible)
 
-            assertNotNull(teamContentContainer)
-            assertTrue(teamContentContainer!!.isVisible)
+                assertNotNull(teamContentContainer)
+                assertTrue(teamContentContainer!!.isVisible)
 
-            val childFragment = fragment.childFragmentManager.findFragmentById(R.id.teamContentContainer)
-            assertNotNull(childFragment)
-            assertTrue(childFragment is DashboardVoicesFragment)
+                val childFragment = fragment.childFragmentManager.findFragmentById(R.id.teamContentContainer)
+                assertNotNull(childFragment)
+                assertTrue(childFragment is DashboardVoicesFragment)
 
-            val voicesButton = fragment.view?.findViewById<ImageButton>(R.id.teamVoicesButton)
-            val surveysButton = fragment.view?.findViewById<ImageButton>(R.id.teamSurveysButton)
+                val voicesButton = fragment.view?.findViewById<ImageButton>(R.id.teamVoicesButton)
+                val surveysButton = fragment.view?.findViewById<ImageButton>(R.id.teamSurveysButton)
 
-            assertNotNull(voicesButton)
-            assertTrue(voicesButton!!.isSelected)
-            // Using boolean check for alpha > 0.9 to avoid float assertion issues in some kotlin versions, or just use typical assertEquals
-            assertEquals(1f, voicesButton.alpha)
+                assertNotNull(voicesButton)
+                assertTrue(voicesButton!!.isSelected)
+                // Using boolean check for alpha > 0.9 to avoid float assertion issues in some kotlin versions, or just use typical assertEquals
+                assertEquals(1f, voicesButton.alpha)
 
-            assertNotNull(surveysButton)
-            assertFalse(surveysButton!!.isSelected)
-            assertEquals(0.5f, surveysButton.alpha)
+                assertNotNull(surveysButton)
+                assertFalse(surveysButton!!.isSelected)
+                assertEquals(0.5f, surveysButton.alpha)
+            }
         }
     }
 
@@ -95,25 +97,26 @@ class DashboardTeamsFragmentTest {
         val context = ApplicationProvider.getApplicationContext<Context>()
         DashboardTeamSelectionPreferences.setSelectedTeam(context, "team1", "Team 1")
 
-        val scenario = launchFragmentInContainer<DashboardTeamsFragment>(themeResId = R.style.Theme_MyPlanetLite)
-        scenario.onFragment { fragment ->
-            val surveysButton = fragment.view?.findViewById<ImageButton>(R.id.teamSurveysButton)
-            surveysButton?.performClick()
+        launchFragmentInContainer<DashboardTeamsFragment>(themeResId = R.style.Theme_MyPlanetLite).use { scenario ->
+            scenario.onFragment { fragment ->
+                val surveysButton = fragment.view?.findViewById<ImageButton>(R.id.teamSurveysButton)
+                surveysButton?.performClick()
 
-            fragment.childFragmentManager.executePendingTransactions()
-            val childFragment = fragment.childFragmentManager.findFragmentById(R.id.teamContentContainer)
-            assertNotNull(childFragment)
-            assertTrue(childFragment is DashboardTeamSurveysFragment)
+                fragment.childFragmentManager.executePendingTransactions()
+                val childFragment = fragment.childFragmentManager.findFragmentById(R.id.teamContentContainer)
+                assertNotNull(childFragment)
+                assertTrue(childFragment is DashboardTeamSurveysFragment)
 
-            val voicesButton = fragment.view?.findViewById<ImageButton>(R.id.teamVoicesButton)
+                val voicesButton = fragment.view?.findViewById<ImageButton>(R.id.teamVoicesButton)
 
-            assertNotNull(surveysButton)
-            assertTrue(surveysButton!!.isSelected)
-            assertEquals(1f, surveysButton.alpha)
+                assertNotNull(surveysButton)
+                assertTrue(surveysButton!!.isSelected)
+                assertEquals(1f, surveysButton.alpha)
 
-            assertNotNull(voicesButton)
-            assertFalse(voicesButton!!.isSelected)
-            assertEquals(0.5f, voicesButton.alpha)
+                assertNotNull(voicesButton)
+                assertFalse(voicesButton!!.isSelected)
+                assertEquals(0.5f, voicesButton.alpha)
+            }
         }
     }
 
@@ -121,27 +124,28 @@ class DashboardTeamsFragmentTest {
     fun `onResume reloads content if team selection changed`() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        val scenario = launchFragmentInContainer<DashboardTeamsFragment>(themeResId = R.style.Theme_MyPlanetLite)
-        scenario.onFragment { fragment ->
-            val emptyView = fragment.view?.findViewById<TextView>(R.id.teamsEmptyView)
-            assertTrue(emptyView!!.isVisible)
-        }
+        launchFragmentInContainer<DashboardTeamsFragment>(themeResId = R.style.Theme_MyPlanetLite).use { scenario ->
+            scenario.onFragment { fragment ->
+                val emptyView = fragment.view?.findViewById<TextView>(R.id.teamsEmptyView)
+                assertTrue(emptyView!!.isVisible)
+            }
 
-        DashboardTeamSelectionPreferences.setSelectedTeam(context, "team1", "Team 1")
+            DashboardTeamSelectionPreferences.setSelectedTeam(context, "team1", "Team 1")
 
-        // Simulating the fragment going back to resumed state (like navigating back)
-        scenario.moveToState(Lifecycle.State.STARTED)
-        scenario.moveToState(Lifecycle.State.RESUMED)
+            // Simulating the fragment going back to resumed state (like navigating back)
+            scenario.moveToState(Lifecycle.State.STARTED)
+            scenario.moveToState(Lifecycle.State.RESUMED)
 
-        scenario.onFragment { fragment ->
-            val emptyView = fragment.view?.findViewById<TextView>(R.id.teamsEmptyView)
-            val teamContentContainer = fragment.view?.findViewById<FrameLayout>(R.id.teamContentContainer)
+            scenario.onFragment { fragment ->
+                val emptyView = fragment.view?.findViewById<TextView>(R.id.teamsEmptyView)
+                val teamContentContainer = fragment.view?.findViewById<FrameLayout>(R.id.teamContentContainer)
 
-            assertFalse(emptyView!!.isVisible)
-            assertTrue(teamContentContainer!!.isVisible)
+                assertFalse(emptyView!!.isVisible)
+                assertTrue(teamContentContainer!!.isVisible)
 
-            val childFragment = fragment.childFragmentManager.findFragmentById(R.id.teamContentContainer)
-            assertTrue(childFragment is DashboardVoicesFragment)
+                val childFragment = fragment.childFragmentManager.findFragmentById(R.id.teamContentContainer)
+                assertTrue(childFragment is DashboardVoicesFragment)
+            }
         }
     }
 
