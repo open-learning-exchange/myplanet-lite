@@ -9,20 +9,14 @@ public class Log {
     public static final int ASSERT = 7;
 
     private static boolean shouldSilence(String tag, String msg) {
-        if (tag != null) {
-            String t = tag.toLowerCase();
-            if (t.contains("packageparser") || t.contains("assetmanager") || t.contains("resources")) {
-                return true;
-            }
-        }
-        if (msg != null) {
-            String m = msg.toLowerCase();
-            return m.contains("invalid id 0x00000000") ||
-                   m.contains("intent filter") ||
-                   m.contains("packageparser") ||
-                   m.contains("attribute");
-        }
-        return false;
+        String t = tag == null ? "" : tag.toLowerCase();
+        String m = msg == null ? "" : msg.toLowerCase();
+        return t.contains("packageparser") || m.contains("packageparser") ||
+               t.contains("intent filter") || m.contains("intent filter") ||
+               t.contains("intent-filter") || m.contains("intent-filter") ||
+               t.contains("assetmanager") || t.contains("resources") ||
+               m.contains("invalid id 0x00000000") || m.contains("attribute") ||
+               m.contains("no action");
     }
 
     public static int v(String tag, String msg) { return 0; }
