@@ -20,8 +20,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 242
-        versionName = "0.2.42"
+        versionCode = 243
+        versionName = "0.2.43"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -112,6 +112,7 @@ dependencies {
 
     // testImplementation
     // testing
+    debugImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
     debugImplementation(libs.androidx.fragment.testing)
