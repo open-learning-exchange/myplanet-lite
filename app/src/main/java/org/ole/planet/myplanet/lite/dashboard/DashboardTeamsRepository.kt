@@ -87,7 +87,6 @@ class DashboardTeamsRepository(
     private val membershipBulkAddAdapter = moshi.adapter(BulkMembershipAddRequest::class.java)
     private val usersFindResponseAdapter = moshi.adapter(UsersFindResponse::class.java)
 
-    private val teamMemberDetailsCache = java.util.concurrent.ConcurrentHashMap<String, List<TeamMemberDetails>>()
 
     suspend fun addTeamMember(
         baseUrl: String,
@@ -1075,6 +1074,12 @@ class DashboardTeamsRepository(
 
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+        private val teamMemberDetailsCache = java.util.concurrent.ConcurrentHashMap<String, List<TeamMemberDetails>>()
+
+        @androidx.annotation.VisibleForTesting
+        fun resetCacheForTesting() {
+            teamMemberDetailsCache.clear()
+        }
     }
 
     @JsonClass(generateAdapter = true)
