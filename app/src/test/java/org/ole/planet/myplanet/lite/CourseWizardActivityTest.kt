@@ -2,8 +2,11 @@ package org.ole.planet.myplanet.lite
 
 import android.content.Context
 import android.content.Intent
-import android.os.Build
+import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
+import io.mockk.every
+import io.mockk.mockk
+import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -33,14 +36,15 @@ class CourseWizardActivityTest {
     @Before
     fun setup() {
         Dispatchers.setMain(testDispatcher)
-        SecurePreferencesProvider.injectedPreferences =
-            context.getSharedPreferences("test_server_preferences", Context.MODE_PRIVATE)
+        val mockPrefs = mockk<SharedPreferences>(relaxed = true)
+        SecurePreferencesProvider.injectedPreferences = mockPrefs
     }
 
     @After
     fun teardown() {
         Dispatchers.resetMain()
         SecurePreferencesProvider.resetForTesting()
+        unmockkAll()
     }
 
     @Test

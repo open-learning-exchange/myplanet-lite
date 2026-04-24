@@ -12,6 +12,8 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.mock
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionParent
+import org.ole.planet.myplanet.lite.dashboard.DashboardOfflineSurveyStore
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionUser
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
@@ -32,12 +34,16 @@ class DashboardLocalSurveyRepositoryTest {
         context = ApplicationProvider.getApplicationContext()
         mockPrefs = mock(SharedPreferences::class.java)
         SecurePreferencesProvider.injectedPreferences = mockPrefs
+        DashboardOfflineSurveyStore.resetForTesting(context)
+        DashboardSurveyOutboxStore.resetForTesting(context)
         repository = DashboardLocalSurveyRepository(context)
     }
 
     @After
     fun tearDown() {
         repository.close()
+        DashboardOfflineSurveyStore.resetForTesting(context)
+        DashboardSurveyOutboxStore.resetForTesting(context)
         SecurePreferencesProvider.resetForTesting()
     }
 
