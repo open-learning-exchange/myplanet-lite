@@ -20,6 +20,8 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.lite.R
+import org.ole.planet.myplanet.lite.util.FakeSharedPreferences
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
@@ -40,15 +42,16 @@ class DashboardOutboxDetailActivityTest {
         org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = mockPrefs
 
         Dispatchers.setMain(testDispatcher)
-        store = DashboardSurveyOutboxStore(context)
+        SecurePreferencesProvider.injectedPreferences = FakeSharedPreferences()
+        store = DashboardSurveyOutboxStore.getInstance(context)
         store.writableDatabase.delete("outbox_submissions", null, null)
     }
 
     @After
     fun teardown() {
         Dispatchers.resetMain()
-        store.close()
-        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = null
+        DashboardSurveyOutboxStore.resetForTesting(context)
+        SecurePreferencesProvider.resetForTesting()
     }
 
     @Test

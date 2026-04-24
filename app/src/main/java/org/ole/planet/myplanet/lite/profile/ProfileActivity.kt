@@ -434,12 +434,19 @@ class ProfileActivity : BaseActivity() {
         return userProfileSync.refreshProfile(normalizedBase, username.orEmpty(), sessionCookie)
     }
 
-    private suspend fun submitProfileUpdates(formValues: ProfileFormValues): Boolean {
+    private data class ProfileUpdateContext(
+        val storedProfile: UserProfile?,
+        val normalizedBase: String,
+        val username: String,
+        val sessionCookie: String
+    )
+
+    private suspend fun resolveProfileUpdateContext(): ProfileUpdateContext? {
         val storedProfile = withContext(Dispatchers.IO) { userProfileDatabase.getProfile() }
         val storedBaseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
         val sanitizedBase = (storedBaseUrl ?: BuildConfig.PLANET_BASE_URL).trim()
         if (sanitizedBase.isEmpty()) {
-            return false
+            return null
         }
         val normalizedBase = sanitizedBase.trimEnd('/')
         var username = storedProfile?.username
@@ -448,7 +455,7 @@ class ProfileActivity : BaseActivity() {
             username = storedCredentials?.username
         }
         if (username.isNullOrBlank()) {
-            return false
+            return null
         }
 
         val authService = AuthDependencies.provideAuthService(this, sanitizedBase)
@@ -461,26 +468,26 @@ class ProfileActivity : BaseActivity() {
 
                 is AuthResult.Error, is AuthResult.Failure -> {
                     if (sessionCookie.isNullOrBlank()) {
-                        return false
+                        return null
                     }
                 }
             }
         }
 
-        val nonNullCookie = sessionCookie.nullIfBlank() ?: return false
-        val avatarUploadBytes = pendingAvatarUpload
-        val document = buildUpdatedProfileDocument(
-            normalizedBase,
-            username,
-            nonNullCookie,
-            formValues,
-            storedProfile,
-            avatarUploadBytes
-        ) ?: return false
+        val nonNullCookie = sessionCookie.nullIfBlank() ?: return null
 
-        val avatarBytesToPersist = avatarUploadBytes ?: storedProfile?.avatarImage
+        return ProfileUpdateContext(storedProfile, normalizedBase, username, nonNullCookie)
+    }
 
-        val success = withContext(Dispatchers.IO) {
+    private suspend fun executeProfileUpdateRequest(
+        normalizedBase: String,
+        username: String,
+        nonNullCookie: String,
+        document: JSONObject,
+        avatarUploadBytes: ByteArray?,
+        avatarBytesToPersist: ByteArray?
+    ): Boolean {
+        return withContext(Dispatchers.IO) {
             try {
                 val requestBody = document.toString()
                     .toRequestBody("application/json; charset=utf-8".toMediaType())
@@ -510,10 +517,34 @@ class ProfileActivity : BaseActivity() {
                 false
             }
         }
+    }
+
+    private suspend fun submitProfileUpdates(formValues: ProfileFormValues): Boolean {
+        val context = resolveProfileUpdateContext() ?: return false
+        val avatarUploadBytes = pendingAvatarUpload
+        val document = buildUpdatedProfileDocument(
+            context.normalizedBase,
+            context.username,
+            context.sessionCookie,
+            formValues,
+            context.storedProfile,
+            avatarUploadBytes
+        ) ?: return false
+
+        val avatarBytesToPersist = avatarUploadBytes ?: context.storedProfile?.avatarImage
+
+        val success = executeProfileUpdateRequest(
+            context.normalizedBase,
+            context.username,
+            context.sessionCookie,
+            document,
+            avatarUploadBytes,
+            avatarBytesToPersist
+        )
 
         if (success && avatarUploadBytes != null) {
             pendingAvatarUpload = null
-            AvatarUpdateNotifier.notifyAvatarUpdated(username)
+            AvatarUpdateNotifier.notifyAvatarUpdated(context.username)
         }
 
         return success

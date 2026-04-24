@@ -28,15 +28,14 @@ class DashboardOfflineSurveyStoreTest {
         org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = mockPrefs
 
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardOfflineSurveyStore(context)
+        store = DashboardOfflineSurveyStore.getInstance(context)
         // Clear db before test
         store.writableDatabase.delete("surveys", null, null)
     }
 
     @After
     fun teardown() {
-        store.close()
-        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = null
+        DashboardOfflineSurveyStore.resetForTesting(ApplicationProvider.getApplicationContext())
     }
 
     @Test
