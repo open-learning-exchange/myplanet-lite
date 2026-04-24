@@ -108,7 +108,7 @@ class OfflineCourseStorageTest {
     @Test
     fun testSaveAndLoadCourse() {
         val course = createDummyCourse("course-123")
-        OfflineCourseStorage.saveCourseManifest(context, course)
+        OfflineCourseStorage.saveCourseManifest(context, course, OfflineCourseStorage.DownloadSource.MY_COURSES)
 
         assertTrue(OfflineCourseStorage.isCourseDownloaded(context, "course-123"))
 
@@ -203,7 +203,7 @@ class OfflineCourseStorageTest {
     fun testDeleteCourse() {
         val courseId = "course-to-delete"
         val course = createDummyCourse(courseId)
-        OfflineCourseStorage.saveCourseManifest(context, course)
+        OfflineCourseStorage.saveCourseManifest(context, course, OfflineCourseStorage.DownloadSource.MY_COURSES)
 
         assertTrue(OfflineCourseStorage.isCourseDownloaded(context, courseId))
 
