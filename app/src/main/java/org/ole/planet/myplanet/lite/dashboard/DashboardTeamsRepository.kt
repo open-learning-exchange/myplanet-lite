@@ -68,8 +68,9 @@ class DashboardTeamsRepository(
         .add(DateStringAdapter())
         .addLast(KotlinJsonAdapterFactory())
         .build(),
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
+    private val dispatcher = overrideDispatcher ?: dispatcher
     private val membershipRequestAdapter = moshi.adapter(MembershipFindRequest::class.java)
     private val membershipResponseAdapter = moshi.adapter(MembershipFindResponse::class.java)
     private val teamMembershipRequestAdapter = moshi.adapter(TeamMembershipFindRequest::class.java)
@@ -1077,8 +1078,12 @@ class DashboardTeamsRepository(
         private val teamMemberDetailsCache = java.util.concurrent.ConcurrentHashMap<String, List<TeamMemberDetails>>()
 
         @androidx.annotation.VisibleForTesting
+        var overrideDispatcher: CoroutineDispatcher? = null
+
+        @androidx.annotation.VisibleForTesting
         fun resetCacheForTesting() {
             teamMemberDetailsCache.clear()
+            overrideDispatcher = null
         }
     }
 

@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -28,7 +29,6 @@ import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
-import java.util.concurrent.TimeoutException
 import java.util.concurrent.TimeUnit
 import com.google.android.material.R as MaterialR
 
@@ -42,6 +42,7 @@ class DashboardTeamMembersFragmentTest {
     @Before
     fun setUp() {
         DashboardTeamsRepository.resetCacheForTesting()
+        DashboardTeamsRepository.overrideDispatcher = UnconfinedTestDispatcher()
         mockWebServer = MockWebServer()
         mockWebServer.start()
 
@@ -104,43 +105,20 @@ class DashboardTeamMembersFragmentTest {
         mockWebServer.enqueue(MockResponse().setBody(membershipsResponse).setResponseCode(200))
         mockWebServer.enqueue(MockResponse().setBody(usersResponse).setResponseCode(200))
         mockWebServer.enqueue(MockResponse().setResponseCode(404))
+        mockWebServer.enqueue(MockResponse().setBody(membershipsResponse).setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setBody(usersResponse).setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setResponseCode(404))
 
         launchFragmentInContainer<DashboardTeamMembersFragment>(themeResId = MaterialR.style.Theme_MaterialComponents_Light).use { scenario ->
-            assertNotNull(
-                "Expected membership request to be executed.",
-                mockWebServer.takeRequest(2, TimeUnit.SECONDS)
-            )
-            assertNotNull(
-                "Expected users request to be executed.",
-                mockWebServer.takeRequest(2, TimeUnit.SECONDS)
-            )
+            repeat(5) { ShadowLooper.runUiThreadTasksIncludingDelayedTasks() }
             scenario.onFragment { fragment ->
                 assertNotNull(fragment)
-                val recyclerView = requireNotNull(
-                    fragment.view?.findViewById<RecyclerView>(R.id.dashboardTeamMembersList)
-                ) { "Expected dashboardTeamMembersList RecyclerView in fragment layout." }
-                waitForRecyclerToShowMembers(recyclerView, expectedItemCount = 1)
-                assertEquals(View.VISIBLE, recyclerView.visibility)
-                assertEquals(1, recyclerView.adapter?.itemCount)
+                val recyclerView = fragment.view?.findViewById<RecyclerView>(R.id.dashboardTeamMembersList)
+                assertNotNull(recyclerView)
+                assertEquals(View.VISIBLE, recyclerView?.visibility)
+                assertEquals(1, recyclerView?.adapter?.itemCount)
             }
         }
-    }
-
-    private fun waitForRecyclerToShowMembers(recyclerView: RecyclerView, expectedItemCount: Int) {
-        val timeoutAt = System.nanoTime() + TimeUnit.SECONDS.toNanos(3)
-        while (System.nanoTime() < timeoutAt) {
-            ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
-            if (recyclerView.visibility == View.VISIBLE &&
-                recyclerView.adapter?.itemCount == expectedItemCount
-            ) {
-                return
-            }
-            Thread.sleep(25)
-        }
-        throw TimeoutException(
-            "RecyclerView did not become visible with $expectedItemCount items. " +
-                "Current visibility=${recyclerView.visibility}, itemCount=${recyclerView.adapter?.itemCount}"
-        )
     }
 }
 

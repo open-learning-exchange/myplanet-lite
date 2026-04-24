@@ -95,13 +95,12 @@ class DashboardTeamMembersFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        fetchJob?.cancel()
+        fetchJob = null
         binding.dashboardTeamMembersList.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@DashboardTeamMembersFragment.adapter
-            addItemDecoration(
-                DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL)
-            )
+            addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
         }
         binding.dashboardTeamMembersSwipeRefresh.setOnRefreshListener { onRefreshRequested() }
         binding.dashboardTeamMembersSearchInput.addTextChangedListener { editable ->
@@ -114,25 +113,25 @@ class DashboardTeamMembersFragment : Fragment() {
         }
         updateLeaderActionsVisibility()
         binding.fabAddMember.enableDrag()
-
         viewLifecycleOwner.lifecycleScope.launch {
             loadConnectionInfo()
-            if (currentTeamId == null) {
-                refreshSelectionState()
-            }
         }
     }
 
     override fun onResume() {
         super.onResume()
-        val selectedTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
-        if (selectedTeamId != currentTeamId) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (baseUrl == null || credentials == null) {
+                loadConnectionInfo()
+            }
             refreshSelectionState()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        fetchJob?.cancel()
+        fetchJob = null
         avatarLoader?.destroy()
         avatarLoader = null
         binding.dashboardTeamMembersSwipeRefresh.setOnRefreshListener(null as SwipeRefreshLayout.OnRefreshListener?)
@@ -157,6 +156,7 @@ class DashboardTeamMembersFragment : Fragment() {
     private fun refreshSelectionState() {
         val selectedTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
         if (selectedTeamId == currentTeamId && currentMembers.isNotEmpty()) {
+            applySearchFilter()
             return
         }
         currentTeamId = selectedTeamId
