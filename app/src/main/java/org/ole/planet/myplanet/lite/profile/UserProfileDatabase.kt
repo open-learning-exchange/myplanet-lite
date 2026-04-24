@@ -172,5 +172,11 @@ class UserProfileDatabase private constructor(context: Context) :
                 legacyDbFile.renameTo(newDbFile)
             }
         }
+
+        fun resetForTesting(context: Context) {
+            instance?.close()
+            instance = null
+            context.deleteDatabase(DATABASE_NAME)
+        }
     }
 }
