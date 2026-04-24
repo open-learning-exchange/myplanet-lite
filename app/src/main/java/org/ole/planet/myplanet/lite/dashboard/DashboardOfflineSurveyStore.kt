@@ -17,7 +17,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.util.getStringOrNull
 
-class DashboardOfflineSurveyStore private constructor(
+class DashboardOfflineSurveyStore(
     context: Context,
     moshi: Moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
