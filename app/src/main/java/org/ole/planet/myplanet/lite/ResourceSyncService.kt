@@ -1,0 +1,149 @@
+package org.ole.planet.myplanet.lite
+
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
+
+internal data class MainResourcesFetchResult(
+    val page: List<ResourceUi>
+)
+
+internal class ResourceSyncService(
+    private val repository: DashboardResourcesRepository,
+    private val downloadService: ResourceDownloadService
+) {
+    suspend fun fetchCommunityResources(
+        baseUrl: String,
+        sessionCookie: String?,
+        searchQuery: String,
+        mediaTypeFilter: String?,
+        isSortDescending: Boolean,
+        skip: Int,
+        limit: Int,
+        existingKeys: Set<String>
+    ): MainResourcesFetchResult {
+        val result = repository.fetchCommunityResources(
+            baseUrl = baseUrl,
+            sessionCookie = sessionCookie,
+            searchQuery = searchQuery,
+            mediaTypeFilter = mediaTypeFilter,
+            sortBy = "title",
+            sortDescending = isSortDescending,
+            skip = skip,
+            limit = limit
+        )
+        val page = result.getOrDefault(emptyList())
+        val mutableKeys = existingKeys.toMutableSet()
+        val items = page.map { resource ->
+            val id = resource.id?.trim().orEmpty()
+            val filename = resource.filename?.trim().orEmpty()
+            ResourceUi(
+                id = id,
+                filename = filename,
+                name = resource.title?.takeIf { it.isNotBlank() }
+                    ?: resource.filename?.takeIf { it.isNotBlank() }
+                    ?: "-",
+                type = resource.mediaType?.uppercase(Locale.ROOT) ?: "PDF",
+                date = resource.createdDate.toDisplayDate(),
+                createdDate = resource.createdDate,
+                isDownloaded = downloadService.findLocalResourceFile(id, filename, isTeamResource = false)?.exists() == true,
+                isDownloadable = ResourceSearchEngine.parseIsDownloadable(resource.isDownloadable),
+                isTeamResource = false
+            )
+        }.filter { item ->
+            val key = item.uniqueKey()
+            if (mutableKeys.contains(key)) false else {
+                mutableKeys.add(key)
+                true
+            }
+        }
+        return MainResourcesFetchResult(items)
+    }
+
+    suspend fun fetchTeamResources(
+        baseUrl: String,
+        sessionCookie: String?,
+        username: String?,
+        password: String?,
+        teamId: String,
+        searchQuery: String,
+        mediaTypeFilter: String?,
+        isSortDescending: Boolean,
+        limit: Int,
+        downloadedResources: List<ResourceUi>
+    ): List<ResourceUi> {
+        val result = repository.fetchTeamResources(
+            baseUrl = baseUrl,
+            sessionCookie = sessionCookie,
+            username = username,
+            password = password,
+            teamId = teamId,
+            searchQuery = searchQuery,
+            mediaTypeFilter = mediaTypeFilter,
+            sortBy = "title",
+            sortDescending = isSortDescending,
+            limit = limit
+        )
+        val page = result.getOrDefault(emptyList())
+        val allRemoteItems = page.map { resource ->
+            val id = resource.id?.trim().orEmpty()
+            val filename = resource.filename?.trim().orEmpty()
+            ResourceUi(
+                id = id,
+                filename = filename,
+                name = resource.title?.takeIf { it.isNotBlank() }
+                    ?: resource.filename?.takeIf { it.isNotBlank() }
+                    ?: "-",
+                type = resource.mediaType?.uppercase(Locale.ROOT) ?: "PDF",
+                date = resource.createdDate.toDisplayDate(),
+                createdDate = resource.createdDate,
+                isDownloaded = downloadService.findLocalResourceFile(id, filename, isTeamResource = true)?.exists() == true,
+                isDownloadable = ResourceSearchEngine.parseIsDownloadable(resource.isDownloadable),
+                isTeamResource = true
+            )
+        }
+        val remoteKeys = allRemoteItems.map { it.resourceIdentityKey() }.toSet()
+        val downloaded = downloadedResources.filter { remoteKeys.contains(it.resourceIdentityKey()) }
+        val existingKeys = downloaded.map { it.resourceIdentityKey() }.toMutableSet()
+        val remoteItems = allRemoteItems.filter { item ->
+            val key = item.resourceIdentityKey()
+            if (existingKeys.contains(key)) false else {
+                existingKeys.add(key)
+                true
+            }
+        }
+        return downloaded + remoteItems
+    }
+
+    suspend fun downloadResource(
+        baseUrl: String,
+        sessionCookie: String?,
+        item: ResourceUi
+    ): Boolean {
+        val bytesResult = repository.downloadResourceBytes(
+            baseUrl = baseUrl,
+            sessionCookie = sessionCookie,
+            resourceId = item.id,
+            filename = item.filename
+        )
+        return bytesResult.fold(
+            onSuccess = { bytes ->
+                val localFile = downloadService.saveDownloadedResourceFile(item, bytes)
+                if (localFile != null) {
+                    downloadService.upsertDownloadedResource(item.copy(isDownloaded = true))
+                    true
+                } else {
+                    false
+                }
+            },
+            onFailure = { false }
+        )
+    }
+}
+
+private fun Long?.toDisplayDate(): String {
+    if (this == null || this <= 0L) return "-"
+    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
+    return formatter.format(Date(this))
+}

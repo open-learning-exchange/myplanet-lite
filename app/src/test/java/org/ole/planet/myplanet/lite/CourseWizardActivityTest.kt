@@ -3,8 +3,8 @@ package org.ole.planet.myplanet.lite
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.os.Build
 import androidx.test.core.app.ApplicationProvider
-import io.mockk.every
 import io.mockk.mockk
 import io.mockk.unmockkAll
 import kotlinx.coroutines.Dispatchers
@@ -23,9 +23,11 @@ import org.ole.planet.myplanet.lite.DashboardCoursePageFragment.CourseItem
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [Build.VERSION_CODES.R])
 class CourseWizardActivityTest {
 
     private val testDispatcher = StandardTestDispatcher()
@@ -51,6 +53,7 @@ class CourseWizardActivityTest {
         val activity = controller.create().get()
 
         assertTrue(activity.isFinishing)
+        controller.pause().stop().destroy()
     }
 
     @Test
@@ -80,5 +83,6 @@ class CourseWizardActivityTest {
         val activity = controller.create().get()
 
         assertFalse(activity.isFinishing)
+        controller.pause().stop().destroy()
     }
 }

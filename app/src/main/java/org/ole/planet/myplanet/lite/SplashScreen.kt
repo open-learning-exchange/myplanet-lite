@@ -17,6 +17,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import com.squareup.moshi.Moshi
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -24,15 +25,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
-import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SplashScreen : BaseActivity() {
 
     private val connectivityClient: OkHttpClient by lazy { OkHttpClient.Builder().build() }
+    private val connectivityMoshi: Moshi by lazy { Moshi.Builder().build() }
+    private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
+        ServerConnectivityRepository(connectivityClient, connectivityMoshi)
+    }
 
     private val userProfileDatabase: UserProfileDatabase by lazy {
         UserProfileDatabase.getInstance(applicationContext)
@@ -43,6 +48,10 @@ class SplashScreen : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (shouldReturnToExistingTask(intent)) {
+            finish()
+            return
+        }
         applyDeviceOrientationLock()
         cacheDeviceIdentifiers()
         enableEdgeToEdge()
@@ -53,6 +62,15 @@ class SplashScreen : BaseActivity() {
             delay(SPLASH_DELAY_MS)
             routeToNextActivity()
         }
+    }
+
+    private fun shouldReturnToExistingTask(launchIntent: Intent?): Boolean {
+        if (isTaskRoot) {
+            return false
+        }
+        val isLauncherIntent = launchIntent?.action == Intent.ACTION_MAIN &&
+            launchIntent.hasCategory(Intent.CATEGORY_LAUNCHER)
+        return isLauncherIntent
     }
 
     private fun startLogoAnimation() {
@@ -142,15 +160,19 @@ class SplashScreen : BaseActivity() {
         val cachedUsername = withContext(Dispatchers.IO) {
             userProfileDatabase.getProfile()?.username
         }?.takeIf { it.isNotBlank() } ?: return DashboardLaunchMode.NONE
-        if (!NetworkUtils.isDeviceOnline(this)) {
+        val isServerReachable = withContext(Dispatchers.IO) {
+            serverConnectivityRepository.checkServerConnectivity(baseUrl).reachable
+        }
+        if (!isServerReachable) {
             return DashboardLaunchMode.OFFLINE
         }
+
         val refreshed = userProfileSync.refreshProfile(baseUrl, cachedUsername, storedToken)
-        if (refreshed) {
-            return DashboardLaunchMode.ONLINE
+        return if (refreshed) {
+            DashboardLaunchMode.ONLINE
+        } else {
+            DashboardLaunchMode.OFFLINE
         }
-        authService.logout()
-        return DashboardLaunchMode.NONE
     }
 
 
