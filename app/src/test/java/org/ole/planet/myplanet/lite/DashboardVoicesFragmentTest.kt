@@ -15,10 +15,19 @@ import org.robolectric.RobolectricTestRunner
 import org.mockito.Mockito
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import androidx.lifecycle.Lifecycle
+import androidx.test.core.app.ApplicationProvider
+import org.junit.After
+import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 
 @RunWith(RobolectricTestRunner::class)
-@Config(instrumentedPackages = ["androidx.loader.content"]) // Helps prevent FragmentScenario crash
+@Config(sdk = [33], instrumentedPackages = ["androidx.loader.content"]) // Helps prevent FragmentScenario crash
 class DashboardVoicesFragmentTest {
+
+    @After
+    fun tearDown() {
+        UserProfileDatabase.resetForTesting(ApplicationProvider.getApplicationContext())
+        SecurePreferencesProvider.resetForTesting()
+    }
 
     @Test
     fun `newInstanceForTeam creates fragment with correct arguments`() {
@@ -45,9 +54,10 @@ class DashboardVoicesFragmentTest {
 
         // To ensure initializeSession reads the arguments from the Bundle provided through FragmentScenario,
         // we must allow it to proceed to RESUMED since the method is triggered via lifecycleScope.launch in onViewCreated
-        val scenario = FragmentScenario.launchInContainer(DashboardVoicesFragment::class.java, args, R.style.Theme_MyPlanetLite)
-        scenario.onFragment { fragment ->
-            block(fragment)
+        FragmentScenario.launchInContainer(DashboardVoicesFragment::class.java, args, R.style.Theme_MyPlanetLite).use { scenario ->
+            scenario.onFragment { fragment ->
+                block(fragment)
+            }
         }
 
         SecurePreferencesProvider.injectedPreferences = null
