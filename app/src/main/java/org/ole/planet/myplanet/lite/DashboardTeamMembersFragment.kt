@@ -30,6 +30,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -81,6 +82,7 @@ class DashboardTeamMembersFragment : Fragment() {
     private var currentTeamType: String? = null
     private var isCurrentUserTeamLeader: Boolean = false
     private var currentUsername: String? = null
+    private var fetchJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -93,13 +95,12 @@ class DashboardTeamMembersFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
+        fetchJob?.cancel()
+        fetchJob = null
         binding.dashboardTeamMembersList.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@DashboardTeamMembersFragment.adapter
-            addItemDecoration(
-                DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL)
-            )
+            addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
         }
         binding.dashboardTeamMembersSwipeRefresh.setOnRefreshListener { onRefreshRequested() }
         binding.dashboardTeamMembersSearchInput.addTextChangedListener { editable ->
@@ -112,23 +113,25 @@ class DashboardTeamMembersFragment : Fragment() {
         }
         updateLeaderActionsVisibility()
         binding.fabAddMember.enableDrag()
-
         viewLifecycleOwner.lifecycleScope.launch {
             loadConnectionInfo()
-            refreshSelectionState()
         }
     }
 
     override fun onResume() {
         super.onResume()
-        val selectedTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
-        if (selectedTeamId != currentTeamId) {
+        viewLifecycleOwner.lifecycleScope.launch {
+            if (baseUrl == null || credentials == null) {
+                loadConnectionInfo()
+            }
             refreshSelectionState()
         }
     }
 
     override fun onDestroyView() {
         super.onDestroyView()
+        fetchJob?.cancel()
+        fetchJob = null
         avatarLoader?.destroy()
         avatarLoader = null
         binding.dashboardTeamMembersSwipeRefresh.setOnRefreshListener(null as SwipeRefreshLayout.OnRefreshListener?)
@@ -151,7 +154,12 @@ class DashboardTeamMembersFragment : Fragment() {
     }
 
     private fun refreshSelectionState() {
-        currentTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
+        val selectedTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
+        if (selectedTeamId == currentTeamId && currentMembers.isNotEmpty()) {
+            applySearchFilter()
+            return
+        }
+        currentTeamId = selectedTeamId
         val hasSelection = !currentTeamId.isNullOrBlank()
 
         if (!hasSelection) {
@@ -215,7 +223,8 @@ class DashboardTeamMembersFragment : Fragment() {
         }
 
         showLoading(!isPullToRefresh)
-        viewLifecycleOwner.lifecycleScope.launch {
+        fetchJob?.cancel()
+        fetchJob = viewLifecycleOwner.lifecycleScope.launch {
             val result = repository.fetchTeamMemberDetails(base, creds, sessionCookie, teamId)
             val members = result.getOrElse {
                 showEmptyState(getString(R.string.dashboard_team_members_error_loading))

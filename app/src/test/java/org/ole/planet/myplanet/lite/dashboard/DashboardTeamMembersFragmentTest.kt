@@ -9,6 +9,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -23,6 +24,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.auth.AuthService
 import org.ole.planet.myplanet.lite.auth.UserCredentials
+import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamMemberDetails
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -39,6 +41,8 @@ class DashboardTeamMembersFragmentTest {
 
     @Before
     fun setUp() {
+        DashboardTeamsRepository.resetCacheForTesting()
+        DashboardTeamsRepository.overrideDispatcher = UnconfinedTestDispatcher()
         mockWebServer = MockWebServer()
         mockWebServer.start()
 
@@ -64,8 +68,9 @@ class DashboardTeamMembersFragmentTest {
     @After
     fun tearDown() {
         mockWebServer.shutdown()
-        SecurePreferencesProvider.injectedPreferences = null
+        SecurePreferencesProvider.resetForTesting()
         AuthDependencies.resetForTesting()
+        DashboardAvatarLoader.resetForTesting()
     }
 
     @Test
@@ -85,22 +90,27 @@ class DashboardTeamMembersFragmentTest {
 
         val usersResponse = """
             {
-                "rows": [
+                "docs": [
                     {
-                        "id": "org.couchdb.user:user1",
-                        "doc": {
-                            "_id": "org.couchdb.user:user1",
-                            "firstName": "First",
-                            "lastName": "User"
-                        }
+                        "_id": "org.couchdb.user:user1",
+                        "firstName": "First",
+                        "lastName": "User"
                     }
                 ]
             }
         """.trimIndent()
         mockWebServer.enqueue(MockResponse().setBody(usersResponse).setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setResponseCode(404))
+        // Enqueue extra responses to handle potential redundant requests during fragment lifecycle
+        mockWebServer.enqueue(MockResponse().setBody(membershipsResponse).setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setBody(usersResponse).setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setResponseCode(404))
+        mockWebServer.enqueue(MockResponse().setBody(membershipsResponse).setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setBody(usersResponse).setResponseCode(200))
+        mockWebServer.enqueue(MockResponse().setResponseCode(404))
 
         launchFragmentInContainer<DashboardTeamMembersFragment>(themeResId = MaterialR.style.Theme_MaterialComponents_Light).use { scenario ->
-            ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+            repeat(5) { ShadowLooper.runUiThreadTasksIncludingDelayedTasks() }
             scenario.onFragment { fragment ->
                 assertNotNull(fragment)
                 val recyclerView = fragment.view?.findViewById<RecyclerView>(R.id.dashboardTeamMembersList)

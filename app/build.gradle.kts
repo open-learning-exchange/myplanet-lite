@@ -114,6 +114,7 @@ dependencies {
 
     // testImplementation
     // testing
+    debugImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
     debugImplementation(libs.androidx.fragment.testing)
@@ -127,6 +128,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
+    debugImplementation(libs.androidx.fragment.testing)
 
     // androidTestImplementation
     // testing

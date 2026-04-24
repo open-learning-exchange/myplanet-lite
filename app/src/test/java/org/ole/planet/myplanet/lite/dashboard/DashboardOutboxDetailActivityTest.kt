@@ -34,8 +34,13 @@ class DashboardOutboxDetailActivityTest {
     private lateinit var store: DashboardSurveyOutboxStore
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
+    private lateinit var mockPrefs: android.content.SharedPreferences
+
     @Before
     fun setup() {
+        mockPrefs = org.mockito.Mockito.mock(android.content.SharedPreferences::class.java)
+        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = mockPrefs
+
         Dispatchers.setMain(testDispatcher)
         SecurePreferencesProvider.injectedPreferences = FakeSharedPreferences()
         store = DashboardSurveyOutboxStore.getInstance(context)
