@@ -10,12 +10,14 @@ import android.app.Activity
 import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.Rect
 import android.net.ConnectivityManager
-import android.os.Build
 import android.os.Bundle
 import android.text.InputType
+import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.inputmethod.EditorInfo
 import android.widget.ArrayAdapter
 import android.widget.AutoCompleteTextView
 import android.widget.Button
@@ -25,6 +27,7 @@ import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.RadioButton
 import android.widget.RadioGroup
+import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.annotation.StringRes
@@ -118,6 +121,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     private lateinit var translationNoticeView: TextView
     private var translationApplied: Boolean = false
     private lateinit var questionBodyView: TextView
+    private lateinit var questionScrollView: ScrollView
     private lateinit var questionContainer: LinearLayout
     private lateinit var previousButton: Button
     private lateinit var nextButton: Button
@@ -141,35 +145,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        titleView = view.findViewById(R.id.surveyWizardTitle)
-        descriptionView = view.findViewById(R.id.surveyWizardDescription)
-        counterView = view.findViewById(R.id.surveyWizardCounter)
-        progressBar = view.findViewById(R.id.surveyWizardProgress)
-        translationOverlay = view.findViewById(R.id.surveyWizardTranslationOverlay)
-        translationProgressBar = view.findViewById(R.id.surveyWizardTranslationProgress)
-        translationNoticeView = view.findViewById(R.id.surveyWizardTranslationNotice)
-        questionBodyView = view.findViewById(R.id.surveyWizardQuestionBody)
-        questionContainer = view.findViewById(R.id.surveyWizardQuestionContainer)
-        previousButton = view.findViewById(R.id.surveyWizardPreviousButton)
-        nextButton = view.findViewById(R.id.surveyWizardNextButton)
-        val contentView: View = view.findViewById(R.id.surveyWizardContent)
-        val initialPaddingStart = contentView.paddingStart
-        val initialPaddingTop = contentView.paddingTop
-        val initialPaddingEnd = contentView.paddingEnd
-        val initialPaddingBottom = contentView.paddingBottom
-
-        ViewCompat.setOnApplyWindowInsetsListener(contentView) { content, insets ->
-            val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
-            val bottomInset = maxOf(systemInsets.bottom, imeInsets.bottom)
-            content.setPadding(
-                initialPaddingStart,
-                initialPaddingTop,
-                initialPaddingEnd,
-                initialPaddingBottom + bottomInset
-            )
-            insets
-        }
+        bindViews(view)
+        setupInsets(view)
 
         translationNoticeView.setOnClickListener {
             startActivity(Intent(requireContext(), PrivacyPolicyActivity::class.java))
@@ -197,6 +174,10 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
         showStep(currentIndex)
 
+        setupNavigationButtons()
+    }
+
+    private fun setupNavigationButtons() {
         previousButton.setOnClickListener {
             activeCollector?.invoke()
             if (currentIndex > 0) {
@@ -216,6 +197,42 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 }
             }
         }
+    }
+
+    private fun setupInsets(view: View) {
+        val contentView: View = view.findViewById(R.id.surveyWizardContent)
+        val initialPaddingStart = contentView.paddingStart
+        val initialPaddingTop = contentView.paddingTop
+        val initialPaddingEnd = contentView.paddingEnd
+        val initialPaddingBottom = contentView.paddingBottom
+
+        ViewCompat.setOnApplyWindowInsetsListener(contentView) { content, insets ->
+            val systemInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            val imeInsets = insets.getInsets(WindowInsetsCompat.Type.ime())
+            val bottomInset = maxOf(systemInsets.bottom, imeInsets.bottom)
+            content.setPadding(
+                initialPaddingStart,
+                initialPaddingTop,
+                initialPaddingEnd,
+                initialPaddingBottom + bottomInset
+            )
+            insets
+        }
+    }
+
+    private fun bindViews(view: View) {
+        titleView = view.findViewById(R.id.surveyWizardTitle)
+        descriptionView = view.findViewById(R.id.surveyWizardDescription)
+        counterView = view.findViewById(R.id.surveyWizardCounter)
+        progressBar = view.findViewById(R.id.surveyWizardProgress)
+        translationOverlay = view.findViewById(R.id.surveyWizardTranslationOverlay)
+        translationProgressBar = view.findViewById(R.id.surveyWizardTranslationProgress)
+        translationNoticeView = view.findViewById(R.id.surveyWizardTranslationNotice)
+        questionBodyView = view.findViewById(R.id.surveyWizardQuestionBody)
+        questionScrollView = view.findViewById(R.id.surveyWizardQuestionScrollView)
+        questionContainer = view.findViewById(R.id.surveyWizardQuestionContainer)
+        previousButton = view.findViewById(R.id.surveyWizardPreviousButton)
+        nextButton = view.findViewById(R.id.surveyWizardNextButton)
     }
 
     override fun onStart() {
@@ -305,7 +322,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         val descriptionText = translatedDescription?.takeIf { it.isNotBlank() }
             ?: survey.description.orEmpty()
         descriptionView.text = descriptionText
-        descriptionView.isVisible = descriptionText.isNotBlank()
+        updateDescriptionVisibility(currentIndex)
     }
 
     private fun updateTranslationNotice(showConsentNotice: Boolean, showAppliedNotice: Boolean) {
@@ -343,6 +360,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         val step = steps[index]
         progressBar.max = steps.size
         counterView.text = getString(R.string.dashboard_survey_wizard_step_counter, index + 1, steps.size)
+        updateDescriptionVisibility(index)
         questionBodyView.text = when (step) {
             WizardStep.Basics -> getString(R.string.dashboard_survey_wizard_participant_basics_title)
             WizardStep.Names -> getString(R.string.dashboard_survey_wizard_names_title)
@@ -364,6 +382,10 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             getString(R.string.dashboard_survey_wizard_next)
         }
         updateNavigationEnabled()
+    }
+
+    private fun updateDescriptionVisibility(stepIndex: Int) {
+        descriptionView.isVisible = stepIndex == 0 && descriptionView.text.isNotBlank()
     }
 
     private fun renderStep(step: WizardStep): Pair<View, () -> Boolean> {
@@ -854,16 +876,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         updateNavigationEnabled()
     }
 
-    private fun renderBasicsStep(): Pair<View, () -> Boolean> {
-        val context = requireContext()
-        val container = LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-
+    private fun createGenderGroup(context: android.content.Context): Pair<TextView, RadioGroup> {
         val genderLabel = TextView(context).apply {
             text = getString(R.string.dashboard_survey_wizard_gender_label)
         }
@@ -876,10 +889,12 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         val maleButton = RadioButton(context).apply {
             text = getString(R.string.signup_gender_option_male)
             tag = GENDER_MALE
+            id = View.generateViewId()
         }
         val femaleButton = RadioButton(context).apply {
             text = getString(R.string.signup_gender_option_female)
             tag = GENDER_FEMALE
+            id = View.generateViewId()
         }
         genderGroup.addView(maleButton)
         genderGroup.addView(femaleButton)
@@ -887,7 +902,10 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             GENDER_MALE -> maleButton.isChecked = true
             GENDER_FEMALE -> femaleButton.isChecked = true
         }
+        return genderLabel to genderGroup
+    }
 
+    private fun createBirthYearLayout(context: android.content.Context): Pair<TextInputLayout, TextInputEditText> {
         val birthYearLayout = TextInputLayout(context).apply {
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
@@ -898,13 +916,66 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         val birthYearInput = TextInputEditText(context).apply {
             inputType = InputType.TYPE_CLASS_NUMBER
             setText(respondent.birthYear?.toString().orEmpty())
+            setOnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    scrollFocusedFieldIntoView(view)
+                } else {
+                    updateRespondentBirthYear(text?.toString())
+                }
+            }
+            setOnClickListener { scrollFocusedFieldIntoView(this) }
+            imeOptions = EditorInfo.IME_ACTION_DONE
+            setOnEditorActionListener { _, actionId, event ->
+                val isDoneAction = actionId == EditorInfo.IME_ACTION_DONE ||
+                    event?.keyCode == KeyEvent.KEYCODE_ENTER
+                if (isDoneAction) {
+                    updateRespondentBirthYear(text?.toString())
+                }
+                false
+            }
         }
         birthYearLayout.addView(birthYearInput)
+        return birthYearLayout to birthYearInput
+    }
 
-        val additionalCheckBox = CheckBox(context).apply {
+    private fun scrollFocusedFieldIntoView(view: View) {
+        questionScrollView.post {
+            questionScrollView.postDelayed({
+                val scrollChild = questionScrollView.getChildAt(0) as? ViewGroup ?: return@postDelayed
+                val targetRect = Rect().also { view.getDrawingRect(it) }
+                scrollChild.offsetDescendantRectToMyCoords(view, targetRect)
+                targetRect.bottom += questionScrollView.height / 3
+                questionScrollView.requestChildRectangleOnScreen(scrollChild, targetRect, true)
+            }, 180)
+        }
+    }
+
+    private fun updateRespondentBirthYear(value: String?) {
+        val year = value?.trim().orEmpty().toIntOrNull()
+        respondent.birthYear = year
+        respondent.age = year?.let { Calendar.getInstance().get(Calendar.YEAR) - it }
+    }
+
+    private fun createAdditionalCheckBox(context: android.content.Context): CheckBox {
+        return CheckBox(context).apply {
             text = getString(R.string.dashboard_survey_wizard_additional_info_label)
             isChecked = respondent.additionalInfo
         }
+    }
+
+    private fun renderBasicsStep(): Pair<View, () -> Boolean> {
+        val context = requireContext()
+        val container = LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+
+        val (genderLabel, genderGroup) = createGenderGroup(context)
+        val (birthYearLayout, birthYearInput) = createBirthYearLayout(context)
+        val additionalCheckBox = createAdditionalCheckBox(context)
 
         container.addView(genderLabel)
         container.addView(genderGroup)
@@ -1420,6 +1491,26 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             )
         }
         val checkboxes = mutableListOf<android.widget.CheckBox>()
+        buildMultiChoiceCheckboxes(context, question, translation, container, checkboxes)
+
+        val (otherBox, otherInputLayout) = buildMultiChoiceOtherOption(context, question, container)
+
+        val savedSelections = (answers[index] as? SurveyAnswer.MultipleChoice)?.choices.orEmpty()
+        restoreMultiChoiceSelections(checkboxes, otherBox, otherInputLayout, savedSelections)
+
+        val collector = {
+            collectMultiChoiceAnswer(checkboxes, otherBox, otherInputLayout, question, index)
+        }
+        return container to collector
+    }
+
+    private fun buildMultiChoiceCheckboxes(
+        context: android.content.Context,
+        question: SurveyQuestion,
+        translation: TranslatedQuestion?,
+        container: LinearLayout,
+        checkboxes: MutableList<android.widget.CheckBox>,
+    ) {
         question.choices.orEmpty().forEachIndexed { index, choice ->
             val box = android.widget.CheckBox(context)
             val translatedLabel = translation?.choices?.getOrNull(index)
@@ -1428,25 +1519,33 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             container.addView(box)
             checkboxes.add(box)
         }
-        val otherInputLayout: TextInputLayout?
-        val otherBox: android.widget.CheckBox?
-        if (question.hasOtherOption) {
-            otherBox = android.widget.CheckBox(context)
-            otherBox.text = getString(R.string.dashboard_survey_wizard_other_option)
-            otherBox.tag = OTHER_CHOICE_TAG
-            container.addView(otherBox)
-            otherInputLayout = buildOtherInputField(context)
-            otherInputLayout.isVisible = false
-            container.addView(otherInputLayout)
-            otherBox.setOnCheckedChangeListener { _, isChecked ->
-                otherInputLayout.isVisible = isChecked
-            }
-        } else {
-            otherInputLayout = null
-            otherBox = null
-        }
+    }
 
-        val savedSelections = (answers[index] as? SurveyAnswer.MultipleChoice)?.choices.orEmpty()
+    private fun buildMultiChoiceOtherOption(
+        context: android.content.Context,
+        question: SurveyQuestion,
+        container: LinearLayout,
+    ): Pair<android.widget.CheckBox?, TextInputLayout?> {
+        if (!question.hasOtherOption) return null to null
+        val otherBox = android.widget.CheckBox(context)
+        otherBox.text = getString(R.string.dashboard_survey_wizard_other_option)
+        otherBox.tag = OTHER_CHOICE_TAG
+        container.addView(otherBox)
+        val otherInputLayout = buildOtherInputField(context)
+        otherInputLayout.isVisible = false
+        container.addView(otherInputLayout)
+        otherBox.setOnCheckedChangeListener { _, isChecked ->
+            otherInputLayout.isVisible = isChecked
+        }
+        return otherBox to otherInputLayout
+    }
+
+    private fun restoreMultiChoiceSelections(
+        checkboxes: List<android.widget.CheckBox>,
+        otherBox: android.widget.CheckBox?,
+        otherInputLayout: TextInputLayout?,
+        savedSelections: List<SelectedOption>,
+    ) {
         checkboxes.forEach { box ->
             val choice = box.tag as? SurveyChoice
             val isSelected = savedSelections.any { saved ->
@@ -1461,52 +1560,55 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             otherInputLayout?.editText?.setText(savedOther.text)
             otherInputLayout?.editText?.setSelection(savedOther.text.length)
         }
+    }
 
-        val collector = {
-            val selectedChoices = checkboxes.filter { it.isChecked }
-                .map { checkbox ->
-                    val choice = checkbox.tag as? SurveyChoice
-                    val label = choice?.text?.takeIf { it.isNotBlank() }
-                        ?: checkbox.text?.toString()?.takeIf { it.isNotBlank() }
-                        ?: choice?.id
-                        ?: ""
-                    SelectedOption(
-                        id = choice?.id ?: label,
-                        text = label,
-                        isOther = false,
-                    )
-                }
-            val otherChecked = otherBox?.isChecked == true
-            val otherText = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
-            if (selectedChoices.isEmpty() && !otherChecked) {
-                showValidationMessage(R.string.dashboard_survey_wizard_choice_required)
-                false
-            } else if (otherChecked && otherText.isBlank()) {
-                showValidationMessage(R.string.dashboard_survey_wizard_input_required)
-                false
-            } else {
-                val combined = mutableListOf<SelectedOption>()
-                combined.addAll(selectedChoices)
-                if (otherChecked && otherText.isNotBlank()) {
-                    combined.add(
-                        SelectedOption(
-                            id = GENDER_OTHER,
-                            text = otherText,
-                            isOther = true,
-                        ),
-                    )
-                }
-                val answer = SurveyAnswer.MultipleChoice(choices = combined)
-                if (isExam && !isAnswerCorrect(question, answer)) {
-                    showValidationMessage(R.string.dashboard_exam_incorrect_answers)
-                    false
-                } else {
-                    answers[index] = answer
-                    true
-                }
+    private fun collectMultiChoiceAnswer(
+        checkboxes: List<android.widget.CheckBox>,
+        otherBox: android.widget.CheckBox?,
+        otherInputLayout: TextInputLayout?,
+        question: SurveyQuestion,
+        index: Int,
+    ): Boolean {
+        val selectedChoices = checkboxes.filter { it.isChecked }
+            .map { checkbox ->
+                val choice = checkbox.tag as? SurveyChoice
+                val label = choice?.text?.takeIf { it.isNotBlank() }
+                    ?: checkbox.text?.toString()?.takeIf { it.isNotBlank() }
+                    ?: choice?.id
+                    ?: ""
+                SelectedOption(
+                    id = choice?.id ?: label,
+                    text = label,
+                    isOther = false,
+                )
             }
+        val otherChecked = otherBox?.isChecked == true
+        val otherText = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
+        if (selectedChoices.isEmpty() && !otherChecked) {
+            showValidationMessage(R.string.dashboard_survey_wizard_choice_required)
+            return false
+        } else if (otherChecked && otherText.isBlank()) {
+            showValidationMessage(R.string.dashboard_survey_wizard_input_required)
+            return false
         }
-        return container to collector
+        val combined = mutableListOf<SelectedOption>()
+        combined.addAll(selectedChoices)
+        if (otherChecked && otherText.isNotBlank()) {
+            combined.add(
+                SelectedOption(
+                    id = GENDER_OTHER,
+                    text = otherText,
+                    isOther = true,
+                ),
+            )
+        }
+        val answer = SurveyAnswer.MultipleChoice(choices = combined)
+        if (isExam && !isAnswerCorrect(question, answer)) {
+            showValidationMessage(R.string.dashboard_exam_incorrect_answers)
+            return false
+        }
+        answers[index] = answer
+        return true
     }
 
     private fun renderRatingQuestion(index: Int): Pair<View, () -> Boolean> {
@@ -1555,23 +1657,9 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         }
 
         (1..9).forEach { value ->
-            val button = MaterialButton(context).apply {
-                text = value.toString()
-                isAllCaps = false
-                textSize = 18f
-                cornerRadius = resources.getDimensionPixelSize(R.dimen.padding_small)
-                insetTop = 0
-                insetBottom = 0
-                layoutParams = GridLayout.LayoutParams().apply {
-                    width = 0
-                    height = ViewGroup.LayoutParams.WRAP_CONTENT
-                    columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
-                    setMargins(horizontalMargin, 0, horizontalMargin, bottomMargin)
-                }
-                setOnClickListener {
-                    selectedValue = value
-                    applySelection()
-                }
+            val button = createRatingButton(context, value, horizontalMargin, bottomMargin) { selected ->
+                selectedValue = selected
+                applySelection()
             }
             buttons.add(button)
             gridLayout.addView(button)
@@ -1590,6 +1678,32 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             }
         }
         return gridLayout to collector
+    }
+
+    private fun createRatingButton(
+        context: android.content.Context,
+        value: Int,
+        horizontalMargin: Int,
+        bottomMargin: Int,
+        onClick: (Int) -> Unit
+    ): MaterialButton {
+        return MaterialButton(context).apply {
+            text = value.toString()
+            isAllCaps = false
+            textSize = 18f
+            cornerRadius = resources.getDimensionPixelSize(R.dimen.padding_small)
+            insetTop = 0
+            insetBottom = 0
+            layoutParams = GridLayout.LayoutParams().apply {
+                width = 0
+                height = ViewGroup.LayoutParams.WRAP_CONTENT
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1f)
+                setMargins(horizontalMargin, 0, horizontalMargin, bottomMargin)
+            }
+            setOnClickListener {
+                onClick(value)
+            }
+        }
     }
 
     private fun buildOtherInputField(context: android.content.Context): TextInputLayout {
