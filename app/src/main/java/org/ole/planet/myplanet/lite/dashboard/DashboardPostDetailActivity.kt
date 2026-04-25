@@ -78,7 +78,7 @@ private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
 }
 
-class DashboardPostDetailActivity : AppCompatActivity() {
+class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: View
@@ -154,6 +154,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyDeviceOrientationLock()
         setContentView(R.layout.activity_dashboard_post_detail)
 
         setupToolbar()
@@ -230,16 +231,18 @@ class DashboardPostDetailActivity : AppCompatActivity() {
     }
 
     private fun setupReplyWindowInsets() {
-        val baseReplyContainerMarginBottom =
-            (replyContainer.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+        val baseReplyContainerPaddingBottom = replyContainer.paddingBottom
 
         ViewCompat.setOnApplyWindowInsetsListener(replyContainer) { view, insets ->
             val systemBarsBottom = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
             val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
             val bottomInset = max(systemBarsBottom, imeBottom)
-            view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = baseReplyContainerMarginBottom + bottomInset
-            }
+            view.setPadding(
+                view.paddingLeft,
+                view.paddingTop,
+                view.paddingRight,
+                baseReplyContainerPaddingBottom + bottomInset
+            )
             insets
         }
         ViewCompat.requestApplyInsets(replyContainer)
