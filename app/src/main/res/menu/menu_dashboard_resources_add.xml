@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <group android:id="@+id/group_add_resource">
+        <item
+            android:id="@+id/action_add_pdf"
+            android:icon="@drawable/ic_course_step_pdf_24"
+            android:title="@string/dashboard_resources_add_pdf" />
+        <item
+            android:id="@+id/action_add_image"
+            android:icon="@drawable/ic_course_step_image_24"
+            android:title="@string/dashboard_resources_add_image" />
+        <item
+            android:id="@+id/action_add_video"
+            android:icon="@drawable/ic_course_step_video_24"
+            android:title="@string/dashboard_resources_add_video" />
+        <item
+            android:id="@+id/action_add_audio"
+            android:icon="@drawable/ic_course_step_audio_24"
+            android:title="@string/dashboard_resources_add_audio" />
+    </group>
+    <group android:id="@+id/group_capture_resource">
+        <item
+            android:id="@+id/action_take_photo"
+            android:icon="@drawable/ic_add_photo_24"
+            android:title="@string/dashboard_resources_take_photo" />
+        <item
+            android:id="@+id/action_take_video"
+            android:icon="@drawable/ic_add_video_24"
+            android:title="@string/dashboard_resources_take_video" />
+        <item
+            android:id="@+id/action_record_audio"
+            android:icon="@drawable/ic_add_record_24"
+            android:title="@string/dashboard_resources_record_audio" />
+    </group>
+</menu>

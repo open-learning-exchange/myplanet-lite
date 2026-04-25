@@ -24,36 +24,22 @@ object SecurePreferencesProvider {
     private val cachedInstances = mutableMapOf<String, SharedPreferences>()
 
     fun getServerPreferences(context: Context): SharedPreferences {
-        injectedPreferences?.let { return it }
-
-        return synchronized(this) {
-            cachedInstances[ENCRYPTED_PREFS_NAME] ?: run {
-                val encryptedPrefs = getEncryptedPreferences(
-                    context = context,
-                    prefsName = ENCRYPTED_PREFS_NAME
-                )
-                val legacyFile = java.io.File(context.applicationInfo.dataDir, "shared_prefs/$LEGACY_PREFS_NAME.xml")
-                val created = if (legacyFile.exists()) {
-                    val legacyPrefs = context.getSharedPreferences(LEGACY_PREFS_NAME, Context.MODE_PRIVATE)
-                    val job = migrateLegacyPreferences(context, encryptedPrefs, legacyPrefs)
-                    MigrationAwarePreferences(encryptedPrefs, legacyPrefs, job)
-                } else {
-                    encryptedPrefs
-                }
-                created.also {
-                    cachedInstances[ENCRYPTED_PREFS_NAME] = it
-                }
-            }
-        }
+        return getEncryptedPreferences(
+            context = context,
+            prefsName = ENCRYPTED_PREFS_NAME,
+            legacyPrefsName = LEGACY_PREFS_NAME
+        )
     }
 
     fun getEncryptedPreferences(
         context: Context,
-        prefsName: String
+        prefsName: String,
+        legacyPrefsName: String? = null
     ): SharedPreferences {
         return getEncryptedPreferences(
             context = context,
             prefsName = prefsName,
+            legacyPrefsName = legacyPrefsName,
             onCreated = { _, _ -> }
         )
     }
@@ -61,17 +47,33 @@ object SecurePreferencesProvider {
     private fun getEncryptedPreferences(
         context: Context,
         prefsName: String,
+        legacyPrefsName: String? = null,
         onCreated: (Context, SharedPreferences) -> Unit
     ): SharedPreferences {
         injectedPreferences?.let { return it }
         val appContext = context.applicationContext
 
         return synchronized(this) {
-            cachedInstances[prefsName] ?: createEncryptedPreferences(
-                appContext = appContext,
-                prefsName = prefsName,
-                onCreated = onCreated
-            ).also { cachedInstances[prefsName] = it }
+            cachedInstances[prefsName] ?: run {
+                val encryptedPrefs = createEncryptedPreferences(
+                    appContext = appContext,
+                    prefsName = prefsName,
+                    onCreated = onCreated
+                )
+                val created = if (legacyPrefsName != null) {
+                    val legacyFile = java.io.File(appContext.applicationInfo.dataDir, "shared_prefs/$legacyPrefsName.xml")
+                    if (legacyFile.exists()) {
+                        val legacyPrefs = appContext.getSharedPreferences(legacyPrefsName, Context.MODE_PRIVATE)
+                        val job = migrateLegacyPreferences(appContext, encryptedPrefs, legacyPrefs, legacyPrefsName)
+                        MigrationAwarePreferences(encryptedPrefs, legacyPrefs, job)
+                    } else {
+                        encryptedPrefs
+                    }
+                } else {
+                    encryptedPrefs
+                }
+                created.also { cachedInstances[prefsName] = it }
+            }
         }
     }
 
@@ -143,7 +145,8 @@ object SecurePreferencesProvider {
     private fun migrateLegacyPreferences(
         context: Context,
         encryptedPrefs: SharedPreferences,
-        legacyPrefs: SharedPreferences
+        legacyPrefs: SharedPreferences,
+        legacyPrefsName: String
     ): Job {
         return migrationScope.launch {
             val allLegacy = legacyPrefs.all
@@ -161,10 +164,10 @@ object SecurePreferencesProvider {
                     }
                 }
                 if (editor.commit()) {
-                    context.deleteSharedPreferences(LEGACY_PREFS_NAME)
+                    context.deleteSharedPreferences(legacyPrefsName)
                 }
             } else {
-                context.deleteSharedPreferences(LEGACY_PREFS_NAME)
+                context.deleteSharedPreferences(legacyPrefsName)
             }
         }
     }

@@ -18,11 +18,9 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 
 class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
-    private val offlineStoreDelegate = lazy { DashboardOfflineSurveyStore(context.applicationContext) }
-    private val outboxStoreDelegate = lazy { DashboardSurveyOutboxStore(context.applicationContext) }
+    private val offlineStore get() = DashboardOfflineSurveyStore.getInstance(context)
+    private val outboxStore get() = DashboardSurveyOutboxStore.getInstance(context)
     private val submissionsRepoDelegate = lazy { DashboardSurveySubmissionsRepository() }
-    private val offlineStore get() = offlineStoreDelegate.value
-    private val outboxStore get() = outboxStoreDelegate.value
     private val submissionsRepo get() = submissionsRepoDelegate.value
 
     suspend fun getSavedSurveyIds(): Set<String> = offlineStore.getSavedSurveyIds()
@@ -78,11 +76,6 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
     }
 
     override fun close() {
-        if (offlineStoreDelegate.isInitialized()) {
-            offlineStore.close()
-        }
-        if (outboxStoreDelegate.isInitialized()) {
-            outboxStore.close()
-        }
+        // Managed by singletons
     }
 }

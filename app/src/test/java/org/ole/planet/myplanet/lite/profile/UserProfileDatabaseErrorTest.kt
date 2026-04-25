@@ -28,10 +28,7 @@ class UserProfileDatabaseErrorTest {
 
     @After
     fun teardown() {
-        database.close()
-        val instanceField = UserProfileDatabase::class.java.getDeclaredField("instance")
-        instanceField.isAccessible = true
-        instanceField.set(null, null)
+        UserProfileDatabase.resetForTesting(context)
     }
 
     @Test

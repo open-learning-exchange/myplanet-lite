@@ -92,6 +92,8 @@ dependencies {
     // UI/media
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.transformer)
+    implementation(libs.androidx.media3.effect)
     implementation(libs.circleimageview)
     implementation(libs.core)
     implementation(libs.ext.tables)
@@ -112,7 +114,7 @@ dependencies {
 
     // testImplementation
     // testing
-    testImplementation(libs.androidx.core)
+    debugImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
     debugImplementation(libs.androidx.fragment.testing)
@@ -126,6 +128,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
+    debugImplementation(libs.androidx.fragment.testing)
 
     // androidTestImplementation
     // testing
@@ -135,4 +138,19 @@ dependencies {
     androidTestImplementation(libs.core.ktx)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.mockwebserver)
+
+    // Force consistent versions
+    configurations.all {
+        resolutionStrategy {
+            force(
+                libs.androidx.test.core,
+                libs.androidx.test.monitor,
+                libs.androidx.test.runner,
+                libs.androidx.espresso.core,
+                libs.androidx.espresso.intents,
+                libs.androidx.junit,
+                libs.core.ktx
+            )
+        }
+    }
 }
