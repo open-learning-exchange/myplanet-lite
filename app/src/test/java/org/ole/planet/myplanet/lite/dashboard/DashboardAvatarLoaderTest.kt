@@ -40,7 +40,6 @@ class DashboardAvatarLoaderTest {
 
     @Before
     fun setUp() {
-        ShadowLog.stream = System.out
         mockWebServer = MockWebServer()
         mockWebServer.start()
         context = ApplicationProvider.getApplicationContext()

@@ -1,13 +1,6 @@
 package android.util;
 
-public class Log {
-    public static final int VERBOSE = 2;
-    public static final int DEBUG = 3;
-    public static final int INFO = 4;
-    public static final int WARN = 5;
-    public static final int ERROR = 6;
-    public static final int ASSERT = 7;
-
+public class Slog {
     private static boolean shouldSilence(String tag, String msg) {
         String t = tag == null ? "" : tag.toLowerCase();
         String m = msg == null ? "" : msg.toLowerCase();
@@ -31,7 +24,6 @@ public class Log {
         return 0;
     }
     public static int w(String tag, String msg, Throwable tr) { return 0; }
-    public static int w(String tag, Throwable tr) { return 0; }
     public static int e(String tag, String msg) {
         if (shouldSilence(tag, msg)) return 0;
         // System.err.println("E/" + tag + ": " + msg);
@@ -44,6 +36,4 @@ public class Log {
     public static int println(int priority, String tag, String msg) {
         return 0;
     }
-    public static boolean isLoggable(String tag, int level) { return level >= INFO; }
-    public static String getStackTraceString(Throwable tr) { return ""; }
 }
