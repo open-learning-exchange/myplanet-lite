@@ -50,7 +50,7 @@ class SecurePreferencesProviderTest {
     }
 
     @Test
-    fun `getServerPreferences returns instance when already created`() {
+    fun `getServerPreferences returns cached instance when already created`() {
         SecurePreferencesProvider.injectedPreferences = mockPrefs
 
         val result = SecurePreferencesProvider.getServerPreferences(mockContext)
@@ -58,7 +58,7 @@ class SecurePreferencesProviderTest {
     }
 
     @Test
-    fun `getServerPreferences creates EncryptedSharedPreferences when instance is null`() {
+    fun `getServerPreferences creates EncryptedSharedPreferences when not cached`() {
         val legacyPrefs = mock(SharedPreferences::class.java)
         `when`(mockContext.getSharedPreferences("server_preferences", Context.MODE_PRIVATE)).thenReturn(legacyPrefs)
         `when`(legacyPrefs.all).thenReturn(emptyMap<String, Any?>())
@@ -117,10 +117,11 @@ class SecurePreferencesProviderTest {
                 "migrateLegacyPreferences",
                 Context::class.java,
                 SharedPreferences::class.java,
-                SharedPreferences::class.java
+                SharedPreferences::class.java,
+                String::class.java
             )
             method.isAccessible = true
-            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs) as Job
+            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs, "server_preferences") as Job
             job.join()
 
             verify(mockEncryptedEditor).putString("string_key", "value")
@@ -150,10 +151,11 @@ class SecurePreferencesProviderTest {
                 "migrateLegacyPreferences",
                 Context::class.java,
                 SharedPreferences::class.java,
-                SharedPreferences::class.java
+                SharedPreferences::class.java,
+                String::class.java
             )
             method.isAccessible = true
-            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs) as Job
+            val job = method.invoke(SecurePreferencesProvider, mockContext, mockEncryptedPrefs, mockLegacyPrefs, "server_preferences") as Job
             job.join()
 
             verify(mockEncryptedPrefs, never()).edit()

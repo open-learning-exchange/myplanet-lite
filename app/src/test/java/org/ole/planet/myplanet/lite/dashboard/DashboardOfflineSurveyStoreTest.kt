@@ -20,17 +20,22 @@ class DashboardOfflineSurveyStoreTest {
 
     private lateinit var store: DashboardOfflineSurveyStore
 
+    private lateinit var mockPrefs: android.content.SharedPreferences
+
     @Before
     fun setup() {
+        mockPrefs = org.mockito.Mockito.mock(android.content.SharedPreferences::class.java)
+        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = mockPrefs
+
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardOfflineSurveyStore(context)
+        store = DashboardOfflineSurveyStore.getInstance(context)
         // Clear db before test
         store.writableDatabase.delete("surveys", null, null)
     }
 
     @After
     fun teardown() {
-        store.close()
+        DashboardOfflineSurveyStore.resetForTesting(ApplicationProvider.getApplicationContext())
     }
 
     @Test

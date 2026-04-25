@@ -59,9 +59,11 @@ class DashboardActivity : BaseActivity() {
     private lateinit var homeIcon: ImageView
     private lateinit var surveysIcon: ImageView
     private lateinit var coursesIcon: ImageView
+    private lateinit var resourcesIcon: ImageView
     private lateinit var teamMembersIcon: ImageView
     private lateinit var surveysContainer: FrameLayout
     private lateinit var coursesContainer: FrameLayout
+    private lateinit var resourcesContainer: FrameLayout
     private lateinit var teamMembersContainer: FrameLayout
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var viewPager: ViewPager2
@@ -76,6 +78,7 @@ class DashboardActivity : BaseActivity() {
     private var isHandlingSurveyTranslationToggle = false
     private var surveyTranslationToggle: SwitchCompat? = null
     private var isOfflineMode = false
+    private var isOfflineForcedByLaunch = false
     private val networkCallback = object : ConnectivityManager.NetworkCallback() {
         override fun onAvailable(network: Network) {
             runOnUiThread {
@@ -95,6 +98,8 @@ class DashboardActivity : BaseActivity() {
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
         deepLinkHandled = savedInstanceState?.getBoolean(STATE_DEEP_LINK_HANDLED) ?: false
+        val restoredSection = savedInstanceState?.getString(STATE_CURRENT_SECTION)
+        currentSection = DashboardSection.entries.firstOrNull { it.name == restoredSection } ?: DashboardSection.HOME
         enableEdgeToEdge()
         setContentView(R.layout.activity_dashboard)
 
@@ -124,10 +129,12 @@ class DashboardActivity : BaseActivity() {
         drawerUsername = drawerHeader.findViewById(R.id.drawerProfileUsername)
         surveysContainer = findViewById(R.id.dashboardSurveysContainer)
         coursesContainer = findViewById(R.id.dashboardCoursesContainer)
+        resourcesContainer = findViewById(R.id.dashboardResourcesContainer)
         teamMembersContainer = findViewById(R.id.dashboardTeamMembersContainer)
         homeIcon = findViewById(R.id.dashboardHomeIcon)
         surveysIcon = findViewById(R.id.dashboardSurveysIcon)
         coursesIcon = findViewById(R.id.dashboardCoursesIcon)
+        resourcesIcon = findViewById(R.id.dashboardResourcesIcon)
         teamMembersIcon = findViewById(R.id.dashboardTeamMembersIcon)
 
         setupWindowInsets(root, appBar, bottomNavigation)
@@ -202,6 +209,10 @@ class DashboardActivity : BaseActivity() {
             showCoursesSection()
         }
 
+        resourcesIcon.setOnClickListener {
+            showResourcesSection()
+        }
+
         teamMembersIcon.setOnClickListener {
             if (isOfflineMode) {
                 showOfflineModeMessage()
@@ -230,6 +241,11 @@ class DashboardActivity : BaseActivity() {
             drawerLayout.openDrawer(GravityCompat.START)
         }
 
+        setupProfileDrawer(profileDrawer)
+        setupSettingsDrawer(settingsDrawer, surveyTranslationMenuItem)
+    }
+
+    private fun setupProfileDrawer(profileDrawer: NavigationView) {
         profileDrawer.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.menu_profile -> {
@@ -261,7 +277,12 @@ class DashboardActivity : BaseActivity() {
                 else -> false
             }
         }
+    }
 
+    private fun setupSettingsDrawer(
+        settingsDrawer: NavigationView,
+        surveyTranslationMenuItem: MenuItem
+    ) {
         val initialSurveyTranslationEnabled = isSurveyTranslationActive()
         surveyTranslationMenuItem.isChecked = initialSurveyTranslationEnabled
         surveyTranslationToggle?.apply {
@@ -343,9 +364,17 @@ class DashboardActivity : BaseActivity() {
             refreshProfileSummary()
         })
 
+        isOfflineForcedByLaunch = intent?.getBooleanExtra(EXTRA_OFFLINE_MODE, false) == true
+        isOfflineMode = isOfflineForcedByLaunch
         handleDeepLinkNavigation()
         val initialConnectivity = NetworkUtils.isDeviceOnline(this)
-        applyConnectivityState(isConnected = initialConnectivity, showMessages = intent?.getBooleanExtra(EXTRA_OFFLINE_MODE, false) == true || !initialConnectivity)
+        applyConnectivityState(
+            isConnected = initialConnectivity,
+            showMessages = isOfflineMode || !initialConnectivity
+        )
+        if (initialConnectivity || currentSection == DashboardSection.SURVEYS) {
+            showSection(currentSection)
+        }
         registerConnectivityCallback()
     }
 
@@ -366,6 +395,17 @@ class DashboardActivity : BaseActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putBoolean(STATE_DEEP_LINK_HANDLED, deepLinkHandled)
+        outState.putString(STATE_CURRENT_SECTION, currentSection.name)
+    }
+
+    private fun showSection(section: DashboardSection) {
+        when (section) {
+            DashboardSection.HOME -> showHomeSection()
+            DashboardSection.SURVEYS -> showSurveysSection()
+            DashboardSection.COURSES -> showCoursesSection()
+            DashboardSection.RESOURCES -> showResourcesSection()
+            DashboardSection.TEAM_MEMBERS -> showTeamMembersSection()
+        }
     }
 
     private fun performLogout() {
@@ -394,6 +434,7 @@ class DashboardActivity : BaseActivity() {
         currentSection = DashboardSection.HOME
         surveysContainer.isVisible = false
         coursesContainer.isVisible = false
+        resourcesContainer.isVisible = false
         teamMembersContainer.isVisible = false
         viewPager.isVisible = true
         tabLayout.isVisible = true
@@ -405,6 +446,7 @@ class DashboardActivity : BaseActivity() {
         viewPager.isVisible = false
         surveysContainer.isVisible = true
         coursesContainer.isVisible = false
+        resourcesContainer.isVisible = false
         teamMembersContainer.isVisible = false
         tabLayout.isVisible = false
 
@@ -423,6 +465,7 @@ class DashboardActivity : BaseActivity() {
         viewPager.isVisible = false
         surveysContainer.isVisible = false
         coursesContainer.isVisible = false
+        resourcesContainer.isVisible = false
         teamMembersContainer.isVisible = true
         tabLayout.isVisible = false
 
@@ -441,6 +484,7 @@ class DashboardActivity : BaseActivity() {
         viewPager.isVisible = false
         surveysContainer.isVisible = false
         coursesContainer.isVisible = true
+        resourcesContainer.isVisible = false
         teamMembersContainer.isVisible = false
         tabLayout.isVisible = false
 
@@ -454,17 +498,39 @@ class DashboardActivity : BaseActivity() {
         updateBottomNavigationState()
     }
 
+    private fun showResourcesSection() {
+        currentSection = DashboardSection.RESOURCES
+        viewPager.isVisible = false
+        surveysContainer.isVisible = false
+        coursesContainer.isVisible = false
+        resourcesContainer.isVisible = true
+        teamMembersContainer.isVisible = false
+        tabLayout.isVisible = false
+
+        val fragment = supportFragmentManager.findFragmentById(R.id.dashboardResourcesContainer)
+        if (fragment !is DashboardResourcesFragment) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.dashboardResourcesContainer, DashboardResourcesFragment())
+                .commit()
+        }
+
+        updateBottomNavigationState()
+    }
+
     private fun updateBottomNavigationState() {
         val homeActive = currentSection == DashboardSection.HOME && !isOfflineMode
         val coursesActive = currentSection == DashboardSection.COURSES
+        val resourcesActive = currentSection == DashboardSection.RESOURCES
         val teamActive = currentSection == DashboardSection.TEAM_MEMBERS && !isOfflineMode
 
         homeIcon.alpha = if (isOfflineMode) 0.3f else if (homeActive) 1f else 0.5f
         surveysIcon.alpha = if (currentSection == DashboardSection.SURVEYS) 1f else 0.5f
         coursesIcon.alpha = if (coursesActive) 1f else 0.5f
+        resourcesIcon.alpha = if (resourcesActive) 1f else 0.5f
         teamMembersIcon.alpha = if (isOfflineMode) 0.3f else if (teamActive) 1f else 0.5f
         homeIcon.isEnabled = !isOfflineMode
         coursesIcon.isEnabled = true
+        resourcesIcon.isEnabled = true
         teamMembersIcon.isEnabled = !isOfflineMode
         viewPager.isUserInputEnabled = !isOfflineMode
         tabLayout.isEnabled = !isOfflineMode
@@ -672,12 +738,15 @@ class DashboardActivity : BaseActivity() {
         HOME,
         SURVEYS,
         COURSES,
+        RESOURCES,
         TEAM_MEMBERS
     }
 
     companion object {
         const val EXTRA_DEEP_LINK_POST_ID = "extra_deep_link_post_id"
         private const val STATE_DEEP_LINK_HANDLED = "state_deep_link_handled"
+        private const val STATE_CURRENT_SECTION = "state_current_section"
+        private const val PREFS_NAME = "server_preferences"
         private const val KEY_VOICE_PAGE_SIZE = "voice_page_size"
         private const val KEY_SURVEY_TRANSLATIONS_ENABLED = "survey_translations_enabled"
         private const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
@@ -718,7 +787,7 @@ class DashboardActivity : BaseActivity() {
 
 
     private fun applyConnectivityState(isConnected: Boolean, showMessages: Boolean = false) {
-        if (isConnected) {
+        if (isConnected && !isOfflineForcedByLaunch) {
             if (isOfflineMode) {
                 isOfflineMode = false
                 updateBottomNavigationState()
@@ -739,4 +808,6 @@ class DashboardActivity : BaseActivity() {
     private fun showOfflineModeMessage() {
         Toast.makeText(this, R.string.dashboard_offline_mode_only_surveys, Toast.LENGTH_SHORT).show()
     }
+
+    fun isOfflineModeActive(): Boolean = isOfflineMode
 }

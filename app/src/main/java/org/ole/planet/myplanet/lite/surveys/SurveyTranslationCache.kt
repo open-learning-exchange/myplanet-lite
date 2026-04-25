@@ -16,7 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.util.getStringOrNull
 
-class SurveyTranslationCache(
+class SurveyTranslationCache private constructor(
     context: Context,
     moshi: Moshi = Moshi.Builder().build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -105,7 +105,7 @@ class SurveyTranslationCache(
         }
     }
 
-    private companion object {
+    companion object {
         private const val DATABASE_NAME = "survey_translations.db"
         private const val DATABASE_VERSION = 1
         private const val TABLE_TRANSLATIONS = "survey_translations"
@@ -116,5 +116,20 @@ class SurveyTranslationCache(
         private const val COLUMN_BODY = "body"
         private const val COLUMN_CHOICES = "choices"
         private val TYPES_STRING_LIST = Types.newParameterizedType(List::class.java, String::class.javaObjectType)
+
+        @Volatile
+        private var instance: SurveyTranslationCache? = null
+
+        fun getInstance(context: Context): SurveyTranslationCache {
+            return instance ?: synchronized(this) {
+                instance ?: SurveyTranslationCache(context.applicationContext).also { instance = it }
+            }
+        }
+
+        fun resetForTesting(context: Context) {
+            instance?.close()
+            instance = null
+            context.deleteDatabase(DATABASE_NAME)
+        }
     }
 }

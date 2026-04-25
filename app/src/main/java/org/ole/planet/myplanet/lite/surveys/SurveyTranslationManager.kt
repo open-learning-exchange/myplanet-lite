@@ -38,7 +38,7 @@ class SurveyTranslationManager(
     private val languageIdentifier: com.google.mlkit.nl.languageid.LanguageIdentifier =
         LanguageIdentification.getClient(),
     private val translationClient: OpenAiTranslationClient = OpenAiTranslationClient(),
-    private val translationCache: SurveyTranslationCache = SurveyTranslationCache(appContext),
+    private val translationCache: SurveyTranslationCache = SurveyTranslationCache.getInstance(appContext),
 ) {
 
     suspend fun translateSurvey(

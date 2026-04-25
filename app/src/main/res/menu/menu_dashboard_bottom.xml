@@ -18,4 +18,10 @@
         android:icon="@drawable/ic_courses_24"
         android:title="@string/dashboard_courses_title"
         app:showAsAction="ifRoom" />
+
+    <item
+        android:id="@+id/menu_resources"
+        android:icon="@drawable/ic_resources_24"
+        android:title="@string/dashboard_resources_title"
+        app:showAsAction="ifRoom" />
 </menu>

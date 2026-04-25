@@ -8,7 +8,6 @@ package org.ole.planet.myplanet.lite
 
 import android.annotation.SuppressLint
 import android.content.Intent
-import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
@@ -18,6 +17,7 @@ import android.widget.ImageView
 import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
+import com.squareup.moshi.Moshi
 import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -25,15 +25,19 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
-import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SplashScreen : BaseActivity() {
 
     private val connectivityClient: OkHttpClient by lazy { OkHttpClient.Builder().build() }
+    private val connectivityMoshi: Moshi by lazy { Moshi.Builder().build() }
+    private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
+        ServerConnectivityRepository(connectivityClient, connectivityMoshi)
+    }
 
     private val userProfileDatabase: UserProfileDatabase by lazy {
         UserProfileDatabase.getInstance(applicationContext)
@@ -44,11 +48,32 @@ class SplashScreen : BaseActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        if (shouldReturnToExistingTask(intent)) {
+            finish()
+            return
+        }
         applyDeviceOrientationLock()
         cacheDeviceIdentifiers()
         enableEdgeToEdge()
         setContentView(R.layout.activity_splash_screen)
         setupEdgeToEdgePadding(findViewById(R.id.main))
+        startLogoAnimation()
+        lifecycleScope.launch {
+            delay(SPLASH_DELAY_MS)
+            routeToNextActivity()
+        }
+    }
+
+    private fun shouldReturnToExistingTask(launchIntent: Intent?): Boolean {
+        if (isTaskRoot) {
+            return false
+        }
+        val isLauncherIntent = launchIntent?.action == Intent.ACTION_MAIN &&
+            launchIntent.hasCategory(Intent.CATEGORY_LAUNCHER)
+        return isLauncherIntent
+    }
+
+    private fun startLogoAnimation() {
         val logo = findViewById<ImageView>(R.id.logoImageView)
         val startOffset = -resources.displayMetrics.heightPixels * 0.5f
         logo.translationY = startOffset
@@ -93,34 +118,34 @@ class SplashScreen : BaseActivity() {
                 .setInterpolator(AccelerateDecelerateInterpolator())
                 .start()
         }
-        lifecycleScope.launch {
-            delay(SPLASH_DELAY_MS)
-            val launchMode = attemptDirectDashboardLaunch()
-            val nextIntent = when (launchMode) {
-                DashboardLaunchMode.ONLINE -> Intent(this@SplashScreen, DashboardActivity::class.java)
-                DashboardLaunchMode.OFFLINE -> Intent(this@SplashScreen, DashboardActivity::class.java).apply {
-                    putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
-                }
-                DashboardLaunchMode.NONE -> Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
-                    putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
-                }
-            }
+    }
 
-            if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
-                if (launchMode == DashboardLaunchMode.NONE) {
-                    nextIntent.action = intent.action
-                    nextIntent.data = intent.data
-                } else {
-                    val postId = IntentUtils.extractDeepLinkPostId(intent)
-                    if (postId != null) {
-                        nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
-                    }
-                }
+    private suspend fun routeToNextActivity() {
+        val launchMode = attemptDirectDashboardLaunch()
+        val nextIntent = when (launchMode) {
+            DashboardLaunchMode.ONLINE -> Intent(this@SplashScreen, DashboardActivity::class.java)
+            DashboardLaunchMode.OFFLINE -> Intent(this@SplashScreen, DashboardActivity::class.java).apply {
+                putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
             }
-
-            startActivity(nextIntent)
-            finish()
+            DashboardLaunchMode.NONE -> Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
+                putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
+            }
         }
+
+        if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
+            if (launchMode == DashboardLaunchMode.NONE) {
+                nextIntent.action = intent.action
+                nextIntent.data = intent.data
+            } else {
+                val postId = IntentUtils.extractDeepLinkPostId(intent)
+                if (postId != null) {
+                    nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
+                }
+            }
+        }
+
+        startActivity(nextIntent)
+        finish()
     }
 
     private suspend fun attemptDirectDashboardLaunch(): DashboardLaunchMode {
@@ -135,15 +160,19 @@ class SplashScreen : BaseActivity() {
         val cachedUsername = withContext(Dispatchers.IO) {
             userProfileDatabase.getProfile()?.username
         }?.takeIf { it.isNotBlank() } ?: return DashboardLaunchMode.NONE
-        if (!NetworkUtils.isDeviceOnline(this)) {
+        val isServerReachable = withContext(Dispatchers.IO) {
+            serverConnectivityRepository.checkServerConnectivity(baseUrl).reachable
+        }
+        if (!isServerReachable) {
             return DashboardLaunchMode.OFFLINE
         }
+
         val refreshed = userProfileSync.refreshProfile(baseUrl, cachedUsername, storedToken)
-        if (refreshed) {
-            return DashboardLaunchMode.ONLINE
+        return if (refreshed) {
+            DashboardLaunchMode.ONLINE
+        } else {
+            DashboardLaunchMode.OFFLINE
         }
-        authService.logout()
-        return DashboardLaunchMode.NONE
     }
 
 

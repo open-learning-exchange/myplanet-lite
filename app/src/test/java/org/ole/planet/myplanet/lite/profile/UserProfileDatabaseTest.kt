@@ -31,12 +31,7 @@ class UserProfileDatabaseTest {
 
     @After
     fun teardown() {
-        database.clearProfile()
-        database.close()
-        // Reset the singleton instance using reflection
-        val instanceField = UserProfileDatabase::class.java.getDeclaredField("instance")
-        instanceField.isAccessible = true
-        instanceField.set(null, null)
+        UserProfileDatabase.resetForTesting(context)
     }
 
     private fun createDummyProfile(username: String, isAdmin: Boolean = false): UserProfile {
