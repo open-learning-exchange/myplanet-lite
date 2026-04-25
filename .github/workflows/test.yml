@@ -9,10 +9,14 @@ on:
 permissions:
   contents: read
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   test:
     name: myPlanet-Lite test
     runs-on: ubuntu-24.04
+
     steps:
       - name: checkout repository code
         uses: actions/checkout@v4
@@ -29,6 +33,10 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: wrapper
+
+      - name: make gradlew executable
+        shell: bash
+        run: chmod +x ./gradlew
 
       - name: run unit tests
         shell: bash

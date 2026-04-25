@@ -16,7 +16,9 @@ import java.util.Locale
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
@@ -126,7 +128,7 @@ class DashboardAvatarLoader(
         }
     }
 
-    private companion object {
+    companion object {
         private const val CACHE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB cache for avatars
         private val missingAvatars = mutableSetOf<String>()
         private val inFlightScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
@@ -135,6 +137,16 @@ class DashboardAvatarLoader(
             override fun sizeOf(key: String, value: Bitmap): Int {
                 return value.byteCount
             }
+        }
+
+        @androidx.annotation.VisibleForTesting
+        fun resetForTesting() {
+            synchronized(missingAvatars) { missingAvatars.clear() }
+            synchronized(inFlightRequests) {
+                inFlightScope.coroutineContext[Job]?.cancelChildren()
+                inFlightRequests.clear()
+            }
+            sharedCache.evictAll()
         }
     }
 }

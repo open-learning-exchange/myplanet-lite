@@ -1,4 +1,3 @@
-@file:Suppress("DEPRECATION")
 /**
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
@@ -30,8 +29,6 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
-import androidx.security.crypto.EncryptedSharedPreferences
-import androidx.security.crypto.MasterKey
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
@@ -51,41 +48,16 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.NetworkUtils
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class CourseWizardActivity : BaseActivity() {
     private val pendingProgressPrefs by lazy {
-        val masterKey = MasterKey.Builder(applicationContext)
-            .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
-            .build()
-        val encryptedPrefs = EncryptedSharedPreferences.create(
-            applicationContext,
-            PREF_ENCRYPTED_PENDING_COURSE_PROGRESS,
-            masterKey,
-            EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
-            EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+        SecurePreferencesProvider.getEncryptedPreferences(
+            context = applicationContext,
+            prefsName = PREF_ENCRYPTED_PENDING_COURSE_PROGRESS,
+            legacyPrefsName = PREF_LEGACY_PENDING_COURSE_PROGRESS
         )
-        val legacyPrefs = getSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS, MODE_PRIVATE)
-        val allLegacy = legacyPrefs.all
-        if (allLegacy.isNotEmpty()) {
-            encryptedPrefs.edit {
-                for ((key, value) in allLegacy) {
-                    when (value) {
-                        is String -> putString(key, value)
-                        is Int -> putInt(key, value)
-                        is Boolean -> putBoolean(key, value)
-                        is Float -> putFloat(key, value)
-                        is Long -> putLong(key, value)
-                        is Set<*> -> @Suppress("UNCHECKED_CAST") putStringSet(
-                            key,
-                            value as Set<String>
-                        )
-                    }
-                }
-            }
-            applicationContext.deleteSharedPreferences(PREF_LEGACY_PENDING_COURSE_PROGRESS)
-        }
-        encryptedPrefs
     }
 
     private lateinit var markwon: Markwon
