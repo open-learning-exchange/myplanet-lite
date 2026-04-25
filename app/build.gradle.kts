@@ -11,7 +11,7 @@ val mockkAgent: Configuration by configurations.creating
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
-    compileSdk = 36
+    compileSdk = 37
     buildFeatures {
         buildConfig = true
         viewBinding = true
@@ -20,8 +20,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 215
-        versionName = "0.2.15"
+        versionCode = 250
+        versionName = "0.2.50"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -92,6 +92,8 @@ dependencies {
     // UI/media
     implementation(libs.androidx.media3.exoplayer)
     implementation(libs.androidx.media3.ui)
+    implementation(libs.androidx.media3.transformer)
+    implementation(libs.androidx.media3.effect)
     implementation(libs.circleimageview)
     implementation(libs.core)
     implementation(libs.ext.tables)
@@ -112,9 +114,10 @@ dependencies {
 
     // testImplementation
     // testing
-    testImplementation(libs.androidx.core)
+    debugImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
+    debugImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.core.ktx)
     testImplementation(libs.json)
     testImplementation(libs.junit)
@@ -125,6 +128,7 @@ dependencies {
     testImplementation(libs.mockk)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
+    debugImplementation(libs.androidx.fragment.testing)
 
     // androidTestImplementation
     // testing
@@ -134,4 +138,19 @@ dependencies {
     androidTestImplementation(libs.core.ktx)
     androidTestImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.mockwebserver)
+
+    // Force consistent versions
+    configurations.all {
+        resolutionStrategy {
+            force(
+                libs.androidx.test.core,
+                libs.androidx.test.monitor,
+                libs.androidx.test.runner,
+                libs.androidx.espresso.core,
+                libs.androidx.espresso.intents,
+                libs.androidx.junit,
+                libs.core.ktx
+            )
+        }
+    }
 }

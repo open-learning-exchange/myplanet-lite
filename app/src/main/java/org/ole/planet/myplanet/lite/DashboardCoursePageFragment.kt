@@ -74,6 +74,31 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
     private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
 
+    private fun isOfflineModeActive(): Boolean {
+        return (activity as? DashboardActivity)?.isOfflineModeActive() == true
+    }
+
+    private fun showOfflineDownloadedCourses(
+        adapter: CourseAdapter,
+        refreshLayout: SwipeRefreshLayout?
+    ) {
+        val offlineCourses = when (tabPosition) {
+            0 -> OfflineCourseStorage.loadDownloadedCourses(
+                requireContext(),
+                OfflineCourseStorage.DownloadSource.MY_COURSES
+            )
+            2 -> OfflineCourseStorage.loadDownloadedCourses(
+                requireContext(),
+                OfflineCourseStorage.DownloadSource.TEAM_COURSES
+            )
+            else -> emptyList()
+        }
+        adapter.submitCourses(offlineCourses)
+        adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
+        refreshLayout?.isRefreshing = false
+        showLoadingOverlay(false)
+    }
+
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         tabPosition = requireArguments().getInt(ARG_TAB_POSITION)
@@ -316,17 +341,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     ) {
         showLoadingOverlay(true)
         viewLifecycleOwner.lifecycleScope.launch {
-            val base = baseUrl
-            val creds = credentials
-            val isOnline = NetworkUtils.isDeviceOnline(requireContext())
-            if (!isOnline) {
-                val offlineCourses = OfflineCourseStorage.loadDownloadedCourses(requireContext())
-                adapter.submitCourses(offlineCourses)
-                adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
-                refreshLayout.isRefreshing = false
-                showLoadingOverlay(false)
+            if (isOfflineModeActive() || !NetworkUtils.isDeviceOnline(requireContext())) {
+                showOfflineDownloadedCourses(adapter, refreshLayout)
                 return@launch
             }
+            val base = baseUrl
+            val creds = credentials
             if (base.isNullOrBlank() || creds == null) {
                 handleMissingCredentials(adapter, refreshLayout)
                 return@launch
@@ -385,6 +405,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         adapter: CourseAdapter,
         refreshLayout: SwipeRefreshLayout
     ) {
+        if (isOfflineModeActive() || !NetworkUtils.isDeviceOnline(requireContext())) {
+            showOfflineDownloadedCourses(adapter, refreshLayout)
+            return
+        }
         resetPagingState()
         adapter.submitCourses(emptyList())
         showLoadingOverlay(true)
@@ -396,6 +420,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         refreshLayout: SwipeRefreshLayout,
         forceReload: Boolean
     ) {
+        if (isOfflineModeActive() || !NetworkUtils.isDeviceOnline(requireContext())) {
+            showOfflineDownloadedCourses(adapter, refreshLayout)
+            return
+        }
         val selectedTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
         val selectedTeamName = DashboardTeamSelectionPreferences.getSelectedTeamName(requireContext())
         if (selectedTeamId.isNullOrBlank() || selectedTeamName.isNullOrBlank()) {
@@ -560,6 +588,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         adapter: CourseAdapter,
         refreshLayout: SwipeRefreshLayout?
     ) {
+        if (isOfflineModeActive() || !NetworkUtils.isDeviceOnline(requireContext())) {
+            showOfflineDownloadedCourses(adapter, refreshLayout)
+            return
+        }
         if (isPaging || !hasMorePages) {
             refreshLayout?.isRefreshing = false
             return
@@ -700,7 +732,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 }
             }
             if (result) {
-                OfflineCourseStorage.saveCourseManifest(requireContext(), course)
+                val source = if (tabPosition == 2) {
+                    OfflineCourseStorage.DownloadSource.TEAM_COURSES
+                } else {
+                    OfflineCourseStorage.DownloadSource.MY_COURSES
+                }
+                OfflineCourseStorage.saveCourseManifest(requireContext(), course, source)
                 adapter.updateDownloadProgress(course.id, null, null)
                 adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
             } else {
@@ -1000,7 +1037,8 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         val steps: List<LessonStep>,
         val rating: Double,
         val progressPercent: Int,
-        val currentStep: Int?
+        val currentStep: Int?,
+        val downloadSource: OfflineCourseStorage.DownloadSource = OfflineCourseStorage.DownloadSource.MY_COURSES
     ) {
         val lessonCount: Int
             get() = steps.size

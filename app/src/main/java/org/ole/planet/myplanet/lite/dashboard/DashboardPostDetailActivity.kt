@@ -50,7 +50,6 @@ import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
-import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import java.util.ArrayList
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
@@ -72,13 +71,14 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 private fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
 }
 
-class DashboardPostDetailActivity : AppCompatActivity() {
+class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() {
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: View
@@ -154,6 +154,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        applyDeviceOrientationLock()
         setContentView(R.layout.activity_dashboard_post_detail)
 
         setupToolbar()
@@ -219,28 +220,35 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyActionsRow = findViewById(R.id.dashboardReplyActions)
         replyMarkdownToolbar = findViewById(R.id.dashboardReplyMarkdownToolbar)
         replyingToLabel = findViewById(R.id.postDetailReplyingTo)
-        val replyBold: MaterialButton = findViewById(R.id.dashboardReplyMarkdownBold)
-        val replyItalic: MaterialButton = findViewById(R.id.dashboardReplyMarkdownItalic)
-        val replyHeading: MaterialButton = findViewById(R.id.dashboardReplyMarkdownHeading)
-        val replyBullet: MaterialButton = findViewById(R.id.dashboardReplyMarkdownBullet)
-        val replyNumbered: MaterialButton = findViewById(R.id.dashboardReplyMarkdownNumbered)
-        val replyQuote: MaterialButton = findViewById(R.id.dashboardReplyMarkdownQuote)
-        val replyLink: MaterialButton = findViewById(R.id.dashboardReplyMarkdownLink)
-        val replyImage: MaterialButton = findViewById(R.id.dashboardReplyMarkdownImage)
-        val baseReplyContainerMarginBottom =
-            (replyContainer.layoutParams as ViewGroup.MarginLayoutParams).bottomMargin
+
+        setupReplyWindowInsets()
+        setupReplyInputListeners()
+        setupReplyMarkdownToolbar()
+
+        updateReplyPreview(replyPreview, "")
+        setMarkdownToolbarEnabled(false)
+        replySendButton.isEnabled = false
+    }
+
+    private fun setupReplyWindowInsets() {
+        val baseReplyContainerPaddingBottom = replyContainer.paddingBottom
 
         ViewCompat.setOnApplyWindowInsetsListener(replyContainer) { view, insets ->
             val systemBarsBottom = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom
             val imeBottom = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
             val bottomInset = max(systemBarsBottom, imeBottom)
-            view.updateLayoutParams<ViewGroup.MarginLayoutParams> {
-                bottomMargin = baseReplyContainerMarginBottom + bottomInset
-            }
+            view.setPadding(
+                view.paddingLeft,
+                view.paddingTop,
+                view.paddingRight,
+                baseReplyContainerPaddingBottom + bottomInset
+            )
             insets
         }
         ViewCompat.requestApplyInsets(replyContainer)
+    }
 
+    private fun setupReplyInputListeners() {
         replyInputLayout.helperText = null
         replyInput.doAfterTextChanged { text ->
             updateReplyPreview(replyPreview, text?.toString())
@@ -273,6 +281,18 @@ class DashboardPostDetailActivity : AppCompatActivity() {
                 attemptReply(message)
             }
         }
+    }
+
+    private fun setupReplyMarkdownToolbar() {
+        val replyBold: MaterialButton = findViewById(R.id.dashboardReplyMarkdownBold)
+        val replyItalic: MaterialButton = findViewById(R.id.dashboardReplyMarkdownItalic)
+        val replyHeading: MaterialButton = findViewById(R.id.dashboardReplyMarkdownHeading)
+        val replyBullet: MaterialButton = findViewById(R.id.dashboardReplyMarkdownBullet)
+        val replyNumbered: MaterialButton = findViewById(R.id.dashboardReplyMarkdownNumbered)
+        val replyQuote: MaterialButton = findViewById(R.id.dashboardReplyMarkdownQuote)
+        val replyLink: MaterialButton = findViewById(R.id.dashboardReplyMarkdownLink)
+        val replyImage: MaterialButton = findViewById(R.id.dashboardReplyMarkdownImage)
+
         replyBold.setOnClickListener {
             applyWrappedFormatting("**", "**", "", placeCursorInsideWhenNoSelection = true)
         }
@@ -289,10 +309,6 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyImage.setOnClickListener {
             handleReplyInsertImageClick()
         }
-        updateReplyPreview(replyPreview, "")
-
-        setMarkdownToolbarEnabled(false)
-        replySendButton.isEnabled = false
     }
 
     private fun loadIntentData(): Boolean {
@@ -517,8 +533,8 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyContainer.isVisible = true
         replyInput.requestFocus()
         replyInput.post {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-            imm?.showSoftInput(replyInput, InputMethodManager.SHOW_IMPLICIT)
+            val imm = getSystemService(InputMethodManager::class.java)
+            imm?.showSoftInput(replyInput, 0)
         }
     }
 
@@ -546,8 +562,8 @@ class DashboardPostDetailActivity : AppCompatActivity() {
         replyContainer.isVisible = true
         replyInput.requestFocus()
         replyInput.post {
-            val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
-            imm?.showSoftInput(replyInput, InputMethodManager.SHOW_IMPLICIT)
+            val imm = getSystemService(InputMethodManager::class.java)
+            imm?.showSoftInput(replyInput, 0)
         }
         updateReplyPreview(replyPreview, replyInput.text?.toString())
     }
@@ -1040,7 +1056,7 @@ class DashboardPostDetailActivity : AppCompatActivity() {
     }
 
     private fun hideReplyKeyboard() {
-        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        val imm = getSystemService(InputMethodManager::class.java)
         imm?.hideSoftInputFromWindow(replyInput.windowToken, 0)
     }
 

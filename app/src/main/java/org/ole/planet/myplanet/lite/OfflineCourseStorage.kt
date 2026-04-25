@@ -29,19 +29,30 @@ object OfflineCourseStorage {
             ?: emptySet()
     }
 
-    fun loadDownloadedCourses(context: Context): List<DashboardCoursePageFragment.CourseItem> {
+    enum class DownloadSource { MY_COURSES, TEAM_COURSES }
+
+    fun loadDownloadedCourses(
+        context: Context,
+        source: DownloadSource? = null
+    ): List<DashboardCoursePageFragment.CourseItem> {
         return downloadedCourseIds(context).mapNotNull { courseId ->
             runCatching {
                 val json = manifestFile(context, courseId).readText()
                 parseCourse(JSONObject(json))
             }.getOrNull()
+        }.filter { item ->
+            source == null || item.downloadSource == source
         }
     }
 
-    fun saveCourseManifest(context: Context, course: DashboardCoursePageFragment.CourseItem) {
+    fun saveCourseManifest(
+        context: Context,
+        course: DashboardCoursePageFragment.CourseItem,
+        source: DownloadSource
+    ) {
         val file = manifestFile(context, course.id)
         file.parentFile?.mkdirs()
-        file.writeText(serializeCourse(course).toString())
+        file.writeText(serializeCourse(course, source).toString())
     }
 
     fun resourceFile(
@@ -130,7 +141,10 @@ object OfflineCourseStorage {
         return bytes.joinToString("") { "%02x".format(it) }
     }
 
-    private fun serializeCourse(course: DashboardCoursePageFragment.CourseItem): JSONObject {
+    private fun serializeCourse(
+        course: DashboardCoursePageFragment.CourseItem,
+        source: DownloadSource
+    ): JSONObject {
         val steps = JSONArray().apply {
             course.steps.forEach { step ->
                 put(
@@ -164,6 +178,7 @@ object OfflineCourseStorage {
             .put("rating", course.rating)
             .put("progressPercent", course.progressPercent)
             .put("currentStep", course.currentStep)
+            .put("downloadSource", source.name)
             .put("steps", steps)
     }
 
@@ -205,7 +220,10 @@ object OfflineCourseStorage {
             steps = steps,
             rating = json.optDouble("rating", 4.0),
             progressPercent = json.optInt("progressPercent", 0),
-            currentStep = json.optInt("currentStep", -1).takeIf { it >= 0 }
+            currentStep = json.optInt("currentStep", -1).takeIf { it >= 0 },
+            downloadSource = runCatching {
+                DownloadSource.valueOf(json.optString("downloadSource", DownloadSource.MY_COURSES.name))
+            }.getOrDefault(DownloadSource.MY_COURSES)
         )
     }
 

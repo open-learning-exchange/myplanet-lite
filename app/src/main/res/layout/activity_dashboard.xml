@@ -117,6 +117,14 @@
             android:background="@color/white"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
+        <FrameLayout
+            android:id="@+id/dashboardResourcesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:background="@color/white"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
         <LinearLayout
             android:id="@+id/dashboardBottomNavigation"
             android:layout_width="match_parent"
@@ -162,6 +170,14 @@
                 android:layout_marginHorizontal="14dp"
                 android:contentDescription="@string/dashboard_courses_title"
                 android:src="@drawable/ic_courses_24" />
+
+            <ImageView
+                android:id="@+id/dashboardResourcesIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginHorizontal="14dp"
+                android:contentDescription="@string/dashboard_resources_title"
+                android:src="@drawable/ic_resources_24" />
 
         </LinearLayout>
 

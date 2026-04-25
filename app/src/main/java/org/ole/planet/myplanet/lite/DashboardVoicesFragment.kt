@@ -111,6 +111,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     private var teamId: String? = null
     private var teamName: String? = null
 
+    private var initJob: kotlinx.coroutines.Job? = null
+    private var fetchJob: kotlinx.coroutines.Job? = null
     private var isLoading = false
     private var hasMore = true
     private var nextSkip = 0
@@ -125,6 +127,12 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        setupViews(view)
+        setupRecyclerView()
+        setupObserversAndLoadInitial()
+    }
+
+    private fun setupViews(view: View) {
         recyclerView = view.findViewById(R.id.postsRecyclerView)
         loadingView = view.findViewById(R.id.postsLoading)
         emptyView = view.findViewById(R.id.postsEmptyView)
@@ -134,7 +142,9 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             openCreateVoiceComposer()
         }
         fab.enableDrag()
+    }
 
+    private fun setupRecyclerView() {
         markwon = Markwon.builder(requireContext()).build()
         adapter = DashboardNewsAdapter(
             markwon,
@@ -189,8 +199,11 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 }
             }
         })
+    }
 
-        viewLifecycleOwner.lifecycleScope.launch {
+    private fun setupObserversAndLoadInitial() {
+        initJob?.cancel()
+        initJob = viewLifecycleOwner.lifecycleScope.launch {
             initializeSession()
             val profile = loadCurrentUserProfile()
             currentUsername = profile?.username
@@ -226,6 +239,10 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
     override fun onDestroyView() {
         super.onDestroyView()
+        initJob?.cancel()
+        initJob = null
+        fetchJob?.cancel()
+        fetchJob = null
         recyclerView.adapter = null
         avatarLoader?.destroy()
         avatarLoader = null
@@ -294,7 +311,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
         isLoading = true
         updateLoadingVisibility()
-        viewLifecycleOwner.lifecycleScope.launch {
+        fetchJob?.cancel()
+        fetchJob = viewLifecycleOwner.lifecycleScope.launch {
             var accumulatedPosts = 0
             var shouldContinue = true
             val fetchLimit = maxOf(pageSize * 5, 100)
@@ -302,12 +320,14 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 val result = repository.fetchNews(
                     base,
                     sessionCookie,
-                    nextSkip,
-                    nextBookmark,
-                    fetchLimit,
-                    serverCode,
-                    serverParentCode,
-                    teamName
+                    DashboardNewsRepository.NewsQuery(
+                        skip = nextSkip,
+                        bookmark = nextBookmark,
+                        limit = fetchLimit,
+                        createdOn = serverCode,
+                        parentCode = serverParentCode,
+                        teamName = teamName
+                    )
                 )
                 val addedPosts = result.fold(
                     onSuccess = { page ->

@@ -169,6 +169,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         val base = baseUrl
         val team = teamId
         val creds = credentials
+        val offlineMode = (activity as? DashboardActivity)?.isOfflineModeActive() == true
         if (base.isNullOrBlank()) {
             showError(getString(R.string.dashboard_surveys_missing_server))
             swipeRefresh.isRefreshing = false
@@ -194,20 +195,29 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val result = repository.fetchTeamSurveys(base, creds, sessionCookie, team)
-                val documents = result.getOrElse {
-                    val cached = localSurveyRepository.getSavedSurveysForTeam(team)
-                    if (cached.isEmpty()) {
-                        showError(getString(R.string.dashboard_surveys_error_loading))
-                        swipeRefresh.isRefreshing = false
-                        return@launch
+                val documents = if (offlineMode) {
+                    localSurveyRepository.getSavedSurveysForTeam(team)
+                } else {
+                    val result = repository.fetchTeamSurveys(base, creds, sessionCookie, team)
+                    result.getOrElse {
+                        val cached = localSurveyRepository.getSavedSurveysForTeam(team)
+                        if (cached.isEmpty()) {
+                            showError(getString(R.string.dashboard_surveys_error_loading))
+                            swipeRefresh.isRefreshing = false
+                            return@launch
+                        }
+                        cached
                     }
-                    cached
                 }
                 statusStore.ensureNewDefaults(documents.map { it.id })
                 adoptedSurveys = documents.filter { !it.sourceSurveyId.isNullOrBlank() }
                 teamSurveys = documents.filter { it.sourceSurveyId.isNullOrBlank() }
-                fetchCompletionCounts(base, team, documents)
+                if (offlineMode) {
+                    completionCounts.clear()
+                    documents.mapNotNull { it.id }.forEach { id -> completionCounts[id] = 0 }
+                } else {
+                    fetchCompletionCounts(base, team, documents)
+                }
                 savedSurveyIds = localSurveyRepository.getSavedSurveyIds()
                 savedSurveyRevisions = localSurveyRepository.getSavedSurveyRevisions()
                 outboxEntries = localSurveyRepository.getPendingForTeam(team)

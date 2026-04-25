@@ -17,7 +17,7 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.ole.planet.myplanet.lite.util.getStringOrNull
 
-class DashboardSurveyOutboxStore(
+class DashboardSurveyOutboxStore private constructor(
     context: Context,
     moshi: Moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
@@ -214,7 +214,7 @@ class DashboardSurveyOutboxStore(
         val payload: String,
     )
 
-    private companion object {
+    companion object {
         private const val DATABASE_NAME = "dashboard_survey_outbox.db"
         private const val DATABASE_VERSION = 1
         private const val TABLE_SUBMISSIONS = "outbox_submissions"
@@ -225,5 +225,20 @@ class DashboardSurveyOutboxStore(
         private const val COLUMN_SURVEY_NAME = "survey_name"
         private const val COLUMN_CREATED_AT = "created_at"
         private const val COLUMN_PAYLOAD = "payload"
+
+        @Volatile
+        private var instance: DashboardSurveyOutboxStore? = null
+
+        fun getInstance(context: Context): DashboardSurveyOutboxStore {
+            return instance ?: synchronized(this) {
+                instance ?: DashboardSurveyOutboxStore(context.applicationContext).also { instance = it }
+            }
+        }
+
+        fun resetForTesting(context: Context) {
+            instance?.close()
+            instance = null
+            context.deleteDatabase(DATABASE_NAME)
+        }
     }
 }

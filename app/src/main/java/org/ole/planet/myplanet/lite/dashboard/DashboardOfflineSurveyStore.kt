@@ -129,7 +129,7 @@ class DashboardOfflineSurveyStore(
         }
     }
 
-    private companion object {
+    companion object {
         private const val DATABASE_NAME = "dashboard_offline_surveys.db"
         private const val DATABASE_VERSION = 1
         private const val TABLE_SURVEYS = "surveys"
@@ -137,5 +137,20 @@ class DashboardOfflineSurveyStore(
         private const val COLUMN_REV = "rev"
         private const val COLUMN_TEAM_ID = "team_id"
         private const val COLUMN_DOCUMENT = "document"
+
+        @Volatile
+        private var instance: DashboardOfflineSurveyStore? = null
+
+        fun getInstance(context: Context): DashboardOfflineSurveyStore {
+            return instance ?: synchronized(this) {
+                instance ?: DashboardOfflineSurveyStore(context.applicationContext).also { instance = it }
+            }
+        }
+
+        fun resetForTesting(context: Context) {
+            instance?.close()
+            instance = null
+            context.deleteDatabase(DATABASE_NAME)
+        }
     }
 }
