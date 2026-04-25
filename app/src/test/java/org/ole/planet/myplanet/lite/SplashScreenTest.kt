@@ -210,6 +210,7 @@ class SplashScreenTest {
         UserProfileDatabase.getInstance(context).saveProfile(createTestUserProfile())
         setNetworkState(true)
 
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
         mockWebServer.enqueue(MockResponse()
             .setResponseCode(200)
             .setBody("{\"_id\":\"org.couchdb.user:testuser\",\"name\":\"testuser\",\"roles\":[]}"))
@@ -234,6 +235,7 @@ class SplashScreenTest {
         UserProfileDatabase.getInstance(context).saveProfile(createTestUserProfile())
         setNetworkState(true)
 
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
         mockWebServer.enqueue(MockResponse().setResponseCode(401))
 
         val controller = Robolectric.buildActivity(SplashScreen::class.java).create().start().resume()
