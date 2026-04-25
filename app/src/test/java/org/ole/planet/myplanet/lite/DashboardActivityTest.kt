@@ -5,6 +5,7 @@ import android.os.Looper
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.ImageView
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.viewpager2.widget.ViewPager2
 import kotlinx.coroutines.Dispatchers
@@ -17,7 +18,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
@@ -46,69 +46,75 @@ class DashboardActivityTest {
 
     @Test
     fun `activity initializes views correctly`() {
-        val controller = Robolectric.buildActivity(DashboardActivity::class.java).create().start().resume()
-        val activity = controller.get()
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
 
-        val viewPager = activity.findViewById<ViewPager2>(R.id.dashboardViewPager)
-        val surveysContainer = activity.findViewById<FrameLayout>(R.id.dashboardSurveysContainer)
-        val homeIcon = activity.findViewById<ImageView>(R.id.dashboardHomeIcon)
-        val surveysIcon = activity.findViewById<ImageView>(R.id.dashboardSurveysIcon)
-        val coursesIcon = activity.findViewById<ImageView>(R.id.dashboardCoursesIcon)
-        val teamMembersIcon = activity.findViewById<ImageView>(R.id.dashboardTeamMembersIcon)
+                val viewPager = activity.findViewById<ViewPager2>(R.id.dashboardViewPager)
+                val surveysContainer = activity.findViewById<FrameLayout>(R.id.dashboardSurveysContainer)
+                val homeIcon = activity.findViewById<ImageView>(R.id.dashboardHomeIcon)
+                val surveysIcon = activity.findViewById<ImageView>(R.id.dashboardSurveysIcon)
+                val coursesIcon = activity.findViewById<ImageView>(R.id.dashboardCoursesIcon)
+                val teamMembersIcon = activity.findViewById<ImageView>(R.id.dashboardTeamMembersIcon)
 
-        // For robolectric the offline mode kicks in. Offline mode only shows surveys
-        assertEquals("Surveys Container should be visible in offline mode", View.VISIBLE, surveysContainer.visibility)
-        assertEquals("ViewPager should be gone in offline mode", View.GONE, viewPager.visibility)
+                // For robolectric the offline mode kicks in. Offline mode only shows surveys
+                assertEquals("Surveys Container should be visible in offline mode", View.VISIBLE, surveysContainer.visibility)
+                assertEquals("ViewPager should be gone in offline mode", View.GONE, viewPager.visibility)
 
-        assertEquals("Home Icon should be visible", View.VISIBLE, homeIcon.visibility)
-        assertEquals("Surveys Icon should be visible", View.VISIBLE, surveysIcon.visibility)
-        assertEquals("Courses Icon should be visible", View.VISIBLE, coursesIcon.visibility)
-        assertEquals("Team Members Icon should be visible", View.VISIBLE, teamMembersIcon.visibility)
+                assertEquals("Home Icon should be visible", View.VISIBLE, homeIcon.visibility)
+                assertEquals("Surveys Icon should be visible", View.VISIBLE, surveysIcon.visibility)
+                assertEquals("Courses Icon should be visible", View.VISIBLE, coursesIcon.visibility)
+                assertEquals("Team Members Icon should be visible", View.VISIBLE, teamMembersIcon.visibility)
+            }
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+        }
     }
 
     @Test
     fun `bottom navigation switches sections correctly`() {
-        val controller = Robolectric.buildActivity(DashboardActivity::class.java).create().start().resume()
-        val activity = controller.get()
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
+        ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
 
-        val viewPager = activity.findViewById<ViewPager2>(R.id.dashboardViewPager)
-        val surveysContainer = activity.findViewById<FrameLayout>(R.id.dashboardSurveysContainer)
-        val coursesContainer = activity.findViewById<FrameLayout>(R.id.dashboardCoursesContainer)
-        val teamMembersContainer = activity.findViewById<FrameLayout>(R.id.dashboardTeamMembersContainer)
+                val viewPager = activity.findViewById<ViewPager2>(R.id.dashboardViewPager)
+                val surveysContainer = activity.findViewById<FrameLayout>(R.id.dashboardSurveysContainer)
+                val coursesContainer = activity.findViewById<FrameLayout>(R.id.dashboardCoursesContainer)
+                val teamMembersContainer = activity.findViewById<FrameLayout>(R.id.dashboardTeamMembersContainer)
 
-        val surveysIcon = activity.findViewById<ImageView>(R.id.dashboardSurveysIcon)
-        val coursesIcon = activity.findViewById<ImageView>(R.id.dashboardCoursesIcon)
-        val teamMembersIcon = activity.findViewById<ImageView>(R.id.dashboardTeamMembersIcon)
-        val homeIcon = activity.findViewById<ImageView>(R.id.dashboardHomeIcon)
+                val surveysIcon = activity.findViewById<ImageView>(R.id.dashboardSurveysIcon)
+                val coursesIcon = activity.findViewById<ImageView>(R.id.dashboardCoursesIcon)
+                val teamMembersIcon = activity.findViewById<ImageView>(R.id.dashboardTeamMembersIcon)
+                val homeIcon = activity.findViewById<ImageView>(R.id.dashboardHomeIcon)
 
-        // Offline mode defaults to Surveys
-        assertEquals("Surveys Container should be visible initially in offline mode", View.VISIBLE, surveysContainer.visibility)
-        assertEquals("ViewPager should be gone initially in offline mode", View.GONE, viewPager.visibility)
+                // Offline mode defaults to Surveys
+                assertEquals("Surveys Container should be visible initially in offline mode", View.VISIBLE, surveysContainer.visibility)
+                assertEquals("ViewPager should be gone initially in offline mode", View.GONE, viewPager.visibility)
 
-        // Click Courses
-        coursesIcon.performClick()
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
-        assertEquals("Surveys Container should be gone after clicking Courses", View.GONE, surveysContainer.visibility)
-        assertEquals("Courses Container should be visible after clicking Courses", View.VISIBLE, coursesContainer.visibility)
+                // Click Courses
+                coursesIcon.performClick()
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertEquals("Surveys Container should be gone after clicking Courses", View.GONE, surveysContainer.visibility)
+                assertEquals("Courses Container should be visible after clicking Courses", View.VISIBLE, coursesContainer.visibility)
 
-        // Click Surveys
-        surveysIcon.performClick()
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
-        assertEquals("Courses Container should be gone after clicking Surveys", View.GONE, coursesContainer.visibility)
-        assertEquals("Surveys Container should be visible after clicking Surveys", View.VISIBLE, surveysContainer.visibility)
+                // Click Surveys
+                surveysIcon.performClick()
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertEquals("Courses Container should be gone after clicking Surveys", View.GONE, coursesContainer.visibility)
+                assertEquals("Surveys Container should be visible after clicking Surveys", View.VISIBLE, surveysContainer.visibility)
 
-        // Click Team Members (Disabled in offline mode so it shouldn't work)
-        teamMembersIcon.performClick()
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
-        assertEquals("Surveys Container should remain visible", View.VISIBLE, surveysContainer.visibility)
-        assertEquals("Team Members Container should remain gone", View.GONE, teamMembersContainer.visibility)
+                // Click Team Members (Disabled in offline mode so it shouldn't work)
+                teamMembersIcon.performClick()
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertEquals("Surveys Container should remain visible", View.VISIBLE, surveysContainer.visibility)
+                assertEquals("Team Members Container should remain gone", View.GONE, teamMembersContainer.visibility)
 
-        // Click Home (Disabled in offline mode so it shouldn't work)
-        homeIcon.performClick()
-        Shadows.shadowOf(Looper.getMainLooper()).idle()
-        assertEquals("Surveys Container should remain visible", View.VISIBLE, surveysContainer.visibility)
-        assertEquals("ViewPager should remain gone", View.GONE, viewPager.visibility)
+                // Click Home (Disabled in offline mode so it shouldn't work)
+                homeIcon.performClick()
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertEquals("Surveys Container should remain visible", View.VISIBLE, surveysContainer.visibility)
+                assertEquals("ViewPager should remain gone", View.GONE, viewPager.visibility)
+            }
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+        }
     }
 }
