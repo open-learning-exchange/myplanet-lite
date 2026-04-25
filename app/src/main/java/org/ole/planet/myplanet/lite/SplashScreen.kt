@@ -171,7 +171,8 @@ class SplashScreen : BaseActivity() {
         return if (refreshed) {
             DashboardLaunchMode.ONLINE
         } else {
-            DashboardLaunchMode.OFFLINE
+            authService.logout()
+            DashboardLaunchMode.NONE
         }
     }
 
