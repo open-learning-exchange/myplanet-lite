@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.content.Context
+import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -10,7 +11,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.mock
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
