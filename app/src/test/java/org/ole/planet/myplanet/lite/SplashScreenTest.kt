@@ -66,6 +66,7 @@ class SplashScreenTest {
         mockWebServer.shutdown()
     }
 
+    @Suppress("DEPRECATION")
     private fun setNetworkState(isOnline: Boolean) {
         val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
         val shadowConnectivityManager = Shadows.shadowOf(connectivityManager)
