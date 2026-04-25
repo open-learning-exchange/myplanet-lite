@@ -6,6 +6,7 @@ import android.content.SharedPreferences
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.Looper
+import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -116,7 +117,7 @@ class SplashScreenTest {
         )
     }
 
-    private fun waitForNextIntent(controller: org.robolectric.android.controller.ActivityController<SplashScreen>): Intent? {
+    private fun waitForNextIntent(scenario: ActivityScenario<SplashScreen>): Intent? {
         val maxWaitTimeMs = 5000
         val incrementMs = 100
         var totalWaitTime = 0
@@ -126,8 +127,11 @@ class SplashScreenTest {
             Thread.sleep(incrementMs.toLong())
             Shadows.shadowOf(Looper.getMainLooper()).runToEndOfTasks()
 
-            val shadowActivity = Shadows.shadowOf(controller.get())
-            nextIntent = shadowActivity.nextStartedActivity
+            scenario.onActivity { activity ->
+                val shadowActivity = Shadows.shadowOf(activity)
+                nextIntent = shadowActivity.nextStartedActivity
+            }
+
             if (nextIntent != null) {
                 break
             }
@@ -140,13 +144,13 @@ class SplashScreenTest {
     fun `test splash screen routes to MyPlanetLite when no server URL is set`() {
         mockPrefs.edit().clear().commit()
 
-        val controller = Robolectric.buildActivity(SplashScreen::class.java).create().start().resume()
-
-        val nextIntent = waitForNextIntent(controller)
-
-        assertNotNull("Expected nextIntent to not be null", nextIntent)
-        assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
-        assertTrue(nextIntent?.getBooleanExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, false) ?: false)
+        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+            val nextIntent = waitForNextIntent(scenario)
+            assertNotNull("Expected nextIntent to not be null", nextIntent)
+            assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
+            assertTrue(nextIntent?.getBooleanExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, false) ?: false)
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+        }
     }
 
     @Test
@@ -156,13 +160,13 @@ class SplashScreenTest {
         mockAuth.storedToken = null
         AuthDependencies.overrideAuthService(mockAuth)
 
-        val controller = Robolectric.buildActivity(SplashScreen::class.java).create().start().resume()
-
-        val nextIntent = waitForNextIntent(controller)
-
-        assertNotNull("Expected nextIntent to not be null", nextIntent)
-        assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
-        assertTrue(nextIntent?.getBooleanExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, false) ?: false)
+        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+            val nextIntent = waitForNextIntent(scenario)
+            assertNotNull("Expected nextIntent to not be null", nextIntent)
+            assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
+            assertTrue(nextIntent?.getBooleanExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, false) ?: false)
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+        }
     }
 
     @Test
@@ -172,13 +176,13 @@ class SplashScreenTest {
         mockAuth.storedToken = "valid_token"
         AuthDependencies.overrideAuthService(mockAuth)
 
-        val controller = Robolectric.buildActivity(SplashScreen::class.java).create().start().resume()
-
-        val nextIntent = waitForNextIntent(controller)
-
-        assertNotNull("Expected nextIntent to not be null", nextIntent)
-        assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
-        assertTrue(nextIntent?.getBooleanExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, false) ?: false)
+        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+            val nextIntent = waitForNextIntent(scenario)
+            assertNotNull("Expected nextIntent to not be null", nextIntent)
+            assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
+            assertTrue(nextIntent?.getBooleanExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, false) ?: false)
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+        }
     }
 
     @Test
@@ -191,13 +195,13 @@ class SplashScreenTest {
         UserProfileDatabase.getInstance(context).saveProfile(createTestUserProfile())
         setNetworkState(false)
 
-        val controller = Robolectric.buildActivity(SplashScreen::class.java).create().start().resume()
-
-        val nextIntent = waitForNextIntent(controller)
-
-        assertNotNull("Expected nextIntent to not be null for offline", nextIntent)
-        assertEquals(DashboardActivity::class.java.name, nextIntent?.component?.className)
-        assertTrue(nextIntent?.getBooleanExtra(DashboardActivity.EXTRA_OFFLINE_MODE, false) ?: false)
+        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+            val nextIntent = waitForNextIntent(scenario)
+            assertNotNull("Expected nextIntent to not be null for offline", nextIntent)
+            assertEquals(DashboardActivity::class.java.name, nextIntent?.component?.className)
+            assertTrue(nextIntent?.getBooleanExtra(DashboardActivity.EXTRA_OFFLINE_MODE, false) ?: false)
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+        }
     }
 
     @Test
@@ -216,13 +220,13 @@ class SplashScreenTest {
             .setResponseCode(200)
             .setBody("{\"_id\":\"org.couchdb.user:testuser\",\"name\":\"testuser\",\"roles\":[]}"))
 
-        val controller = Robolectric.buildActivity(SplashScreen::class.java).create().start().resume()
-
-        val nextIntent = waitForNextIntent(controller)
-
-        assertNotNull("Expected nextIntent to not be null for online", nextIntent)
-        assertEquals(DashboardActivity::class.java.name, nextIntent?.component?.className)
-        assertEquals(false, nextIntent?.getBooleanExtra(DashboardActivity.EXTRA_OFFLINE_MODE, false))
+        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+            val nextIntent = waitForNextIntent(scenario)
+            assertNotNull("Expected nextIntent to not be null for online", nextIntent)
+            assertEquals(DashboardActivity::class.java.name, nextIntent?.component?.className)
+            assertEquals(false, nextIntent?.getBooleanExtra(DashboardActivity.EXTRA_OFFLINE_MODE, false))
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+        }
     }
 
     @Test
@@ -239,14 +243,14 @@ class SplashScreenTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
         mockWebServer.enqueue(MockResponse().setResponseCode(401))
 
-        val controller = Robolectric.buildActivity(SplashScreen::class.java).create().start().resume()
-
-        val nextIntent = waitForNextIntent(controller)
-
-        assertNotNull("Expected nextIntent to not be null for failed refresh", nextIntent)
-        assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
-        assertTrue(nextIntent?.getBooleanExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, false) ?: false)
-        assertTrue(mockAuth.isLoggedOut)
+        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+            val nextIntent = waitForNextIntent(scenario)
+            assertNotNull("Expected nextIntent to not be null for failed refresh", nextIntent)
+            assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
+            assertTrue(nextIntent?.getBooleanExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, false) ?: false)
+            assertTrue(mockAuth.isLoggedOut)
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+        }
     }
 }
 
