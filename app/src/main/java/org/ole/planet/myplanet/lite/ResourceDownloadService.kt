@@ -7,12 +7,21 @@ import androidx.core.net.toUri
 import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 internal class ResourceDownloadService(
     private val context: Context,
     private val prefsName: String,
     private val downloadedResourcesKey: String
 ) {
+    private val securePrefs by lazy {
+        SecurePreferencesProvider.getEncryptedPreferences(
+            context = context,
+            prefsName = "encrypted_$prefsName",
+            legacyPrefsName = prefsName
+        )
+    }
+
     fun saveDownloadedResourceFile(item: ResourceUi, bytes: ByteArray): File? {
         return runCatching {
             val normalizedResourceFolder = item.id.takeIf { it.isNotBlank() } ?: "_no_id"
@@ -23,7 +32,7 @@ internal class ResourceDownloadService(
     }
 
     fun loadDownloadedResources(): List<ResourceUi> {
-        val raw = context.getSharedPreferences(prefsName, 0)
+        val raw = securePrefs
             .getString(downloadedResourcesKey, "[]")
             .orEmpty()
         val json = runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
@@ -53,7 +62,7 @@ internal class ResourceDownloadService(
     }
 
     fun upsertDownloadedResource(item: ResourceUi) {
-        val prefs = context.getSharedPreferences(prefsName, 0)
+        val prefs = securePrefs
         val existing = runCatching {
             JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty())
         }.getOrElse { JSONArray() }
@@ -84,7 +93,7 @@ internal class ResourceDownloadService(
     }
 
     fun removeDownloadedResource(item: ResourceUi) {
-        val prefs = context.getSharedPreferences(prefsName, 0)
+        val prefs = securePrefs
         val existing = runCatching {
             JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty())
         }.getOrElse { JSONArray() }
