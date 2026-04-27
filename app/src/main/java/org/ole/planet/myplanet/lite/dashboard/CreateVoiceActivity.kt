@@ -38,6 +38,7 @@ import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
+import java.util.ArrayList
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
@@ -1438,9 +1439,13 @@ class CreateVoiceActivity : BaseActivity() {
         val json = JSONObject(rawDocument)
         val attachments = parseAttachmentPayloads(json.optJSONObject("_attachments"))
         val roles = json.optJSONArray("roles")?.let { array ->
-            val collected = mutableListOf<String>()
-            for (index in 0 until array.length()) {
-                array.optString(index).takeIf { it.isNotBlank() }?.let { collected += it }
+            val length = array.length()
+            val collected = ArrayList<String>(length)
+            for (index in 0 until length) {
+                val s = array.optString(index)
+                if (s.isNotBlank()) {
+                    collected.add(s)
+                }
             }
             collected.takeIf { it.isNotEmpty() }
         }
