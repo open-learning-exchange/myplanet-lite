@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Context
-import android.content.ContextWrapper
 import android.content.SharedPreferences
 import android.widget.FrameLayout
 import android.widget.ImageButton
