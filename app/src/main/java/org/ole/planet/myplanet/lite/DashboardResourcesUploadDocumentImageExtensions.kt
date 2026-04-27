@@ -13,13 +13,13 @@ import android.widget.Spinner
 import android.widget.TextView
 import android.widget.Toast
 import androidx.lifecycle.lifecycleScope
+import com.bumptech.glide.Glide
 import com.google.android.material.slider.Slider
 import java.io.File
 import kotlin.math.max
 import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import com.bumptech.glide.Glide
 import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences

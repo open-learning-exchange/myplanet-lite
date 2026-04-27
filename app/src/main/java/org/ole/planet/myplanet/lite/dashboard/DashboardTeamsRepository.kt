@@ -26,7 +26,6 @@ import org.ole.planet.myplanet.lite.util.BirthDateString
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 import org.ole.planet.myplanet.lite.util.nullIfBlank
 
-
 class DashboardTeamsRepository(
     private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()

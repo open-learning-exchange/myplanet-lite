@@ -1,4 +1,5 @@
 package org.ole.planet.myplanet.lite
+
 import android.content.Intent
 import android.content.SharedPreferences
 import androidx.core.content.IntentCompat
@@ -7,7 +8,10 @@ import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.mlkit.common.sdkinternal.MlKitContext
 import org.junit.After
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -16,6 +20,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyD
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+
 @RunWith(RobolectricTestRunner::class)
 class SurveyWizardActivityTest {
     @Before
