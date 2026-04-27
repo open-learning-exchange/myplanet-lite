@@ -1,6 +1,5 @@
 package org.ole.planet.myplanet.lite
 
-import android.content.Context
 import android.content.SharedPreferences
 import android.content.pm.ActivityInfo
 import android.os.Build

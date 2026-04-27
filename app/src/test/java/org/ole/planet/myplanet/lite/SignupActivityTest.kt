@@ -1,18 +1,11 @@
 package org.ole.planet.myplanet.lite
 
-import android.content.Context
-import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Build
 import android.os.Looper
-import android.view.View
 import android.widget.AutoCompleteTextView
 import android.widget.RadioGroup
-import android.widget.TextView
-import androidx.test.core.app.ApplicationProvider
-import com.google.android.material.button.MaterialButton
 import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import java.lang.reflect.Method
 import kotlin.reflect.full.callSuspend
 import kotlin.reflect.full.memberFunctions
@@ -38,7 +31,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
-import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_MALE
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.Robolectric
