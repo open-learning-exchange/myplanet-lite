@@ -8,22 +8,22 @@ import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import org.ole.planet.myplanet.lite.dashboard.DashboardOfflineSurveyStore
+import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertTrue
-import org.junit.Assert.assertFalse
-import org.ole.planet.myplanet.lite.dashboard.DashboardOfflineSurveyStore
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)

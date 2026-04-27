@@ -1,8 +1,8 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Context
-import android.widget.TextView
 import android.widget.ImageButton
+import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.appbar.MaterialToolbar
 import org.junit.Assert.assertNotNull
@@ -10,10 +10,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.android.controller.ActivityController
-import org.mockito.Mockito
 
 @RunWith(RobolectricTestRunner::class)
 class PrivacyPolicyActivityTest {
