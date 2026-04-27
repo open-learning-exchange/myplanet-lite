@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.lite
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import java.io.File
+import java.lang.reflect.Method
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -286,5 +287,37 @@ class OfflineCourseStorageTest {
         assertNotNull(uri)
         assertTrue(uri?.startsWith("file:/") == true)
         assertTrue(uri?.endsWith(".jpg") == true)
+    }
+
+    @Test
+    fun testSha256() {
+        val method: Method = OfflineCourseStorage::class.java.getDeclaredMethod("sha256", String::class.java)
+        method.isAccessible = true
+
+        val input = "test string"
+        val expected = "d5579c46dfcc7f18207013e65b44e4cb4e2c2298f4ac457ba8f82743f31e930b"
+        val result = method.invoke(OfflineCourseStorage, input) as String
+        assertEquals(expected, result)
+
+        val emptyInput = ""
+        val emptyExpected = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+        val emptyResult = method.invoke(OfflineCourseStorage, emptyInput) as String
+        assertEquals(emptyExpected, emptyResult)
+    }
+
+    @Test
+    fun testLegacySha1() {
+        val method: Method = OfflineCourseStorage::class.java.getDeclaredMethod("legacySha1", String::class.java)
+        method.isAccessible = true
+
+        val input = "test string"
+        val expected = "661295c9cbf9d6b2f6428414504a8deed3020641"
+        val result = method.invoke(OfflineCourseStorage, input) as String
+        assertEquals(expected, result)
+
+        val emptyInput = ""
+        val emptyExpected = "da39a3ee5e6b4b0d3255bfef95601890afd80709"
+        val emptyResult = method.invoke(OfflineCourseStorage, emptyInput) as String
+        assertEquals(emptyExpected, emptyResult)
     }
 }
