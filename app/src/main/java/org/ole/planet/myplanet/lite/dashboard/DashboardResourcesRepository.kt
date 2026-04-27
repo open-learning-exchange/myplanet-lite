@@ -18,7 +18,6 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.lite.util.BirthDateString
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
-
 class DashboardResourcesRepository {
 
     private val client: OkHttpClient = OkHttpClient.Builder().build()
