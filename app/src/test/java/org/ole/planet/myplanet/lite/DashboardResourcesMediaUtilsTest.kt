@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
+import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -57,29 +58,64 @@ class DashboardResourcesMediaUtilsTest {
     }
 
     @Test
-    fun testApplyWebCompatibleResourceDefaults() {
+    fun applyWebCompatibleResourceDefaults_addsMissingFields() {
         val payload = JSONObject()
+
         DashboardResourcesMediaUtils.applyWebCompatibleResourceDefaults(payload)
 
+        assertTrue(payload.has("author"))
         assertEquals("", payload.getString("author"))
-        assertEquals("", payload.getString("year"))
-        assertEquals("", payload.getString("publisher"))
-        assertEquals("", payload.getString("linkToLicense"))
-        assertEquals("", payload.getString("openWith"))
-        assertEquals(0, payload.getJSONArray("resourceFor").length())
-        assertEquals("", payload.getString("medium"))
-        assertEquals("", payload.getString("resourceType"))
 
-        val existingPayload = JSONObject().apply {
+        assertTrue(payload.has("year"))
+        assertEquals("", payload.getString("year"))
+
+        assertTrue(payload.has("publisher"))
+        assertEquals("", payload.getString("publisher"))
+
+        assertTrue(payload.has("linkToLicense"))
+        assertEquals("", payload.getString("linkToLicense"))
+
+        assertTrue(payload.has("openWith"))
+        assertEquals("", payload.getString("openWith"))
+
+        assertTrue(payload.has("resourceFor"))
+        val resourceForArray = payload.getJSONArray("resourceFor")
+        assertEquals(0, resourceForArray.length())
+
+        assertTrue(payload.has("medium"))
+        assertEquals("", payload.getString("medium"))
+
+        assertTrue(payload.has("resourceType"))
+        assertEquals("", payload.getString("resourceType"))
+    }
+
+    @Test
+    fun applyWebCompatibleResourceDefaults_preservesExistingFields() {
+        val payload = JSONObject().apply {
             put("author", "Test Author")
             put("year", "2023")
+            put("publisher", "Test Publisher")
+            put("linkToLicense", "http://license.com")
+            put("openWith", "PDF Viewer")
+            put("resourceFor", JSONArray().apply { put("Test Group") })
+            put("medium", "digital")
+            put("resourceType", "book")
         }
 
-        DashboardResourcesMediaUtils.applyWebCompatibleResourceDefaults(existingPayload)
+        DashboardResourcesMediaUtils.applyWebCompatibleResourceDefaults(payload)
 
-        assertEquals("Test Author", existingPayload.getString("author"))
-        assertEquals("2023", existingPayload.getString("year"))
-        assertEquals("", existingPayload.getString("publisher"))
+        assertEquals("Test Author", payload.getString("author"))
+        assertEquals("2023", payload.getString("year"))
+        assertEquals("Test Publisher", payload.getString("publisher"))
+        assertEquals("http://license.com", payload.getString("linkToLicense"))
+        assertEquals("PDF Viewer", payload.getString("openWith"))
+
+        val resourceForArray = payload.getJSONArray("resourceFor")
+        assertEquals(1, resourceForArray.length())
+        assertEquals("Test Group", resourceForArray.getString(0))
+
+        assertEquals("digital", payload.getString("medium"))
+        assertEquals("book", payload.getString("resourceType"))
     }
 
     @Test
@@ -165,24 +201,14 @@ class DashboardResourcesMediaUtilsTest {
         assertEquals(
             211111L,
             DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
-                1000000L,
-                1080,
-                720,
-                10000L,
-                0L,
-                5000L
+                1000000L, 1080, 720, 10000L, 0L, 5000L
             )
         )
 
         assertEquals(
             65536L,
             DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
-                1L,
-                1080,
-                720,
-                10000L,
-                0L,
-                5000L
+                1L, 1080, 720, 10000L, 0L, 5000L
             )
         )
     }
