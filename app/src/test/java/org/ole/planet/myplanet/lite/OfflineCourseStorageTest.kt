@@ -287,4 +287,34 @@ class OfflineCourseStorageTest {
         assertTrue(uri?.startsWith("file:/") == true)
         assertTrue(uri?.endsWith(".jpg") == true)
     }
+
+    @Test
+    fun testLegacySha1() {
+        val method = OfflineCourseStorage::class.java.getDeclaredMethod("legacySha1", String::class.java)
+        method.isAccessible = true
+
+        val emptyHash = method.invoke(OfflineCourseStorage, "") as String
+        assertEquals("da39a3ee5e6b4b0d3255bfef95601890afd80709", emptyHash)
+
+        val testHash = method.invoke(OfflineCourseStorage, "test") as String
+        assertEquals("a94a8fe5ccb19ba61c4c0873d391e987982fbbd3", testHash)
+
+        val specialCharsHash = method.invoke(OfflineCourseStorage, "test@123! \n") as String
+        assertEquals("d15229ba5391227d0c41c5705b9d9c4bf1497b0c", specialCharsHash)
+    }
+
+    @Test
+    fun testSha256() {
+        val method = OfflineCourseStorage::class.java.getDeclaredMethod("sha256", String::class.java)
+        method.isAccessible = true
+
+        val emptyHash = method.invoke(OfflineCourseStorage, "") as String
+        assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", emptyHash)
+
+        val testHash = method.invoke(OfflineCourseStorage, "test") as String
+        assertEquals("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", testHash)
+
+        val specialCharsHash = method.invoke(OfflineCourseStorage, "test@123! \n") as String
+        assertEquals("0cfd4bc47bbb9810356c301eb59acad0362c2846fdf3197115e8e2f1842f43fd", specialCharsHash)
+    }
 }

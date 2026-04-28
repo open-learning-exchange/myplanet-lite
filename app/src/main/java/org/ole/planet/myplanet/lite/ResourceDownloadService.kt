@@ -23,7 +23,7 @@ internal class ResourceDownloadService(
     }
 
     fun loadDownloadedResources(): List<ResourceUi> {
-        val raw = context.getSharedPreferences(prefsName, 0)
+        val raw = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
             .getString(downloadedResourcesKey, "[]")
             .orEmpty()
         val json = runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
@@ -53,7 +53,7 @@ internal class ResourceDownloadService(
     }
 
     fun upsertDownloadedResource(item: ResourceUi) {
-        val prefs = context.getSharedPreferences(prefsName, 0)
+        val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         val existing = runCatching {
             JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty())
         }.getOrElse { JSONArray() }
@@ -84,7 +84,7 @@ internal class ResourceDownloadService(
     }
 
     fun removeDownloadedResource(item: ResourceUi) {
-        val prefs = context.getSharedPreferences(prefsName, 0)
+        val prefs = context.getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         val existing = runCatching {
             JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty())
         }.getOrElse { JSONArray() }
