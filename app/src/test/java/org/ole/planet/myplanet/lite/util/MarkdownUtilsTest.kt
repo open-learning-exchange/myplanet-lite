@@ -99,4 +99,65 @@ class MarkdownUtilsTest {
         val expected = "![alt](http://base/db/image1.png) ![html](http://base/db/image2.png)"
         assertEquals(expected, result)
     }
+
+    @Test
+    fun replaceImagePlaceholder_emptyAltText_returnsReplacement() {
+        val source = "Some text ![](image.png) here"
+        val replacement = "![new](new.png)"
+        val expected = "Some text ![new](new.png) here"
+        assertEquals(expected, MarkdownUtils.replaceImagePlaceholder(source, "image.png", replacement))
+    }
+
+    @Test
+    fun replaceImagePlaceholder_withAltText_insertsAltTextIntoReplacement() {
+        val source = "Some text ![alt text](image.png) here"
+        val replacement = "![](new.png)"
+        val expected = "Some text ![alt text](new.png) here"
+        assertEquals(expected, MarkdownUtils.replaceImagePlaceholder(source, "image.png", replacement))
+    }
+
+    @Test
+    fun replaceImagePlaceholder_noMatch_appendsReplacement() {
+        val source = "Some text"
+        val replacement = "![new](new.png)"
+        val expected = "Some text\n\n![new](new.png)"
+        assertEquals(expected, MarkdownUtils.replaceImagePlaceholder(source, "image.png", replacement))
+
+        val sourceEmpty = ""
+        val expectedEmpty = "![new](new.png)"
+        assertEquals(expectedEmpty, MarkdownUtils.replaceImagePlaceholder(sourceEmpty, "image.png", replacement))
+    }
+
+    @Test
+    fun applyAltText_emptyAltText_returnsOriginal() {
+        val markdown = "![](image.png)"
+        assertEquals(markdown, MarkdownUtils.applyAltText(markdown, "   "))
+        assertEquals(markdown, MarkdownUtils.applyAltText(markdown, ""))
+    }
+
+    @Test
+    fun applyAltText_noBrackets_returnsOriginal() {
+        val markdown = "image.png"
+        assertEquals(markdown, MarkdownUtils.applyAltText(markdown, "alt text"))
+
+        val markdownMissingOpen = "image.png]"
+        assertEquals(markdownMissingOpen, MarkdownUtils.applyAltText(markdownMissingOpen, "alt text"))
+
+        val markdownMissingClose = "[image.png"
+        assertEquals(markdownMissingClose, MarkdownUtils.applyAltText(markdownMissingClose, "alt text"))
+
+        val markdownWrongOrder = "]image.png["
+        assertEquals(markdownWrongOrder, MarkdownUtils.applyAltText(markdownWrongOrder, "alt text"))
+    }
+
+    @Test
+    fun applyAltText_validBrackets_insertsAltText() {
+        val markdown = "![](image.png)"
+        val expected = "![myalt](image.png)"
+        assertEquals(expected, MarkdownUtils.applyAltText(markdown, "myalt"))
+
+        val markdownWithExisting = "![old](image.png)"
+        val expectedExisting = "![myalt](image.png)"
+        assertEquals(expectedExisting, MarkdownUtils.applyAltText(markdownWithExisting, "myalt"))
+    }
 }
