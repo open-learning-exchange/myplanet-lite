@@ -62,22 +62,32 @@ class SurveyTranslationCache private constructor(
                 null,
                 null,
             )
-            cursor.use {
-                buildMap {
-                    val indexQuestionIndex = cursor.getColumnIndexOrThrow(COLUMN_QUESTION_INDEX)
-                    val indexBody = cursor.getColumnIndexOrThrow(COLUMN_BODY)
-                    val indexChoices = cursor.getColumnIndexOrThrow(COLUMN_CHOICES)
+            val rawData = cursor.use { c ->
+                val indexQuestionIndex = c.getColumnIndexOrThrow(COLUMN_QUESTION_INDEX)
+                val indexBody = c.getColumnIndexOrThrow(COLUMN_BODY)
+                val indexChoices = c.getColumnIndexOrThrow(COLUMN_CHOICES)
 
-                    while (cursor.moveToNext()) {
-                        val questionIndex = cursor.getInt(indexQuestionIndex)
-                        val body = cursor.getStringOrNull(indexBody)
-                        val choices = cursor.getStringOrNull(indexChoices)
-                            ?.let { choicesAdapter.fromJson(it) }
-                            ?: emptyList()
-                        put(questionIndex, SurveyTranslationManager.TranslatedQuestion(body, choices))
-                    }
+                val count = c.count
+                val questionIndices = IntArray(count)
+                val bodies = arrayOfNulls<String>(count)
+                val choicesList = arrayOfNulls<String>(count)
+
+                var i = 0
+                while (c.moveToNext()) {
+                    questionIndices[i] = c.getInt(indexQuestionIndex)
+                    bodies[i] = c.getStringOrNull(indexBody)
+                    choicesList[i] = c.getStringOrNull(indexChoices)
+                    i++
                 }
+                Triple(questionIndices, bodies, choicesList)
             }
+
+            val result = HashMap<Int, SurveyTranslationManager.TranslatedQuestion>(rawData.first.size)
+            for (i in rawData.first.indices) {
+                val choices = rawData.third[i]?.let { choicesAdapter.fromJson(it) } ?: emptyList()
+                result[rawData.first[i]] = SurveyTranslationManager.TranslatedQuestion(rawData.second[i], choices)
+            }
+            result
         }
     }
 
