@@ -38,6 +38,7 @@ class DashboardResourcesMediaUtilsTest {
             151200000L,
             DashboardResourcesMediaUtils.estimateAudioUploadSizeBytes(320, 3600000L)
         )
+    }
     fun `extensionForImageMimeType returns png for png mime types`() {
         assertEquals("png", DashboardResourcesMediaUtils.extensionForImageMimeType("image/png"))
         assertEquals("png", DashboardResourcesMediaUtils.extensionForImageMimeType("image/x-png"))
