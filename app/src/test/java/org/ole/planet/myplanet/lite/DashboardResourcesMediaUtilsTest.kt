@@ -27,11 +27,13 @@ class DashboardResourcesMediaUtilsTest {
     @Test
     fun sanitizeResourceName_replacesSpacesWithUnderscores() {
         assertEquals("file_name_with_spaces", DashboardResourcesMediaUtils.sanitizeResourceName("file name with spaces"))
+        assertEquals("My_Resource", DashboardResourcesMediaUtils.sanitizeResourceName("My Resource!"))
     }
 
     @Test
     fun sanitizeResourceName_removesSpecialCharacters() {
         assertEquals("file_name", DashboardResourcesMediaUtils.sanitizeResourceName("file!@#$%^&*()name"))
+        assertEquals("test-name_123", DashboardResourcesMediaUtils.sanitizeResourceName("test-name@123"))
     }
 
     @Test
@@ -40,21 +42,32 @@ class DashboardResourcesMediaUtilsTest {
             "file_name---with_multiple_underscores",
             DashboardResourcesMediaUtils.sanitizeResourceName("file___name---with___multiple___underscores")
         )
+        assertEquals("a_b_c", DashboardResourcesMediaUtils.sanitizeResourceName("a____b!!!!c"))
     }
 
     @Test
     fun sanitizeResourceName_removesLeadingAndTrailingUnderscores() {
         assertEquals("file_name", DashboardResourcesMediaUtils.sanitizeResourceName("___file_name___"))
+        assertEquals("trimmed", DashboardResourcesMediaUtils.sanitizeResourceName("___trimmed___"))
     }
 
     @Test
     fun sanitizeResourceName_emptyString_defaultsToResourcePrefix() {
-        assertTrue(DashboardResourcesMediaUtils.sanitizeResourceName("").startsWith("resource_"))
+        val result = DashboardResourcesMediaUtils.sanitizeResourceName("")
+        assertTrue(result.startsWith("resource_"))
+        assertTrue(result.substringAfter("resource_").toLong() > 0)
     }
 
     @Test
     fun sanitizeResourceName_blankString_defaultsToResourcePrefix() {
-        assertTrue(DashboardResourcesMediaUtils.sanitizeResourceName("   ").startsWith("resource_"))
+        val result = DashboardResourcesMediaUtils.sanitizeResourceName("   ")
+        assertTrue(result.startsWith("resource_"))
+        assertTrue(result.substringAfter("resource_").toLong() > 0)
+    }
+
+    @Test
+    fun sanitizeResourceName_onlySpecialCharacters_defaultsToResourcePrefix() {
+        assertTrue(DashboardResourcesMediaUtils.sanitizeResourceName("!!!").startsWith("resource_"))
     }
 
     @Test
@@ -65,26 +78,18 @@ class DashboardResourcesMediaUtilsTest {
 
         assertTrue(payload.has("author"))
         assertEquals("", payload.getString("author"))
-
         assertTrue(payload.has("year"))
         assertEquals("", payload.getString("year"))
-
         assertTrue(payload.has("publisher"))
         assertEquals("", payload.getString("publisher"))
-
         assertTrue(payload.has("linkToLicense"))
         assertEquals("", payload.getString("linkToLicense"))
-
         assertTrue(payload.has("openWith"))
         assertEquals("", payload.getString("openWith"))
-
         assertTrue(payload.has("resourceFor"))
-        val resourceForArray = payload.getJSONArray("resourceFor")
-        assertEquals(0, resourceForArray.length())
-
+        assertEquals(0, payload.getJSONArray("resourceFor").length())
         assertTrue(payload.has("medium"))
         assertEquals("", payload.getString("medium"))
-
         assertTrue(payload.has("resourceType"))
         assertEquals("", payload.getString("resourceType"))
     }
@@ -109,17 +114,15 @@ class DashboardResourcesMediaUtilsTest {
         assertEquals("Test Publisher", payload.getString("publisher"))
         assertEquals("http://license.com", payload.getString("linkToLicense"))
         assertEquals("PDF Viewer", payload.getString("openWith"))
-
-        val resourceForArray = payload.getJSONArray("resourceFor")
-        assertEquals(1, resourceForArray.length())
-        assertEquals("Test Group", resourceForArray.getString(0))
-
+        assertEquals(1, payload.getJSONArray("resourceFor").length())
+        assertEquals("Test Group", payload.getJSONArray("resourceFor").getString(0))
         assertEquals("digital", payload.getString("medium"))
         assertEquals("book", payload.getString("resourceType"))
     }
 
     @Test
     fun testNormalizeResourceMediaType() {
+        assertEquals("image", DashboardResourcesMediaUtils.normalizeResourceMediaType("image/jpeg"))
         assertEquals("image", DashboardResourcesMediaUtils.normalizeResourceMediaType("IMAGE/PNG"))
         assertEquals("video", DashboardResourcesMediaUtils.normalizeResourceMediaType("video/mp4"))
         assertEquals("audio", DashboardResourcesMediaUtils.normalizeResourceMediaType("audio/mpeg"))
@@ -132,16 +135,15 @@ class DashboardResourcesMediaUtilsTest {
         assertEquals("png", DashboardResourcesMediaUtils.extensionForImageMimeType("image/png"))
         assertEquals("png", DashboardResourcesMediaUtils.extensionForImageMimeType("image/x-png"))
         assertEquals("png", DashboardResourcesMediaUtils.extensionForImageMimeType("PNG"))
-
         assertEquals("webp", DashboardResourcesMediaUtils.extensionForImageMimeType("image/webp"))
         assertEquals("webp", DashboardResourcesMediaUtils.extensionForImageMimeType("WEBP"))
-
         assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("image/jpeg"))
         assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("image/gif"))
         assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("image/bmp"))
         assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("application/pdf"))
         assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType(""))
         assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("UNKNOWN"))
+        assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("unknown"))
         assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("unknown/mime"))
     }
 
@@ -151,15 +153,12 @@ class DashboardResourcesMediaUtilsTest {
             1080 to listOf(480, 576, 720, 1080),
             1920 to listOf(480, 576, 720, 1080),
             2160 to listOf(480, 576, 720, 1080),
-
             720 to listOf(480, 576, 720),
             800 to listOf(480, 576, 720),
             1079 to listOf(480, 576, 720),
-
             576 to listOf(480, 576),
             600 to listOf(480, 576),
             719 to listOf(480, 576),
-
             575 to listOf(480),
             480 to listOf(480),
             360 to listOf(480),
@@ -169,11 +168,7 @@ class DashboardResourcesMediaUtilsTest {
         )
 
         cases.forEach { (input, expected) ->
-            assertEquals(
-                "Failed for height $input",
-                expected,
-                DashboardResourcesMediaUtils.allowedVideoHeights(input)
-            )
+            assertEquals("Failed for height $input", expected, DashboardResourcesMediaUtils.allowedVideoHeights(input))
         }
     }
 
@@ -205,9 +200,11 @@ class DashboardResourcesMediaUtilsTest {
     @Test
     fun testFormatDurationMs() {
         assertEquals("00:00", DashboardResourcesMediaUtils.formatDurationMs(0L))
+        assertEquals("00:00", DashboardResourcesMediaUtils.formatDurationMs(-1000L))
         assertEquals("00:05", DashboardResourcesMediaUtils.formatDurationMs(5000L))
         assertEquals("01:05", DashboardResourcesMediaUtils.formatDurationMs(65000L))
         assertEquals("1:00:00", DashboardResourcesMediaUtils.formatDurationMs(3600000L))
+        assertEquals("1:00:05", DashboardResourcesMediaUtils.formatDurationMs(3605000L))
         assertEquals("1:01:05", DashboardResourcesMediaUtils.formatDurationMs(3665000L))
     }
 
@@ -240,7 +237,6 @@ class DashboardResourcesMediaUtilsTest {
         val context = mock(Context::class.java)
         val resources = mock(Resources::class.java)
         val configuration = mock(Configuration::class.java)
-
         val options = listOf("English", "French", "Spanish")
 
         `when`(context.getString(R.string.language_name_english)).thenReturn("English")
