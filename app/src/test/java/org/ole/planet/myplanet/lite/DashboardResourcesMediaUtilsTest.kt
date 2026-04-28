@@ -150,7 +150,7 @@ class DashboardResourcesMediaUtilsTest {
         assertEquals(1, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, options))
 
         // Test Spanish locale
-        val localesSpanish = android.os.LocaleList(Locale("es"))
+        val localesSpanish = android.os.LocaleList(Locale.forLanguageTag("es"))
         `when`(configuration.locales).thenReturn(localesSpanish)
         assertEquals(2, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, options))
 
