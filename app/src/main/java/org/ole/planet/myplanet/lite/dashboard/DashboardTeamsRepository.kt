@@ -44,6 +44,7 @@ class DashboardTeamsRepository(
     private val teamsResponseAdapter = moshi.adapter(TeamsFindResponse::class.java)
     private val availableTeamsRequestAdapter = moshi.adapter(NonMemberTeamsFindRequest::class.java)
     private val joinRequestFindAdapter = moshi.adapter(JoinRequestFindRequest::class.java)
+    private val teamJoinRequestFindAdapter = moshi.adapter(TeamJoinRequestFindRequest::class.java)
     private val joinRequestFindResponseAdapter = moshi.adapter(JoinRequestFindResponse::class.java)
     private val joinTeamRequestAdapter = moshi.adapter(JoinTeamRequest::class.java)
     private val deleteJoinRequestAdapter = moshi.adapter(DeleteDocumentRequest::class.java)
@@ -480,6 +481,59 @@ class DashboardTeamsRepository(
                     userId = userId,
                 )
                 val payload = joinRequestFindAdapter.toJson(JoinRequestFindRequest(selector))
+                val requestBuilder = Request.Builder()
+                    .url("$normalizedBase/db/teams/_find")
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                credentials?.let {
+                    requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
+                }
+                sessionCookie.nullIfBlank()?.let { cookie ->
+                    requestBuilder.addHeader("Cookie", cookie)
+                }
+
+                client.newCall(requestBuilder.build()).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}")
+                    }
+                    val body = response.body.string()
+                    joinRequestFindResponseAdapter.fromJson(body)?.docs ?: emptyList()
+                }
+            }
+        }
+    }
+
+    suspend fun fetchTeamJoinRequests(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamId: String,
+        teamPlanetCode: String,
+    ): Result<List<JoinRequestDocument>> {
+        return withContext(dispatcher) {
+            runCatching {
+                val normalizedBase = baseUrl.trim().trimEnd('/')
+                if (normalizedBase.isEmpty()) {
+                    throw IOException("Missing server base URL")
+                }
+                if (teamId.isBlank()) {
+                    throw IOException("Missing team id")
+                }
+                if (teamPlanetCode.isBlank()) {
+                    throw IOException("Missing team planet code")
+                }
+
+                val selector = TeamJoinRequestSelector(
+                    teamId = teamId,
+                    teamPlanetCode = teamPlanetCode,
+                    docType = "request",
+                    status = StatusClause(
+                        or = listOf(
+                            StatusCondition(exists = false),
+                            StatusCondition(notEquals = "archived")
+                        )
+                    )
+                )
+                val payload = teamJoinRequestFindAdapter.toJson(TeamJoinRequestFindRequest(selector))
                 val requestBuilder = Request.Builder()
                     .url("$normalizedBase/db/teams/_find")
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
@@ -972,6 +1026,17 @@ class DashboardTeamsRepository(
         val teamType: String? = null,
         val teamId: String? = null,
         val userId: String,
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class TeamJoinRequestFindRequest(val selector: TeamJoinRequestSelector)
+
+    @JsonClass(generateAdapter = true)
+    data class TeamJoinRequestSelector(
+        val teamId: String,
+        val teamPlanetCode: String,
+        val docType: String,
+        val status: StatusClause,
     )
 
     @JsonClass(generateAdapter = true)

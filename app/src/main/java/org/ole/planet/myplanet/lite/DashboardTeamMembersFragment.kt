@@ -39,11 +39,13 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamMemberProfileActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.JoinRequestDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamMemberDetails
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.UserDocument
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.ole.planet.myplanet.lite.databinding.FragmentDashboardTeamMembersBinding
 import org.ole.planet.myplanet.lite.databinding.ItemInviteMemberBinding
+import org.ole.planet.myplanet.lite.databinding.ItemTeamJoinRequestBinding
 import org.ole.planet.myplanet.lite.databinding.ItemTeamMemberBinding
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
@@ -69,8 +71,21 @@ class DashboardTeamMembersFragment : Fragment() {
             confirmMemberRemoval(member)
         }
     )
+    private val joinRequestsAdapter = TeamJoinRequestsAdapter(
+        avatarBinder = { imageView, username, hasAvatar ->
+            val shouldAttemptLoad = hasAvatar || !username.isNullOrBlank()
+            avatarLoader?.bind(imageView, username, shouldAttemptLoad)
+        },
+        onAcceptClicked = { request ->
+            confirmAcceptJoinRequest(request)
+        },
+        onRejectClicked = { request ->
+            confirmRejectJoinRequest(request)
+        },
+    )
 
     private var currentMembers: List<TeamMemberDetails> = emptyList()
+    private var currentJoinRequests: List<TeamJoinRequestUiModel> = emptyList()
     private var searchQuery: String = ""
     private var currentTeamId: String? = null
     private var baseUrl: String? = null
@@ -100,6 +115,11 @@ class DashboardTeamMembersFragment : Fragment() {
         binding.dashboardTeamMembersList.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@DashboardTeamMembersFragment.adapter
+            addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
+        }
+        binding.dashboardTeamJoinRequestsList.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = this@DashboardTeamMembersFragment.joinRequestsAdapter
             addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
         }
         binding.dashboardTeamMembersSwipeRefresh.setOnRefreshListener { onRefreshRequested() }
@@ -225,6 +245,29 @@ class DashboardTeamMembersFragment : Fragment() {
         showLoading(!isPullToRefresh)
         fetchJob?.cancel()
         fetchJob = viewLifecycleOwner.lifecycleScope.launch {
+            val teamPlanetCodeForRequests = currentTeamPlanetCode ?: serverPlanetCode
+            val joinRequests = if (teamPlanetCodeForRequests.isNullOrBlank()) {
+                emptyList<JoinRequestDocument>()
+            } else {
+                repository.fetchTeamJoinRequests(
+                    baseUrl = base,
+                    credentials = creds,
+                    sessionCookie = sessionCookie,
+                    teamId = teamId,
+                    teamPlanetCode = teamPlanetCodeForRequests,
+                ).getOrElse {
+                    showJoinRequestsError()
+                    null
+                }
+            }
+            if (joinRequests != null) {
+                loadJoinRequestsData(base, creds, joinRequests)
+            } else {
+                currentJoinRequests = emptyList()
+                joinRequestsAdapter.submitList(emptyList())
+                binding.dashboardTeamJoinRequestsList.isVisible = false
+            }
+
             val result = repository.fetchTeamMemberDetails(base, creds, sessionCookie, teamId)
             val members = result.getOrElse {
                 showEmptyState(getString(R.string.dashboard_team_members_error_loading))
@@ -273,9 +316,47 @@ class DashboardTeamMembersFragment : Fragment() {
         }
     }
 
+    private suspend fun loadJoinRequestsData(
+        base: String,
+        creds: StoredCredentials,
+        joinRequests: List<JoinRequestDocument>
+    ) {
+        if (joinRequests.isEmpty()) {
+            currentJoinRequests = emptyList()
+            updateJoinRequestsAdapterList(emptyList())
+            showJoinRequestsEmptyState()
+            return
+        }
+
+        val userIds = joinRequests.mapNotNull { it.userId?.takeIf(String::isNotBlank) }.distinct()
+        val profilesById = repository.fetchUserProfiles(base, creds, sessionCookie, userIds)
+            .getOrDefault(emptyList())
+            .associateBy { it._id }
+        val requests = joinRequests.map { request ->
+            val userId = request.userId.orEmpty()
+            val profile = profilesById[userId]
+            val username = userId.substringAfter("org.couchdb.user:", userId)
+            val fullName = listOfNotNull(
+                profile?.firstName,
+                profile?.middleName,
+                profile?.lastName
+            ).filter { it.isNotBlank() }.joinToString(" ").ifBlank { username }
+            TeamJoinRequestUiModel(
+                id = request.id ?: userId,
+                username = username,
+                fullName = fullName,
+                hasAvatar = profile?.attachments?.image != null,
+                request = request,
+            )
+        }.sortedBy { it.fullName.lowercase() }
+
+        currentJoinRequests = requests
+        updateJoinRequestsAdapterList(requests)
+    }
+
     private fun showLoading(loading: Boolean) {
         binding.dashboardTeamMembersLoading.isVisible = loading
-        binding.dashboardTeamMembersList.isVisible = !loading
+        binding.dashboardTeamMembersContent.isVisible = !loading
         if (loading) {
             binding.dashboardTeamMembersSearchEmptyView.isVisible = false
         }
@@ -287,12 +368,14 @@ class DashboardTeamMembersFragment : Fragment() {
             updateTeamMembersAdapterList(emptyList())
             binding.dashboardTeamMembersSearchEmptyView.isVisible = false
             binding.dashboardTeamMembersList.isVisible = false
+            binding.dashboardTeamMembersListTitle.isVisible = false
             return
         }
         if (query.isEmpty()) {
             updateTeamMembersAdapterList(currentMembers)
             binding.dashboardTeamMembersSearchEmptyView.isVisible = false
             binding.dashboardTeamMembersList.isVisible = true
+            binding.dashboardTeamMembersListTitle.isVisible = true
             return
         }
         val filtered = currentMembers.filter { member ->
@@ -304,19 +387,37 @@ class DashboardTeamMembersFragment : Fragment() {
         val hasResults = filtered.isNotEmpty()
         binding.dashboardTeamMembersSearchEmptyView.isVisible = !hasResults
         binding.dashboardTeamMembersList.isVisible = hasResults
+        binding.dashboardTeamMembersListTitle.isVisible = hasResults
     }
 
     private fun showEmptyState(message: String) {
         showLoading(false)
         binding.dashboardTeamMembersSearchEmptyView.text = message
         binding.dashboardTeamMembersSearchEmptyView.isVisible = true
-        binding.dashboardTeamMembersList.isVisible = false
+        binding.dashboardTeamMembersContent.isVisible = false
         currentMembers = emptyList()
+        currentJoinRequests = emptyList()
         currentTeamPlanetCode = null
         currentTeamType = null
         updateTeamMembersAdapterList(emptyList())
+        updateJoinRequestsAdapterList(emptyList())
         isCurrentUserTeamLeader = false
         updateLeaderActionsVisibility()
+    }
+
+    private fun showJoinRequestsEmptyState() {
+        binding.dashboardTeamJoinRequestsTitle.isVisible = false
+        binding.dashboardTeamJoinRequestsList.isVisible = false
+    }
+
+    private fun showJoinRequestsError() {
+        binding.dashboardTeamJoinRequestsTitle.isVisible = false
+        binding.dashboardTeamJoinRequestsList.isVisible = false
+        Toast.makeText(
+            requireContext(),
+            getString(R.string.dashboard_team_members_requests_error_loading),
+            Toast.LENGTH_SHORT
+        ).show()
     }
 
     private fun updateLeaderActionsVisibility() {
@@ -326,6 +427,139 @@ class DashboardTeamMembersFragment : Fragment() {
     private fun updateTeamMembersAdapterList(list: List<TeamMemberDetails>) {
         val uiModels = list.map { TeamMemberUiModel(it, isCurrentUserTeamLeader, currentUsername) }
         adapter.submitList(uiModels)
+    }
+
+    private fun updateJoinRequestsAdapterList(list: List<TeamJoinRequestUiModel>) {
+        joinRequestsAdapter.submitList(list)
+        val hasRequests = list.isNotEmpty()
+        binding.dashboardTeamJoinRequestsTitle.isVisible = hasRequests
+        binding.dashboardTeamJoinRequestsTitle.text = getString(R.string.dashboard_team_members_requests_title)
+        binding.dashboardTeamJoinRequestsList.isVisible = hasRequests
+    }
+
+    private fun acceptJoinRequest(request: TeamJoinRequestUiModel) {
+        val base = baseUrl
+        val creds = credentials
+        val teamId = request.request.teamId
+        val userId = request.request.userId
+        val teamPlanetCode = request.request.teamPlanetCode ?: currentTeamPlanetCode ?: serverPlanetCode
+        val userPlanetCode = request.request.userPlanetCode ?: serverPlanetCode
+        val requestId = request.request.id
+        val requestRevision = request.request.revision
+
+        if (
+            base.isNullOrBlank() || creds == null ||
+            teamId.isNullOrBlank() || userId.isNullOrBlank() ||
+            teamPlanetCode.isNullOrBlank() || userPlanetCode.isNullOrBlank() ||
+            requestId.isNullOrBlank() || requestRevision.isNullOrBlank()
+        ) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.dashboard_invite_members_add_error_generic),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+
+        viewLifecycleOwner.lifecycleScope.launch {
+            val addResult = repository.addTeamMember(
+                baseUrl = base,
+                credentials = creds,
+                sessionCookie = sessionCookie,
+                teamId = teamId,
+                teamPlanetCode = teamPlanetCode,
+                teamType = request.request.teamType ?: "local",
+                userId = userId,
+                userPlanetCode = userPlanetCode,
+            )
+            addResult.onSuccess {
+                repository.cancelJoinRequest(
+                    baseUrl = base,
+                    credentials = creds,
+                    sessionCookie = sessionCookie,
+                    documentId = requestId,
+                    revision = requestRevision
+                )
+                currentTeamId?.let { selectedTeamId ->
+                    loadTeamMembers(selectedTeamId)
+                }
+            }.onFailure {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.dashboard_invite_members_add_error, request.fullName),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    private fun confirmAcceptJoinRequest(request: TeamJoinRequestUiModel) {
+        val displayName = request.fullName.ifBlank { request.username }
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.dashboard_team_members_request_accept_confirm_title)
+            .setMessage(
+                getString(
+                    R.string.dashboard_team_members_request_accept_confirm_message,
+                    displayName
+                )
+            )
+            .setNegativeButton(R.string.dashboard_team_members_remove_cancel, null)
+            .setPositiveButton(R.string.dashboard_team_members_request_accept_confirm_action) { _, _ ->
+                acceptJoinRequest(request)
+            }
+            .show()
+    }
+
+    private fun rejectJoinRequest(request: TeamJoinRequestUiModel) {
+        val base = baseUrl
+        val creds = credentials
+        val requestId = request.request.id
+        val requestRevision = request.request.revision
+        if (base.isNullOrBlank() || creds == null || requestId.isNullOrBlank() || requestRevision.isNullOrBlank()) {
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.dashboard_invite_members_add_error_generic),
+                Toast.LENGTH_SHORT
+            ).show()
+            return
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            val result = repository.cancelJoinRequest(
+                baseUrl = base,
+                credentials = creds,
+                sessionCookie = sessionCookie,
+                documentId = requestId,
+                revision = requestRevision
+            )
+            result.onSuccess {
+                currentTeamId?.let { selectedTeamId ->
+                    loadTeamMembers(selectedTeamId)
+                }
+            }.onFailure {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.dashboard_invite_members_add_error_generic),
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        }
+    }
+
+    private fun confirmRejectJoinRequest(request: TeamJoinRequestUiModel) {
+        val displayName = request.fullName.ifBlank { request.username }
+        AlertDialog.Builder(requireContext())
+            .setTitle(R.string.dashboard_team_members_request_reject_confirm_title)
+            .setMessage(
+                getString(
+                    R.string.dashboard_team_members_request_reject_confirm_message,
+                    displayName
+                )
+            )
+            .setNegativeButton(R.string.dashboard_team_members_remove_cancel, null)
+            .setPositiveButton(R.string.dashboard_team_members_request_reject_confirm_action) { _, _ ->
+                rejectJoinRequest(request)
+            }
+            .show()
     }
 
     private fun confirmMemberRemoval(member: TeamMemberDetails) {
@@ -689,6 +923,14 @@ private data class TeamMemberUiModel(
     val currentUsername: String?
 )
 
+private data class TeamJoinRequestUiModel(
+    val id: String,
+    val username: String,
+    val fullName: String,
+    val hasAvatar: Boolean,
+    val request: JoinRequestDocument,
+)
+
 private class TeamMembersAdapter(
     private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
     private val onMemberClicked: (TeamMemberDetails) -> Unit,
@@ -706,6 +948,44 @@ private class TeamMembersAdapter(
     override fun onBindViewHolder(holder: TeamMemberViewHolder, position: Int) {
         val uiModel = getItem(position)
         holder.bind(uiModel.member, uiModel.showRemoveAction, uiModel.currentUsername)
+    }
+}
+
+private class TeamJoinRequestsAdapter(
+    private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
+    private val onAcceptClicked: (TeamJoinRequestUiModel) -> Unit,
+    private val onRejectClicked: (TeamJoinRequestUiModel) -> Unit,
+) : ListAdapter<TeamJoinRequestUiModel, TeamJoinRequestViewHolder>(
+    org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback({ oldItem, newItem -> oldItem.id == newItem.id })
+) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamJoinRequestViewHolder {
+        val inflater = LayoutInflater.from(parent.context)
+        val binding = ItemTeamJoinRequestBinding.inflate(inflater, parent, false)
+        return TeamJoinRequestViewHolder(binding, avatarBinder, onAcceptClicked, onRejectClicked)
+    }
+
+    override fun onBindViewHolder(holder: TeamJoinRequestViewHolder, position: Int) {
+        holder.bind(getItem(position))
+    }
+}
+
+private class TeamJoinRequestViewHolder(
+    private val binding: ItemTeamJoinRequestBinding,
+    private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
+    private val onAcceptClicked: (TeamJoinRequestUiModel) -> Unit,
+    private val onRejectClicked: (TeamJoinRequestUiModel) -> Unit,
+) : RecyclerView.ViewHolder(binding.root) {
+    fun bind(item: TeamJoinRequestUiModel) {
+        binding.teamJoinRequestAvatar.setImageResource(R.drawable.ic_person_placeholder_24)
+        avatarBinder(binding.teamJoinRequestAvatar, item.username, item.hasAvatar)
+        binding.teamJoinRequestName.text = item.fullName
+        binding.teamJoinRequestUsername.text = itemView.context.getString(
+            R.string.dashboard_team_member_profile_username_format,
+            item.username
+        )
+        binding.teamJoinRequestRole.setText(R.string.dashboard_team_members_request_role)
+        binding.teamJoinRequestAcceptButton.setOnClickListener { onAcceptClicked(item) }
+        binding.teamJoinRequestRejectButton.setOnClickListener { onRejectClicked(item) }
     }
 }
 
