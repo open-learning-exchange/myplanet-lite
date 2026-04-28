@@ -169,7 +169,7 @@ class DashboardTeamsRepositoryTest {
             baseUrl = baseUrl,
             credentials = StoredCredentials("testuser", "pass"),
             sessionCookie = null,
-            request = DashboardTeamsRepository.JoinTeamRequest(
+            request = JoinTeamRequest(
                 teamId = "team1",
                 teamPlanetCode = "planet1",
                 userId = "user1",

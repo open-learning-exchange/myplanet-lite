@@ -6,29 +6,19 @@
 
 package org.ole.planet.myplanet.lite
 
-import android.content.res.ColorStateList
-import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ImageView
-import android.widget.ProgressBar
 import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
-import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.ListAdapter
-import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlin.math.abs
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -39,14 +29,10 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamMemberProfileActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.JoinRequestDocument
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamMemberDetails
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.UserDocument
+import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
+import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.ole.planet.myplanet.lite.databinding.FragmentDashboardTeamMembersBinding
-import org.ole.planet.myplanet.lite.databinding.ItemInviteMemberBinding
-import org.ole.planet.myplanet.lite.databinding.ItemTeamJoinRequestBinding
-import org.ole.planet.myplanet.lite.databinding.ItemTeamMemberBinding
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.enableDrag
@@ -437,199 +423,30 @@ class DashboardTeamMembersFragment : Fragment() {
         binding.dashboardTeamJoinRequestsList.isVisible = hasRequests
     }
 
-    private fun acceptJoinRequest(request: TeamJoinRequestUiModel) {
-        val base = baseUrl
-        val creds = credentials
-        val teamId = request.request.teamId
-        val userId = request.request.userId
-        val teamPlanetCode = request.request.teamPlanetCode ?: currentTeamPlanetCode ?: serverPlanetCode
-        val userPlanetCode = request.request.userPlanetCode ?: serverPlanetCode
-        val requestId = request.request.id
-        val requestRevision = request.request.revision
-
-        if (
-            base.isNullOrBlank() || creds == null ||
-            teamId.isNullOrBlank() || userId.isNullOrBlank() ||
-            teamPlanetCode.isNullOrBlank() || userPlanetCode.isNullOrBlank() ||
-            requestId.isNullOrBlank() || requestRevision.isNullOrBlank()
-        ) {
-            Toast.makeText(
-                requireContext(),
-                getString(R.string.dashboard_invite_members_add_error_generic),
-                Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val addResult = repository.addTeamMember(
-                baseUrl = base,
-                credentials = creds,
-                sessionCookie = sessionCookie,
-                teamId = teamId,
-                teamPlanetCode = teamPlanetCode,
-                teamType = request.request.teamType ?: "local",
-                userId = userId,
-                userPlanetCode = userPlanetCode,
-            )
-            addResult.onSuccess {
-                repository.cancelJoinRequest(
-                    baseUrl = base,
-                    credentials = creds,
-                    sessionCookie = sessionCookie,
-                    documentId = requestId,
-                    revision = requestRevision
-                )
-                currentTeamId?.let { selectedTeamId ->
-                    loadTeamMembers(selectedTeamId)
-                }
-            }.onFailure {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.dashboard_invite_members_add_error, request.fullName),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
+    private fun acceptJoinRequest(request: TeamJoinRequestUiModel) = runAcceptJoinRequest(this, repository, baseUrl, credentials, sessionCookie, request, currentTeamPlanetCode, serverPlanetCode) { currentTeamId?.let(::loadTeamMembers) }
 
     private fun confirmAcceptJoinRequest(request: TeamJoinRequestUiModel) {
-        val displayName = request.fullName.ifBlank { request.username }
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.dashboard_team_members_request_accept_confirm_title)
-            .setMessage(
-                getString(
-                    R.string.dashboard_team_members_request_accept_confirm_message,
-                    displayName
-                )
-            )
-            .setNegativeButton(R.string.dashboard_team_members_remove_cancel, null)
-            .setPositiveButton(R.string.dashboard_team_members_request_accept_confirm_action) { _, _ ->
-                acceptJoinRequest(request)
-            }
-            .show()
+        confirmAcceptJoinRequestDialog(this, request) { acceptJoinRequest(it) }
     }
 
-    private fun rejectJoinRequest(request: TeamJoinRequestUiModel) {
-        val base = baseUrl
-        val creds = credentials
-        val requestId = request.request.id
-        val requestRevision = request.request.revision
-        if (base.isNullOrBlank() || creds == null || requestId.isNullOrBlank() || requestRevision.isNullOrBlank()) {
-            Toast.makeText(
-                requireContext(),
-                getString(R.string.dashboard_invite_members_add_error_generic),
-                Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
-        viewLifecycleOwner.lifecycleScope.launch {
-            val result = repository.cancelJoinRequest(
-                baseUrl = base,
-                credentials = creds,
-                sessionCookie = sessionCookie,
-                documentId = requestId,
-                revision = requestRevision
-            )
-            result.onSuccess {
-                currentTeamId?.let { selectedTeamId ->
-                    loadTeamMembers(selectedTeamId)
-                }
-            }.onFailure {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.dashboard_invite_members_add_error_generic),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-        }
-    }
+    private fun rejectJoinRequest(request: TeamJoinRequestUiModel) = runRejectJoinRequest(this, repository, baseUrl, credentials, sessionCookie, request) { currentTeamId?.let(::loadTeamMembers) }
 
     private fun confirmRejectJoinRequest(request: TeamJoinRequestUiModel) {
-        val displayName = request.fullName.ifBlank { request.username }
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.dashboard_team_members_request_reject_confirm_title)
-            .setMessage(
-                getString(
-                    R.string.dashboard_team_members_request_reject_confirm_message,
-                    displayName
-                )
-            )
-            .setNegativeButton(R.string.dashboard_team_members_remove_cancel, null)
-            .setPositiveButton(R.string.dashboard_team_members_request_reject_confirm_action) { _, _ ->
-                rejectJoinRequest(request)
-            }
-            .show()
+        confirmRejectJoinRequestDialog(this, request) { rejectJoinRequest(it) }
     }
 
-    private fun confirmMemberRemoval(member: TeamMemberDetails) {
-        val displayName = member.fullName?.takeIf { it.isNotBlank() }
-            ?: member.username?.takeIf { it.isNotBlank() }
-            ?: getString(R.string.dashboard_team_members_unknown)
-        AlertDialog.Builder(requireContext())
-            .setTitle(R.string.dashboard_team_members_remove_confirmation_title)
-            .setMessage(
-                getString(
-                    R.string.dashboard_team_members_remove_confirmation_message,
-                    displayName
-                )
-            )
-            .setNegativeButton(R.string.dashboard_team_members_remove_cancel, null)
-            .setPositiveButton(R.string.dashboard_team_members_remove_action) { _, _ ->
-                removeTeamMember(member, displayName)
-            }
-            .show()
-    }
-
-    private fun removeTeamMember(member: TeamMemberDetails, displayName: String) {
-        val teamId = currentTeamId
-        val base = baseUrl
-        val creds = credentials
-        val membership = member.membership
-
-        if (teamId.isNullOrBlank() || base.isNullOrBlank() || creds == null || membership == null) {
-            Toast.makeText(
-                requireContext(),
-                getString(R.string.dashboard_team_members_remove_error, displayName),
-                Toast.LENGTH_SHORT
-            ).show()
-            return
-        }
-
-        binding.dashboardTeamMembersSwipeRefresh.isRefreshing = true
-
-        viewLifecycleOwner.lifecycleScope.launch {
-            val result = repository.removeTeamMember(base, creds, sessionCookie, membership)
-            result.onSuccess {
-                Toast.makeText(
-                    requireContext(),
-                    getString(
-                        R.string.dashboard_team_members_remove_success,
-                        displayName
-                    ),
-                    Toast.LENGTH_SHORT
-                ).show()
-                loadTeamMembers(teamId)
-            }.onFailure {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.dashboard_team_members_remove_error, displayName),
-                    Toast.LENGTH_SHORT
-                ).show()
-                binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
-            }
-        }
+    private fun confirmMemberRemoval(member: TeamMemberDetails) = confirmMemberRemovalDialog(this, member) { selectedMember, displayName ->
+        runRemoveTeamMember(this, repository, currentTeamId, baseUrl, credentials, sessionCookie, selectedMember, displayName,
+            onStart = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = true },
+            onStop = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false },
+            onReload = { currentTeamId?.let(::loadTeamMembers) })
     }
 
     private fun showInviteMembersDialog() {
         val base = baseUrl
         val creds = credentials
         if (base.isNullOrBlank() || creds == null) {
-            Toast.makeText(
-                requireContext(),
-                getString(R.string.dashboard_invite_members_load_error),
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(requireContext(), getString(R.string.dashboard_invite_members_load_error), Toast.LENGTH_SHORT).show()
             return
         }
 
@@ -641,479 +458,28 @@ class DashboardTeamMembersFragment : Fragment() {
         val teamPlanetCode = currentTeamPlanetCode ?: serverPlanetCode
         val teamType = currentTeamType ?: "local"
         if (teamId.isNullOrBlank() || teamPlanetCode.isNullOrBlank()) {
-            Toast.makeText(
-                requireContext(),
-                getString(R.string.dashboard_invite_members_add_error_generic),
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast.makeText(requireContext(), getString(R.string.dashboard_invite_members_add_error_generic), Toast.LENGTH_SHORT).show()
             return
         }
 
-        val dialogBinding = DialogInviteMembersBinding.inflate(layoutInflater)
-        InviteDialogController(dialogBinding, base, creds, teamId, teamPlanetCode, teamType).show()
+        DashboardTeamMembersInviteDialogController(
+            fragment = this,
+            dialogBinding = DialogInviteMembersBinding.inflate(layoutInflater),
+            repository = repository,
+            lifecycleScope = viewLifecycleOwner.lifecycleScope,
+            avatarLoader = avatarLoader,
+            base = base,
+            creds = creds,
+            teamId = teamId,
+            teamPlanetCode = teamPlanetCode,
+            teamType = teamType,
+            sessionCookie = sessionCookie,
+            serverPlanetCode = serverPlanetCode,
+            serverParentCode = serverParentCode,
+            currentMembersProvider = { currentMembers },
+            onReload = { currentTeamId?.let { loadTeamMembers(it) } },
+        ).show()
     }
 
-    private inner class InviteDialogController(
-        val dialogBinding: DialogInviteMembersBinding,
-        val base: String,
-        val creds: StoredCredentials,
-        val teamId: String,
-        val teamPlanetCode: String,
-        val teamType: String
-    ) {
-        private var isLoadingPage = false
-        private var hasMorePages = true
-        private var nextSkip = 0
-        private var currentSearchTerm = ""
-        private var pendingReset = false
-        private var pagingDialog: AlertDialog? = null
-        private lateinit var inviteAdapter: InviteMembersAdapter
-        private val currentCandidates = mutableListOf<InviteCandidate>()
-        private val disabledCandidates = mutableSetOf<String>()
-
-        private fun submitCandidates() {
-            val uiModels = currentCandidates.map { InviteCandidateUiModel(it, disabledCandidates.contains(it.username)) }
-            inviteAdapter.submitList(uiModels)
-        }
-
-        fun show() {
-            inviteAdapter = InviteMembersAdapter(avatarLoader) { candidate ->
-                addMember(candidate)
-            }
-
-            val layoutManager = LinearLayoutManager(requireContext())
-            dialogBinding.inviteMembersList.adapter = inviteAdapter
-            dialogBinding.inviteMembersList.layoutManager = layoutManager
-            dialogBinding.inviteMembersList.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
-                    if (dy <= 0) return
-                    val lastVisible = layoutManager.findLastVisibleItemPosition()
-                    if (hasMorePages && !isLoadingPage && lastVisible >= inviteAdapter.itemCount - 5) {
-                        loadInvitePage()
-                    }
-                }
-            })
-
-            dialogBinding.inviteMembersSearchInput.addTextChangedListener { editable ->
-                val newQuery = editable?.toString()?.trim().orEmpty()
-                if (newQuery != currentSearchTerm) {
-                    currentSearchTerm = newQuery
-                    loadInvitePage(reset = true)
-                }
-            }
-
-            val dialog = AlertDialog.Builder(requireContext())
-                .setView(dialogBinding.root)
-                .create()
-
-            dialogBinding.inviteMembersCancel.setOnClickListener { dialog.dismiss() }
-
-            dialog.setOnDismissListener {
-                pagingDialog?.dismiss()
-                pagingDialog = null
-                currentTeamId?.let { id -> loadTeamMembers(id) }
-            }
-
-            dialog.show()
-            loadInvitePage(reset = true)
-        }
-
-        private fun addMember(candidate: InviteCandidate) {
-            val userPlanet = candidate.planetCode ?: serverPlanetCode
-            if (userPlanet.isNullOrBlank()) {
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.dashboard_invite_members_add_error_generic),
-                    Toast.LENGTH_SHORT
-                ).show()
-                return
-            }
-            disabledCandidates.add(candidate.username)
-            submitCandidates()
-            viewLifecycleOwner.lifecycleScope.launch {
-                val result = repository.addTeamMember(
-                    baseUrl = base,
-                    credentials = creds,
-                    sessionCookie = sessionCookie,
-                    teamId = teamId,
-                    teamPlanetCode = teamPlanetCode,
-                    teamType = teamType,
-                    userId = "org.couchdb.user:${candidate.username}",
-                    userPlanetCode = userPlanet,
-                )
-                result.onSuccess {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(
-                            R.string.dashboard_invite_members_add_success,
-                            candidate.name
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }.onFailure {
-                    disabledCandidates.remove(candidate.username)
-                    submitCandidates()
-                    Toast.makeText(
-                        requireContext(),
-                        getString(
-                            R.string.dashboard_invite_members_add_error,
-                            candidate.name
-                        ),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-            }
-        }
-
-        private fun showPagingDialog() {
-            if (pagingDialog == null) {
-                val progressBar = ProgressBar(requireContext())
-                val padding = resources.getDimensionPixelSize(R.dimen.padding_small)
-                progressBar.setPadding(padding, padding, padding, padding)
-                pagingDialog = AlertDialog.Builder(requireContext())
-                    .setView(progressBar)
-                    .setCancelable(false)
-                    .create().apply {
-                        window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
-                    }
-            }
-            pagingDialog?.show()
-        }
-
-        private fun hidePagingDialog() {
-            pagingDialog?.dismiss()
-        }
-
-        private fun prepareForLoad(reset: Boolean): Boolean {
-            if (isLoadingPage) {
-                if (reset) {
-                    pendingReset = true
-                }
-                return false
-            }
-            if (!hasMorePages && !reset) return false
-            isLoadingPage = true
-            if (reset) {
-                nextSkip = 0
-                hasMorePages = true
-                pendingReset = false
-                currentCandidates.clear()
-                disabledCandidates.clear()
-                submitCandidates()
-            }
-            if (nextSkip == 0) {
-                dialogBinding.inviteMembersLoading.isVisible = true
-                dialogBinding.inviteMembersList.isVisible = false
-            } else {
-                showPagingDialog()
-            }
-            return true
-        }
-
-        private fun getExcludedIds(): List<String> {
-            return currentMembers.mapNotNull { member ->
-                val userId = member.membership?.userId
-                when {
-                    userId.isNullOrBlank() -> null
-                    userId.startsWith("org.couchdb.user:") -> userId
-                    else -> "org.couchdb.user:$userId"
-                }
-            }
-        }
-
-        private fun handleFetchSuccess(users: List<UserDocument>, reset: Boolean) {
-            val candidates = users.mapNotNull { user ->
-                toInviteCandidate(user)
-            }
-            if (reset) {
-                currentCandidates.clear()
-                disabledCandidates.clear()
-                currentCandidates.addAll(candidates)
-            } else {
-                currentCandidates.addAll(candidates)
-            }
-            submitCandidates()
-            if (candidates.size < INVITE_PAGE_SIZE) {
-                hasMorePages = false
-            } else {
-                nextSkip += INVITE_PAGE_SIZE
-            }
-        }
-
-        private fun finishLoad(reset: Boolean) {
-            dialogBinding.inviteMembersLoading.isVisible = false
-            dialogBinding.inviteMembersList.isVisible = true
-            isLoadingPage = false
-            hidePagingDialog()
-            if (pendingReset) {
-                pendingReset = false
-                loadInvitePage(reset = true)
-            }
-        }
-
-        private fun loadInvitePage(reset: Boolean = false) {
-            if (!prepareForLoad(reset)) return
-
-            viewLifecycleOwner.lifecycleScope.launch {
-                val result = repository.fetchAllUsers(
-                    baseUrl = base,
-                    credentials = creds,
-                    sessionCookie = sessionCookie,
-                    planetCode = serverPlanetCode,
-                    parentCode = serverParentCode,
-                    pageSize = INVITE_PAGE_SIZE,
-                    skip = nextSkip,
-                    searchTerm = currentSearchTerm.takeIf { it.isNotBlank() },
-                    excludedUserIds = getExcludedIds(),
-                )
-                result.onSuccess { users ->
-                    handleFetchSuccess(users, reset)
-                }.onFailure {
-                    Toast.makeText(
-                        requireContext(),
-                        getString(R.string.dashboard_invite_members_load_error),
-                        Toast.LENGTH_SHORT
-                    ).show()
-                }
-                finishLoad(reset)
-            }
-        }
-    }
-
-    private fun toInviteCandidate(user: UserDocument): InviteCandidate? {
-        val username = user._id?.substringAfter("org.couchdb.user:")?.takeIf { it.isNotBlank() }
-            ?: return null
-        val planetMatches = serverPlanetCode.isNullOrBlank() ||
-            user.planetCode.isNullOrBlank() ||
-            serverPlanetCode.equals(user.planetCode, ignoreCase = true)
-        val parentMatches = serverParentCode.isNullOrBlank() ||
-            user.parentCode.isNullOrBlank() ||
-            serverParentCode.equals(user.parentCode, ignoreCase = true)
-        if (!planetMatches || !parentMatches) {
-            return null
-        }
-        val nameParts = listOfNotNull(user.firstName, user.lastName).filter { it.isNotBlank() }
-        val displayName = nameParts.joinToString(" ").takeIf { it.isNotBlank() }
-            ?: user.email?.takeIf { it.isNotBlank() }
-            ?: username
-        val colorIndex = abs(username.hashCode()) % INVITE_PLACEHOLDER_COLORS.size
-        return InviteCandidate(
-            name = displayName,
-            username = username,
-            planetCode = user.planetCode,
-            hasAvatar = user.attachments?.image != null,
-            colorRes = INVITE_PLACEHOLDER_COLORS[colorIndex],
-        )
-    }
-
-    private fun animateFabClick(fab: FloatingActionButton) {
-        fab.animate()
-            .rotationBy(360f)
-            .setDuration(250)
-            .withEndAction { fab.rotation = 0f }
-            .start()
-    }
-}
-
-
-private data class TeamMemberUiModel(
-    val member: TeamMemberDetails,
-    val showRemoveAction: Boolean,
-    val currentUsername: String?
-)
-
-private data class TeamJoinRequestUiModel(
-    val id: String,
-    val username: String,
-    val fullName: String,
-    val hasAvatar: Boolean,
-    val request: JoinRequestDocument,
-)
-
-private class TeamMembersAdapter(
-    private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
-    private val onMemberClicked: (TeamMemberDetails) -> Unit,
-    private val onRemoveMemberClicked: (TeamMemberDetails) -> Unit
-) : ListAdapter<TeamMemberUiModel, TeamMemberViewHolder>(
-    org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback({ oldItem, newItem -> oldItem.member.username == newItem.member.username })
-) {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamMemberViewHolder {
-        val inflater = LayoutInflater.from(parent.context)
-        val binding = ItemTeamMemberBinding.inflate(inflater, parent, false)
-        return TeamMemberViewHolder(binding, avatarBinder, onMemberClicked, onRemoveMemberClicked)
-    }
-
-    override fun onBindViewHolder(holder: TeamMemberViewHolder, position: Int) {
-        val uiModel = getItem(position)
-        holder.bind(uiModel.member, uiModel.showRemoveAction, uiModel.currentUsername)
-    }
-}
-
-private class TeamJoinRequestsAdapter(
-    private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
-    private val onAcceptClicked: (TeamJoinRequestUiModel) -> Unit,
-    private val onRejectClicked: (TeamJoinRequestUiModel) -> Unit,
-) : ListAdapter<TeamJoinRequestUiModel, TeamJoinRequestViewHolder>(
-    org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback({ oldItem, newItem -> oldItem.id == newItem.id })
-) {
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): TeamJoinRequestViewHolder {
-        val inflater = LayoutInflater.from(parent.context)
-        val binding = ItemTeamJoinRequestBinding.inflate(inflater, parent, false)
-        return TeamJoinRequestViewHolder(binding, avatarBinder, onAcceptClicked, onRejectClicked)
-    }
-
-    override fun onBindViewHolder(holder: TeamJoinRequestViewHolder, position: Int) {
-        holder.bind(getItem(position))
-    }
-}
-
-private class TeamJoinRequestViewHolder(
-    private val binding: ItemTeamJoinRequestBinding,
-    private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
-    private val onAcceptClicked: (TeamJoinRequestUiModel) -> Unit,
-    private val onRejectClicked: (TeamJoinRequestUiModel) -> Unit,
-) : RecyclerView.ViewHolder(binding.root) {
-    fun bind(item: TeamJoinRequestUiModel) {
-        binding.teamJoinRequestAvatar.setImageResource(R.drawable.ic_person_placeholder_24)
-        avatarBinder(binding.teamJoinRequestAvatar, item.username, item.hasAvatar)
-        binding.teamJoinRequestName.text = item.fullName
-        binding.teamJoinRequestUsername.text = itemView.context.getString(
-            R.string.dashboard_team_member_profile_username_format,
-            item.username
-        )
-        binding.teamJoinRequestRole.setText(R.string.dashboard_team_members_request_role)
-        binding.teamJoinRequestAcceptButton.setOnClickListener { onAcceptClicked(item) }
-        binding.teamJoinRequestRejectButton.setOnClickListener { onRejectClicked(item) }
-    }
-}
-
-private class TeamMemberViewHolder(
-    private val binding: ItemTeamMemberBinding,
-    private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
-    private val onMemberClicked: (TeamMemberDetails) -> Unit,
-    private val onRemoveMemberClicked: (TeamMemberDetails) -> Unit
-) : RecyclerView.ViewHolder(binding.root) {
-
-    fun bind(member: TeamMemberDetails, showRemoveAction: Boolean, currentUsername: String?) {
-        val username = member.username
-        binding.teamMemberAvatar.setImageResource(R.drawable.ic_person_placeholder_24)
-        avatarBinder(binding.teamMemberAvatar, username, member.hasAvatar)
-
-        val displayName = member.fullName?.takeIf { it.isNotBlank() }
-            ?: username?.takeIf { it.isNotBlank() }
-            ?: itemView.context.getString(R.string.dashboard_team_members_unknown)
-        binding.teamMemberName.text = displayName
-        binding.teamMemberUsername.text = username?.takeIf { it.isNotBlank() }?.let {
-            itemView.context.getString(
-                R.string.dashboard_team_member_profile_username_format,
-                it
-            )
-        } ?: itemView.context.getString(R.string.dashboard_team_members_unknown_username)
-
-        val roleLabel = if (member.isLeader) {
-            R.string.dashboard_team_members_leader_role
-        } else {
-            R.string.dashboard_team_members_member_role
-        }
-        binding.teamMemberRole.setText(roleLabel)
-
-        val clickListener = View.OnClickListener {
-            onMemberClicked(member)
-        }
-        itemView.setOnClickListener(clickListener)
-        binding.teamMemberAvatar.setOnClickListener(clickListener)
-        binding.teamMemberName.setOnClickListener(clickListener)
-        binding.teamMemberUsername.setOnClickListener(clickListener)
-        binding.teamMemberRole.setOnClickListener(clickListener)
-
-        val isCurrentUser = currentUsername != null && username.equals(currentUsername, ignoreCase = true)
-        binding.teamMemberRemoveButton.isVisible = showRemoveAction && !isCurrentUser
-        binding.teamMemberRemoveButton.setOnClickListener {
-            onRemoveMemberClicked(member)
-        }
-    }
-}
-
-private const val INVITE_PAGE_SIZE = 25
-private val INVITE_PLACEHOLDER_COLORS = listOf(
-    R.color.login_primary,
-    R.color.blueOle,
-    R.color.greenOleLogo,
-)
-
-private data class InviteCandidate(
-    val name: String,
-    val username: String,
-    val planetCode: String?,
-    val hasAvatar: Boolean,
-    val colorRes: Int,
-)
-
-
-private data class InviteCandidateUiModel(
-    val candidate: InviteCandidate,
-    val isDisabled: Boolean
-)
-
-private class InviteMembersAdapter(
-    private val avatarLoader: DashboardAvatarLoader?,
-    private val onAddClicked: (InviteCandidate) -> Unit
-) : ListAdapter<InviteCandidateUiModel, InviteMemberViewHolder>(
-    org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback(
-        areItemsTheSame = { oldItem, newItem -> oldItem.candidate.username == newItem.candidate.username },
-        getChangePayload = { oldItem, newItem -> if (oldItem.isDisabled != newItem.isDisabled) true else null }
-    )
-) {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): InviteMemberViewHolder {
-        val inflater = LayoutInflater.from(parent.context)
-        val binding = ItemInviteMemberBinding.inflate(inflater, parent, false)
-        return InviteMemberViewHolder(binding, avatarLoader, onAddClicked)
-    }
-
-    override fun onBindViewHolder(holder: InviteMemberViewHolder, position: Int) {
-        val uiModel = getItem(position)
-        holder.bind(uiModel.candidate, uiModel.isDisabled)
-    }
-
-    override fun onBindViewHolder(holder: InviteMemberViewHolder, position: Int, payloads: MutableList<Any>) {
-        if (payloads.isNotEmpty()) {
-            val uiModel = getItem(position)
-            holder.bindPayload(uiModel.isDisabled)
-        } else {
-            super.onBindViewHolder(holder, position, payloads)
-        }
-    }
-}
-
-private class InviteMemberViewHolder(
-    private val binding: ItemInviteMemberBinding,
-    private val avatarLoader: DashboardAvatarLoader?,
-    private val onAddClicked: (InviteCandidate) -> Unit
-) : RecyclerView.ViewHolder(binding.root) {
-
-    fun bind(candidate: InviteCandidate, isDisabled: Boolean) {
-        binding.inviteMemberName.text = candidate.name
-        binding.inviteMemberUsername.text = "@${candidate.username}"
-        binding.inviteMemberAvatar.setImageDrawable(null)
-        binding.inviteMemberAvatar.setImageResource(R.drawable.ic_person_placeholder_24)
-        binding.inviteMemberAvatar.backgroundTintList = ColorStateList.valueOf(
-            ContextCompat.getColor(binding.root.context, candidate.colorRes)
-        )
-        val shouldAttemptLoad = candidate.hasAvatar || candidate.username.isNotBlank()
-        avatarLoader?.bind(binding.inviteMemberAvatar, candidate.username, shouldAttemptLoad)
-        bindPayload(isDisabled)
-        binding.inviteMemberAdd.setOnClickListener {
-            if (binding.inviteMemberAdd.isEnabled) {
-                onAddClicked(candidate)
-            }
-        }
-    }
-
-    fun bindPayload(isDisabled: Boolean) {
-        binding.inviteMemberAdd.isEnabled = !isDisabled
-        binding.inviteMemberAdd.alpha = if (isDisabled) 0.5f else 1f
-    }
+    private fun animateFabClick(fab: FloatingActionButton) = animateFabClickSupport(fab)
 }

@@ -51,7 +51,7 @@ class DashboardSurveysRepository(
                 val selector = SurveySelector(
                     type = "surveys",
                     teamId = teamId,
-                    isArchived = mapOf("\$exists" to false),
+                    isArchived = mapOf($$"$exists" to false),
                 )
                 val payload = findRequestAdapter.toJson(SurveysFindRequest(selector))
                 val requestBuilder = Request.Builder()
@@ -143,7 +143,7 @@ class DashboardSurveysRepository(
                     teamId = teamId,
                     parentMatches = listOf(
                         mapOf("parentId" to surveyId),
-                        mapOf("parentId" to mapOf("\$regex" to "^${surveyId}@")),
+                        mapOf("parentId" to mapOf($$"$regex" to "^${surveyId}@")),
                     ),
                 )
                 val payload = completionsRequestAdapter.toJson(
@@ -193,7 +193,7 @@ class DashboardSurveysRepository(
                 val parentMatches = surveyIds.flatMap { surveyId ->
                     listOf(
                         mapOf("parentId" to surveyId),
-                        mapOf("parentId" to mapOf("\$regex" to "^${surveyId}@"))
+                        mapOf("parentId" to mapOf($$"$regex" to "^${surveyId}@"))
                     )
                 }
 

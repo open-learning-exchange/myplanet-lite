@@ -53,6 +53,7 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:gravity="end|center_vertical"
+        android:layout_marginEnd="8dp"
         android:orientation="vertical">
 
         <ImageButton
@@ -63,7 +64,7 @@
             android:contentDescription="@string/dashboard_team_members_request_accept"
             android:padding="4dp"
             android:src="@drawable/ic_group_join_24"
-            app:tint="?attr/colorOnSurface" />
+            app:tint="@color/greenOleLogo" />
 
         <ImageButton
             android:id="@+id/teamJoinRequestRejectButton"
@@ -74,7 +75,7 @@
             android:contentDescription="@string/dashboard_team_members_request_reject"
             android:padding="4dp"
             android:src="@drawable/ic_group_delete"
-            app:tint="?attr/colorOnSurface" />
+            app:tint="@color/dashboard_reject_red" />
     </LinearLayout>
 
 </LinearLayout>
