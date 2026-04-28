@@ -1,13 +1,13 @@
 package org.ole.planet.myplanet.lite
 
+import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import androidx.core.view.isVisible
+import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
-import kotlinx.coroutines.launch
 
 internal fun DashboardResourcesPageFragment.refreshContent(forceRefresh: Boolean = false) {
         val content = contentView ?: return

@@ -27,7 +27,6 @@ class OfflineCourseStorageTest {
     @Before
     fun setup() {
         context = ApplicationProvider.getApplicationContext()
-        // Ensure clean state before tests
         val rootDir = File(context.filesDir, ".offline_courses")
         if (rootDir.exists()) {
             rootDir.deleteRecursively()
@@ -36,7 +35,6 @@ class OfflineCourseStorageTest {
 
     @After
     fun tearDown() {
-        // Clean up after tests
         val rootDir = File(context.filesDir, ".offline_courses")
         if (rootDir.exists()) {
             rootDir.deleteRecursively()
@@ -128,12 +126,14 @@ class OfflineCourseStorageTest {
         assertEquals(0, loadedCourse.currentStep)
 
         assertEquals(1, loadedCourse.steps.size)
+
         val step = loadedCourse.steps.first()
         assertEquals("Step 1", step.title)
         assertEquals("First step", step.description)
         assertEquals(listOf("pdf", "video"), step.mediaTypes)
 
         assertEquals(1, step.resources.size)
+
         val resource = step.resources.first()
         assertEquals("res-1", resource.id)
         assertEquals("doc1.pdf", resource.filename)
@@ -144,6 +144,7 @@ class OfflineCourseStorageTest {
         assertEquals("1-rev", step.survey?.rev)
         assertEquals("Test Survey", step.survey?.name)
         assertEquals(1, step.survey?.questions?.size)
+
         val question = step.survey?.questions?.first()
         assertEquals("Question 1", question?.body)
         assertEquals("radio", question?.type)
@@ -155,13 +156,12 @@ class OfflineCourseStorageTest {
 
     @Test
     fun testLoadDownloadedCourses_withCorruptedJson() {
-        // Create an invalid JSON manifest
         val dir = File(File(context.filesDir, ".offline_courses"), "corrupted-course")
         dir.mkdirs()
         File(dir, "course.json").writeText("{ invalid_json ]")
 
         val courses = OfflineCourseStorage.loadDownloadedCourses(context)
-        assertTrue(courses.isEmpty()) // Should catch the exception and return an empty list or skip the corrupted one
+        assertTrue(courses.isEmpty())
     }
 
     @Test
@@ -176,20 +176,16 @@ class OfflineCourseStorageTest {
         val resourceId = "res-1"
         val filename = "my doc.pdf"
 
-        // Initially not found
         assertNull(OfflineCourseStorage.findExistingResourceFile(context, courseId, resourceId, filename))
 
-        // Create the file using URL encoded name
         val expectedFile = OfflineCourseStorage.resourceFile(context, courseId, resourceId, "my%20doc.pdf")
         expectedFile.parentFile?.mkdirs()
         expectedFile.writeText("dummy content")
 
-        // Should find it even if we pass the decoded name or encoded name
         val found = OfflineCourseStorage.findExistingResourceFile(context, courseId, resourceId, filename)
         assertNotNull(found)
         assertEquals(expectedFile.absolutePath, found?.absolutePath)
 
-        // Try finding with exact matching file name
         val exactFile = OfflineCourseStorage.resourceFile(context, courseId, resourceId, "exact.pdf")
         exactFile.parentFile?.mkdirs()
         exactFile.writeText("dummy")
@@ -203,11 +199,13 @@ class OfflineCourseStorageTest {
     fun testDeleteCourse() {
         val courseId = "course-to-delete"
         val course = createDummyCourse(courseId)
+
         OfflineCourseStorage.saveCourseManifest(context, course, OfflineCourseStorage.DownloadSource.MY_COURSES)
 
         assertTrue(OfflineCourseStorage.isCourseDownloaded(context, courseId))
 
         val deleted = OfflineCourseStorage.deleteCourse(context, courseId)
+
         assertTrue(deleted)
         assertFalse(OfflineCourseStorage.isCourseDownloaded(context, courseId))
     }
@@ -230,8 +228,6 @@ class OfflineCourseStorageTest {
         val source = "https://example.com/image.png"
         val file = OfflineCourseStorage.markdownImageFile(context, courseId, source)
 
-        // sha256 of "https://example.com/image.png"
-        // MessageDigest "SHA-256" -> "..."
         assertTrue(file.absolutePath.endsWith(".png"))
         assertTrue(file.absolutePath.contains(".offline_courses/course-img/markdown/"))
     }
@@ -241,31 +237,24 @@ class OfflineCourseStorageTest {
         val courseId = "course-img-migrate"
         val source = "https://example.com/legacy.png"
 
-        // Calculate the legacy SHA-1 digest to write the file where the old logic expected it.
         val digest = java.security.MessageDigest.getInstance("SHA-1").digest(source.toByteArray())
         val sha1Hex = digest.joinToString("") { "%02x".format(it) }
 
-        // The old code would create this file
         val legacyFile = File(File(File(context.filesDir, ".offline_courses"), courseId), "markdown/$sha1Hex.png")
         legacyFile.parentFile?.mkdirs()
         legacyFile.writeText("legacy image data")
 
-        // Ensure the new SHA-256 file doesn't exist yet
         val newFile = OfflineCourseStorage.markdownImageFile(context, courseId, source)
         assertFalse(newFile.exists())
 
-        // When we request the URI, it should migrate the legacy file
         val uri = OfflineCourseStorage.localMarkdownImageUri(context, courseId, source)
 
         assertNotNull(uri)
         assertTrue(uri?.startsWith("file:/") == true)
         assertTrue(uri?.endsWith(".png") == true)
 
-        // The new file should exist now
         assertTrue(newFile.exists())
         assertEquals("legacy image data", newFile.readText())
-
-        // The legacy file should no longer exist
         assertFalse(legacyFile.exists())
     }
 
@@ -274,17 +263,52 @@ class OfflineCourseStorageTest {
         val courseId = "course-img-uri"
         val source = "https://example.com/img2.jpg?test=1#anchor"
 
-        // Initially doesn't exist
         assertNull(OfflineCourseStorage.localMarkdownImageUri(context, courseId, source))
 
-        // Create the file
         val file = OfflineCourseStorage.markdownImageFile(context, courseId, source)
         file.parentFile?.mkdirs()
         file.writeText("image data")
 
         val uri = OfflineCourseStorage.localMarkdownImageUri(context, courseId, source)
+
         assertNotNull(uri)
         assertTrue(uri?.startsWith("file:/") == true)
         assertTrue(uri?.endsWith(".jpg") == true)
+    }
+
+    @Test
+    fun testSha256() {
+        val method = OfflineCourseStorage::class.java.getDeclaredMethod("sha256", String::class.java)
+        method.isAccessible = true
+
+        val emptyHash = method.invoke(OfflineCourseStorage, "") as String
+        assertEquals("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855", emptyHash)
+
+        val testHash = method.invoke(OfflineCourseStorage, "test") as String
+        assertEquals("9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08", testHash)
+
+        val testStringHash = method.invoke(OfflineCourseStorage, "test string") as String
+        assertEquals("d5579c46dfcc7f18207013e65b44e4cb4e2c2298f4ac457ba8f82743f31e930b", testStringHash)
+
+        val specialCharsHash = method.invoke(OfflineCourseStorage, "test@123! \n") as String
+        assertEquals("0cfd4bc47bbb9810356c301eb59acad0362c2846fdf3197115e8e2f1842f43fd", specialCharsHash)
+    }
+
+    @Test
+    fun testLegacySha1() {
+        val method = OfflineCourseStorage::class.java.getDeclaredMethod("legacySha1", String::class.java)
+        method.isAccessible = true
+
+        val emptyHash = method.invoke(OfflineCourseStorage, "") as String
+        assertEquals("da39a3ee5e6b4b0d3255bfef95601890afd80709", emptyHash)
+
+        val testHash = method.invoke(OfflineCourseStorage, "test") as String
+        assertEquals("a94a8fe5ccb19ba61c4c0873d391e987982fbbd3", testHash)
+
+        val testStringHash = method.invoke(OfflineCourseStorage, "test string") as String
+        assertEquals("661295c9cbf9d6b2f6428414504a8deed3020641", testStringHash)
+
+        val specialCharsHash = method.invoke(OfflineCourseStorage, "test@123! \n") as String
+        assertEquals("d15229ba5391227d0c41c5705b9d9c4bf1497b0c", specialCharsHash)
     }
 }

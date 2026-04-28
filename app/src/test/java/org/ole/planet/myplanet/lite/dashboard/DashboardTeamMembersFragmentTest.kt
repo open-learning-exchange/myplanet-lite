@@ -1,13 +1,10 @@
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.content.Context
 import android.content.SharedPreferences
-import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.recyclerview.widget.RecyclerView
-import androidx.test.core.app.ApplicationProvider
-import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.google.android.material.R as MaterialR
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import okhttp3.mockwebserver.MockResponse
@@ -24,13 +21,9 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.auth.AuthService
 import org.ole.planet.myplanet.lite.auth.UserCredentials
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamMemberDetails
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
-import java.util.concurrent.TimeUnit
-import com.google.android.material.R as MaterialR
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)

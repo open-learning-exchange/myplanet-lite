@@ -82,4 +82,42 @@ class AuthUtilsTest {
         val url = "not_a_valid_url"
         assertFalse(AuthUtils.isSecureAndTrustedUrl(url, base))
     }
+
+    @Test
+    fun isSecureAndTrustedUrl_noHost_returnsFalse() {
+        val base = "https://example.com"
+        val url = "file:///path/to/local/file"
+        assertFalse(AuthUtils.isSecureAndTrustedUrl(url, base))
+    }
+
+    @Test
+    fun isSecureAndTrustedUrl_mixedCaseHttps_returnsTrue() {
+        val base = "https://example.com"
+        val url = "HTTPS://example.com/db/resources"
+        assertTrue(AuthUtils.isSecureAndTrustedUrl(url, base))
+    }
+
+    @Test
+    fun isSecureAndTrustedUrl_invalidPrivateIpClassA_returnsFalse() {
+        // 10.999.999.999 fails to parse as a valid URI, so URI.create throws and the catch block returns false
+        val base = "http://10.999.999.999"
+        val url = "http://10.999.999.999/db/resources"
+        assertFalse(AuthUtils.isSecureAndTrustedUrl(url, base))
+    }
+
+    @Test
+    fun isSecureAndTrustedUrl_invalidPrivateIpClassB_returnsFalse() {
+        // 172.32.0.0 is outside the 172.16-31 range.
+        val base = "http://172.32.0.0"
+        val url = "http://172.32.0.0/db/resources"
+        assertFalse(AuthUtils.isSecureAndTrustedUrl(url, base))
+    }
+
+    @Test
+    fun isSecureAndTrustedUrl_invalidPrivateIpClassC_returnsFalse() {
+        // 192.168.256.0 fails to parse as a valid URI, throwing an exception and returning false
+        val base = "http://192.168.256.0"
+        val url = "http://192.168.256.0/db/resources"
+        assertFalse(AuthUtils.isSecureAndTrustedUrl(url, base))
+    }
 }
