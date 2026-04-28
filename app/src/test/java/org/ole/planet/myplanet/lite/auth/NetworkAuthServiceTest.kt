@@ -11,6 +11,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.test.runTest
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
 import okhttp3.ResponseBody.Companion.toResponseBody
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -362,6 +363,33 @@ class NetworkAuthServiceTest {
         val error = result as AuthResult.Error
         assertEquals(null, error.code)
         assertTrue(error.message.contains("Error de red: Custom IO error"))
+    }
+
+    @Test
+    fun `login io exception with real network client interceptor returns network error`() = runTest {
+        // Create an OkHttpClient that throws an IOException on any request using an Interceptor
+        val client = OkHttpClient.Builder()
+            .addInterceptor { _ ->
+                throw java.io.IOException("Mocked network client exception")
+            }
+            .build()
+
+        val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+        val retrofit = Retrofit.Builder()
+            .baseUrl("http://localhost/")
+            .client(client)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+
+        val customApi = retrofit.create(AuthApi::class.java)
+        val customService = NetworkAuthService(customApi, tokenStorage, Dispatchers.Unconfined)
+
+        val result = customService.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error de red: Mocked network client exception"))
     }
 
     @Test
