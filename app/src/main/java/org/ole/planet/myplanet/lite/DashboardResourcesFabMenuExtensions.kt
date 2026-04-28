@@ -4,8 +4,8 @@ import android.view.ContextThemeWrapper
 import android.view.View
 import android.view.animation.LinearInterpolator
 import androidx.appcompat.widget.PopupMenu
-import androidx.core.view.MenuCompat
 import androidx.core.content.FileProvider
+import androidx.core.view.MenuCompat
 import java.io.File
 
 internal fun DashboardResourcesPageFragment.showAddResourceMenu(anchor: View) {
