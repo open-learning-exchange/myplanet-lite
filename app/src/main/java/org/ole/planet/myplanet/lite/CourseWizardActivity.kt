@@ -104,16 +104,7 @@ class CourseWizardActivity : BaseActivity() {
             }
             pendingExamStepIndex = null
             if (this::stepPositionView.isInitialized) {
-                bindStep(
-                    stepPositionView,
-                    stepTitleView,
-                    descriptionView,
-                    attachmentsContainer,
-                    attachmentsTitle,
-                    attachmentsList,
-                    previousButton,
-                    nextButton
-                )
+                    bindStep()
             }
         }
 
@@ -137,16 +128,7 @@ class CourseWizardActivity : BaseActivity() {
             flushPendingExamSubmissions()
             flushPendingCourseProgress()
             currentIndex = resolveInitialStepIndex(startIndex)
-            bindStep(
-                stepPositionView,
-                stepTitleView,
-                descriptionView,
-                attachmentsContainer,
-                attachmentsTitle,
-                attachmentsList,
-                previousButton,
-                nextButton
-            )
+            bindStep()
             maybeAutoCompleteFirstStep()
         }
     }
@@ -250,16 +232,7 @@ class CourseWizardActivity : BaseActivity() {
         }
     }
 
-    private fun bindStep(
-        stepPositionView: TextView,
-        stepTitleView: TextView,
-        descriptionView: TextView,
-        attachmentsContainer: LinearLayout,
-        attachmentsTitle: TextView,
-        attachmentsList: LinearLayout,
-        previousButton: View,
-        nextButton: View
-    ) {
+    private fun bindStep() {
         val step = steps[currentIndex]
         stepPositionView.text = getString(
             R.string.course_wizard_step_position,
@@ -283,44 +256,22 @@ class CourseWizardActivity : BaseActivity() {
         previousButton.setOnClickListener {
             if (currentIndex > 0) {
                 currentIndex -= 1
-                bindStep(
-                    stepPositionView,
-                    stepTitleView,
-                    descriptionView,
-                    attachmentsContainer,
-                    attachmentsTitle,
-                    attachmentsList,
-                    previousButton,
-                    nextButton
-                )
+                bindStep()
             }
         }
         val examPending = step.exam?.questions?.isNotEmpty() == true &&
                 !completedExamSteps.contains(currentIndex)
         if (currentIndex >= steps.lastIndex) {
             nextButton.isEnabled = true
-            if (nextButton is TextView) {
-                nextButton.text = getString(R.string.course_wizard_finish)
-            }
+            (nextButton as? TextView)?.text = getString(R.string.course_wizard_finish)
             nextButton.setOnClickListener { finish() }
         } else {
             nextButton.isEnabled = true
-            if (nextButton is TextView) {
-                nextButton.text = getString(R.string.course_wizard_next)
-            }
+            (nextButton as? TextView)?.text = getString(R.string.course_wizard_next)
             nextButton.setOnClickListener {
                 if (currentIndex < steps.lastIndex) {
                     lifecycleScope.launch {
-                        advanceToNextStep(
-                            stepPositionView,
-                            stepTitleView,
-                            descriptionView,
-                            attachmentsContainer,
-                            attachmentsTitle,
-                            attachmentsList,
-                            previousButton,
-                            nextButton
-                        )
+                        advanceToNextStep()
                     }
                 }
             }
@@ -330,32 +281,14 @@ class CourseWizardActivity : BaseActivity() {
         }
     }
 
-    private fun advanceToNextStep(
-        stepPositionView: TextView,
-        stepTitleView: TextView,
-        descriptionView: TextView,
-        attachmentsContainer: LinearLayout,
-        attachmentsTitle: TextView,
-        attachmentsList: LinearLayout,
-        previousButton: View,
-        nextButton: View
-    ) {
+    private fun advanceToNextStep() {
         val targetIndex = (currentIndex + 1).coerceAtMost(steps.lastIndex)
         val targetStepNumber = targetIndex + 1
         lifecycleScope.launch {
             runCatching { updateCourseProgressIfNeeded(targetStepNumber) }
         }
         currentIndex = targetIndex
-        bindStep(
-            stepPositionView,
-            stepTitleView,
-            descriptionView,
-            attachmentsContainer,
-            attachmentsTitle,
-            attachmentsList,
-            previousButton,
-            nextButton
-        )
+        bindStep()
     }
 
     private suspend fun updateCourseProgressIfNeeded(targetStepNumber: Int) {
