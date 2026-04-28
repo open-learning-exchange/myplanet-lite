@@ -1,7 +1,6 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Context
-import android.os.Bundle
 import android.view.View
 import androidx.fragment.app.testing.launchFragmentInContainer
 import androidx.lifecycle.Lifecycle

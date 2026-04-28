@@ -1,19 +1,19 @@
 package org.ole.planet.myplanet.lite
 
+import android.os.Bundle
+import androidx.fragment.app.FragmentActivity
 import androidx.test.core.app.ApplicationProvider
+import com.google.mlkit.common.sdkinternal.MlKitContext
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowToast
-import android.os.Bundle
-import org.robolectric.Robolectric
-import androidx.fragment.app.FragmentActivity
-import com.google.mlkit.common.sdkinternal.MlKitContext
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)

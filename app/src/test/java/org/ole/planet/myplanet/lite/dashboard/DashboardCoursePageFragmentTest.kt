@@ -4,12 +4,12 @@ import android.os.Bundle
 import androidx.fragment.app.testing.launchFragmentInContainer
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.junit.Before
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.DashboardCoursePageFragment
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class DashboardCoursePageFragmentTest {
