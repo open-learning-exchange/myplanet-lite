@@ -4,15 +4,14 @@ import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
-import androidx.test.core.app.ApplicationProvider
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.*
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import org.mockito.Mockito.*
 import java.util.Locale
 
 @RunWith(RobolectricTestRunner::class)
@@ -122,12 +121,27 @@ class DashboardResourcesMediaUtilsTest {
 
     @Test
     fun testDefaultVideoHeightSelection() {
-        assertEquals(720, DashboardResourcesMediaUtils.defaultVideoHeightSelection(1920))
-        assertEquals(720, DashboardResourcesMediaUtils.defaultVideoHeightSelection(1080))
-        assertEquals(720, DashboardResourcesMediaUtils.defaultVideoHeightSelection(720))
-        assertEquals(576, DashboardResourcesMediaUtils.defaultVideoHeightSelection(576))
-        assertEquals(480, DashboardResourcesMediaUtils.defaultVideoHeightSelection(480))
-        assertEquals(480, DashboardResourcesMediaUtils.defaultVideoHeightSelection(240))
+        val cases = listOf(
+            1080 to 720,
+            2160 to 720,
+            720 to 720,
+            1079 to 720,
+            576 to 576,
+            719 to 576,
+            575 to 480,
+            480 to 480,
+            240 to 480,
+            0 to 480,
+            -1 to 480
+        )
+
+        cases.forEach { (sourceHeight, expectedHeight) ->
+            assertEquals(
+                "Failed for source height $sourceHeight",
+                expectedHeight,
+                DashboardResourcesMediaUtils.defaultVideoHeightSelection(sourceHeight)
+            )
+        }
     }
 
     @Test
@@ -151,14 +165,24 @@ class DashboardResourcesMediaUtilsTest {
         assertEquals(
             211111L,
             DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
-                1000000L, 1080, 720, 10000L, 0L, 5000L
+                1000000L,
+                1080,
+                720,
+                10000L,
+                0L,
+                5000L
             )
         )
 
         assertEquals(
             65536L,
             DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
-                1L, 1080, 720, 10000L, 0L, 5000L
+                1L,
+                1080,
+                720,
+                10000L,
+                0L,
+                5000L
             )
         )
     }
@@ -184,7 +208,6 @@ class DashboardResourcesMediaUtilsTest {
         `when`(configuration.locales).thenReturn(localesFrench)
         assertEquals(1, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, options))
 
-        // Test Spanish locale
         val localesSpanish = android.os.LocaleList(Locale.forLanguageTag("es"))
         `when`(configuration.locales).thenReturn(localesSpanish)
         assertEquals(2, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, options))
