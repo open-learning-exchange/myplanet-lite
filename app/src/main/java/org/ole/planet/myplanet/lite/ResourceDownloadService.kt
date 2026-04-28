@@ -7,12 +7,22 @@ import androidx.core.net.toUri
 import java.io.File
 import org.json.JSONArray
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 internal class ResourceDownloadService(
     private val context: Context,
     private val prefsName: String,
     private val downloadedResourcesKey: String
 ) {
+
+    private val securePrefs by lazy {
+        SecurePreferencesProvider.getEncryptedPreferences(
+            context = context,
+            prefsName = "encrypted_$prefsName",
+            legacyPrefsName = prefsName
+        )
+    }
+
     fun saveDownloadedResourceFile(item: ResourceUi, bytes: ByteArray): File? {
         return runCatching {
             val normalizedResourceFolder = item.id.takeIf { it.isNotBlank() } ?: "_no_id"
@@ -23,18 +33,23 @@ internal class ResourceDownloadService(
     }
 
     fun loadDownloadedResources(): List<ResourceUi> {
-        val raw = context.getSharedPreferences(prefsName, 0)
+        val raw = securePrefs
             .getString(downloadedResourcesKey, "[]")
             .orEmpty()
+
         val json = runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
         val items = mutableListOf<ResourceUi>()
+
         for (i in 0 until json.length()) {
             val obj = json.optJSONObject(i) ?: continue
+
             val id = obj.optString("id").orEmpty()
             val filename = obj.optString("filename").orEmpty()
             val isTeamResource = obj.optBoolean("isTeamResource", false)
+
             val local = findLocalResourceFile(id, filename, isTeamResource)
             if (local?.exists() != true) continue
+
             items.add(
                 ResourceUi(
                     id = id,
@@ -49,24 +64,31 @@ internal class ResourceDownloadService(
                 )
             )
         }
+
         return items
     }
 
     fun upsertDownloadedResource(item: ResourceUi) {
-        val prefs = context.getSharedPreferences(prefsName, 0)
+        val prefs = securePrefs
+
         val existing = runCatching {
             JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty())
         }.getOrElse { JSONArray() }
+
         val filtered = mutableListOf<JSONObject>()
+
         for (i in 0 until existing.length()) {
             val obj = existing.optJSONObject(i) ?: continue
+
             val key = storedResourceKey(
                 id = obj.optString("id"),
                 filename = obj.optString("filename"),
                 isTeamResource = obj.optBoolean("isTeamResource", false)
             )
+
             if (key != item.uniqueKey()) filtered.add(obj)
         }
+
         filtered.add(
             JSONObject().apply {
                 put("id", item.id)
@@ -78,34 +100,45 @@ internal class ResourceDownloadService(
                 put("isTeamResource", item.isTeamResource)
             }
         )
+
         val next = JSONArray()
         filtered.forEach { next.put(it) }
+
         prefs.edit { putString(downloadedResourcesKey, next.toString()) }
     }
 
     fun removeDownloadedResource(item: ResourceUi) {
-        val prefs = context.getSharedPreferences(prefsName, 0)
+        val prefs = securePrefs
+
         val existing = runCatching {
             JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty())
         }.getOrElse { JSONArray() }
+
         val next = JSONArray()
+
         for (i in 0 until existing.length()) {
             val obj = existing.optJSONObject(i) ?: continue
+
             val key = storedResourceKey(
                 id = obj.optString("id"),
                 filename = obj.optString("filename"),
                 isTeamResource = obj.optBoolean("isTeamResource", false)
             )
+
             if (key != item.uniqueKey()) next.put(obj)
         }
+
         prefs.edit { putString(downloadedResourcesKey, next.toString()) }
     }
 
     fun findLocalResourceFile(resourceId: String, filename: String, isTeamResource: Boolean): File? {
         if (filename.isBlank()) return null
+
         val publicDownloads = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)
         val tabFolder = if (isTeamResource) "team" else "community"
+
         val candidates = mutableListOf<File>()
+
         if (resourceId.isNotBlank()) {
             candidates += File(context.filesDir, "resources/$tabFolder/$resourceId/$filename")
             candidates += File(context.filesDir, "resources/$resourceId/$filename")
@@ -114,7 +147,9 @@ internal class ResourceDownloadService(
             candidates += File(context.filesDir, "resources/_no_id/$filename")
             candidates += File(context.filesDir, "resources/$filename")
         }
+
         candidates += File(publicDownloads, filename)
+
         context.getExternalFilesDir(null)?.let {
             if (resourceId.isNotBlank()) {
                 candidates.add(File(it, "resources/$tabFolder/$resourceId/$filename"))
@@ -124,6 +159,7 @@ internal class ResourceDownloadService(
                 candidates.add(File(it, "resources/_no_id/$filename"))
             }
         }
+
         context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.let {
             if (resourceId.isNotBlank()) {
                 candidates.add(File(it, "resources/$tabFolder/$resourceId/$filename"))
@@ -133,14 +169,17 @@ internal class ResourceDownloadService(
                 candidates.add(File(it, "resources/_no_id/$filename"))
             }
         }
+
         return candidates.firstOrNull { it.exists() }
     }
 
     fun resolveResourceUri(baseUrl: String?, item: ResourceUi): String? {
         val localFile = findLocalResourceFile(item.id, item.filename, item.isTeamResource)
         if (localFile?.exists() == true) return localFile.toURI().toString()
+
         val trimmedBase = baseUrl?.trim()?.trimEnd('/').orEmpty()
         if (trimmedBase.isBlank() || item.id.isBlank() || item.filename.isBlank()) return null
+
         return trimmedBase.toUri().buildUpon()
             .appendPath("db")
             .appendPath("resources")
