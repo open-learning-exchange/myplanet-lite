@@ -7,7 +7,6 @@ import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -21,11 +20,41 @@ import java.util.Locale
 class DashboardResourcesMediaUtilsTest {
 
     @Test
-    fun testSanitizeResourceName() {
-        assertEquals("valid_name", DashboardResourcesMediaUtils.sanitizeResourceName("valid_name"))
-        assertEquals("invalid_name", DashboardResourcesMediaUtils.sanitizeResourceName("invalid@name!"))
-        assertEquals("multiple_spaces", DashboardResourcesMediaUtils.sanitizeResourceName("multiple   spaces"))
+    fun sanitizeResourceName_validName_noChanges() {
+        assertEquals("valid_name-123", DashboardResourcesMediaUtils.sanitizeResourceName("valid_name-123"))
+    }
+
+    @Test
+    fun sanitizeResourceName_replacesSpacesWithUnderscores() {
+        assertEquals("file_name_with_spaces", DashboardResourcesMediaUtils.sanitizeResourceName("file name with spaces"))
+    }
+
+    @Test
+    fun sanitizeResourceName_removesSpecialCharacters() {
+        assertEquals("file_name", DashboardResourcesMediaUtils.sanitizeResourceName("file!@#$%^&*()name"))
+    }
+
+    @Test
+    fun sanitizeResourceName_collapsesMultipleUnderscores() {
+        assertEquals(
+            "file_name---with_multiple_underscores",
+            DashboardResourcesMediaUtils.sanitizeResourceName("file___name---with___multiple___underscores")
+        )
+    }
+
+    @Test
+    fun sanitizeResourceName_removesLeadingAndTrailingUnderscores() {
+        assertEquals("file_name", DashboardResourcesMediaUtils.sanitizeResourceName("___file_name___"))
+    }
+
+    @Test
+    fun sanitizeResourceName_emptyString_defaultsToResourcePrefix() {
         assertTrue(DashboardResourcesMediaUtils.sanitizeResourceName("").startsWith("resource_"))
+    }
+
+    @Test
+    fun sanitizeResourceName_blankString_defaultsToResourcePrefix() {
+        assertTrue(DashboardResourcesMediaUtils.sanitizeResourceName("   ").startsWith("resource_"))
     }
 
     @Test
@@ -46,6 +75,7 @@ class DashboardResourcesMediaUtilsTest {
             put("author", "Test Author")
             put("year", "2023")
         }
+
         DashboardResourcesMediaUtils.applyWebCompatibleResourceDefaults(existingPayload)
 
         assertEquals("Test Author", existingPayload.getString("author"))
@@ -65,8 +95,18 @@ class DashboardResourcesMediaUtilsTest {
     @Test
     fun testExtensionForImageMimeType() {
         assertEquals("png", DashboardResourcesMediaUtils.extensionForImageMimeType("image/png"))
+        assertEquals("png", DashboardResourcesMediaUtils.extensionForImageMimeType("image/x-png"))
+        assertEquals("png", DashboardResourcesMediaUtils.extensionForImageMimeType("PNG"))
+
         assertEquals("webp", DashboardResourcesMediaUtils.extensionForImageMimeType("image/webp"))
+        assertEquals("webp", DashboardResourcesMediaUtils.extensionForImageMimeType("WEBP"))
+
         assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("image/jpeg"))
+        assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("image/gif"))
+        assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("image/bmp"))
+        assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("application/pdf"))
+        assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType(""))
+        assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("UNKNOWN"))
         assertEquals("jpg", DashboardResourcesMediaUtils.extensionForImageMimeType("unknown/mime"))
     }
 
@@ -101,24 +141,26 @@ class DashboardResourcesMediaUtilsTest {
 
     @Test
     fun testEstimateAudioUploadSizeBytes() {
-        // 128 kbps, 10 seconds -> 128,000 bits/sec * 10 sec = 1,280,000 bits = 160,000 bytes. With 1.05 multiplier = 168,000 bytes
         assertEquals(168000L, DashboardResourcesMediaUtils.estimateAudioUploadSizeBytes(128, 10000L))
-        // 64 kbps, 5 seconds -> 64,000 * 5 = 320,000 bits = 40,000 bytes. With 1.05 multiplier = 42,000 bytes
         assertEquals(42000L, DashboardResourcesMediaUtils.estimateAudioUploadSizeBytes(64, 5000L))
-        // Minimum threshold test
         assertEquals(1024L, DashboardResourcesMediaUtils.estimateAudioUploadSizeBytes(1, 1L))
     }
 
     @Test
     fun testEstimateVideoUploadSizeBytes() {
-        // sourceSizeBytes = 1000000L, sourceHeight = 1080, selectedHeight = 720, sourceDuration = 10000, start = 0, end = 5000
-        // durationFactor = 5000 / 10000 = 0.5
-        // resolutionFactor = (720 / 1080)^2 = (2/3)^2 = 4/9
-        // estimated = 1000000 * 4/9 * 0.5 * 0.95 = 211111L
-        assertEquals(211111L, DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(1000000L, 1080, 720, 10000L, 0L, 5000L))
+        assertEquals(
+            211111L,
+            DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
+                1000000L, 1080, 720, 10000L, 0L, 5000L
+            )
+        )
 
-        // Minimum threshold test
-        assertEquals(65536L, DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(1L, 1080, 720, 10000L, 0L, 5000L))
+        assertEquals(
+            65536L,
+            DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
+                1L, 1080, 720, 10000L, 0L, 5000L
+            )
+        )
     }
 
     @Test
@@ -126,25 +168,18 @@ class DashboardResourcesMediaUtilsTest {
         val context = mock(Context::class.java)
         val resources = mock(Resources::class.java)
         val configuration = mock(Configuration::class.java)
+
         val options = listOf("English", "French", "Spanish")
 
-        // Mock getting string resources directly to bypass actual application context
-        `when`(context.getString(R.string.language_name_nepali)).thenReturn("Nepali")
+        `when`(context.getString(R.string.language_name_english)).thenReturn("English")
         `when`(context.getString(R.string.language_name_french)).thenReturn("French")
         `when`(context.getString(R.string.language_name_spanish)).thenReturn("Spanish")
-        `when`(context.getString(R.string.language_name_arabic)).thenReturn("Arabic")
-        `when`(context.getString(R.string.language_name_somali)).thenReturn("Somali")
-        `when`(context.getString(R.string.language_name_hindi)).thenReturn("Hindi")
-        `when`(context.getString(R.string.language_name_portuguese)).thenReturn("Portuguese")
-        `when`(context.getString(R.string.language_name_english)).thenReturn("English")
 
-        // Test English locale
         val localesEnglish = android.os.LocaleList(Locale.ENGLISH)
         `when`(configuration.locales).thenReturn(localesEnglish)
         `when`(resources.configuration).thenReturn(configuration)
         assertEquals(0, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, options))
 
-        // Test French locale
         val localesFrench = android.os.LocaleList(Locale.FRENCH)
         `when`(configuration.locales).thenReturn(localesFrench)
         assertEquals(1, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, options))
@@ -154,12 +189,10 @@ class DashboardResourcesMediaUtilsTest {
         `when`(configuration.locales).thenReturn(localesSpanish)
         assertEquals(2, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, options))
 
-        // Test unlisted locale defaults to English if present
         val localesGerman = android.os.LocaleList(Locale.GERMAN)
         `when`(configuration.locales).thenReturn(localesGerman)
         assertEquals(0, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, options))
 
-        // Test unlisted locale defaults to 0 if English is also absent
         val optionsNoEnglish = listOf("French", "Spanish")
         assertEquals(0, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, optionsNoEnglish))
     }
