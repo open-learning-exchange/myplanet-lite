@@ -135,28 +135,39 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         val availableTeamsData: AvailableTeamsData
     )
 
-    private fun loadTeams() {
+    private data class ValidationContext(
+        val base: String,
+        val username: String,
+        val credentials: StoredCredentials
+    )
+
+    private fun validatePreconditions(): ValidationContext? {
         val base = baseUrl
         val username = currentUsername
-        val context = context ?: return
+        val context = context ?: return null
         val credentials = ProfileCredentialsStore.getStoredCredentials(context)
+
         if (base.isNullOrBlank()) {
             showEmptyState(R.string.dashboard_teams_no_server)
-            return
+            return null
         }
         if (username.isNullOrBlank()) {
             showEmptyState(R.string.dashboard_teams_no_user)
-            return
+            return null
         }
         pendingJoinRequests = emptySet()
         if (credentials == null) {
             showEmptyState(R.string.dashboard_teams_no_credentials)
-            return
+            return null
         }
         if (isLoading) {
             stopRefreshing()
-            return
+            return null
         }
+        return ValidationContext(base, username, credentials)
+    }
+
+    private fun prepareForLoading() {
         isLoading = true
         isPaging = false
         hasMoreAvailableTeams = true
@@ -165,32 +176,46 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         memberTeams = emptyList()
         memberCounts.clear()
         updateLoadingVisibility()
+    }
+
+    private fun processTeamsData(data: TeamsLoadResult) {
+        membershipsByTeamId = data.membershipsByTeamId
+        joinRequestsByTeamId = data.joinRequestsByTeamId
+        pendingJoinRequests = joinRequestsByTeamId.keys - membershipsByTeamId.keys
+
+        memberTeams = data.memberTeams
+        memberCounts.putAll(data.memberCounts)
+
+        val availableData = data.availableTeamsData
+        availableTeams.addAll(availableData.teams)
+        memberCounts.putAll(availableData.counts)
+        availableData.teams.mapNotNull { it.id }.forEach { id ->
+            memberCounts.putIfAbsent(id, 0)
+        }
+
+        availableSkip = availableData.teams.size
+        hasMoreAvailableTeams = availableData.teams.size >= pageSize
+
+        renderTeams(memberTeams, availableTeams, memberCounts)
+    }
+
+    private fun loadTeams() {
+        val validationContext = validatePreconditions() ?: return
+
+        prepareForLoading()
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val result = fetchAllTeamsData(base, username, credentials, sessionCookie)
+                val result = fetchAllTeamsData(
+                    validationContext.base,
+                    validationContext.username,
+                    validationContext.credentials,
+                    sessionCookie
+                )
                 val data = result.getOrElse {
                     handleLoadError()
                     return@launch
                 }
-
-                membershipsByTeamId = data.membershipsByTeamId
-                joinRequestsByTeamId = data.joinRequestsByTeamId
-                pendingJoinRequests = joinRequestsByTeamId.keys - membershipsByTeamId.keys
-
-                memberTeams = data.memberTeams
-                memberCounts.putAll(data.memberCounts)
-
-                val availableData = data.availableTeamsData
-                availableTeams.addAll(availableData.teams)
-                memberCounts.putAll(availableData.counts)
-                availableData.teams.mapNotNull { it.id }.forEach { id ->
-                    memberCounts.putIfAbsent(id, 0)
-                }
-
-                availableSkip = availableData.teams.size
-                hasMoreAvailableTeams = availableData.teams.size >= pageSize
-
-                renderTeams(memberTeams, availableTeams, memberCounts)
+                processTeamsData(data)
             } finally {
                 isLoading = false
                 updateLoadingVisibility()
