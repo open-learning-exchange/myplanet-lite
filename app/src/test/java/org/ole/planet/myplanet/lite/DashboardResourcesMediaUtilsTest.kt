@@ -147,12 +147,34 @@ class DashboardResourcesMediaUtilsTest {
 
     @Test
     fun testAllowedVideoHeights() {
-        assertEquals(listOf(480, 576, 720, 1080), DashboardResourcesMediaUtils.allowedVideoHeights(1920))
-        assertEquals(listOf(480, 576, 720, 1080), DashboardResourcesMediaUtils.allowedVideoHeights(1080))
-        assertEquals(listOf(480, 576, 720), DashboardResourcesMediaUtils.allowedVideoHeights(720))
-        assertEquals(listOf(480, 576), DashboardResourcesMediaUtils.allowedVideoHeights(576))
-        assertEquals(listOf(480), DashboardResourcesMediaUtils.allowedVideoHeights(480))
-        assertEquals(listOf(480), DashboardResourcesMediaUtils.allowedVideoHeights(240))
+        val cases = listOf(
+            1080 to listOf(480, 576, 720, 1080),
+            1920 to listOf(480, 576, 720, 1080),
+            2160 to listOf(480, 576, 720, 1080),
+
+            720 to listOf(480, 576, 720),
+            800 to listOf(480, 576, 720),
+            1079 to listOf(480, 576, 720),
+
+            576 to listOf(480, 576),
+            600 to listOf(480, 576),
+            719 to listOf(480, 576),
+
+            575 to listOf(480),
+            480 to listOf(480),
+            360 to listOf(480),
+            240 to listOf(480),
+            0 to listOf(480),
+            -10 to listOf(480)
+        )
+
+        cases.forEach { (input, expected) ->
+            assertEquals(
+                "Failed for height $input",
+                expected,
+                DashboardResourcesMediaUtils.allowedVideoHeights(input)
+            )
+        }
     }
 
     @Test
