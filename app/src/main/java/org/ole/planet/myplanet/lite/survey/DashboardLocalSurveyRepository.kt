@@ -5,6 +5,8 @@ import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import java.io.Closeable
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardOfflineSurveyStore
@@ -60,10 +62,18 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
 
         if (pendingEntries.isEmpty()) return
 
-        pendingEntries.forEach { entry ->
-            val result = submissionsRepo.submitSurvey(base, creds, sessionCookie, entry.submission)
-            if (result.isSuccess) {
-                outboxStore.deleteEntry(entry.id)
+        coroutineScope {
+            val deferredResults = pendingEntries.map { entry ->
+                async(Dispatchers.IO) {
+                    val result = submissionsRepo.submitSurvey(base, creds, sessionCookie, entry.submission)
+                    entry to result
+                }
+            }
+            deferredResults.forEach { deferred ->
+                val (entry, result) = deferred.await()
+                if (result.isSuccess) {
+                    outboxStore.deleteEntry(entry.id)
+                }
             }
         }
     }

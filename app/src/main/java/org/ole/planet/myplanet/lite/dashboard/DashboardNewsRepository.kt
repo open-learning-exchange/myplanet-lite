@@ -58,7 +58,7 @@ class DashboardNewsRepository(
                         }
                     }
                     viewInClause?.let { clause ->
-                        selector["viewIn"] = mapOf("\$elemMatch" to clause)
+                        selector["viewIn"] = mapOf($$"$elemMatch" to clause)
                     }
                 }
                 val payload = NewsFindRequest(
@@ -143,7 +143,7 @@ class DashboardNewsRepository(
                         }
                     }
                     viewInClause?.let { clause ->
-                        selector["viewIn"] = mapOf("\$elemMatch" to clause)
+                        selector["viewIn"] = mapOf($$"$elemMatch" to clause)
                     }
                 }
                 val payload = NewsFindRequest(

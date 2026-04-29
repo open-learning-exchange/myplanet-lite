@@ -148,7 +148,7 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
         }
     }
 
-    private fun bindProfile(profile: DashboardTeamsRepository.TeamMemberProfileDetails, fallbackName: String, username: String) {
+    private fun bindProfile(profile: TeamMemberProfileDetails, fallbackName: String, username: String) {
         val fullName = profile.fullName ?: fallbackName
         nameView.text = fullName
         identityNameView.text = fullName

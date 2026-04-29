@@ -20,4 +20,5 @@
     <color name="survey_rating_selected_text">#FFFFFF</color>
     <color name="survey_rating_default_text">#000000</color>
     <color name="course_wizard_top_background">#6A1B9A</color>
+    <color name="dashboard_reject_red">#D32F2F</color>
 </resources>
