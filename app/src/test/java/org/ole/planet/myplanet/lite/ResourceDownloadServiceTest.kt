@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Context
+import android.os.Build
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
@@ -11,7 +12,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.annotation.Config
-import android.os.Build
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [Build.VERSION_CODES.P])
