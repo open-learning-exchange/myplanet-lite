@@ -33,10 +33,10 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.JoinRequestDocument
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.JoinTeamRequest
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.MembershipDocument
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository.TeamDocument
+import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
+import org.ole.planet.myplanet.lite.dashboard.JoinTeamRequest
+import org.ole.planet.myplanet.lite.dashboard.MembershipDocument
+import org.ole.planet.myplanet.lite.dashboard.TeamDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
