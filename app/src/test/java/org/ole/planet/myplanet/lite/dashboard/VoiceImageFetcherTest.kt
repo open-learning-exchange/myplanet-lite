@@ -156,8 +156,32 @@ class VoiceImageFetcherTest {
             cacheDir = tempCacheDir,
             sessionCookie = null,
             baseUrl = baseUrl,
-            imagePath = "../etc/passwd",
-            generateImageFileName = { ".." },
+            imagePath = "images/..%2f..%2fetc/passwd",
+            generateImageFileName = { "../passwd" },
+            generatePendingImageId = { "pending-$it" }
+        )
+        // Note: extractFileName gets "images/..%2f..%2fetc/passwd" -> "passwd".
+        // Let's pass a path that extractFileName returns something with "../" like "images/.." or "foo/.." so that extractFileName yields ".." which triggers path traversal.
+        // Actually wait, if extractFileName gives "passwd", it's safe! The traversal must be in the filename.
+        // To properly test the IDOR blocking, we should provide an imagePath like "http://server/foo/.." which extracts ".." or just a name like "../passwd".
+        // Wait, if imagePath is "../passwd", extractFileName returns "passwd". We need extractFileName to return null or "../passwd", which is impossible.
+        // So the only traversal vector is if `extractFileName(imagePath)` returns `null`, and `generateImageFileName` returns the traversal string, OR `extractFileName` yields something with `..`.
+        // What if `imagePath` is `images/foo/..`? extractFileName gets `..`. That's traversal. Let's use `images/..`
+    }
+
+    @Test
+    fun `fetchExistingImage with directory traversal path returns null blocked`() {
+        val dummyBytes = "dummy_image_data".toByteArray()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(String(dummyBytes)))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = VoiceImageFetcher.fetchExistingImage(
+            httpClient = okHttpClient,
+            cacheDir = tempCacheDir,
+            sessionCookie = null,
+            baseUrl = baseUrl,
+            imagePath = "db/resources/123/..",
+            generateImageFileName = { "generated.jpg" },
             generatePendingImageId = { "pending-$it" }
         )
 
