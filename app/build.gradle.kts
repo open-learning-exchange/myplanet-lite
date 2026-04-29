@@ -20,8 +20,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 273
-        versionName = "0.2.73"
+        versionCode = 281
+        versionName = "0.2.81"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -46,6 +46,7 @@ android {
 }
 
 tasks.withType<Test>().configureEach {
+    jvmArgs("-Xshare:off")
     systemProperty("robolectric.logging", "none")
     systemProperty("robolectric.logging.enabled", "false")
 
