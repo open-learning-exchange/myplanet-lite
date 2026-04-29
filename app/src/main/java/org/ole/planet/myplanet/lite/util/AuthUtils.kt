@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.lite.util
 
+import android.util.Log
 import java.net.URI
 
 object AuthUtils {
@@ -28,6 +29,7 @@ object AuthUtils {
 
             isLocalOrPrivateIp(host)
         } catch (e: Exception) {
+            Log.e("AuthUtils", "Error validating URL: $url with base: $base", e)
             false
         }
     }
