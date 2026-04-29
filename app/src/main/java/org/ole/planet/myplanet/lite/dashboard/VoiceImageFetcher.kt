@@ -36,6 +36,11 @@ object VoiceImageFetcher {
                 }
                 val fileName = extractFileName(imagePath) ?: generateImageFileName()
                 val tempFile = File(cacheDir, fileName)
+                val canonicalTempFile = tempFile.canonicalFile
+                val canonicalCacheDir = cacheDir.canonicalFile
+                if (!canonicalTempFile.canonicalPath.startsWith(canonicalCacheDir.canonicalPath + File.separator) && canonicalTempFile != canonicalCacheDir) {
+                    return null
+                }
                 FileOutputStream(tempFile).use { output ->
                     output.write(bytes)
                 }
