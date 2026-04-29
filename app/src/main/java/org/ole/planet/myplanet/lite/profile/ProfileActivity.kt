@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.ImageView
@@ -514,6 +515,7 @@ class ProfileActivity : BaseActivity() {
                     true
                 }
             } catch (error: Exception) {
+                Log.e("ProfileActivity", "Error executing profile update", error)
                 false
             }
         }
@@ -609,6 +611,7 @@ class ProfileActivity : BaseActivity() {
                     JSONObject(body)
                 }
             } catch (error: Exception) {
+                Log.e("ProfileActivity", "Error fetching remote profile", error)
                 null
             }
         }
@@ -922,6 +925,7 @@ class ProfileActivity : BaseActivity() {
                 square
             }
         } catch (ex: Exception) {
+            Log.e("ProfileActivity", "Error loading scaled avatar", ex)
             null
         }
     }
@@ -970,6 +974,7 @@ class ProfileActivity : BaseActivity() {
         return try {
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
         } catch (ex: Exception) {
+            Log.e("ProfileActivity", "Error decoding avatar bytes", ex)
             null
         }
     }
