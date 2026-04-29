@@ -92,8 +92,10 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
         waveformView.clear()
         try {
             mediaRecorder?.stop()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
+        mediaRecorder?.reset()
         mediaRecorder?.release()
         mediaRecorder = null
         recordButton.setImageResource(R.drawable.ic_add_record_24)
