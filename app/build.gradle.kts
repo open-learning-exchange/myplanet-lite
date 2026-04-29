@@ -46,6 +46,7 @@ android {
 }
 
 tasks.withType<Test>().configureEach {
+    jvmArgs("-Xshare:off")
     systemProperty("robolectric.logging", "none")
     systemProperty("robolectric.logging.enabled", "false")
 
