@@ -13,6 +13,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Base64
+import android.util.Log
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.ImageView
@@ -514,6 +515,7 @@ class ProfileActivity : BaseActivity() {
                     true
                 }
             } catch (error: Exception) {
+                Log.e("ProfileActivity", "Error executing profile update request", error)
                 false
             }
         }
