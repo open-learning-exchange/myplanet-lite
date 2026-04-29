@@ -144,4 +144,23 @@ class VoiceImageFetcherTest {
         assertEquals("12345", result?.fileName)
         assertEquals("!(resources/12345/)", result?.uploadedMarkdown?.replace("[]", ""))
     }
+
+    @Test
+    fun `fetchExistingImage with directory traversal path returns null`() {
+        val dummyBytes = "dummy_image_data".toByteArray()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(String(dummyBytes)))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = VoiceImageFetcher.fetchExistingImage(
+            httpClient = okHttpClient,
+            cacheDir = tempCacheDir,
+            sessionCookie = null,
+            baseUrl = baseUrl,
+            imagePath = "../etc/passwd",
+            generateImageFileName = { ".." },
+            generatePendingImageId = { "pending-$it" }
+        )
+
+        assertNull("Result should be null due to path traversal blocking", result)
+    }
 }
