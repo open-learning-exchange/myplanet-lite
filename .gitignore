@@ -160,3 +160,5 @@ benchmark.kt
 app/baseline_time.txt
 
 plan.md
+
+.kotlin/sessions/
