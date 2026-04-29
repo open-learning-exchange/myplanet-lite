@@ -92,7 +92,8 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
         waveformView.clear()
         try {
             mediaRecorder?.stop()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
         mediaRecorder?.release()
         mediaRecorder = null
