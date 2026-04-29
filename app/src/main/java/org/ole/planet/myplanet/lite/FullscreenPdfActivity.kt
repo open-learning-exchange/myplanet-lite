@@ -140,9 +140,16 @@ class FullscreenPdfActivity : AppCompatActivity() {
             runCatching {
                 val parsedUri = android.net.Uri.parse(url)
                 if (parsedUri.scheme == "file") {
+                    if (!isSafeLocalFile(this@FullscreenPdfActivity, parsedUri)) {
+                        return@withContext null
+                    }
                     val localFile = File(parsedUri.path.orEmpty())
                     if (localFile.exists()) {
                         return@withContext localFile
+                    }
+                } else {
+                    if (!isSafeHttpUrl(url)) {
+                        return@withContext null
                     }
                 }
                 val request = Request.Builder()
@@ -220,6 +227,39 @@ class FullscreenPdfActivity : AppCompatActivity() {
             fun clear() {
                 imageView.setImageDrawable(null)
             }
+        }
+    }
+
+    private fun isSafeHttpUrl(url: String): Boolean {
+        val uri = android.net.Uri.parse(url)
+        val scheme = uri.scheme
+        if (scheme != "http" && scheme != "https") return false
+        val host = uri.host ?: return false
+        return try {
+            val address = java.net.InetAddress.getByName(host)
+            !address.isAnyLocalAddress &&
+            !address.isLoopbackAddress &&
+            !address.isLinkLocalAddress &&
+            !address.isSiteLocalAddress
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    private fun isSafeLocalFile(context: Context, uri: android.net.Uri): Boolean {
+        if (uri.scheme != "file") return false
+        val path = uri.path ?: return false
+        val file = File(path)
+        return try {
+            val canonicalPath = file.canonicalPath
+            val safeDirs = listOf(
+                context.filesDir.canonicalPath,
+                context.cacheDir.canonicalPath,
+                context.getExternalFilesDir(null)?.canonicalPath
+            ).mapNotNull { it }
+            safeDirs.any { canonicalPath.startsWith(it) }
+        } catch (e: Exception) {
+            false
         }
     }
 
