@@ -9,7 +9,10 @@ import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.mockito.Mockito.mock
+import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
+import org.mockito.kotlin.never
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
@@ -17,14 +20,19 @@ class ProfileCredentialsStoreTest {
     private lateinit var mockContext: Context
     private lateinit var mockAppContext: Context
     private lateinit var mockPrefs: SharedPreferences
+    private lateinit var mockEditor: SharedPreferences.Editor
 
     @Before
     fun setup() {
         mockContext = mock()
         mockAppContext = mock()
         mockPrefs = mock()
+        mockEditor = mock()
 
         whenever(mockContext.applicationContext).thenReturn(mockAppContext)
+        whenever(mockPrefs.edit()).thenReturn(mockEditor)
+        whenever(mockEditor.putString(any(), any())).thenReturn(mockEditor)
+        whenever(mockEditor.remove(any())).thenReturn(mockEditor)
         SecurePreferencesProvider.resetForTesting()
         SecurePreferencesProvider.injectedPreferences = mockPrefs
 
@@ -88,5 +96,39 @@ class ProfileCredentialsStoreTest {
         val result = ProfileCredentialsStore.getStoredCredentials(mockContext)
 
         assertNull(result)
+    }
+
+    @Test
+    fun `test saveTemporarySignUpPassword stores password correctly`() {
+        val password = "tempPassword123"
+
+        ProfileCredentialsStore.saveTemporarySignUpPassword(mockContext, password)
+
+        verify(mockPrefs).edit()
+        verify(mockEditor).putString(eq("temp_signup_password"), eq(password))
+        verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `test consumeTemporarySignUpPassword returns value and clears when present`() {
+        val password = "tempPassword123"
+        whenever(mockPrefs.getString(eq("temp_signup_password"), eq(null))).thenReturn(password)
+
+        val result = ProfileCredentialsStore.consumeTemporarySignUpPassword(mockContext)
+
+        assertEquals(password, result)
+        verify(mockPrefs).edit()
+        verify(mockEditor).remove(eq("temp_signup_password"))
+        verify(mockEditor).apply()
+    }
+
+    @Test
+    fun `test consumeTemporarySignUpPassword returns null and does not clear when absent`() {
+        whenever(mockPrefs.getString(eq("temp_signup_password"), eq(null))).thenReturn(null)
+
+        val result = ProfileCredentialsStore.consumeTemporarySignUpPassword(mockContext)
+
+        assertNull(result)
+        verify(mockPrefs, never()).edit()
     }
 }
