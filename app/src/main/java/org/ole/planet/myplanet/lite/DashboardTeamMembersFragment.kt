@@ -231,29 +231,6 @@ class DashboardTeamMembersFragment : Fragment() {
         showLoading(!isPullToRefresh)
         fetchJob?.cancel()
         fetchJob = viewLifecycleOwner.lifecycleScope.launch {
-            val teamPlanetCodeForRequests = currentTeamPlanetCode ?: serverPlanetCode
-            val joinRequests = if (teamPlanetCodeForRequests.isNullOrBlank()) {
-                emptyList<JoinRequestDocument>()
-            } else {
-                repository.fetchTeamJoinRequests(
-                    baseUrl = base,
-                    credentials = creds,
-                    sessionCookie = sessionCookie,
-                    teamId = teamId,
-                    teamPlanetCode = teamPlanetCodeForRequests,
-                ).getOrElse {
-                    showJoinRequestsError()
-                    null
-                }
-            }
-            if (joinRequests != null) {
-                loadJoinRequestsData(base, creds, joinRequests)
-            } else {
-                currentJoinRequests = emptyList()
-                joinRequestsAdapter.submitList(emptyList())
-                binding.dashboardTeamJoinRequestsList.isVisible = false
-            }
-
             val result = repository.fetchTeamMemberDetails(base, creds, sessionCookie, teamId)
             val members = result.getOrElse {
                 showEmptyState(getString(R.string.dashboard_team_members_error_loading))
@@ -295,6 +272,32 @@ class DashboardTeamMembersFragment : Fragment() {
             }
             currentUsername = normalizedCurrentUsername
             updateLeaderActionsVisibility()
+
+            if (isCurrentUserTeamLeader) {
+                val teamPlanetCodeForRequests = currentTeamPlanetCode ?: serverPlanetCode
+                val joinRequests = if (teamPlanetCodeForRequests.isNullOrBlank()) {
+                    emptyList<JoinRequestDocument>()
+                } else {
+                    repository.fetchTeamJoinRequests(
+                        baseUrl = base,
+                        credentials = creds,
+                        sessionCookie = sessionCookie,
+                        teamId = teamId,
+                        teamPlanetCode = teamPlanetCodeForRequests,
+                    ).getOrElse {
+                        showJoinRequestsError()
+                        null
+                    }
+                }
+                if (joinRequests != null) {
+                    loadJoinRequestsData(base, creds, joinRequests)
+                } else {
+                    hideJoinRequestsSection()
+                }
+            } else {
+                hideJoinRequestsSection()
+            }
+
             searchQuery = binding.dashboardTeamMembersSearchInput.text?.toString().orEmpty()
             applySearchFilter()
             binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
@@ -389,6 +392,13 @@ class DashboardTeamMembersFragment : Fragment() {
         updateJoinRequestsAdapterList(emptyList())
         isCurrentUserTeamLeader = false
         updateLeaderActionsVisibility()
+    }
+
+    private fun hideJoinRequestsSection() {
+        currentJoinRequests = emptyList()
+        joinRequestsAdapter.submitList(emptyList())
+        binding.dashboardTeamJoinRequestsTitle.isVisible = false
+        binding.dashboardTeamJoinRequestsList.isVisible = false
     }
 
     private fun showJoinRequestsEmptyState() {
