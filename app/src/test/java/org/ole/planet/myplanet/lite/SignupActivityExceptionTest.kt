@@ -54,7 +54,7 @@ class SignupActivityExceptionTest {
     }
 
     @Test
-    fun `executeSignupRequest shows Toast and returns FAILED on Exception`() = runTest(testDispatcher) {
+    fun `executeSignupRequest returns FAILED on Exception without showing redundant Toast`() = runTest(testDispatcher) {
         val controller = Robolectric.buildActivity(SignupActivity::class.java).create().start().resume()
         val activity = controller.get()
 
@@ -80,7 +80,8 @@ class SignupActivityExceptionTest {
         val result = deferred.await()
 
         assertEquals("FAILED", result.toString())
-        assertNotNull("Expected a Toast to be shown", ShadowToast.getLatestToast())
-        assertEquals("An unexpected error occurred.", ShadowToast.getTextOfLatestToast())
+        // Verified that no toast is shown by executeSignupRequest itself
+        // Note: the caller might show a toast, but here we are testing the internal method
+        org.junit.Assert.assertNull("Expected no Toast to be shown by executeSignupRequest", ShadowToast.getLatestToast())
     }
 }

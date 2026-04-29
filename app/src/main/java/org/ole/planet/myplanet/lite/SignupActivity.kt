@@ -9,6 +9,7 @@ package org.ole.planet.myplanet.lite
 import android.content.Intent
 import android.graphics.Rect
 import android.os.Bundle
+import android.util.Log
 import android.text.InputFilter
 import android.util.Patterns
 import android.view.View
@@ -35,6 +36,7 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -169,6 +171,7 @@ class SignupActivity : BaseActivity() {
     private var currentStepIndex = 0
 
     companion object {
+        private const val TAG = "SignupActivity"
         private const val STATE_BIRTH_DATE_SELECTION = "state_birth_date_selection"
         private const val STATE_STEP_INDEX = "state_step_index"
         private const val BIRTH_DATE_PICKER_TAG = "signup_birth_date_picker"
@@ -1024,10 +1027,11 @@ class SignupActivity : BaseActivity() {
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
-            } catch (_: Exception) {
-                withContext(Dispatchers.Main) {
-                    android.widget.Toast.makeText(this@SignupActivity, "An unexpected error occurred.", android.widget.Toast.LENGTH_SHORT).show()
-                }
+            } catch (e: IOException) {
+                Log.e(TAG, "Network error during signup", e)
+                SignupSubmissionResult.FAILED
+            } catch (e: Exception) {
+                Log.e(TAG, "Unexpected error during signup", e)
                 SignupSubmissionResult.FAILED
             }
         }
