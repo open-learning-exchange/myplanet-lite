@@ -155,7 +155,8 @@ object DashboardResourcesMediaUtils {
         return try {
             retriever.setDataSource(context, uri)
             retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toIntOrNull()?.let { it / 1000 }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            e.printStackTrace()
             null
         } finally {
             runCatching { retriever.release() }
