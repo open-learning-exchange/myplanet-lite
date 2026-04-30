@@ -55,7 +55,7 @@
                     android:layout_height="wrap_content"
                     android:alpha="0.72"
                     android:textColor="?attr/colorOnSurface"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_size_12sp"
                     tools:text="@lasmuchedumbres • 22h" />
 
             </LinearLayout>
@@ -68,7 +68,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
             android:textColor="?attr/colorOnSurface"
-            android:textSize="14sp"
+            android:textSize="@dimen/text_size_14sp"
             tools:text="Buenas tardes Guatemala. Vean esto..." />
 
         <LinearLayout
@@ -109,7 +109,7 @@
                     android:layout_marginStart="4dp"
                     android:alpha="0.72"
                     android:textColor="?attr/colorOnSurface"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_size_12sp"
                     tools:text="1.4K" />
 
             </LinearLayout>

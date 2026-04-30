@@ -15,6 +15,10 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 class FetchCoursesPerformanceTest {
 
+    companion object {
+        private val COURSE_PATTERN = Pattern.compile("course_\\d+")
+    }
+
     private lateinit var mockWebServer: MockWebServer
     private lateinit var repository: DashboardCoursesRepository
 
@@ -36,8 +40,7 @@ class FetchCoursesPerformanceTest {
                         MockResponse().setBody("{\"rows\": [$rows]}").setResponseCode(200)
                     }
                     path.contains("/courses_progress/_find") -> {
-                        val p = Pattern.compile("course_\\d+")
-                        val matcher = p.matcher(body)
+                        val matcher = COURSE_PATTERN.matcher(body)
                         val courseIds = mutableListOf<String>()
                         while (matcher.find()) {
                             courseIds.add(matcher.group())

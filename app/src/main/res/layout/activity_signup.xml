@@ -47,7 +47,7 @@
         android:text="@string/signup_header_title"
         android:textAlignment="center"
         android:textColor="@color/greenOleLogo"
-        android:textSize="24sp"
+        android:textSize="@dimen/text_size_24sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -64,7 +64,7 @@
         android:text="@string/signup_header_message"
         android:textAlignment="center"
         android:textColor="@color/login_secondary_text"
-        android:textSize="14sp"
+        android:textSize="@dimen/text_size_14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/signupHeaderTitle" />
@@ -79,7 +79,7 @@
         app:fontFamily="@font/poppins_semibold"
         android:letterSpacing="0.02"
         android:textColor="@color/darkOle"
-        android:textSize="20sp"
+        android:textSize="@dimen/text_size_20sp"
         android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -96,7 +96,7 @@
         app:fontFamily="@font/poppins_regular"
         android:textAlignment="center"
         android:textColor="@color/login_secondary_text"
-        android:textSize="14sp"
+        android:textSize="@dimen/text_size_14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/signupTitle"
@@ -257,7 +257,7 @@
                     app:fontFamily="@font/poppins_regular"
                     android:text="@string/signup_gender_label"
                     android:textColor="@color/darkOle"
-                    android:textSize="14sp" />
+                    android:textSize="@dimen/text_size_14sp" />
 
                 <RadioGroup
                     android:id="@+id/signupGenderGroup"
@@ -287,7 +287,7 @@
                     android:layout_marginTop="8dp"
                     app:fontFamily="@font/poppins_regular"
                     android:textColor="?attr/colorError"
-                    android:textSize="12sp"
+                    android:textSize="@dimen/text_size_12sp"
                     android:visibility="gone"
                     tools:text="@string/signup_gender_error_required"
                     tools:visibility="visible" />
@@ -480,7 +480,7 @@
                             app:fontFamily="@font/poppins_semibold"
                             android:text="@string/signup_license_title"
                             android:textColor="@android:color/black"
-                            android:textSize="18sp"
+                            android:textSize="@dimen/text_size_18sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -491,7 +491,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_subtitle"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection1Title"
@@ -501,7 +501,7 @@
                             app:fontFamily="@font/poppins_semibold"
                             android:text="@string/signup_license_section1_title"
                             android:textColor="@android:color/black"
-                            android:textSize="16sp"
+                            android:textSize="@dimen/text_size_16sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -513,7 +513,7 @@
                             android:lineSpacingExtra="4dp"
                             android:text="@string/signup_license_section1_body"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection2Title"
@@ -523,7 +523,7 @@
                             app:fontFamily="@font/poppins_semibold"
                             android:text="@string/signup_license_section2_title"
                             android:textColor="@android:color/black"
-                            android:textSize="16sp"
+                            android:textSize="@dimen/text_size_16sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -535,7 +535,7 @@
                             android:lineSpacingExtra="4dp"
                             android:text="@string/signup_license_section2_body"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection3Title"
@@ -545,7 +545,7 @@
                             app:fontFamily="@font/poppins_semibold"
                             android:text="@string/signup_license_section3_title"
                             android:textColor="@android:color/black"
-                            android:textSize="16sp"
+                            android:textSize="@dimen/text_size_16sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -557,7 +557,7 @@
                             android:lineSpacingExtra="4dp"
                             android:text="@string/signup_license_section3_body"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection4Title"
@@ -567,7 +567,7 @@
                             app:fontFamily="@font/poppins_semibold"
                             android:text="@string/signup_license_section4_title"
                             android:textColor="@android:color/black"
-                            android:textSize="16sp"
+                            android:textSize="@dimen/text_size_16sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -578,7 +578,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section4_point1"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection4Point2"
@@ -588,7 +588,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section4_point2"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection4Point3"
@@ -598,7 +598,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section4_point3"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection5Title"
@@ -608,7 +608,7 @@
                             app:fontFamily="@font/poppins_semibold"
                             android:text="@string/signup_license_section5_title"
                             android:textColor="@android:color/black"
-                            android:textSize="16sp"
+                            android:textSize="@dimen/text_size_16sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -620,7 +620,7 @@
                             android:lineSpacingExtra="4dp"
                             android:text="@string/signup_license_section5_body"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection6Title"
@@ -630,7 +630,7 @@
                             app:fontFamily="@font/poppins_semibold"
                             android:text="@string/signup_license_section6_title"
                             android:textColor="@android:color/black"
-                            android:textSize="16sp"
+                            android:textSize="@dimen/text_size_16sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -641,7 +641,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section6_intro"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection6Point1"
@@ -651,7 +651,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section6_point1"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection6Point2"
@@ -661,7 +661,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section6_point2"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection6Point3"
@@ -671,7 +671,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section6_point3"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection7Title"
@@ -681,7 +681,7 @@
                             app:fontFamily="@font/poppins_semibold"
                             android:text="@string/signup_license_section7_title"
                             android:textColor="@android:color/black"
-                            android:textSize="16sp"
+                            android:textSize="@dimen/text_size_16sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -693,7 +693,7 @@
                             android:lineSpacingExtra="4dp"
                             android:text="@string/signup_license_section7_body"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection8Title"
@@ -703,7 +703,7 @@
                             app:fontFamily="@font/poppins_semibold"
                             android:text="@string/signup_license_section8_title"
                             android:textColor="@android:color/black"
-                            android:textSize="16sp"
+                            android:textSize="@dimen/text_size_16sp"
                             android:textStyle="bold" />
 
                         <TextView
@@ -714,7 +714,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section8_intro"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection8Point1"
@@ -724,7 +724,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section8_point1"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection8Point2"
@@ -734,7 +734,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section8_point2"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
 
                         <TextView
                             android:id="@+id/signupLicenseSection8Point3"
@@ -744,7 +744,7 @@
                             app:fontFamily="@font/poppins_regular"
                             android:text="@string/signup_license_section8_point3"
                             android:textColor="@android:color/black"
-                            android:textSize="14sp" />
+                            android:textSize="@dimen/text_size_14sp" />
                     </LinearLayout>
                 </com.google.android.material.card.MaterialCardView>
 

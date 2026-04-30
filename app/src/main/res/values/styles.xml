@@ -8,7 +8,7 @@
     </style>
 
     <style name="TextAppearance.MyPlanet.DashboardDrawerItem" parent="@style/TextAppearance.Material3.TitleMedium">
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">@dimen/text_size_18sp</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     <style name="Theme.MyPlanetLite.ImagePreview" parent="Theme.MaterialComponents.Light.NoActionBar">
