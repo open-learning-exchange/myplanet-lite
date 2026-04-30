@@ -36,7 +36,7 @@
                 android:layout_height="wrap_content"
                 android:textColor="?attr/colorOnSurface"
                 android:textStyle="bold"
-                android:textSize="13sp"
+                android:textSize="@dimen/text_size_13sp"
                 tools:text="Walfre Lopez" />
 
             <TextView
@@ -45,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:alpha="0.72"
                 android:textColor="?attr/colorOnSurface"
-                android:textSize="11sp"
+                android:textSize="@dimen/text_size_11sp"
                 tools:text="@wlopez • 1h" />
 
         </LinearLayout>
@@ -68,7 +68,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
         android:textColor="?attr/colorOnSurface"
-        android:textSize="13sp"
+        android:textSize="@dimen/text_size_13sp"
         tools:text="Gracias por compartir esta información." />
 
     <LinearLayout

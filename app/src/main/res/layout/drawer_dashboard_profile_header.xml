@@ -27,7 +27,7 @@
         android:fontFamily="sans-serif-medium"
         android:text="@string/dashboard_profile_name_placeholder"
         android:textColor="@color/black"
-        android:textSize="20sp" />
+        android:textSize="@dimen/text_size_20sp" />
 
     <TextView
         android:id="@+id/drawerProfileUsername"
@@ -37,7 +37,7 @@
         android:fontFamily="sans-serif"
         android:text="@string/dashboard_profile_username_placeholder"
         android:textColor="@color/black"
-        android:textSize="14sp" />
+        android:textSize="@dimen/text_size_14sp" />
 
     <View
         android:layout_width="match_parent"

@@ -17,7 +17,7 @@
         android:fontFamily="sans-serif-medium"
         android:text="@string/dashboard_settings_title"
         android:textColor="@color/black"
-        android:textSize="20sp" />
+        android:textSize="@dimen/text_size_20sp" />
 
     <View
         android:layout_width="match_parent"

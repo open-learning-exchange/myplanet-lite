@@ -38,5 +38,5 @@
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         android:textColor="@android:color/black"
-        android:textSize="14sp" />
+        android:textSize="@dimen/text_size_14sp" />
 </FrameLayout>

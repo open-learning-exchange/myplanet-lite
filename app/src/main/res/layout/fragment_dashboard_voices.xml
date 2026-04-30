@@ -36,7 +36,7 @@
         android:paddingStart="24dp"
         android:paddingEnd="24dp"
         android:textColor="?attr/colorOnSurface"
-        android:textSize="16sp"
+        android:textSize="@dimen/text_size_16sp"
         android:visibility="gone" />
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton

@@ -49,4 +49,15 @@
     <dimen name="create_voice_preview_image_thumbnail_size">96dp</dimen>
     <dimen name="create_voice_image_preview_dialog_padding">16dp</dimen>
     <dimen name="create_voice_submit_bottom_margin">24dp</dimen>
+    <dimen name="text_size_11sp">11sp</dimen>
+    <dimen name="text_size_12sp">12sp</dimen>
+    <dimen name="text_size_13sp">13sp</dimen>
+    <dimen name="text_size_14sp">14sp</dimen>
+    <dimen name="text_size_15sp">15sp</dimen>
+    <dimen name="text_size_16sp">16sp</dimen>
+    <dimen name="text_size_18sp">18sp</dimen>
+    <dimen name="text_size_20sp">20sp</dimen>
+    <dimen name="text_size_24sp">24sp</dimen>
+    <dimen name="text_size_26sp">26sp</dimen>
+    <dimen name="text_size_28sp">28sp</dimen>
 </resources>

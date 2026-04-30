@@ -132,6 +132,6 @@
         android:paddingEnd="@dimen/dashboard_horizontal_padding"
         android:visibility="gone"
         android:textColor="?attr/colorOnSurface"
-        android:textSize="16sp" />
+        android:textSize="@dimen/text_size_16sp" />
 
 </FrameLayout>
