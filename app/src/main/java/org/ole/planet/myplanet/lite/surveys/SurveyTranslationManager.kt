@@ -262,16 +262,20 @@ class SurveyTranslationManager(
             model = openAiModel,
             sourceLanguage = normalizedSourceLanguage ?: sourceLanguage,
         )
-        val translatedChoices = question.choices.orEmpty().map { choice ->
-            choice.text?.let { text ->
-                translationClient.translate(
-                    text = text,
-                    targetLanguage = normalizedTargetLanguage,
-                    apiKey = openAiKey,
-                    model = openAiModel,
-                    sourceLanguage = normalizedSourceLanguage ?: sourceLanguage,
-                )
-            }
+        val translatedChoices = coroutineScope {
+            question.choices.orEmpty().map { choice ->
+                async {
+                    choice.text?.let { text ->
+                        translationClient.translate(
+                            text = text,
+                            targetLanguage = normalizedTargetLanguage,
+                            apiKey = openAiKey,
+                            model = openAiModel,
+                            sourceLanguage = normalizedSourceLanguage ?: sourceLanguage,
+                        )
+                    }
+                }
+            }.awaitAll()
         }
         val translation = TranslatedQuestion(translatedBody, translatedChoices)
         if (cacheSurveyId != null && translation.hasTranslation) {
