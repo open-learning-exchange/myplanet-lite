@@ -43,7 +43,9 @@ import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.util.ArrayList
 import java.util.Locale
@@ -122,6 +124,10 @@ class MyPlanetLite : BaseActivity() {
         SecurePreferencesProvider.getEncryptedPreferences(applicationContext, SECURE_PREFS_NAME)
     }
     private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
+    private val customServerAdapter: JsonAdapter<List<CustomServer>> by lazy {
+        val type = Types.newParameterizedType(List::class.java, CustomServer::class.java)
+        moshi.adapter(type)
+    }
     private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
         ServerConnectivityRepository(connectivityClient, moshi)
     }
@@ -916,18 +922,17 @@ class MyPlanetLite : BaseActivity() {
     private fun loadCustomServers(): MutableList<CustomServer> {
         val raw = serverPreferences.getString(KEY_CUSTOM_SERVERS, null) ?: return mutableListOf()
         return try {
-            val array = JSONArray(raw)
-            val result = mutableListOf<CustomServer>()
-            for (index in 0 until array.length()) {
-                val obj = array.optJSONObject(index) ?: continue
-                val baseUrl = obj.optString("baseUrl", "").trim()
-                val countryCode = obj.optString("countryCode", "").uppercase(Locale.ROOT)
-                if (baseUrl.isBlank() || countryCode.isBlank()) continue
-                val displayName = obj.optString("displayName", baseUrl)
-                result.add(CustomServer(displayName, baseUrl, countryCode))
-            }
-            result
-        } catch (error: JSONException) {
+            val decoded = customServerAdapter.fromJson(raw) ?: return mutableListOf()
+            decoded.filter { it.baseUrl.isNotBlank() && it.countryCode.isNotBlank() }
+                .map {
+                    it.copy(
+                        baseUrl = it.baseUrl.trim(),
+                        countryCode = it.countryCode.uppercase(Locale.ROOT),
+                        displayName = it.displayName.ifBlank { it.baseUrl.trim() }
+                    )
+                }
+                .toMutableList()
+        } catch (error: Exception) {
             mutableListOf()
         }
     }
@@ -944,16 +949,9 @@ class MyPlanetLite : BaseActivity() {
     }
 
     private fun persistCustomServers(servers: List<CustomServer>) {
-        val array = JSONArray()
-        servers.forEach { server ->
-            val obj = JSONObject()
-            obj.put("displayName", server.displayName)
-            obj.put("baseUrl", server.baseUrl)
-            obj.put("countryCode", server.countryCode)
-            array.put(obj)
-        }
+        val json = customServerAdapter.toJson(servers)
         serverPreferences.edit()
-            .putString(KEY_CUSTOM_SERVERS, array.toString())
+            .putString(KEY_CUSTOM_SERVERS, json)
             .apply()
     }
 
