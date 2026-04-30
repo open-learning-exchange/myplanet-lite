@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.lite.util
 
+import java.util.TimeZone
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
-import java.util.TimeZone
 
 class DateStringAdapterTest {
     private lateinit var adapter: DateStringAdapter
