@@ -13,7 +13,7 @@
         app:fontFamily="@font/poppins_regular"
         android:text="@string/login_survey_translation_consent_description"
         android:textColor="@color/darkOle"
-        android:textSize="14sp" />
+        android:textSize="@dimen/text_size_14sp" />
 
     <com.google.android.material.checkbox.MaterialCheckBox
         android:id="@+id/surveyTranslationConsentCheckBox"
@@ -22,7 +22,7 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp"
         android:text="@string/login_survey_translation_consent_accept"
-        android:textSize="14sp" />
+        android:textSize="@dimen/text_size_14sp" />
 
     <TextView
         android:id="@+id/surveyTranslationPolicyLink"
@@ -32,6 +32,6 @@
         app:fontFamily="@font/poppins_regular"
         android:text="@string/login_survey_translation_consent_policy"
         android:textColor="@color/login_primary"
-        android:textSize="14sp" />
+        android:textSize="@dimen/text_size_14sp" />
 
 </LinearLayout>
