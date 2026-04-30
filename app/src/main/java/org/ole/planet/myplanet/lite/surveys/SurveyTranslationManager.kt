@@ -24,10 +24,13 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.dashboard.ServerConfigurationRepository
@@ -399,22 +402,48 @@ class OpenAiTranslationClient(
                 temperature = 0.2,
             ),
         )
-        return withContext(Dispatchers.IO) {
-            runCatching {
+        return runCatching {
+            suspendCancellableCoroutine { continuation ->
                 val request = Request.Builder()
                     .url(OPEN_AI_CHAT_URL)
                     .addHeader("Authorization", "Bearer $apiKey")
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                     .build()
-                client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Translation request failed with ${response.code}")
+
+                val call = client.newCall(request)
+
+                call.enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        if (continuation.isActive) {
+                            continuation.resumeWithException(e)
+                        }
                     }
-                    val body = response.body.string()
-                    responseAdapter.fromJson(body)?.choices?.firstOrNull()?.message?.content?.trim()
+
+                    override fun onResponse(call: Call, response: Response) {
+                        try {
+                            if (!response.isSuccessful) {
+                                throw IOException("Translation request failed with ${response.code}")
+                            }
+                            val body = response.body?.string() ?: ""
+                            val result = responseAdapter.fromJson(body)?.choices?.firstOrNull()?.message?.content?.trim()
+                            if (continuation.isActive) {
+                                continuation.resume(result)
+                            }
+                        } catch (e: Exception) {
+                            if (continuation.isActive) {
+                                continuation.resumeWithException(e)
+                            }
+                        } finally {
+                            response.close()
+                        }
+                    }
+                })
+
+                continuation.invokeOnCancellation {
+                    call.cancel()
                 }
-            }.getOrNull()
-        }
+            }
+        }.getOrNull()
     }
 
     @JsonClass(generateAdapter = true)
