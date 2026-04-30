@@ -6,7 +6,6 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -20,7 +19,6 @@ import android.text.TextWatcher
 import android.view.MotionEvent
 import android.view.TouchDelegate
 import android.view.View
-import android.view.ViewGroup
 import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
 import android.widget.ImageView
@@ -29,10 +27,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.view.ContextThemeWrapper
-import androidx.appcompat.view.menu.MenuBuilder
 import androidx.appcompat.widget.AppCompatImageView
-import androidx.appcompat.widget.PopupMenu
 import androidx.core.os.BundleCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
