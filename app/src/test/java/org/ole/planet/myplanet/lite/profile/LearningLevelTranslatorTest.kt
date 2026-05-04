@@ -31,13 +31,6 @@ class LearningLevelTranslatorTest {
 
     @Test
     fun testToEnglish_TranslatesSpanishToEnglish() {
-        // Based on app/src/main/res/values-es/strings.xml
-        // <string-array name="signup_level_options_language_es">
-        //     <item>Principiante</item>
-        //     <item>Intermedio</item>
-        //     <item>Avanzado</item>
-        //     <item>Experto</item>
-        // </string-array>
         assertEquals("Beginner", LearningLevelTranslator.toEnglish(context, "Principiante"))
         assertEquals("Intermediate", LearningLevelTranslator.toEnglish(context, "Intermedio"))
         assertEquals("Advanced", LearningLevelTranslator.toEnglish(context, "Avanzado"))
@@ -46,17 +39,17 @@ class LearningLevelTranslatorTest {
 
     @Test
     fun testToEnglish_TranslatesFrenchToEnglish() {
-        // Based on app/src/main/res/values-fr/strings.xml
-        // <string-array name="signup_level_options_language_fr">
-        //     <item>Débutant</item>
-        //     <item>Intermédiaire</item>
-        //     <item>Avancé</item>
-        //     <item>Expert</item>
-        // </string-array>
         assertEquals("Beginner", LearningLevelTranslator.toEnglish(context, "Débutant"))
         assertEquals("Intermediate", LearningLevelTranslator.toEnglish(context, "Intermédiaire"))
         assertEquals("Advanced", LearningLevelTranslator.toEnglish(context, "Avancé"))
         assertEquals("Expert", LearningLevelTranslator.toEnglish(context, "Expert"))
+    }
+
+    @Test
+    fun testToEnglish_CaseInsensitive() {
+        assertEquals("Beginner", LearningLevelTranslator.toEnglish(context, " bEgInNeR "))
+        assertEquals("Beginner", LearningLevelTranslator.toEnglish(context, " pRiNcIpIaNtE "))
+        assertEquals("Advanced", LearningLevelTranslator.toEnglish(context, " aVaNcÉ "))
     }
 
     @Test
