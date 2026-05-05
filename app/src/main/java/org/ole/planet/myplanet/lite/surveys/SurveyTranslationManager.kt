@@ -422,7 +422,7 @@ class OpenAiTranslationClient(
                             if (!response.isSuccessful) {
                                 throw IOException("Translation request failed with ${response.code}")
                             }
-                            val body = response.body.string() ?: ""
+                            val body = response.body.string()
                             val result = responseAdapter.fromJson(body)?.choices?.firstOrNull()?.message?.content?.trim()
                             if (continuation.isActive) {
                                 continuation.resume(result)
