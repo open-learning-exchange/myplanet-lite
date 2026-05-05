@@ -420,8 +420,9 @@ class CourseWizardActivity : BaseActivity() {
         }.getOrDefault(emptyList())
     }
 
-    private fun removePendingProgress(courseId: String, stepNumber: Int) {
-        val remaining = getPendingProgress(courseId).filterNot { it == stepNumber }
+    private fun removePendingProgress(courseId: String, stepNumbers: Collection<Int>) {
+        val stepsToRemove = stepNumbers.toSet()
+        val remaining = getPendingProgress(courseId).filterNot { it in stepsToRemove }
         if (remaining.isEmpty()) {
             pendingProgressPrefs.edit { remove(progressKey(courseId)) }
             return
