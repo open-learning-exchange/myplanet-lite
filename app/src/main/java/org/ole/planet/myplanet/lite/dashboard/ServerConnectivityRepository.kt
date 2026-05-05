@@ -23,7 +23,7 @@ class ServerConnectivityRepository(
                 if (response.code != 200) {
                     return@use ServerConnectivityResult(false)
                 }
-                val body = response.body?.string() ?: ""
+                val body = response.body.string()
                 if (body.isBlank()) {
                     return@use ServerConnectivityResult(true)
                 }
