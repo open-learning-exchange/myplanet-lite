@@ -65,10 +65,26 @@ class LearningLevelTranslatorTest {
     }
 
     @Test
+    fun testToLocalized_ReturnsNullForEmptyInput() {
+        assertNull(LearningLevelTranslator.toLocalized(context, "", R.array.signup_level_options_language_es))
+        assertNull(LearningLevelTranslator.toLocalized(context, null, R.array.signup_level_options_language_es))
+        assertNull(LearningLevelTranslator.toLocalized(context, "   ", R.array.signup_level_options_language_es))
+    }
+
+    @Test
     fun testToLocalized_TranslatesEnglishToSpanish() {
         assertEquals("Principiante", LearningLevelTranslator.toLocalized(context, "Beginner", R.array.signup_level_options_language_es))
         assertEquals("Intermedio", LearningLevelTranslator.toLocalized(context, "Intermediate", R.array.signup_level_options_language_es))
         assertEquals("Avanzado", LearningLevelTranslator.toLocalized(context, "Advanced", R.array.signup_level_options_language_es))
+        assertEquals("Experto", LearningLevelTranslator.toLocalized(context, "Expert", R.array.signup_level_options_language_es))
+    }
+
+    @Test
+    fun testToLocalized_TranslatesLocalizedToAnotherLocalized() {
+        // Translates French to Spanish
+        assertEquals("Principiante", LearningLevelTranslator.toLocalized(context, "Débutant", R.array.signup_level_options_language_es))
+        assertEquals("Intermedio", LearningLevelTranslator.toLocalized(context, "Intermédiaire", R.array.signup_level_options_language_es))
+        assertEquals("Avanzado", LearningLevelTranslator.toLocalized(context, "Avancé", R.array.signup_level_options_language_es))
         assertEquals("Experto", LearningLevelTranslator.toLocalized(context, "Expert", R.array.signup_level_options_language_es))
     }
 
