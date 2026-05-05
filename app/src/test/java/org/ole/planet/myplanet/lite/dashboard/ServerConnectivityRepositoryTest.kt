@@ -97,4 +97,37 @@ class ServerConnectivityRepositoryTest {
         assertEquals("pCode", result.parentCode)
         assertEquals("mCode", result.code)
     }
+
+    @Test
+    fun checkServerConnectivity_http200_invalidJson_returnsReachableWithoutCodes() {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("invalid json"))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = repository.checkServerConnectivity(baseUrl)
+
+        assertTrue(result.reachable)
+        assertNull(result.parentCode)
+        assertNull(result.code)
+    }
+
+    @Test
+    fun checkServerConnectivity_http200_validJsonMissingCodes_returnsReachableWithoutCodes() {
+        val json = """
+            {
+                "rows": [
+                    {
+                        "doc": {}
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(json))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = repository.checkServerConnectivity(baseUrl)
+
+        assertTrue(result.reachable)
+        assertNull(result.parentCode)
+        assertNull(result.code)
+    }
 }
