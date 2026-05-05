@@ -156,17 +156,12 @@ class VoiceImageFetcherTest {
             cacheDir = tempCacheDir,
             sessionCookie = null,
             baseUrl = baseUrl,
-            imagePath = "images/..%2f..%2fetc/passwd",
-            generateImageFileName = { "../passwd" },
+            imagePath = "   ", // Blank path makes extractFileName return null, falling back to generateImageFileName
+            generateImageFileName = { "../traversal.jpg" },
             generatePendingImageId = { "pending-$it" }
         )
-        // Note: extractFileName gets "images/..%2f..%2fetc/passwd" -> "passwd".
-        // Let's pass a path that extractFileName returns something with "../" like "images/.." or "foo/.." so that extractFileName yields ".." which triggers path traversal.
-        // Actually wait, if extractFileName gives "passwd", it's safe! The traversal must be in the filename.
-        // To properly test the IDOR blocking, we should provide an imagePath like "http://server/foo/.." which extracts ".." or just a name like "../passwd".
-        // Wait, if imagePath is "../passwd", extractFileName returns "passwd". We need extractFileName to return null or "../passwd", which is impossible.
-        // So the only traversal vector is if `extractFileName(imagePath)` returns `null`, and `generateImageFileName` returns the traversal string, OR `extractFileName` yields something with `..`.
-        // What if `imagePath` is `images/foo/..`? extractFileName gets `..`. That's traversal. Let's use `images/..`
+
+        assertNull("Result should be null due to path traversal blocking from generated name", result)
     }
 
     @Test
@@ -186,5 +181,62 @@ class VoiceImageFetcherTest {
         )
 
         assertNull("Result should be null due to path traversal blocking", result)
+    }
+
+    @Test
+    fun `fetchExistingImage with blank image path returns null`() {
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = VoiceImageFetcher.fetchExistingImage(
+            httpClient = okHttpClient,
+            cacheDir = tempCacheDir,
+            sessionCookie = null,
+            baseUrl = baseUrl,
+            imagePath = "   ",
+            generateImageFileName = { "generated.jpg" },
+            generatePendingImageId = { "pending-$it" }
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `fetchExistingImage with network exception returns null`() {
+        val baseUrl = mockWebServer.url("/").toString()
+        mockWebServer.shutdown() // shut down mock server so okHttpClient throws an exception
+
+        val result = VoiceImageFetcher.fetchExistingImage(
+            httpClient = okHttpClient,
+            cacheDir = tempCacheDir,
+            sessionCookie = null,
+            baseUrl = baseUrl,
+            imagePath = "image.jpg",
+            generateImageFileName = { "generated.jpg" },
+            generatePendingImageId = { "pending-$it" }
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `fetchExistingImage with blank cookie omits cookie header`() {
+        val dummyBytes = "dummy_image_data".toByteArray()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(String(dummyBytes)))
+
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = VoiceImageFetcher.fetchExistingImage(
+            httpClient = okHttpClient,
+            cacheDir = tempCacheDir,
+            sessionCookie = "   ",
+            baseUrl = baseUrl,
+            imagePath = "db/resources/12345/image.jpg",
+            generateImageFileName = { "generated.jpg" },
+            generatePendingImageId = { "pending-$it" }
+        )
+
+        assertNotNull(result)
+        val request = mockWebServer.takeRequest()
+        assertNull(request.getHeader("Cookie"))
     }
 }

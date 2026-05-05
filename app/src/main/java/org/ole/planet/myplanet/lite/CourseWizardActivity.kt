@@ -355,7 +355,7 @@ class CourseWizardActivity : BaseActivity() {
         val maxPendingStep = pendingSteps.maxOrNull() ?: 0
 
         if (maxPendingStep <= existingStep) {
-            pendingSteps.forEach { removePendingProgress(id, it) }
+            removePendingProgress(id, pendingSteps)
             return
         }
 
@@ -377,7 +377,7 @@ class CourseWizardActivity : BaseActivity() {
 
         val result = coursesRepository.saveCourseProgress(normalizedBase, creds, listOf(document))
         if (result.isSuccess) {
-            pendingSteps.forEach { removePendingProgress(id, it) }
+            removePendingProgress(id, pendingSteps)
             val persistedDoc = result.getOrNull()
                 ?.firstOrNull { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
             val resolvedId = persistedDoc?.id ?: existingDoc?.id
@@ -420,8 +420,9 @@ class CourseWizardActivity : BaseActivity() {
         }.getOrDefault(emptyList())
     }
 
-    private fun removePendingProgress(courseId: String, stepNumber: Int) {
-        val remaining = getPendingProgress(courseId).filterNot { it == stepNumber }
+    private fun removePendingProgress(courseId: String, stepNumbers: Collection<Int>) {
+        val stepsToRemove = stepNumbers.toSet()
+        val remaining = getPendingProgress(courseId).filterNot { it in stepsToRemove }
         if (remaining.isEmpty()) {
             pendingProgressPrefs.edit { remove(progressKey(courseId)) }
             return

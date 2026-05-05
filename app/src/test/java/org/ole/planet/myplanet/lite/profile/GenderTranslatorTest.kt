@@ -84,10 +84,28 @@ class GenderTranslatorTest {
     }
 
     @Test
+    fun testToLocalized_EnglishToEnglish() {
+        assertEquals("Male", GenderTranslator.toLocalized(context, "Male", R.array.signup_gender_options_language_en))
+        assertEquals("Female", GenderTranslator.toLocalized(context, "Female", R.array.signup_gender_options_language_en))
+    }
+
+    @Test
     fun testToLocalized_FromLocalized() {
         assertEquals("Masculin", GenderTranslator.toLocalized(context, "Masculino", R.array.signup_gender_options_language_fr))
         assertEquals("Feminino", GenderTranslator.toLocalized(context, "Féminin", R.array.signup_gender_options_language_pt))
         assertEquals("أنثى", GenderTranslator.toLocalized(context, "Femenino", R.array.signup_gender_options_language_ar))
+    }
+
+    @Test
+    fun testToLocalized_LocalizedToSameLocalized() {
+        assertEquals("Masculino", GenderTranslator.toLocalized(context, "Masculino", R.array.signup_gender_options_language_es))
+        assertEquals("Féminin", GenderTranslator.toLocalized(context, "Féminin", R.array.signup_gender_options_language_fr))
+    }
+
+    @Test
+    fun testToLocalized_LocalizedToEnglish() {
+        assertEquals("Male", GenderTranslator.toLocalized(context, "Masculino", R.array.signup_gender_options_language_en))
+        assertEquals("Female", GenderTranslator.toLocalized(context, "Féminin", R.array.signup_gender_options_language_en))
     }
 
     @Test
