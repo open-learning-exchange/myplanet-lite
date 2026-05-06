@@ -13,6 +13,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionParent
+import android.content.ContentValues
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionTeam
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionUser
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
@@ -63,6 +64,45 @@ class DashboardSurveyOutboxStoreTest {
         assertEquals("Team A", pending[0].teamName)
         assertEquals("Test Survey", pending[0].surveyName)
         assertEquals("parent123", pending[0].submission.parentId)
+    }
+
+    @Test
+    fun getPendingForTeam_returnsDescendingOrder() = runTest {
+        val submission1 = createSubmission()
+        val submission2 = createSubmission()
+
+        store.saveSubmission(submission1, "survey1", "Survey 1", "team1", "Team A")
+        // Delay to ensure created_at is different
+        kotlinx.coroutines.delay(10)
+        store.saveSubmission(submission2, "survey2", "Survey 2", "team1", "Team A")
+
+        val pending = store.getPendingForTeam("team1")
+        assertEquals(2, pending.size)
+        // Since order is DESC, the second submission (latest) should be first
+        assertEquals("survey2", pending[0].surveyId)
+        assertEquals("survey1", pending[1].surveyId)
+    }
+
+    @Test
+    fun getPendingForTeam_ignoresInvalidPayload() = runTest {
+        val submission = createSubmission()
+        store.saveSubmission(submission, "survey1", "Test Survey", "team1", "Team A")
+
+        // Insert a row with an invalid payload
+        val values = ContentValues().apply {
+            put("survey_id", "invalid_survey")
+            put("team_id", "team1")
+            put("team_name", "Team A")
+            put("survey_name", "Invalid Survey")
+            put("created_at", System.currentTimeMillis())
+            put("payload", "invalid json")
+        }
+        store.writableDatabase.insert("outbox_submissions", null, values)
+
+        val pending = store.getPendingForTeam("team1")
+        // It should only return the valid entry
+        assertEquals(1, pending.size)
+        assertEquals("survey1", pending[0].surveyId)
     }
 
     @Test
