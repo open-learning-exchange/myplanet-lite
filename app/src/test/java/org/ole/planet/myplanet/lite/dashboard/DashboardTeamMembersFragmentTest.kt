@@ -51,9 +51,27 @@ class DashboardTeamMembersFragmentTest {
             .apply()
 
         AuthDependencies.overrideAuthService(object : AuthService {
-            override suspend fun login(usernameOrEmail: String, password: String): AuthResult = TODO()
-            override suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult = TODO()
-            override suspend fun logout() = TODO()
+            override suspend fun login(usernameOrEmail: String, password: String): AuthResult {
+                return AuthResult.Success(
+                    org.ole.planet.myplanet.lite.auth.LoginResponse(
+                        ok = true,
+                        name = usernameOrEmail,
+                        roles = emptyList(),
+                        sessionCookie = "test-token"
+                    )
+                )
+            }
+            override suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult {
+                return AuthResult.Success(
+                    org.ole.planet.myplanet.lite.auth.LoginResponse(
+                        ok = true,
+                        name = credentials.name,
+                        roles = emptyList(),
+                        sessionCookie = "test-token"
+                    )
+                )
+            }
+            override suspend fun logout() {}
             override suspend fun getStoredToken(): String? = "test-token"
         })
     }
