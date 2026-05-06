@@ -1,16 +1,12 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Context
-import android.widget.Toast
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.After
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
@@ -18,15 +14,12 @@ import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
-import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowToast
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
-import androidx.lifecycle.lifecycleScope
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33])
