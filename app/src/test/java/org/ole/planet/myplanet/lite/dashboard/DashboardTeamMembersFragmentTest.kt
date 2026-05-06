@@ -53,7 +53,7 @@ class DashboardTeamMembersFragmentTest {
         AuthDependencies.overrideAuthService(object : AuthService {
             override suspend fun login(usernameOrEmail: String, password: String): AuthResult = TODO()
             override suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult = TODO()
-            override suspend fun logout() = TODO()
+            override suspend fun logout() {}
             override suspend fun getStoredToken(): String? = "test-token"
         })
     }
