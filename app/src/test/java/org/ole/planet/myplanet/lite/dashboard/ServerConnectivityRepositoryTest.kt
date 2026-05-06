@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.lite.dashboard
 
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import java.util.concurrent.TimeUnit
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -12,7 +13,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
-import java.util.concurrent.TimeUnit
 
 class ServerConnectivityRepositoryTest {
 
@@ -96,5 +96,38 @@ class ServerConnectivityRepositoryTest {
         assertTrue(result.reachable)
         assertEquals("pCode", result.parentCode)
         assertEquals("mCode", result.code)
+    }
+
+    @Test
+    fun checkServerConnectivity_http200_invalidJson_returnsReachableWithoutCodes() {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("invalid json"))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = repository.checkServerConnectivity(baseUrl)
+
+        assertTrue(result.reachable)
+        assertNull(result.parentCode)
+        assertNull(result.code)
+    }
+
+    @Test
+    fun checkServerConnectivity_http200_validJsonMissingCodes_returnsReachableWithoutCodes() {
+        val json = """
+            {
+                "rows": [
+                    {
+                        "doc": {}
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(json))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = repository.checkServerConnectivity(baseUrl)
+
+        assertTrue(result.reachable)
+        assertNull(result.parentCode)
+        assertNull(result.code)
     }
 }

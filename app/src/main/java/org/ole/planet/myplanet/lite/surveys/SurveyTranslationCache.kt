@@ -46,6 +46,37 @@ class SurveyTranslationCache private constructor(
         }
     }
 
+    suspend fun getTranslation(
+        surveyId: String,
+        questionIndex: Int,
+        targetLanguage: String,
+    ): SurveyTranslationManager.TranslatedQuestion? {
+        val normalizedLanguage = targetLanguage.lowercase()
+        return withContext(Dispatchers.IO) {
+            val db = readableDatabase
+            db.query(
+                TABLE_TRANSLATIONS,
+                arrayOf(COLUMN_BODY, COLUMN_CHOICES),
+                "$COLUMN_SURVEY_ID = ? AND $COLUMN_QUESTION_INDEX = ? AND $COLUMN_TARGET_LANGUAGE = ?",
+                arrayOf(surveyId, questionIndex.toString(), normalizedLanguage),
+                null,
+                null,
+                null,
+            ).use { c ->
+                if (c.moveToFirst()) {
+                    val indexBody = c.getColumnIndexOrThrow(COLUMN_BODY)
+                    val indexChoices = c.getColumnIndexOrThrow(COLUMN_CHOICES)
+                    val body = c.getStringOrNull(indexBody)
+                    val choicesJson = c.getStringOrNull(indexChoices)
+                    val choices = choicesJson?.let { choicesAdapter.fromJson(it) } ?: emptyList()
+                    SurveyTranslationManager.TranslatedQuestion(body, choices)
+                } else {
+                    null
+                }
+            }
+        }
+    }
+
     suspend fun getTranslations(
         surveyId: String,
         targetLanguage: String,
@@ -53,7 +84,8 @@ class SurveyTranslationCache private constructor(
         val normalizedLanguage = targetLanguage.lowercase()
         return withContext(Dispatchers.IO) {
             val db = readableDatabase
-            val cursor = db.query(
+            val result = HashMap<Int, SurveyTranslationManager.TranslatedQuestion>()
+            db.query(
                 TABLE_TRANSLATIONS,
                 arrayOf(COLUMN_QUESTION_INDEX, COLUMN_BODY, COLUMN_CHOICES),
                 "$COLUMN_SURVEY_ID = ? AND $COLUMN_TARGET_LANGUAGE = ?",
@@ -61,33 +93,53 @@ class SurveyTranslationCache private constructor(
                 null,
                 null,
                 null,
-            )
-            val rawData = cursor.use { c ->
+            ).use { c ->
                 val indexQuestionIndex = c.getColumnIndexOrThrow(COLUMN_QUESTION_INDEX)
                 val indexBody = c.getColumnIndexOrThrow(COLUMN_BODY)
                 val indexChoices = c.getColumnIndexOrThrow(COLUMN_CHOICES)
 
-                val count = c.count
-                val questionIndices = IntArray(count)
-                val bodies = arrayOfNulls<String>(count)
-                val choicesList = arrayOfNulls<String>(count)
-
-                var i = 0
                 while (c.moveToNext()) {
-                    questionIndices[i] = c.getInt(indexQuestionIndex)
-                    bodies[i] = c.getStringOrNull(indexBody)
-                    choicesList[i] = c.getStringOrNull(indexChoices)
-                    i++
+                    val questionIndex = c.getInt(indexQuestionIndex)
+                    val body = c.getStringOrNull(indexBody)
+                    val choicesJson = c.getStringOrNull(indexChoices)
+                    val choices = choicesJson?.let { choicesAdapter.fromJson(it) } ?: emptyList()
+                    result[questionIndex] = SurveyTranslationManager.TranslatedQuestion(body, choices)
                 }
-                Triple(questionIndices, bodies, choicesList)
-            }
-
-            val result = HashMap<Int, SurveyTranslationManager.TranslatedQuestion>(rawData.first.size)
-            for (i in rawData.first.indices) {
-                val choices = rawData.third[i]?.let { choicesAdapter.fromJson(it) } ?: emptyList()
-                result[rawData.first[i]] = SurveyTranslationManager.TranslatedQuestion(rawData.second[i], choices)
             }
             result
+        }
+    }
+
+    suspend fun saveTranslations(
+        surveyId: String,
+        targetLanguage: String,
+        translations: Map<Int, SurveyTranslationManager.TranslatedQuestion>,
+    ) {
+        if (translations.isEmpty()) return
+        val normalizedLanguage = targetLanguage.lowercase()
+        withContext(Dispatchers.IO) {
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                translations.forEach { (questionIndex, translation) ->
+                    val values = ContentValues().apply {
+                        put(COLUMN_SURVEY_ID, surveyId)
+                        put(COLUMN_QUESTION_INDEX, questionIndex)
+                        put(COLUMN_TARGET_LANGUAGE, normalizedLanguage)
+                        put(COLUMN_BODY, translation.body)
+                        put(COLUMN_CHOICES, choicesAdapter.toJson(translation.choices))
+                    }
+                    db.insertWithOnConflict(
+                        TABLE_TRANSLATIONS,
+                        null,
+                        values,
+                        SQLiteDatabase.CONFLICT_REPLACE,
+                    )
+                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
+            }
         }
     }
 

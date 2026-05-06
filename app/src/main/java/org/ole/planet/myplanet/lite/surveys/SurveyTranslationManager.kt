@@ -16,14 +16,12 @@ import java.io.IOException
 import java.util.Locale
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
-import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -83,26 +81,31 @@ class SurveyTranslationManager(
             return SurveyTranslationResult(sourceLanguage, null, null, emptyMap())
         }
 
-        val (translatedTitle, translatedDescription) = translateSurveyMetadata(
+        val (translatedTitle, translatedDescription, metadataToCache) = translateSurveyMetadata(
             survey = survey,
             cachedTitle = cachedTitle,
             cachedDescription = cachedDescription,
-            cacheSurveyId = cacheSurveyId,
             normalizedTargetLanguage = normalizedTargetLanguage,
             sourceLanguage = normalizedSourceLanguage ?: sourceLanguage,
             openAiKey = openAiKey,
             openAiModel = openAiModel,
         )
 
-        val translations = translateSurveyQuestionList(
+        val (translations, questionsToCache) = translateSurveyQuestionList(
             questions = survey.questions.orEmpty(),
             cachedQuestionTranslations = cachedQuestionTranslations,
-            cacheSurveyId = cacheSurveyId,
             normalizedTargetLanguage = normalizedTargetLanguage,
             sourceLanguage = normalizedSourceLanguage ?: sourceLanguage,
             openAiKey = openAiKey,
             openAiModel = openAiModel,
         )
+
+        if (cacheSurveyId != null) {
+            val allToCache = metadataToCache + questionsToCache
+            if (allToCache.isNotEmpty()) {
+                translationCache.saveTranslations(cacheSurveyId, normalizedTargetLanguage, allToCache)
+            }
+        }
 
         return SurveyTranslationResult(sourceLanguage, translatedTitle, translatedDescription, translations)
     }
@@ -111,12 +114,12 @@ class SurveyTranslationManager(
         survey: SurveyDocument,
         cachedTitle: String?,
         cachedDescription: String?,
-        cacheSurveyId: String?,
         normalizedTargetLanguage: String,
         sourceLanguage: String,
         openAiKey: String,
         openAiModel: String,
-    ): Pair<String?, String?> {
+    ): Triple<String?, String?, Map<Int, TranslatedQuestion>> {
+        val newToCache = mutableMapOf<Int, TranslatedQuestion>()
         val translatedTitle = survey.name?.let { title ->
             cachedTitle ?: translationClient.translate(
                 text = title,
@@ -124,7 +127,7 @@ class SurveyTranslationManager(
                 apiKey = openAiKey,
                 model = openAiModel,
                 sourceLanguage = sourceLanguage,
-            )
+            )?.also { newToCache[TITLE_INDEX] = TranslatedQuestion(body = it) }
         }
         val translatedDescription = survey.description?.let { description ->
             cachedDescription ?: translationClient.translate(
@@ -133,50 +136,29 @@ class SurveyTranslationManager(
                 apiKey = openAiKey,
                 model = openAiModel,
                 sourceLanguage = sourceLanguage,
-            )
+            )?.also { newToCache[DESCRIPTION_INDEX] = TranslatedQuestion(body = it) }
         }
-        if (cacheSurveyId != null) {
-            if (!translatedTitle.isNullOrBlank()) {
-                translationCache.saveTranslation(
-                    cacheSurveyId,
-                    TITLE_INDEX,
-                    normalizedTargetLanguage,
-                    TranslatedQuestion(body = translatedTitle),
-                )
-            }
-            if (!translatedDescription.isNullOrBlank()) {
-                translationCache.saveTranslation(
-                    cacheSurveyId,
-                    DESCRIPTION_INDEX,
-                    normalizedTargetLanguage,
-                    TranslatedQuestion(body = translatedDescription),
-                )
-            }
-        }
-        return Pair(translatedTitle, translatedDescription)
+        return Triple(translatedTitle, translatedDescription, newToCache)
     }
 
     private suspend fun translateSurveyQuestionList(
         questions: List<SurveyQuestion>,
         cachedQuestionTranslations: Map<Int, TranslatedQuestion>,
-        cacheSurveyId: String?,
         normalizedTargetLanguage: String,
         sourceLanguage: String,
         openAiKey: String,
         openAiModel: String,
-    ): Map<Int, TranslatedQuestion> = coroutineScope {
+    ): Pair<Map<Int, TranslatedQuestion>, Map<Int, TranslatedQuestion>> = coroutineScope {
         val semaphore = Semaphore(5)
+        val newToCache = mutableMapOf<Int, TranslatedQuestion>()
         val translations = questions.mapIndexed { index, question ->
             async {
                 val cached = cachedQuestionTranslations[index]
-                val translatedBody: String?
-                val translatedChoices: List<String?>
 
                 if (cached != null && cached.hasTranslation) {
-                    translatedBody = cached.body
-                    translatedChoices = cached.choices
+                    index to cached
                 } else {
-                    translatedBody = semaphore.withPermit {
+                    val body = semaphore.withPermit {
                         translationClient.translate(
                             text = question.body.orEmpty(),
                             targetLanguage = normalizedTargetLanguage,
@@ -185,7 +167,7 @@ class SurveyTranslationManager(
                             sourceLanguage = sourceLanguage,
                         )
                     }
-                    translatedChoices = question.choices.orEmpty().map { choice ->
+                    val choices = question.choices.orEmpty().map { choice ->
                         async {
                             choice.text?.let { text ->
                                 semaphore.withPermit {
@@ -201,28 +183,20 @@ class SurveyTranslationManager(
                         }
                     }.awaitAll()
 
-                    if (cacheSurveyId != null && (!translatedBody.isNullOrBlank() || translatedChoices.any { !it.isNullOrBlank() })) {
-                        translationCache.saveTranslation(
-                            cacheSurveyId,
-                            index,
-                            normalizedTargetLanguage,
-                            TranslatedQuestion(translatedBody, translatedChoices),
-                        )
+                    if (!body.isNullOrBlank() || choices.any { !it.isNullOrBlank() }) {
+                        val translation = TranslatedQuestion(body, choices)
+                        synchronized(newToCache) {
+                            newToCache[index] = translation
+                        }
+                        index to translation
+                    } else {
+                        null
                     }
                 }
-
-                if (!translatedBody.isNullOrBlank() || translatedChoices.any { !it.isNullOrBlank() }) {
-                    index to TranslatedQuestion(
-                        body = translatedBody,
-                        choices = translatedChoices,
-                    )
-                } else {
-                    null
-                }
             }
-        }.awaitAll()
+        }.awaitAll().filterNotNull().toMap()
 
-        translations.filterNotNull().toMap()
+        translations to newToCache
     }
 
     suspend fun translateQuestion(
@@ -238,7 +212,7 @@ class SurveyTranslationManager(
         val cacheSurveyId = survey.id ?: survey.sourceSurveyId
         if (!forceRetranslate) {
             val cached = cacheSurveyId?.let {
-                translationCache.getTranslations(it, normalizedTargetLanguage)[questionIndex]
+                translationCache.getTranslation(it, questionIndex, normalizedTargetLanguage)
             }
             if (cached?.hasTranslation == true) {
                 return cached
@@ -424,7 +398,7 @@ class OpenAiTranslationClient(
                             if (!response.isSuccessful) {
                                 throw IOException("Translation request failed with ${response.code}")
                             }
-                            val body = response.body?.string() ?: ""
+                            val body = response.body.string()
                             val result = responseAdapter.fromJson(body)?.choices?.firstOrNull()?.message?.content?.trim()
                             if (continuation.isActive) {
                                 continuation.resume(result)
