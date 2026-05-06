@@ -29,7 +29,6 @@
                 android:contentDescription="@null"
                 android:scaleType="fitCenter"
                 android:src="@drawable/ic_course_step_pdf_24" />
-
             <LinearLayout
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
@@ -41,14 +40,12 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:textAppearance="?attr/textAppearanceTitleMedium" />
-
                 <TextView
                     android:id="@+id/resourceType"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="4dp"
                     android:textAppearance="?attr/textAppearanceBodySmall" />
-
                 <TextView
                     android:id="@+id/resourceDate"
                     android:layout_width="match_parent"
@@ -72,7 +69,6 @@
                     android:contentDescription="@string/dashboard_resources_action_view"
                     android:padding="6dp"
                     android:src="@drawable/icon_image_view" />
-
                 <ImageButton
                     android:id="@+id/resourceSecondaryActionButton"
                     android:layout_width="36dp"
@@ -95,7 +91,5 @@
             android:progress="0"
             android:progressTint="?attr/colorPrimary"
             android:visibility="gone" />
-
     </LinearLayout>
-
 </com.google.android.material.card.MaterialCardView>
