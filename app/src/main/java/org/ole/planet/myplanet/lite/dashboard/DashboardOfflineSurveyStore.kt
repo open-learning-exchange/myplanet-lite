@@ -19,7 +19,10 @@ import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class DashboardOfflineSurveyStore(
     context: Context,
-    moshi: Moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+    moshi: Moshi = Moshi.Builder()
+        .add(FlexibleSurveyJsonAdapter())
+        .addLast(KotlinJsonAdapterFactory())
+        .build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
 
     private val documentAdapter = moshi.adapter(SurveyDocument::class.java)

@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 class DashboardCoursesRepository(
     private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()
+        .add(FlexibleSurveyJsonAdapter())
         .addLast(KotlinJsonAdapterFactory())
         .build(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
