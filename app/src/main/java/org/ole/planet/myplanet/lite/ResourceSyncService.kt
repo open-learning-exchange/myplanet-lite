@@ -4,6 +4,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
+import org.ole.planet.myplanet.lite.util.DateUtils
 
 internal data class MainResourcesFetchResult(
     val page: List<ResourceUi>
@@ -45,7 +46,7 @@ internal class ResourceSyncService(
                     ?: resource.filename?.takeIf { it.isNotBlank() }
                     ?: "-",
                 type = resource.mediaType?.uppercase(Locale.ROOT) ?: "PDF",
-                date = resource.createdDate.toDisplayDate(),
+                date = DateUtils.toDisplayDate(resource.createdDate),
                 createdDate = resource.createdDate,
                 isDownloaded = downloadService.findLocalResourceFile(id, filename, isTeamResource = false)?.exists() == true,
                 isDownloadable = ResourceSearchEngine.parseIsDownloadable(resource.isDownloadable),
@@ -96,7 +97,7 @@ internal class ResourceSyncService(
                     ?: resource.filename?.takeIf { it.isNotBlank() }
                     ?: "-",
                 type = resource.mediaType?.uppercase(Locale.ROOT) ?: "PDF",
-                date = resource.createdDate.toDisplayDate(),
+                date = DateUtils.toDisplayDate(resource.createdDate),
                 createdDate = resource.createdDate,
                 isDownloaded = downloadService.findLocalResourceFile(id, filename, isTeamResource = true)?.exists() == true,
                 isDownloadable = ResourceSearchEngine.parseIsDownloadable(resource.isDownloadable),
@@ -142,10 +143,4 @@ internal class ResourceSyncService(
             onFailure = { false }
         )
     }
-}
-
-private fun Long?.toDisplayDate(): String {
-    if (this == null || this <= 0L) return "-"
-    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
-    return formatter.format(Date(this))
 }
