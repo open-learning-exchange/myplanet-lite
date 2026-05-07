@@ -12,6 +12,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.spy
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.doReturn
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionParent
 import android.content.ContentValues
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionTeam
@@ -207,5 +211,17 @@ class DashboardSurveyOutboxStoreTest {
         assertEquals(1, pending.size)
         assertNull(pending[0].surveyId)
         assertNull(pending[0].teamId)
+    }
+
+    @Test
+    fun saveSubmission_returnsFalseOnInsertFailure() = runTest {
+        val submission = createSubmission()
+        val spyDb = spy(store.writableDatabase)
+        doReturn(-1L).`when`(spyDb).insert(any(), anyOrNull(), any())
+        val spyStore = spy(store)
+        doReturn(spyDb).`when`(spyStore).writableDatabase
+
+        val saved = spyStore.saveSubmission(submission, "survey1", "Test Survey", "team1", "Team A")
+        assertFalse(saved)
     }
 }
