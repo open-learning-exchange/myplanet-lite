@@ -4,6 +4,7 @@ import android.os.Build
 import androidx.annotation.VisibleForTesting
 import java.text.SimpleDateFormat
 import java.time.Instant
+import java.util.Date
 import java.time.LocalDate
 import java.time.ZoneOffset
 import java.util.Locale
@@ -47,5 +48,11 @@ object DateUtils {
                 }
             } ?: fallback
         }
+    }
+
+    fun toDisplayDate(dateLong: Long?): String {
+        if (dateLong == null || dateLong <= 0L) return "-"
+        val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
+        return formatter.format(Date(dateLong))
     }
 }
