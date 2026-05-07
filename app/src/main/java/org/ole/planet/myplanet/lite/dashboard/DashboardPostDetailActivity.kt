@@ -11,7 +11,6 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextUtils
@@ -1270,18 +1269,6 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         return profile
     }
 
-
-    private fun resolveDeviceName(): String? {
-        val manufacturer = Build.MANUFACTURER?.trim().orEmpty()
-        val model = Build.MODEL?.trim().orEmpty()
-        val base = when {
-            manufacturer.isNotEmpty() && model.isNotEmpty() -> "$manufacturer $model"
-            model.isNotEmpty() -> model
-            manufacturer.isNotEmpty() -> manufacturer
-            else -> null
-        }
-        return base
-    }
 
     private fun generatePendingImageId(baseName: String): String {
         var candidate = baseName
