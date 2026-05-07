@@ -88,7 +88,7 @@ class DashboardSurveyOutboxStore private constructor(
             if (teamId.isNullOrBlank()) null else arrayOf(teamId),
             null,
             null,
-            "$COLUMN_CREATED_AT DESC",
+            "$COLUMN_CREATED_AT DESC, $COLUMN_ID DESC",
         ).use { cursor ->
             val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
             val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)
