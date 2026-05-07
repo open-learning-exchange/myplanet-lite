@@ -79,7 +79,6 @@ class CourseWizardActivity : BaseActivity() {
     private var lastPlaybackIndex = 0
     private var lastPlaybackPositionMs = 0L
     private val coursesRepository = DashboardCoursesRepository()
-    private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
     private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(applicationContext) }
     private var hasAutoCompletedFirstStep = false
     private val audioPlayers = mutableListOf<ExoPlayer>()
