@@ -19,6 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.os.BundleCompat
+import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -27,6 +28,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
 import java.util.ArrayList
 import java.util.Locale
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import okhttp3.Credentials
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewActivity
@@ -69,6 +71,7 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
     }
     internal val mainResourcesItems = mutableListOf<ResourceUi>()
     internal val teamResourcesItems = mutableListOf<ResourceUi>()
+    internal val resourceDownloadProgress = mutableMapOf<String, Int?>()
     internal var mainResourcesSkip = 0
     internal var isLoadingMainResources = false
     internal var hasMoreMainResources = true
@@ -215,6 +218,7 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
 
     internal class ResourceExplorerAdapter(
         initialResources: List<ResourceUi>,
+        private val downloadProgressByKey: Map<String, Int?>,
         private val onViewResource: (ResourceUi) -> Unit,
         private val onSecondaryAction: (ResourceUi) -> Unit
     ) : RecyclerView.Adapter<ResourceExplorerAdapter.ResourceViewHolder>() {
@@ -228,7 +232,9 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         }
 
         override fun onBindViewHolder(holder: ResourceViewHolder, position: Int) {
-            holder.bind(resources[position], onViewResource, onSecondaryAction)
+            val item = resources[position]
+            val key = item.uniqueKey()
+            holder.bind(item, downloadProgressByKey[key], downloadProgressByKey.containsKey(key), onViewResource, onSecondaryAction)
         }
 
         override fun getItemCount(): Int = resources.size
@@ -254,6 +260,13 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
             }
         }
 
+        fun notifyResourceChanged(item: ResourceUi) {
+            val index = resources.indexOfFirst { it.uniqueKey() == item.uniqueKey() }
+            if (index >= 0) {
+                notifyItemChanged(index)
+            }
+        }
+
         class ResourceViewHolder(
             private val binding: ItemDashboardResourceExplorerBinding
         ) : RecyclerView.ViewHolder(binding.root) {
@@ -261,6 +274,8 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
 
             fun bind(
                 item: ResourceUi,
+                downloadProgress: Int?,
+                isDownloading: Boolean,
                 onViewResource: (ResourceUi) -> Unit,
                 onSecondaryAction: (ResourceUi) -> Unit
             ) {
@@ -295,10 +310,21 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
                 binding.resourceSecondaryActionButton.contentDescription =
                     binding.root.context.getString(secondaryDescriptionRes)
                 binding.resourceSecondaryActionButton.setOnClickListener {
-                    onSecondaryAction(item)
+                    if (!isDownloading) {
+                        onSecondaryAction(item)
+                    }
                 }
                 binding.resourceSecondaryActionButton.alpha =
-                    if (!item.isDownloaded && !item.isDownloadable) 0.4f else 1f
+                    if (isDownloading || (!item.isDownloaded && !item.isDownloadable)) 0.4f else 1f
+                binding.resourceSecondaryActionButton.isEnabled = !isDownloading
+                binding.resourceDownloadProgress.isVisible = isDownloading
+                if (isDownloading) {
+                    binding.resourceDownloadProgress.max = 100
+                    binding.resourceDownloadProgress.isIndeterminate = downloadProgress == null
+                    if (downloadProgress != null) {
+                        binding.resourceDownloadProgress.progress = downloadProgress
+                    }
+                }
             }
         }
     }
@@ -328,12 +354,19 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
             return
         }
         lifecycleScope.launch {
+            updateResourceDownloadProgress(item, 0)
             val wasDownloaded = ResourceDownloadUiDelegate.downloadResource(
                 baseUrl = currentBaseUrl,
                 sessionCookie = sessionCookie,
                 item = item,
-                resourceSyncService = resourceSyncService
+                resourceSyncService = resourceSyncService,
+                onProgress = { progress ->
+                    viewLifecycleOwner.lifecycleScope.launch(Dispatchers.Main.immediate) {
+                        updateResourceDownloadProgress(item, progress)
+                    }
+                }
             )
+            clearResourceDownloadProgress(item)
             if (wasDownloaded) {
                 markResourceDownloadState(item, downloaded = true)
             } else {
@@ -344,7 +377,18 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
 
     internal fun deleteDownloadedResource(item: ResourceUi) {
         ResourceDownloadUiDelegate.deleteDownloadedResource(downloadService, item)
+        clearResourceDownloadProgress(item)
         markResourceDownloadState(item, downloaded = false)
+    }
+
+    internal fun updateResourceDownloadProgress(item: ResourceUi, progress: Int?) {
+        resourceDownloadProgress[item.uniqueKey()] = progress
+        (resourcesList?.adapter as? ResourceExplorerAdapter)?.notifyResourceChanged(item)
+    }
+
+    internal fun clearResourceDownloadProgress(item: ResourceUi) {
+        resourceDownloadProgress.remove(item.uniqueKey())
+        (resourcesList?.adapter as? ResourceExplorerAdapter)?.notifyResourceChanged(item)
     }
 
     internal fun markResourceDownloadState(item: ResourceUi, downloaded: Boolean) {
@@ -360,7 +404,7 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         val adapter = list.adapter as? ResourceExplorerAdapter
         val source = if (isTeamResourcesTab) teamResourcesItems else mainResourcesItems
         if (adapter == null) {
-            list.adapter = ResourceExplorerAdapter(source.toList(), ::openResource, ::onSecondaryAction)
+            list.adapter = ResourceExplorerAdapter(source.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
         } else {
             adapter.replaceResources(source)
         }

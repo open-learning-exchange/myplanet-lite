@@ -11,7 +11,6 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.Rect
-import android.net.ConnectivityManager
 import android.os.Bundle
 import android.text.InputType
 import android.view.KeyEvent
@@ -108,9 +107,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     private var translatedTitle: String? = null
     private var translatedDescription: String? = null
     private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
-    private val connectivityManager by lazy {
-        context?.getSystemService(ConnectivityManager::class.java)
-    }
 
     private lateinit var titleView: TextView
     private lateinit var descriptionView: TextView

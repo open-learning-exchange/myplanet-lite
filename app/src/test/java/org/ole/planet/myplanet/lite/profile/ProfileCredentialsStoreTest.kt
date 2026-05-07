@@ -58,9 +58,17 @@ class ProfileCredentialsStoreTest {
     }
 
     @Test
-    fun `test getStoredCredentials returns from SharedPreferences when memory is empty`() {
+    fun `test getPasswordKey generates correct SHA-256 hash`() {
+        val expectedHash = "70cfbf5a0d1834b3577863bd449f2684d79adae9c658423167a192ad6ddbe272" // for "pw_testuser"
+        val key = ProfileCredentialsStore.getPasswordKey("testuser")
+        assertEquals(expectedHash, key)
+    }
+
+    @Test
+    fun `test getStoredCredentials returns from SharedPreferences using dynamic key`() {
+        val dynamicKey = ProfileCredentialsStore.getPasswordKey("prefUser")
         whenever(mockPrefs.getString(eq("remembered_username"), eq(null))).thenReturn("prefUser")
-        whenever(mockPrefs.getString(eq("remembered_password"), eq(null))).thenReturn("prefPass")
+        whenever(mockPrefs.getString(eq(dynamicKey), eq(null))).thenReturn("prefPass")
 
         val result = ProfileCredentialsStore.getStoredCredentials(mockContext)
 
@@ -69,9 +77,23 @@ class ProfileCredentialsStoreTest {
     }
 
     @Test
+    fun `test getStoredCredentials migrates password from legacy key`() {
+        val dynamicKey = ProfileCredentialsStore.getPasswordKey("prefUser")
+        whenever(mockPrefs.getString(eq("remembered_username"), eq(null))).thenReturn("prefUser")
+        whenever(mockPrefs.getString(eq(dynamicKey), eq(null))).thenReturn(null)
+        whenever(mockPrefs.getString(eq("remembered_password"), eq(null))).thenReturn("legacyPass")
+
+        val result = ProfileCredentialsStore.getStoredCredentials(mockContext)
+
+        assertEquals("prefUser", result?.username)
+        assertEquals("legacyPass", result?.password)
+        verify(mockEditor).putString(eq(dynamicKey), eq("legacyPass"))
+        verify(mockEditor).remove(eq("remembered_password"))
+    }
+
+    @Test
     fun `test getStoredCredentials returns null when SharedPreferences username is missing`() {
         whenever(mockPrefs.getString(eq("remembered_username"), eq(null))).thenReturn(null)
-        whenever(mockPrefs.getString(eq("remembered_password"), eq(null))).thenReturn("prefPass")
 
         val result = ProfileCredentialsStore.getStoredCredentials(mockContext)
 
@@ -80,7 +102,9 @@ class ProfileCredentialsStoreTest {
 
     @Test
     fun `test getStoredCredentials returns null when SharedPreferences password is missing`() {
+        val dynamicKey = ProfileCredentialsStore.getPasswordKey("prefUser")
         whenever(mockPrefs.getString(eq("remembered_username"), eq(null))).thenReturn("prefUser")
+        whenever(mockPrefs.getString(eq(dynamicKey), eq(null))).thenReturn(null)
         whenever(mockPrefs.getString(eq("remembered_password"), eq(null))).thenReturn(null)
 
         val result = ProfileCredentialsStore.getStoredCredentials(mockContext)
@@ -90,7 +114,9 @@ class ProfileCredentialsStoreTest {
 
     @Test
     fun `test getStoredCredentials returns null when SharedPreferences values are blank`() {
+        val dynamicKey = ProfileCredentialsStore.getPasswordKey("   ")
         whenever(mockPrefs.getString(eq("remembered_username"), eq(null))).thenReturn("   ")
+        whenever(mockPrefs.getString(eq(dynamicKey), eq(null))).thenReturn("")
         whenever(mockPrefs.getString(eq("remembered_password"), eq(null))).thenReturn("")
 
         val result = ProfileCredentialsStore.getStoredCredentials(mockContext)
@@ -99,36 +125,34 @@ class ProfileCredentialsStoreTest {
     }
 
     @Test
-    fun `test saveTemporarySignUpPassword stores password correctly`() {
+    fun `test saveTemporarySignUpPassword stores password in memory correctly`() {
         val password = "tempPassword123"
 
         ProfileCredentialsStore.saveTemporarySignUpPassword(mockContext, password)
 
-        verify(mockPrefs).edit()
-        verify(mockEditor).putString(eq("temp_signup_password"), eq(password))
-        verify(mockEditor).apply()
-    }
-
-    @Test
-    fun `test consumeTemporarySignUpPassword returns value and clears when present`() {
-        val password = "tempPassword123"
-        whenever(mockPrefs.getString(eq("temp_signup_password"), eq(null))).thenReturn(password)
+        // Memory should not touch prefs
+        verify(mockPrefs, never()).edit()
 
         val result = ProfileCredentialsStore.consumeTemporarySignUpPassword(mockContext)
-
         assertEquals(password, result)
-        verify(mockPrefs).edit()
-        verify(mockEditor).remove(eq("temp_signup_password"))
-        verify(mockEditor).apply()
     }
 
     @Test
-    fun `test consumeTemporarySignUpPassword returns null and does not clear when absent`() {
-        whenever(mockPrefs.getString(eq("temp_signup_password"), eq(null))).thenReturn(null)
+    fun `test consumeTemporarySignUpPassword returns value and clears memory when present`() {
+        val password = "tempPassword123"
+        ProfileCredentialsStore.saveTemporarySignUpPassword(mockContext, password)
 
+        val result1 = ProfileCredentialsStore.consumeTemporarySignUpPassword(mockContext)
+        val result2 = ProfileCredentialsStore.consumeTemporarySignUpPassword(mockContext)
+
+        assertEquals(password, result1)
+        assertNull(result2)
+    }
+
+    @Test
+    fun `test consumeTemporarySignUpPassword returns null when memory is empty`() {
         val result = ProfileCredentialsStore.consumeTemporarySignUpPassword(mockContext)
 
         assertNull(result)
-        verify(mockPrefs, never()).edit()
     }
 }
