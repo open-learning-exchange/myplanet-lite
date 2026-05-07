@@ -13,6 +13,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okio.Buffer
 import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.util.BirthDateString
@@ -242,7 +243,8 @@ class DashboardResourcesRepository {
         baseUrl: String,
         sessionCookie: String?,
         resourceId: String,
-        filename: String
+        filename: String,
+        onProgress: ((Int?) -> Unit)? = null
     ): Result<ByteArray> {
         return withContext(Dispatchers.IO) {
             runCatching {
@@ -264,7 +266,30 @@ class DashboardResourcesRepository {
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
-                    response.body.bytes()
+                    val body = response.body
+                    val totalBytes = body.contentLength()
+                    val source = body.source()
+                    val sink = Buffer()
+                    val chunkSize = 8_192L
+                    var downloadedBytes = 0L
+                    var lastProgress: Int? = null
+                    onProgress?.invoke(if (totalBytes > 0L) 0 else null)
+                    while (true) {
+                        val read = source.read(sink, chunkSize)
+                        if (read == -1L) break
+                        downloadedBytes += read
+                        if (totalBytes > 0L) {
+                            val progress = ((downloadedBytes * 100L) / totalBytes).toInt().coerceIn(0, 100)
+                            if (progress != lastProgress) {
+                                lastProgress = progress
+                                onProgress?.invoke(progress)
+                            }
+                        }
+                    }
+                    if (totalBytes > 0L && lastProgress != 100) {
+                        onProgress?.invoke(100)
+                    }
+                    sink.readByteArray()
                 }
             }.onFailure { }
         }

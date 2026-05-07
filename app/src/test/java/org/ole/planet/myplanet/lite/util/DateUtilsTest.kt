@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.lite.util
 import android.os.Build
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class DateUtilsTest {
 
@@ -75,5 +77,19 @@ class DateUtilsTest {
         DateUtils.sdkInt = Build.VERSION_CODES.O
         val input = "Invalid-Date-String"
         assertEquals(fallbackString, DateUtils.formatBirthDate(input, fallbackString))
+    }
+
+    @Test
+    fun `toDisplayDate returns formatted date for valid timestamp`() {
+        val timestamp = 1672531200000L // 2023-01-01 00:00:00 UTC
+        val expected = SimpleDateFormat("yyyy-MM-dd", java.util.Locale.ROOT).format(Date(timestamp))
+        assertEquals(expected, DateUtils.toDisplayDate(timestamp))
+    }
+
+    @Test
+    fun `toDisplayDate returns fallback for invalid timestamp`() {
+        assertEquals("-", DateUtils.toDisplayDate(null))
+        assertEquals("-", DateUtils.toDisplayDate(0L))
+        assertEquals("-", DateUtils.toDisplayDate(-1L))
     }
 }
