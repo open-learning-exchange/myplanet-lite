@@ -5,12 +5,14 @@ internal object ResourceDownloadUiDelegate {
         baseUrl: String,
         sessionCookie: String?,
         item: ResourceUi,
-        resourceSyncService: ResourceSyncService
+        resourceSyncService: ResourceSyncService,
+        onProgress: ((Int?) -> Unit)? = null
     ): Boolean {
         return resourceSyncService.downloadResource(
             baseUrl = baseUrl,
             sessionCookie = sessionCookie,
-            item = item
+            item = item,
+            onProgress = onProgress
         )
     }
 

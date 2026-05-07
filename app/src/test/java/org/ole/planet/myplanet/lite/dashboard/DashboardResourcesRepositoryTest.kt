@@ -48,4 +48,27 @@ class DashboardResourcesRepositoryTest {
         assertEquals(true, selector.has("_id"))
         assertEquals(true, selector.getJSONObject("_id").has($$"$gt"))
     }
+
+    @Test
+    fun downloadResourceBytes_reportsProgress() = runBlocking {
+        server.enqueue(
+            MockResponse()
+                .setBody("abcd")
+                .setHeader("Content-Length", "4")
+        )
+
+        val progressValues = mutableListOf<Int?>()
+        val result = repository.downloadResourceBytes(
+            baseUrl = server.url("/").toString(),
+            sessionCookie = "test-cookie",
+            resourceId = "resource-1",
+            filename = "file.pdf",
+            onProgress = progressValues::add
+        )
+
+        assertEquals(true, result.isSuccess)
+        assertEquals("abcd", result.getOrThrow().decodeToString())
+        assertEquals(0, progressValues.first())
+        assertEquals(100, progressValues.last())
+    }
 }
