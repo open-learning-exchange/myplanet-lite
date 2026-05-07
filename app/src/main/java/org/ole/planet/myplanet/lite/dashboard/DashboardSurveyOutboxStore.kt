@@ -19,7 +19,10 @@ import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class DashboardSurveyOutboxStore private constructor(
     context: Context,
-    moshi: Moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+    moshi: Moshi = Moshi.Builder()
+        .add(FlexibleSurveyJsonAdapter())
+        .addLast(KotlinJsonAdapterFactory())
+        .build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
 
     private val submissionAdapter = moshi.adapter(SurveySubmission::class.java)
@@ -85,7 +88,7 @@ class DashboardSurveyOutboxStore private constructor(
             if (teamId.isNullOrBlank()) null else arrayOf(teamId),
             null,
             null,
-            "$COLUMN_CREATED_AT DESC",
+            "$COLUMN_CREATED_AT DESC, $COLUMN_ID DESC",
         ).use { cursor ->
             val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
             val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)

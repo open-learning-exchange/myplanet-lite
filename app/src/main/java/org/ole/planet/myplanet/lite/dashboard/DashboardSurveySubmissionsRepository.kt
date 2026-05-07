@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 class DashboardSurveySubmissionsRepository(
     private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()
+        .add(FlexibleSurveyJsonAdapter())
         .addLast(KotlinJsonAdapterFactory())
         .build(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -62,6 +63,7 @@ class DashboardSurveySubmissionsRepository(
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}. body=$responseBody")
                     }
+                    Unit
                 }
             }
         }

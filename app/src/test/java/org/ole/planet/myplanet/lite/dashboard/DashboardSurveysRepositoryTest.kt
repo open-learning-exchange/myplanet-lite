@@ -67,6 +67,53 @@ class DashboardSurveysRepositoryTest {
     }
 
     @Test
+    fun fetchTeamSurveys_parsesMixedSurveyFieldTypes() = runTest {
+        val jsonResponse = """
+            {
+              "docs": [
+                {
+                  "_id": "survey1",
+                  "_rev": "1-rev",
+                  "name": "Imported Survey",
+                  "passingPercentage": "",
+                  "createdDate": 1773949429414,
+                  "totalMarks": 0,
+                  "sourceSurveyId": "source1",
+                  "teamId": "team1",
+                  "questions": [
+                    {
+                      "body": "How are you?",
+                      "type": "ratingScale",
+                      "marks": "",
+                      "correctChoice": [],
+                      "choices": [],
+                      "hasOtherOption": false
+                    }
+                  ]
+                }
+              ]
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(MockResponse().setBody(jsonResponse).setResponseCode(200))
+
+        val result = repository.fetchTeamSurveys(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = null,
+            sessionCookie = null,
+            teamId = "team1"
+        )
+
+        assertTrue(result.isSuccess)
+        val survey = result.getOrThrow().single()
+        assertEquals("survey1", survey.id)
+        assertEquals("1773949429414", survey.createdDate)
+        assertEquals(null, survey.passingPercentage)
+        assertEquals(0, survey.totalMarks)
+        assertEquals(null, survey.questions?.single()?.marks)
+    }
+
+    @Test
     fun fetchTeamSurveys_missingBaseUrl() = runTest {
         val result = repository.fetchTeamSurveys(
             baseUrl = "  ",
