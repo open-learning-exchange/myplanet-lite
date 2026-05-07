@@ -10,15 +10,22 @@ package org.ole.planet.myplanet.lite.profile
 import android.content.Context
 import org.ole.planet.myplanet.lite.MyPlanetLite
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import java.security.MessageDigest
 
 /**
  * Reads the credentials that were persisted after login so the profile screen can refresh data.
  */
+
 object ProfileCredentialsStore {
+    fun getPasswordKey(username: String): String {
+        val digest = MessageDigest.getInstance("SHA-256").digest("pw_$username".toByteArray())
+        return digest.joinToString("") { "%02x".format(it) }
+    }
     private const val KEY_REMEMBERED_USERNAME = "remembered_username"
-    private const val KEY_REMEMBERED_PASSWORD = "remembered_password"
     @Volatile
     private var sessionCredentials: StoredCredentials? = null
+    @Volatile
+    private var tempSignUpPassword: String? = null
 
     fun setSessionCredentials(credentials: StoredCredentials?) {
         sessionCredentials = credentials
@@ -34,7 +41,24 @@ object ProfileCredentialsStore {
         )
 
         val username = securePrefs.getString(KEY_REMEMBERED_USERNAME, null)?.takeIf { it.isNotBlank() }
-        val password = securePrefs.getString(KEY_REMEMBERED_PASSWORD, null)?.takeIf { it.isNotBlank() }
+
+        var password: String? = null
+        if (username != null) {
+            val dynamicKey = getPasswordKey(username)
+            password = securePrefs.getString(dynamicKey, null)?.takeIf { it.isNotBlank() }
+
+            // Migration
+            if (password == null) {
+                val legacyPassword = securePrefs.getString("remembered_password", null)?.takeIf { it.isNotBlank() }
+                if (legacyPassword != null) {
+                    password = legacyPassword
+                    securePrefs.edit()
+                        .putString(dynamicKey, legacyPassword)
+                        .remove("remembered_password")
+                        .apply()
+                }
+            }
+        }
         return if (username != null && password != null) {
             StoredCredentials(username, password)
         } else {
@@ -43,22 +67,12 @@ object ProfileCredentialsStore {
     }
 
     fun saveTemporarySignUpPassword(context: Context, password: String) {
-        val securePrefs = SecurePreferencesProvider.getEncryptedPreferences(
-            context.applicationContext,
-            MyPlanetLite.SECURE_PREFS_NAME
-        )
-        securePrefs.edit().putString("temp_signup_password", password).apply()
+        tempSignUpPassword = password
     }
 
     fun consumeTemporarySignUpPassword(context: Context): String? {
-        val securePrefs = SecurePreferencesProvider.getEncryptedPreferences(
-            context.applicationContext,
-            MyPlanetLite.SECURE_PREFS_NAME
-        )
-        val pwd = securePrefs.getString("temp_signup_password", null)
-        if (pwd != null) {
-            securePrefs.edit().remove("temp_signup_password").apply()
-        }
+        val pwd = tempSignUpPassword
+        tempSignUpPassword = null
         return pwd
     }
 }

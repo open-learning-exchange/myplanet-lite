@@ -6,9 +6,14 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
+import com.squareup.moshi.FromJson
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
+import com.squareup.moshi.JsonQualifier
+import com.squareup.moshi.JsonReader
+import com.squareup.moshi.JsonWriter
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.ToJson
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
@@ -24,6 +29,7 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 class DashboardSurveysRepository(
     private val client: OkHttpClient = OkHttpClient.Builder().build(),
     private val moshi: Moshi = Moshi.Builder()
+        .add(FlexibleSurveyJsonAdapter())
         .addLast(KotlinJsonAdapterFactory())
         .build(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
@@ -54,8 +60,9 @@ class DashboardSurveysRepository(
                     isArchived = mapOf($$"$exists" to false),
                 )
                 val payload = findRequestAdapter.toJson(SurveysFindRequest(selector))
+                val endpoint = "$normalizedBase/db/exams/_find"
                 val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/exams/_find")
+                    .url(endpoint)
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
@@ -97,12 +104,12 @@ class DashboardSurveysRepository(
         @param:Json(name = "_rev") val rev: String? = null,
         @param:Json(name = "name") val name: String? = null,
         @param:Json(name = "description") val description: String? = null,
-        @param:Json(name = "passingPercentage") val passingPercentage: Int? = null,
+        @param:Json(name = "passingPercentage") @param:FlexibleInt val passingPercentage: Int? = null,
         @param:Json(name = "sourceSurveyId") val sourceSurveyId: String? = null,
         @param:Json(name = "teamId") val teamId: String? = null,
-        @param:Json(name = "createdDate") val createdDate: String? = null,
+        @param:Json(name = "createdDate") @param:FlexibleString val createdDate: String? = null,
         @param:Json(name = "questions") val questions: List<SurveyQuestion>? = null,
-        @param:Json(name = "totalMarks") val totalMarks: Int? = null,
+        @param:Json(name = "totalMarks") @param:FlexibleInt val totalMarks: Int? = null,
     ) : java.io.Serializable
 
     @JsonClass(generateAdapter = true)
@@ -110,7 +117,7 @@ class DashboardSurveysRepository(
         @param:Json(name = "body") val body: String? = null,
         @param:Json(name = "type") val type: String? = null,
         @param:Json(name = "correctChoice") val correctChoice: Any? = null,
-        @param:Json(name = "marks") val marks: Int? = null,
+        @param:Json(name = "marks") @param:FlexibleInt val marks: Int? = null,
         @param:Json(name = "choices") val choices: List<SurveyChoice>? = null,
         @param:Json(name = "hasOtherOption") val hasOtherOption: Boolean = false,
     ) : java.io.Serializable
@@ -151,8 +158,9 @@ class DashboardSurveysRepository(
                         selector = selector,
                     ),
                 )
+                val endpoint = "$normalizedBase/db/submissions/_find"
                 val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/submissions/_find")
+                    .url(endpoint)
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
@@ -209,8 +217,9 @@ class DashboardSurveysRepository(
                         limit = 50000,
                     ),
                 )
+                val endpoint = "$normalizedBase/db/submissions/_find"
                 val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/submissions/_find")
+                    .url(endpoint)
                     .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
@@ -257,5 +266,62 @@ class DashboardSurveysRepository(
 
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+    }
+}
+
+@Retention(AnnotationRetention.RUNTIME)
+@JsonQualifier
+internal annotation class FlexibleInt
+
+@Retention(AnnotationRetention.RUNTIME)
+@JsonQualifier
+internal annotation class FlexibleString
+
+internal class FlexibleSurveyJsonAdapter {
+    @FromJson
+    @FlexibleInt
+    fun fromJsonFlexibleInt(reader: JsonReader): Int? {
+        return when (reader.peek()) {
+            JsonReader.Token.NULL -> reader.nextNull()
+            JsonReader.Token.NUMBER -> reader.nextInt()
+            JsonReader.Token.STRING -> reader.nextString().trim().toIntOrNull()
+            else -> {
+                reader.skipValue()
+                null
+            }
+        }
+    }
+
+    @ToJson
+    fun toJsonFlexibleInt(writer: JsonWriter, @FlexibleInt value: Int?) {
+        if (value == null) {
+            writer.nullValue()
+        } else {
+            writer.value(value)
+        }
+    }
+
+    @FromJson
+    @FlexibleString
+    fun fromJsonFlexibleString(reader: JsonReader): String? {
+        return when (reader.peek()) {
+            JsonReader.Token.NULL -> reader.nextNull()
+            JsonReader.Token.STRING -> reader.nextString()
+            JsonReader.Token.NUMBER -> reader.nextLong().toString()
+            JsonReader.Token.BOOLEAN -> reader.nextBoolean().toString()
+            else -> {
+                reader.skipValue()
+                null
+            }
+        }
+    }
+
+    @ToJson
+    fun toJsonFlexibleString(writer: JsonWriter, @FlexibleString value: String?) {
+        if (value == null) {
+            writer.nullValue()
+        } else {
+            writer.value(value)
+        }
     }
 }
