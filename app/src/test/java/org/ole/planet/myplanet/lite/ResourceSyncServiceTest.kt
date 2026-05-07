@@ -53,6 +53,7 @@ class ResourceSyncServiceTest {
             isDownloadable = "true",
             attachments = null
         )
+        val doc1DuplicateWithDifferentFile = doc1.copy(filename = "file1-copy.pdf")
 
         whenever(repository.fetchCommunityResources(
             baseUrl = any(),
@@ -63,7 +64,7 @@ class ResourceSyncServiceTest {
             sortDescending = eq(false),
             limit = eq(100),
             skip = eq(0)
-        )).doReturn(Result.success(listOf(doc1, doc2, doc1))) // doc1 repeated
+        )).doReturn(Result.success(listOf(doc1, doc2, doc1DuplicateWithDifferentFile))) // doc1 repeated by id
 
         val mockFile = mock<File>()
         whenever(mockFile.exists()).doReturn(true)
@@ -109,7 +110,7 @@ class ResourceSyncServiceTest {
             any(), anyOrNull(), any(), anyOrNull(), any(), any(), any(), any()
         )).doReturn(Result.success(listOf(doc1)))
 
-        val existingKey = storedResourceKey("id1", "file1.pdf", false)
+        val existingKey = "id1"
 
         val result = service.fetchCommunityResources(
             baseUrl = "http://base",
@@ -181,7 +182,7 @@ class ResourceSyncServiceTest {
         val bytes = byteArrayOf(1, 2, 3)
         val file = File("dummy")
 
-        whenever(repository.downloadResourceBytes(any(), anyOrNull(), eq("id1"), eq("file1.pdf")))
+        whenever(repository.downloadResourceBytes(any(), anyOrNull(), eq("id1"), eq("file1.pdf"), anyOrNull()))
             .doReturn(Result.success(bytes))
         whenever(downloadService.saveDownloadedResourceFile(eq(item), eq(bytes)))
             .doReturn(file)
@@ -197,7 +198,7 @@ class ResourceSyncServiceTest {
         val item = ResourceUi("id1", "file1.pdf", "Title", "PDF", "-", null, false, true, false)
         val bytes = byteArrayOf(1, 2, 3)
 
-        whenever(repository.downloadResourceBytes(any(), anyOrNull(), eq("id1"), eq("file1.pdf")))
+        whenever(repository.downloadResourceBytes(any(), anyOrNull(), eq("id1"), eq("file1.pdf"), anyOrNull()))
             .doReturn(Result.success(bytes))
         whenever(downloadService.saveDownloadedResourceFile(eq(item), eq(bytes)))
             .doReturn(null)
@@ -212,7 +213,7 @@ class ResourceSyncServiceTest {
     fun `downloadResource returns false when download fails`() = runTest {
         val item = ResourceUi("id1", "file1.pdf", "Title", "PDF", "-", null, false, true, false)
 
-        whenever(repository.downloadResourceBytes(any(), anyOrNull(), eq("id1"), eq("file1.pdf")))
+        whenever(repository.downloadResourceBytes(any(), anyOrNull(), eq("id1"), eq("file1.pdf"), anyOrNull()))
             .doReturn(Result.failure(Exception("Network Error")))
 
         val success = service.downloadResource("http://base", null, item)

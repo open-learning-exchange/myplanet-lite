@@ -174,7 +174,6 @@ class SignupActivity : BaseActivity() {
         private const val BIRTH_DATE_PICKER_TAG = "signup_birth_date_picker"
         const val EXTRA_AUTO_LOGIN = "org.ole.planet.myplanet.lite.signup.AUTO_LOGIN"
         const val EXTRA_USERNAME = "org.ole.planet.myplanet.lite.signup.USERNAME"
-        const val EXTRA_PASSWORD = "org.ole.planet.myplanet.lite.signup.PASSWORD"
         const val EXTRA_SERVER_BASE_URL = "org.ole.planet.myplanet.lite.signup.SERVER_BASE_URL"
         private const val KEY_SERVER_URL = "server_url"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
@@ -567,8 +566,10 @@ class SignupActivity : BaseActivity() {
         val resultIntent = Intent().apply {
             putExtra(EXTRA_AUTO_LOGIN, autoLogin)
             if (autoLogin) {
-                putExtra(EXTRA_USERNAME, usernameInput.text?.toString()?.trim().orEmpty())
-                putExtra(EXTRA_PASSWORD, passwordInput.text?.toString().orEmpty())
+                val username = usernameInput.text?.toString()?.trim().orEmpty()
+                val password = passwordInput.text?.toString().orEmpty()
+                putExtra(EXTRA_USERNAME, username)
+                org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.saveTemporarySignUpPassword(this@SignupActivity, password)
             }
         }
         if (autoLogin) {
@@ -578,7 +579,7 @@ class SignupActivity : BaseActivity() {
                 .edit()
                 .putBoolean(MyPlanetLite.KEY_REMEMBER_CREDENTIALS, true)
                 .putString(MyPlanetLite.KEY_REMEMBERED_USERNAME, username)
-                .putString(MyPlanetLite.KEY_REMEMBERED_PASSWORD, password)
+                .putString(org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.getPasswordKey(username), password)
                 .apply()
         }
         setResult(RESULT_OK, resultIntent)

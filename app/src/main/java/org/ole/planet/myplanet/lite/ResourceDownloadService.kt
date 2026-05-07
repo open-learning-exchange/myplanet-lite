@@ -23,6 +23,8 @@ internal class ResourceDownloadService(
         )
     }
 
+    private var cachedDownloadedResources: JSONArray? = null
+
     fun saveDownloadedResourceFile(item: ResourceUi, bytes: ByteArray): File? {
         return runCatching {
             val normalizedResourceFolder = item.id.takeIf { it.isNotBlank() } ?: "_no_id"
@@ -37,7 +39,11 @@ internal class ResourceDownloadService(
             .getString(downloadedResourcesKey, "[]")
             .orEmpty()
 
-        val json = runCatching { JSONArray(raw) }.getOrElse { JSONArray() }
+        val json = cachedDownloadedResources ?: runCatching {
+            JSONArray(raw).also { cachedDownloadedResources = it }
+        }.getOrElse {
+            JSONArray().also { cachedDownloadedResources = it }
+        }
         val items = mutableListOf<ResourceUi>()
 
         for (i in 0 until json.length()) {
@@ -71,9 +77,11 @@ internal class ResourceDownloadService(
     fun upsertDownloadedResource(item: ResourceUi) {
         val prefs = securePrefs
 
-        val existing = runCatching {
-            JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty())
-        }.getOrElse { JSONArray() }
+        val existing = cachedDownloadedResources ?: runCatching {
+            JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty()).also { cachedDownloadedResources = it }
+        }.getOrElse {
+            JSONArray().also { cachedDownloadedResources = it }
+        }
 
         val filtered = mutableListOf<JSONObject>()
 
@@ -101,8 +109,8 @@ internal class ResourceDownloadService(
             }
         )
 
-        val next = JSONArray()
-        filtered.forEach { next.put(it) }
+        val next = JSONArray(filtered)
+        cachedDownloadedResources = next
 
         prefs.edit { putString(downloadedResourcesKey, next.toString()) }
     }
@@ -110,9 +118,11 @@ internal class ResourceDownloadService(
     fun removeDownloadedResource(item: ResourceUi) {
         val prefs = securePrefs
 
-        val existing = runCatching {
-            JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty())
-        }.getOrElse { JSONArray() }
+        val existing = cachedDownloadedResources ?: runCatching {
+            JSONArray(prefs.getString(downloadedResourcesKey, "[]").orEmpty()).also { cachedDownloadedResources = it }
+        }.getOrElse {
+            JSONArray().also { cachedDownloadedResources = it }
+        }
 
         val next = JSONArray()
 
@@ -128,6 +138,7 @@ internal class ResourceDownloadService(
             if (key != item.uniqueKey()) next.put(obj)
         }
 
+        cachedDownloadedResources = next
         prefs.edit { putString(downloadedResourcesKey, next.toString()) }
     }
 

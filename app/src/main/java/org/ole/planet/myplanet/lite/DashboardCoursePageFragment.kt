@@ -37,7 +37,6 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
@@ -71,7 +70,6 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private val tagCourseIdsByTag = mutableMapOf<String, Set<String>>()
     private val httpClient = OkHttpClient()
     private val activeDownloads = mutableMapOf<String, Job>()
-    private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
     private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
 
     private fun isOfflineModeActive(): Boolean {
