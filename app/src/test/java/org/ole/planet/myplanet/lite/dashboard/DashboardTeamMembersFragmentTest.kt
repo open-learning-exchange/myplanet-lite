@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.auth.AuthService
+import org.ole.planet.myplanet.lite.auth.LoginResponse
 import org.ole.planet.myplanet.lite.auth.UserCredentials
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
@@ -52,7 +53,7 @@ class DashboardTeamMembersFragmentTest {
 
         AuthDependencies.overrideAuthService(object : AuthService {
             override suspend fun login(usernameOrEmail: String, password: String): AuthResult = TODO()
-            override suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult = TODO()
+            override suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult = AuthResult.Success(LoginResponse(ok = true))
             override suspend fun logout() = TODO()
             override suspend fun getStoredToken(): String? = "test-token"
         })
