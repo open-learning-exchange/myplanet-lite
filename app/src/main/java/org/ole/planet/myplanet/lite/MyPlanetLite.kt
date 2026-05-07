@@ -1092,16 +1092,20 @@ class MyPlanetLite : BaseActivity() {
         securePreferences.edit()
             .putBoolean(KEY_REMEMBER_CREDENTIALS, true)
             .putString(KEY_REMEMBERED_USERNAME, username)
-            .putString(KEY_REMEMBERED_PASSWORD, password)
+            .putString(org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.getPasswordKey(username), password)
             .commit()
     }
 
     private fun clearRememberedCredentials() {
-        securePreferences.edit()
-            .putBoolean(KEY_REMEMBER_CREDENTIALS, false)
-            .remove(KEY_REMEMBERED_USERNAME)
-            .remove(KEY_REMEMBERED_PASSWORD)
-            .commit()
+        val editor = securePreferences.edit()
+        editor.putBoolean(KEY_REMEMBER_CREDENTIALS, false)
+        val username = securePreferences.getString(KEY_REMEMBERED_USERNAME, null)
+        if (username != null) {
+            editor.remove(org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.getPasswordKey(username))
+        }
+        editor.remove(KEY_REMEMBERED_USERNAME)
+        editor.remove(KEY_REMEMBERED_PASSWORD)
+        editor.commit()
     }
 
     private fun clearStoredSessionIfNotRemembered() {
@@ -1141,7 +1145,22 @@ class MyPlanetLite : BaseActivity() {
             return null
         }
         val username = securePreferences.getString(KEY_REMEMBERED_USERNAME, null)
-        val password = securePreferences.getString(KEY_REMEMBERED_PASSWORD, null)
+        var password: String? = null
+        if (!username.isNullOrEmpty()) {
+            val dynamicKey = org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.getPasswordKey(username)
+            password = securePreferences.getString(dynamicKey, null)
+
+            if (password.isNullOrEmpty()) {
+                val legacyPassword = securePreferences.getString(KEY_REMEMBERED_PASSWORD, null)
+                if (!legacyPassword.isNullOrEmpty()) {
+                    password = legacyPassword
+                    securePreferences.edit()
+                        .putString(dynamicKey, legacyPassword)
+                        .remove(KEY_REMEMBERED_PASSWORD)
+                        .apply()
+                }
+            }
+        }
         if (username.isNullOrEmpty() && password.isNullOrEmpty()) {
             return null
         }

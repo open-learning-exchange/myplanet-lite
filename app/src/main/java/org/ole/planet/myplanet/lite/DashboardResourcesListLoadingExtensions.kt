@@ -40,7 +40,7 @@ internal fun DashboardResourcesPageFragment.refreshContent(forceRefresh: Boolean
             }
             val currentAdapter = list.adapter as? DashboardResourcesPageFragment.ResourceExplorerAdapter
             if (currentAdapter == null) {
-                list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(teamResourcesItems.toList(), ::openResource, ::onSecondaryAction)
+                list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(teamResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
             } else {
                 currentAdapter.replaceResources(teamResourcesItems)
             }
@@ -61,7 +61,7 @@ internal fun DashboardResourcesPageFragment.refreshContent(forceRefresh: Boolean
         }
         val currentAdapter = list.adapter as? DashboardResourcesPageFragment.ResourceExplorerAdapter
         if (currentAdapter == null) {
-            list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), ::openResource, ::onSecondaryAction)
+            list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
         } else {
             currentAdapter.replaceResources(mainResourcesItems)
         }
@@ -78,7 +78,7 @@ internal fun DashboardResourcesPageFragment.showDownloadedResourcesOnly(list: Re
             mainResourcesItems.clear()
             mainResourcesItems.addAll(downloadedResources)
         }
-        list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(downloadedResources, ::openResource, ::onSecondaryAction)
+        list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(downloadedResources, resourceDownloadProgress, ::openResource, ::onSecondaryAction)
     }
 
 internal fun DashboardResourcesPageFragment.resetMainResourcesAndLoad() {
@@ -89,7 +89,7 @@ internal fun DashboardResourcesPageFragment.resetMainResourcesAndLoad() {
         mainResourcesItems.clear()
         mainResourcesItems.addAll(loadDownloadedResourcesFiltered())
         ResourceSearchEngine.sortResources(mainResourcesItems, selectedSortBy, isSortDescending)
-        resourcesList?.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), ::openResource, ::onSecondaryAction)
+        resourcesList?.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
         loadMoreMainResources()
     }
 
@@ -101,7 +101,7 @@ internal fun DashboardResourcesPageFragment.loadMoreMainResources() {
         val list = resourcesList ?: return
         val resolvedBaseUrl = DashboardServerPreferences.getServerBaseUrl(context)
         if (resolvedBaseUrl.isNullOrBlank()) {
-            list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), ::openResource, ::onSecondaryAction)
+            list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
             swipeRefreshLayout?.isRefreshing = false
             return
         }
@@ -122,7 +122,7 @@ internal fun DashboardResourcesPageFragment.loadMoreMainResources() {
                 isSortDescending = isSortDescending,
                 skip = mainResourcesSkip,
                 limit = DashboardResourcesPageFragment.MAIN_RESOURCES_PAGE_SIZE,
-                existingKeys = mainResourcesItems.map { it.uniqueKey() }.toSet()
+                existingKeys = mainResourcesItems.map { it.resourceIdentityKey() }.toSet()
             )
             val items = fetchResult.page
             isLoadingMainResources = false
@@ -131,7 +131,7 @@ internal fun DashboardResourcesPageFragment.loadMoreMainResources() {
                 ResourceSearchEngine.sortResources(mainResourcesItems, selectedSortBy, isSortDescending)
                 val currentAdapter = list.adapter as? DashboardResourcesPageFragment.ResourceExplorerAdapter
                 if (currentAdapter == null || mainResourcesSkip == 0) {
-                    list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), ::openResource, ::onSecondaryAction)
+                    list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
                 } else {
                     currentAdapter.replaceResources(mainResourcesItems)
                 }
@@ -154,7 +154,7 @@ internal fun DashboardResourcesPageFragment.loadTeamResources() {
         val credentials = ProfileCredentialsStore.getStoredCredentials(context.applicationContext)
         if (teamId.isBlank() || resolvedBaseUrl.isNullOrBlank()) {
             teamResourcesItems.clear()
-            list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(emptyList<ResourceUi>(), ::openResource, ::onSecondaryAction)
+            list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(emptyList<ResourceUi>(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
             swipeRefreshLayout?.isRefreshing = false
             return
         }
@@ -184,7 +184,7 @@ internal fun DashboardResourcesPageFragment.loadTeamResources() {
                 teamResourcesItems.addAll(mergedResources)
                 ResourceSearchEngine.sortResources(teamResourcesItems, selectedSortBy, isSortDescending)
                 hasLoadedTeamResources = true
-                list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(teamResourcesItems.toList(), ::openResource, ::onSecondaryAction)
+                list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(teamResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
                 swipeRefreshLayout?.isRefreshing = false
             }
         }

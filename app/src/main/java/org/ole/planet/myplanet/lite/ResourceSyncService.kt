@@ -52,7 +52,7 @@ internal class ResourceSyncService(
                 isTeamResource = false
             )
         }.filter { item ->
-            val key = item.uniqueKey()
+            val key = item.resourceIdentityKey()
             if (mutableKeys.contains(key)) false else {
                 mutableKeys.add(key)
                 true
@@ -119,13 +119,15 @@ internal class ResourceSyncService(
     suspend fun downloadResource(
         baseUrl: String,
         sessionCookie: String?,
-        item: ResourceUi
+        item: ResourceUi,
+        onProgress: ((Int?) -> Unit)? = null
     ): Boolean {
         val bytesResult = repository.downloadResourceBytes(
             baseUrl = baseUrl,
             sessionCookie = sessionCookie,
             resourceId = item.id,
-            filename = item.filename
+            filename = item.filename,
+            onProgress = onProgress
         )
         return bytesResult.fold(
             onSuccess = { bytes ->
