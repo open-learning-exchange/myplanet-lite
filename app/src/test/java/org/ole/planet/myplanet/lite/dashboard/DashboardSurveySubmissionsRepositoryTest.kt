@@ -244,4 +244,121 @@ class DashboardSurveySubmissionsRepositoryTest {
         assertTrue(result.exceptionOrNull() is IOException)
         assertEquals("Unexpected response 404. body=", result.exceptionOrNull()?.message)
     }
+
+    @Test
+    fun `fetchExistingSubmission network error returns failure`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START)
+        )
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val result = repository.fetchExistingSubmission(
+            baseUrl = baseUrl,
+            credentials = null,
+            sessionCookie = null,
+            parentId = "parent123",
+            userId = "user1",
+            userName = "Test User",
+            parentRev = "1"
+        )
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IOException)
+    }
+
+    @Test
+    fun `fetchExistingSubmission empty body returns null`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setResponseCode(200).setBody("")
+        )
+
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = repository.fetchExistingSubmission(
+            baseUrl = baseUrl,
+            credentials = null,
+            sessionCookie = null,
+            parentId = "parent123",
+            userId = "user1",
+            userName = "Test User",
+            parentRev = "1"
+        )
+
+        assertTrue(result.isSuccess)
+        assertTrue(result.getOrNull() == null)
+    }
+
+    @Test
+    fun `fetchExistingSubmission with only userId succeeds`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setResponseCode(200).setBody("""
+                {
+                    "docs": [
+                        {
+                            "_id": "sub123",
+                            "_rev": "1-abc"
+                        }
+                    ]
+                }
+            """.trimIndent())
+        )
+
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = repository.fetchExistingSubmission(
+            baseUrl = baseUrl,
+            credentials = null,
+            sessionCookie = null,
+            parentId = "parent123",
+            userId = "user1",
+            userName = null,
+            parentRev = "1"
+        )
+
+        assertTrue(result.isSuccess)
+        val lookup = result.getOrNull()
+        assertNotNull(lookup)
+        assertEquals("sub123", lookup?.id)
+
+        val request = mockWebServer.takeRequest()
+        val body = request.body.readUtf8()
+        assertTrue(body.contains("\"user._id\":\"user1\""))
+    }
+
+    @Test
+    fun `fetchExistingSubmission with only userName succeeds`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setResponseCode(200).setBody("""
+                {
+                    "docs": [
+                        {
+                            "_id": "sub123",
+                            "_rev": "1-abc"
+                        }
+                    ]
+                }
+            """.trimIndent())
+        )
+
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = repository.fetchExistingSubmission(
+            baseUrl = baseUrl,
+            credentials = null,
+            sessionCookie = null,
+            parentId = "parent123",
+            userId = null,
+            userName = "Test User",
+            parentRev = "1"
+        )
+
+        assertTrue(result.isSuccess)
+        val lookup = result.getOrNull()
+        assertNotNull(lookup)
+        assertEquals("sub123", lookup?.id)
+
+        val request = mockWebServer.takeRequest()
+        val body = request.body.readUtf8()
+        assertTrue(body.contains("\"user.name\":\"Test User\""))
+    }
 }

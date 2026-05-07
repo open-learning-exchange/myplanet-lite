@@ -79,7 +79,6 @@ class CourseWizardActivity : BaseActivity() {
     private var lastPlaybackIndex = 0
     private var lastPlaybackPositionMs = 0L
     private val coursesRepository = DashboardCoursesRepository()
-    private val surveySubmissionRepository = DashboardSurveySubmissionsRepository()
     private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(applicationContext) }
     private var hasAutoCompletedFirstStep = false
     private val audioPlayers = mutableListOf<ExoPlayer>()
@@ -418,18 +417,6 @@ class CourseWizardActivity : BaseActivity() {
                 if (step > 0) step else null
             }
         }.getOrDefault(emptyList())
-    }
-
-    private fun removePendingProgress(courseId: String, stepNumbers: Collection<Int>) {
-        val stepsToRemove = stepNumbers.toSet()
-        val remaining = getPendingProgress(courseId).filterNot { it in stepsToRemove }
-        if (remaining.isEmpty()) {
-            pendingProgressPrefs.edit { remove(progressKey(courseId)) }
-            return
-        }
-        val array = JSONArray()
-        remaining.forEach { array.put(it) }
-        pendingProgressPrefs.edit { putString(progressKey(courseId), array.toString()) }
     }
 
     private fun removePendingProgressBatch(courseId: String, stepNumbers: Set<Int>) {

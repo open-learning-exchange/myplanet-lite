@@ -210,21 +210,79 @@ class DashboardTeamMembersFragment : Fragment() {
         startActivity(intent)
     }
 
+    private fun handleLoadError(messageResId: Int) {
+        showEmptyState(getString(messageResId))
+        binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
+        isCurrentUserTeamLeader = false
+        updateLeaderActionsVisibility()
+    }
+
+    private fun processTeamMembers(members: List<TeamMemberDetails>, creds: StoredCredentials) {
+        val sortedMembers = members.sortedWith(
+            compareBy(String.CASE_INSENSITIVE_ORDER) { member ->
+                member.fullName?.takeIf { it.isNotBlank() }
+                    ?: member.username.orEmpty()
+            }
+        )
+        val normalizedCurrentUsername = creds.username.substringAfter(
+            "org.couchdb.user:",
+            creds.username
+        )
+        currentMembers = sortedMembers
+        currentTeamPlanetCode = sortedMembers.firstNotNullOfOrNull { member ->
+            member.membership?.teamPlanetCode?.takeIf { it.isNotBlank() }
+        }
+        currentTeamType = sortedMembers.firstNotNullOfOrNull { member ->
+            member.membership?.teamType?.takeIf { it.isNotBlank() }
+        } ?: "local"
+        isCurrentUserTeamLeader = sortedMembers.any { member ->
+            val username = member.username
+            member.isLeader && (
+                username.equals(creds.username, ignoreCase = true) ||
+                    username.equals(normalizedCurrentUsername, ignoreCase = true)
+                )
+        }
+        currentUsername = normalizedCurrentUsername
+        updateLeaderActionsVisibility()
+    }
+
+    private suspend fun fetchAndProcessJoinRequests(base: String, creds: StoredCredentials, teamId: String) {
+        if (!isCurrentUserTeamLeader) {
+            hideJoinRequestsSection()
+            return
+        }
+
+        val teamPlanetCodeForRequests = currentTeamPlanetCode ?: serverPlanetCode
+        val joinRequests = if (teamPlanetCodeForRequests.isNullOrBlank()) {
+            emptyList<JoinRequestDocument>()
+        } else {
+            repository.fetchTeamJoinRequests(
+                baseUrl = base,
+                credentials = creds,
+                sessionCookie = sessionCookie,
+                teamId = teamId,
+                teamPlanetCode = teamPlanetCodeForRequests,
+            ).getOrElse {
+                showJoinRequestsError()
+                null
+            }
+        }
+        if (joinRequests != null) {
+            loadJoinRequestsData(base, creds, joinRequests)
+        } else {
+            hideJoinRequestsSection()
+        }
+    }
+
     private fun loadTeamMembers(teamId: String, isPullToRefresh: Boolean = false) {
         val base = baseUrl
         val creds = credentials
         if (base.isNullOrBlank()) {
-            showEmptyState(getString(R.string.dashboard_team_members_missing_server))
-            binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
-            isCurrentUserTeamLeader = false
-            updateLeaderActionsVisibility()
+            handleLoadError(R.string.dashboard_team_members_missing_server)
             return
         }
         if (creds == null) {
-            showEmptyState(getString(R.string.dashboard_team_members_missing_credentials))
-            binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
-            isCurrentUserTeamLeader = false
-            updateLeaderActionsVisibility()
+            handleLoadError(R.string.dashboard_team_members_missing_credentials)
             return
         }
 
@@ -233,70 +291,16 @@ class DashboardTeamMembersFragment : Fragment() {
         fetchJob = viewLifecycleOwner.lifecycleScope.launch {
             val result = repository.fetchTeamMemberDetails(base, creds, sessionCookie, teamId)
             val members = result.getOrElse {
-                showEmptyState(getString(R.string.dashboard_team_members_error_loading))
-                binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
-                isCurrentUserTeamLeader = false
-                updateLeaderActionsVisibility()
+                handleLoadError(R.string.dashboard_team_members_error_loading)
                 return@launch
             }
             if (members.isEmpty()) {
-                showEmptyState(getString(R.string.dashboard_team_members_empty))
-                binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
-                isCurrentUserTeamLeader = false
-                updateLeaderActionsVisibility()
+                handleLoadError(R.string.dashboard_team_members_empty)
                 return@launch
             }
-            val sortedMembers = members.sortedWith(
-                compareBy(String.CASE_INSENSITIVE_ORDER) { member ->
-                    member.fullName?.takeIf { it.isNotBlank() }
-                        ?: member.username.orEmpty()
-                }
-            )
-            val normalizedCurrentUsername = creds.username.substringAfter(
-                "org.couchdb.user:",
-                creds.username
-            )
-            currentMembers = sortedMembers
-            currentTeamPlanetCode = sortedMembers.firstNotNullOfOrNull { member ->
-                member.membership?.teamPlanetCode?.takeIf { it.isNotBlank() }
-            }
-            currentTeamType = sortedMembers.firstNotNullOfOrNull { member ->
-                member.membership?.teamType?.takeIf { it.isNotBlank() }
-            } ?: "local"
-            isCurrentUserTeamLeader = sortedMembers.any { member ->
-                val username = member.username
-                member.isLeader && (
-                    username.equals(creds.username, ignoreCase = true) ||
-                        username.equals(normalizedCurrentUsername, ignoreCase = true)
-                    )
-            }
-            currentUsername = normalizedCurrentUsername
-            updateLeaderActionsVisibility()
 
-            if (isCurrentUserTeamLeader) {
-                val teamPlanetCodeForRequests = currentTeamPlanetCode ?: serverPlanetCode
-                val joinRequests = if (teamPlanetCodeForRequests.isNullOrBlank()) {
-                    emptyList<JoinRequestDocument>()
-                } else {
-                    repository.fetchTeamJoinRequests(
-                        baseUrl = base,
-                        credentials = creds,
-                        sessionCookie = sessionCookie,
-                        teamId = teamId,
-                        teamPlanetCode = teamPlanetCodeForRequests,
-                    ).getOrElse {
-                        showJoinRequestsError()
-                        null
-                    }
-                }
-                if (joinRequests != null) {
-                    loadJoinRequestsData(base, creds, joinRequests)
-                } else {
-                    hideJoinRequestsSection()
-                }
-            } else {
-                hideJoinRequestsSection()
-            }
+            processTeamMembers(members, creds)
+            fetchAndProcessJoinRequests(base, creds, teamId)
 
             searchQuery = binding.dashboardTeamMembersSearchInput.text?.toString().orEmpty()
             applySearchFilter()
