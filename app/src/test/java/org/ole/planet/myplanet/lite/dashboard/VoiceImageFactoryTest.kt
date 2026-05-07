@@ -45,6 +45,7 @@ class VoiceImageFactoryTest {
         FileOutputStream(imageFile).use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+        bitmap.recycle()
         val uri = Uri.fromFile(imageFile)
 
         val pendingImage = VoiceImageFactory.createPendingVoiceImage(
@@ -68,6 +69,7 @@ class VoiceImageFactoryTest {
         FileOutputStream(imageFile).use {
             bitmap.compress(Bitmap.CompressFormat.PNG, 100, it)
         }
+        bitmap.recycle()
         val uri = Uri.fromFile(imageFile)
 
         val pendingImage = VoiceImageFactory.createPendingVoiceImage(
@@ -86,6 +88,7 @@ class VoiceImageFactoryTest {
         // Since max side is 2000 (width), scaled width should be 1280, height should be 1500 * (1280/2000) = 960
         assertEquals(1280, decoded.width)
         assertEquals(960, decoded.height)
+        decoded.recycle()
     }
 
     @Test(expected = IllegalArgumentException::class)
