@@ -46,6 +46,15 @@ class DateStringAdapterTest {
     }
 
     @Test
+    fun `fromJson uses fallback toLongOrNull when SimpleDateFormat throws ParseException`() {
+        // This input fails the initial SimpleDateFormat parsing but is a valid Long, hitting the catch block.
+        val input = "1700000000000"
+        val expected = 1700000000000L
+        val result = adapter.fromJson(input)
+        assertEquals(expected, result)
+    }
+
+    @Test
     fun `fromJson returns null when input is an invalid string`() {
         val input = "not-a-date"
         val result = adapter.fromJson(input)
