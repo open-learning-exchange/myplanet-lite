@@ -150,7 +150,7 @@ class DashboardSurveysRepository(
                     teamId = teamId,
                     parentMatches = listOf(
                         mapOf("parentId" to surveyId),
-                        mapOf("parentId" to mapOf($$"$regex" to "^${surveyId}@")),
+                        mapOf("parentId" to mapOf($$"\$regex" to "^${surveyId}@")),
                     ),
                 )
                 val payload = completionsRequestAdapter.toJson(
@@ -198,11 +198,10 @@ class DashboardSurveysRepository(
                 }
 
                 val counts = mutableMapOf<String, Int>()
-                val parentMatches = surveyIds.flatMap { surveyId ->
-                    listOf(
-                        mapOf("parentId" to surveyId),
-                        mapOf("parentId" to mapOf($$"$regex" to "^${surveyId}@"))
-                    )
+                val parentMatches = ArrayList<Map<String, Any>>(surveyIds.size * 2)
+                for (surveyId in surveyIds) {
+                    parentMatches.add(mapOf("parentId" to surveyId))
+                    parentMatches.add(mapOf("parentId" to mapOf("\$regex" to "^${surveyId}@")))
                 }
 
                 val selector = SurveyCompletionsSelector(
