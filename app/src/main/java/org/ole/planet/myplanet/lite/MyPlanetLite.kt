@@ -183,7 +183,9 @@ class MyPlanetLite : BaseActivity() {
         ProfileCredentialsStore.setSessionCredentials(null)
         clearStoredSessionIfNotRemembered()
         autoLoginEnabled = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
-        deepLinkPostId = IntentUtils.extractDeepLinkPostId(intent)
+        deepLinkPostId = intent?.getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
+            ?.takeIf { it.isNotBlank() }
+            ?: IntentUtils.extractDeepLinkPostId(intent)
 
         if (savedInstanceState != null) {
             val contentRoot: View? = findViewById(android.R.id.content)
