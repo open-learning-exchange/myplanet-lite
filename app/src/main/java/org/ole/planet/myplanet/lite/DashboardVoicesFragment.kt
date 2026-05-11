@@ -23,14 +23,15 @@ import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
+import android.icu.text.CompactDecimalFormat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
-import java.text.DecimalFormat
 import java.util.ArrayList
+import java.util.Locale
 import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -870,27 +871,11 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             if (count < 0) {
                 return "0"
             }
-            if (count < 1000) {
-                return count.toString()
-            }
-            var value = count.toDouble()
-            val suffixes = arrayOf("K", "M", "B")
-            var suffixIndex = -1
-            while (value >= 1000 && suffixIndex < suffixes.lastIndex) {
-                value /= 1000.0
-                suffixIndex++
-            }
-            val hasFraction = value < 100 && value % 1.0 != 0.0
-            val formatted = if (hasFraction) {
-                DECIMAL_FORMAT.format(value)
-            } else {
-                value.toInt().toString()
-            }
-            return if (suffixIndex >= 0) formatted + suffixes[suffixIndex] else formatted
+            return COMPACT_DECIMAL_FORMAT.format(count)
         }
 
         companion object {
-            private val DECIMAL_FORMAT = DecimalFormat("#.#")
+            private val COMPACT_DECIMAL_FORMAT = CompactDecimalFormat.getInstance(Locale.US, CompactDecimalFormat.CompactStyle.SHORT)
             private const val DISABLED_ACTION_ALPHA = 0.4f
         }
     }
