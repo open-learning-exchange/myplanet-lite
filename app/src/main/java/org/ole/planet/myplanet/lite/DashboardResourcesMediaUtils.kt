@@ -162,6 +162,26 @@ object DashboardResourcesMediaUtils {
         }
     }
 
+    private fun prepareAudioCodec(extractor: MediaExtractor): MediaCodec? {
+        var audioTrackIndex = -1
+        for (i in 0 until extractor.trackCount) {
+            val format = extractor.getTrackFormat(i)
+            val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+            if (mime.startsWith("audio/")) {
+                audioTrackIndex = i
+                break
+            }
+        }
+        if (audioTrackIndex == -1) return null
+        extractor.selectTrack(audioTrackIndex)
+        val format = extractor.getTrackFormat(audioTrackIndex)
+        val mime = format.getString(MediaFormat.KEY_MIME) ?: return null
+        val codec = MediaCodec.createDecoderByType(mime)
+        codec.configure(format, null, null, 0)
+        codec.start()
+        return codec
+    }
+
     suspend fun extractWaveform(context: Context, uri: Uri): FloatArray {
         return withContext(Dispatchers.IO) {
             val retriever = MediaMetadataRetriever()
@@ -172,22 +192,8 @@ object DashboardResourcesMediaUtils {
                 val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
                 if (durationMs <= 0) return@withContext floatArrayOf()
                 extractor.setDataSource(context, uri, null)
-                var audioTrackIndex = -1
-                for (i in 0 until extractor.trackCount) {
-                    val format = extractor.getTrackFormat(i)
-                    val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
-                    if (mime.startsWith("audio/")) {
-                        audioTrackIndex = i
-                        break
-                    }
-                }
-                if (audioTrackIndex == -1) return@withContext floatArrayOf()
-                extractor.selectTrack(audioTrackIndex)
-                val format = extractor.getTrackFormat(audioTrackIndex)
-                val mime = format.getString(MediaFormat.KEY_MIME)!!
-                codec = MediaCodec.createDecoderByType(mime)
-                codec.configure(format, null, null, 0)
-                codec.start()
+                codec = prepareAudioCodec(extractor)
+                if (codec == null) return@withContext floatArrayOf()
                 val info = MediaCodec.BufferInfo()
                 val amplitudes = mutableListOf<Float>()
                 var sawOutputEOS = false
