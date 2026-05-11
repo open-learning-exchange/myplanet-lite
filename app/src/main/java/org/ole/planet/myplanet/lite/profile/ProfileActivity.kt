@@ -615,31 +615,23 @@ class ProfileActivity : BaseActivity() {
     }
 
     private fun applyFormValuesToDocument(document: JSONObject, values: ProfileFormValues) {
-        document.putOrRemove("firstName", values.firstName)
         document.put("middleName", values.middleName.orEmpty())
-        document.putOrRemove("lastName", values.lastName)
-        document.putOrRemove("email", values.email)
-        document.putOrRemove("phoneNumber", values.phoneNumber)
-        document.putOrRemove("gender", values.gender)
-        document.putOrRemove("language", values.language)
-        document.putOrRemove("level", values.level)
 
-        if (values.birthDateIso != null) {
-            document.put("birthDate", values.birthDateIso)
-        } else {
-            document.remove("birthDate")
-        }
+        val properties = mapOf(
+            "firstName" to values.firstName,
+            "lastName" to values.lastName,
+            "email" to values.email,
+            "phoneNumber" to values.phoneNumber,
+            "gender" to values.gender,
+            "language" to values.language,
+            "level" to values.level,
+            "birthDate" to values.birthDateIso,
+            "birthYear" to values.birthYear,
+            "age" to values.age
+        )
 
-        if (values.birthYear != null) {
-            document.put("birthYear", values.birthYear)
-        } else {
-            document.remove("birthYear")
-        }
-
-        if (values.age != null) {
-            document.put("age", values.age)
-        } else {
-            document.remove("age")
+        properties.forEach { (key, value) ->
+            document.putOrRemove(key, value)
         }
     }
 
