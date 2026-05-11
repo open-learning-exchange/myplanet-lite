@@ -8,9 +8,9 @@
 package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
+import java.security.MessageDigest
 import org.ole.planet.myplanet.lite.MyPlanetLite
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import java.security.MessageDigest
 
 /**
  * Reads the credentials that were persisted after login so the profile screen can refresh data.

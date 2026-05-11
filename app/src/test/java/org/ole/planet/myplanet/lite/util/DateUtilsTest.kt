@@ -1,10 +1,10 @@
 package org.ole.planet.myplanet.lite.util
 
 import android.os.Build
-import org.junit.Assert.assertEquals
-import org.junit.Test
 import java.text.SimpleDateFormat
 import java.util.Date
+import org.junit.Assert.assertEquals
+import org.junit.Test
 
 class DateUtilsTest {
 

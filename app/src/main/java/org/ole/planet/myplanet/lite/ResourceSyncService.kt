@@ -1,7 +1,5 @@
 package org.ole.planet.myplanet.lite
 
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
 import org.ole.planet.myplanet.lite.util.DateUtils
