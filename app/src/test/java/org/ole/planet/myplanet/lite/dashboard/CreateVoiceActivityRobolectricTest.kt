@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.content.Context
+import android.content.Intent
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.button.MaterialButton
@@ -40,6 +41,12 @@ class CreateVoiceActivityRobolectricTest {
 
     private fun buildActivityController(): ActivityController<CreateVoiceActivity> {
         return Robolectric.buildActivity(CreateVoiceActivity::class.java).also {
+            it.get().setTheme(R.style.Theme_MyPlanetLite)
+        }.create().start().resume()
+    }
+
+    private fun buildActivityController(intent: Intent): ActivityController<CreateVoiceActivity> {
+        return Robolectric.buildActivity(CreateVoiceActivity::class.java, intent).also {
             it.get().setTheme(R.style.Theme_MyPlanetLite)
         }.create().start().resume()
     }
@@ -158,5 +165,55 @@ class CreateVoiceActivityRobolectricTest {
         // A MaterialAlertDialog is used, which might not register exactly as AlertDialog in Robolectric sometimes depending on version or it uses a generic dialog
         val dialog2 = org.robolectric.shadows.ShadowDialog.getLatestDialog()
         assertNotNull("Expected confirmation dialog", dialog2)
+    }
+
+    @Test
+    fun `markdown toolbar inserts empty bold and italic delimiters when publishing voice`() {
+        val controller = buildActivityController()
+        val activity = controller.get()
+        val input: TextInputEditText = activity.findViewById(R.id.createVoiceInput)
+
+        activity.findViewById<MaterialButton>(R.id.markdownBoldButton).performClick()
+        assertEquals("****", input.text.toString())
+
+        input.setText("")
+        input.setSelection(0)
+        activity.findViewById<MaterialButton>(R.id.markdownItalicButton).performClick()
+        assertEquals("**", input.text.toString())
+    }
+
+    @Test
+    fun `markdown toolbar wraps selected text correctly when editing voice`() {
+        val editIntent = Intent(context, CreateVoiceActivity::class.java)
+            .putExtra(CreateVoiceActivity.EXTRA_IS_EDIT_MODE, true)
+            .putExtra(CreateVoiceActivity.EXTRA_EDIT_POST_ID, "voice-1")
+            .putExtra(CreateVoiceActivity.EXTRA_EDIT_INITIAL_MESSAGE, "voice")
+        val controller = buildActivityController(editIntent)
+        val activity = controller.get()
+        val input: TextInputEditText = activity.findViewById(R.id.createVoiceInput)
+
+        input.setSelection(0, input.text?.length ?: 0)
+        activity.findViewById<MaterialButton>(R.id.markdownBoldButton).performClick()
+        assertEquals("**voice**", input.text.toString())
+
+        input.setText("voice")
+        input.setSelection(0, input.text?.length ?: 0)
+        activity.findViewById<MaterialButton>(R.id.markdownItalicButton).performClick()
+        assertEquals("*voice*", input.text.toString())
+    }
+
+    @Test
+    fun `voice preview preserves markdown line breaks`() {
+        val controller = buildActivityController()
+        val activity = controller.get()
+        val method = CreateVoiceActivity::class.java.getDeclaredMethod(
+            "transformMarkdownForPreview",
+            String::class.java
+        )
+        method.isAccessible = true
+
+        val result = method.invoke(activity, "**bold**\n*italic*")
+
+        assertEquals("**bold**  \n*italic*", result)
     }
 }

@@ -884,21 +884,12 @@ class ProfileActivity : BaseActivity() {
                 inJustDecodeBounds = true
             }
             val decoded = resolver.openInputStream(uri)?.use { input ->
-                val bufferedInput = BufferedInputStream(input)
-                bufferedInput.mark(8 * 1024 * 1024) // 8MB mark limit for decode bounds
-                BitmapFactory.decodeStream(bufferedInput, null, boundsOptions)
+                val bytes = input.readBytes()
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, boundsOptions)
                 val decodeOptions = BitmapFactory.Options().apply {
                     inSampleSize = calculateInSampleSize(boundsOptions, targetSize, targetSize)
                 }
-                try {
-                    bufferedInput.reset()
-                    BitmapFactory.decodeStream(bufferedInput, null, decodeOptions)
-                } catch (e: IOException) {
-                    // Fallback to reopening the stream if reset fails
-                    resolver.openInputStream(uri)?.use { fallbackInput ->
-                        BitmapFactory.decodeStream(fallbackInput, null, decodeOptions)
-                    }
-                }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
             } ?: return null
             val square = cropToSquare(decoded)
             if (square !== decoded) {
