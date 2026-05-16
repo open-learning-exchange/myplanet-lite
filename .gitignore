@@ -162,4 +162,5 @@ app/baseline_time.txt
 plan.md
 
 fix.sh
+run_test.sh
 .kotlin/sessions/

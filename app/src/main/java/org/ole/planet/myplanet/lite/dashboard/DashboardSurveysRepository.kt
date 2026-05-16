@@ -18,12 +18,18 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 class DashboardSurveysRepository(
@@ -70,7 +76,7 @@ class DashboardSurveysRepository(
                 sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
-                client.newCall(requestBuilder.build()).execute().use { response ->
+                client.newCall(requestBuilder.build()).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -168,7 +174,7 @@ class DashboardSurveysRepository(
                 sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
-                client.newCall(requestBuilder.build()).execute().use { response ->
+                client.newCall(requestBuilder.build()).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -227,7 +233,7 @@ class DashboardSurveysRepository(
                     requestBuilder.addHeader("Cookie", cookie)
                 }
 
-                client.newCall(requestBuilder.build()).execute().use { response ->
+                client.newCall(requestBuilder.build()).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -265,6 +271,29 @@ class DashboardSurveysRepository(
 
     companion object {
         private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
+    }
+}
+
+suspend fun Call.await(): Response {
+    return suspendCancellableCoroutine { continuation ->
+        enqueue(object : Callback {
+            override fun onResponse(call: Call, response: Response) {
+                continuation.resume(response)
+            }
+
+            override fun onFailure(call: Call, e: IOException) {
+                if (continuation.isCancelled) return
+                continuation.resumeWithException(e)
+            }
+        })
+
+        continuation.invokeOnCancellation {
+            try {
+                cancel()
+            } catch (ex: Throwable) {
+                // Ignore cancel exception
+            }
+        }
     }
 }
 
