@@ -505,7 +505,7 @@ class CreateVoiceActivity : BaseActivity() {
     }
 
     private fun transformMarkdownForPreview(markdown: String): String {
-        var processed = markdown
+        var processed = markdown.replace("\n", "  \n")
         if (pendingImages.isNotEmpty()) {
             pendingImages.values.forEach { pending ->
                 val pattern = Regex("(!\\[[^\\]]*\\]\\()${Regex.escape(pending.fileName)}(\\))")
