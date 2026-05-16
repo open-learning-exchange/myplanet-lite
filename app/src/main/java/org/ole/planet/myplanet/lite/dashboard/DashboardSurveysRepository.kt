@@ -134,57 +134,6 @@ class DashboardSurveysRepository(
         @param:Json(name = "id") val id: String? = null,
     ) : java.io.Serializable
 
-    suspend fun fetchSurveyCompletionCount(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        teamId: String,
-        surveyId: String,
-    ): Result<Int> {
-        return withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                if (teamId.isBlank() || surveyId.isBlank()) {
-                    throw IOException("Missing survey lookup parameters")
-                }
-                val selector = SurveyCompletionsSelector(
-                    type = "survey",
-                    status = "complete",
-                    teamId = teamId,
-                    parentMatches = listOf(
-                        mapOf("parentId" to surveyId),
-                        mapOf("parentId" to mapOf($$"$regex" to "^${surveyId}@")),
-                    ),
-                )
-                val payload = completionsRequestAdapter.toJson(
-                    SurveyCompletionsRequest(
-                        selector = selector,
-                    ),
-                )
-                val endpoint = "$normalizedBase/db/submissions/_find"
-                val requestBuilder = Request.Builder()
-                    .url(endpoint)
-                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-                credentials?.let { creds ->
-                    requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
-                }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                    requestBuilder.addHeader("Cookie", cookie)
-                }
-                client.newCall(requestBuilder.build()).await().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val body = response.body.string()
-                    completionsResponseAdapter.fromJson(body)?.docs?.size ?: 0
-                }
-            }
-        }
-    }
-
 
     suspend fun fetchSurveyCompletionCountsBatched(
         baseUrl: String,
@@ -204,11 +153,10 @@ class DashboardSurveysRepository(
                 }
 
                 val counts = mutableMapOf<String, Int>()
-                val parentMatches = surveyIds.flatMap { surveyId ->
-                    listOf(
-                        mapOf("parentId" to surveyId),
-                        mapOf("parentId" to mapOf($$"$regex" to "^${surveyId}@"))
-                    )
+                val parentMatches = ArrayList<Map<String, Any>>(surveyIds.size * 2)
+                for (surveyId in surveyIds) {
+                    parentMatches.add(mapOf("parentId" to surveyId))
+                    parentMatches.add(mapOf("parentId" to mapOf($$"$regex" to "^${surveyId}@")))
                 }
 
                 val selector = SurveyCompletionsSelector(
@@ -262,7 +210,7 @@ class DashboardSurveysRepository(
         @param:Json(name = "type") val type: String,
         @param:Json(name = "status") val status: String,
         @param:Json(name = "team._id") val teamId: String,
-        @param:Json(name = "${'$'}or") val parentMatches: List<Map<String, Any>>,
+        @param:Json(name = $$"$or") val parentMatches: List<Map<String, Any>>,
     )
 
     @JsonClass(generateAdapter = true)
