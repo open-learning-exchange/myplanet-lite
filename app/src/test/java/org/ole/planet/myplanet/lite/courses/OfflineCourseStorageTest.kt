@@ -82,4 +82,43 @@ class OfflineCourseStorageTest {
         // Should only contain "valid_course"
         Assert.assertEquals(setOf("valid_course"), result)
     }
+
+    @Test
+    fun `deleteCourse returns false for blank or empty courseId`() {
+        Assert.assertFalse(OfflineCourseStorage.deleteCourse(context, ""))
+        Assert.assertFalse(OfflineCourseStorage.deleteCourse(context, "   "))
+    }
+
+    @Test
+    fun `deleteCourse returns true if course directory does not exist`() {
+        val courseId = "non_existent_course"
+        val courseDir = File(File(tempFilesDir, ".offline_courses"), courseId)
+        Assert.assertFalse(courseDir.exists())
+
+        val result = OfflineCourseStorage.deleteCourse(context, courseId)
+        Assert.assertTrue(result)
+    }
+
+    @Test
+    fun `deleteCourse deletes course directory and its contents recursively`() {
+        val courseId = "course_to_delete"
+        val rootDir = File(tempFilesDir, ".offline_courses")
+        val courseDir = File(rootDir, courseId)
+        courseDir.mkdirs()
+
+        // Create some files and subdirectories
+        File(courseDir, "course.json").createNewFile()
+        val resourcesDir = File(courseDir, "resources")
+        resourcesDir.mkdir()
+        File(resourcesDir, "file1.txt").createNewFile()
+
+        Assert.assertTrue(courseDir.exists())
+        Assert.assertTrue(File(courseDir, "course.json").exists())
+        Assert.assertTrue(File(resourcesDir, "file1.txt").exists())
+
+        val result = OfflineCourseStorage.deleteCourse(context, courseId)
+
+        Assert.assertTrue(result)
+        Assert.assertFalse(courseDir.exists())
+    }
 }
