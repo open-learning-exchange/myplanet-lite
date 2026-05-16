@@ -1146,8 +1146,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() }
 
         if (!base.isNullOrEmpty()) {
-            val resourcesPattern = Regex("!\\[[^\\]]*\\]\\((resources/[^)]+)\\)")
-            processed = resourcesPattern.replace(processed) { matchResult ->
+            processed = RESOURCES_MARKDOWN_REGEX.replace(processed) { matchResult ->
                 val path = matchResult.groupValues.getOrNull(1)?.trim().orEmpty()
                 val absolute = "$base/db/$path"
                 "![]($absolute)"
@@ -1444,8 +1443,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         if (markdown.isNullOrBlank()) {
             return emptyList()
         }
-        val regex = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
-        return regex.findAll(markdown)
+        return IMAGE_MARKDOWN_REGEX.findAll(markdown)
             .mapNotNull { match ->
                 match.groupValues.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
             }
@@ -1470,8 +1468,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     private fun normalizeImagePath(path: String): String {
         val extracted = extractImagePath(path) ?: path
         val trimmed = extracted.trim()
-        val resourcesMatch = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
-            .find(trimmed)
+        val resourcesMatch = RESOURCES_PATH_REGEX.find(trimmed)
         val reduced = if (resourcesMatch != null) {
             resourcesMatch.value
         } else {
@@ -1486,8 +1483,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         if (markdown.isNullOrBlank()) {
             return null
         }
-        val pattern = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
-        val match = pattern.find(markdown)
+        val match = IMAGE_MARKDOWN_REGEX.find(markdown)
         return match?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
     }
 
@@ -1608,5 +1604,8 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         }
 
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
+        private val IMAGE_MARKDOWN_REGEX = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
+        private val RESOURCES_MARKDOWN_REGEX = Regex("!\\[[^\\]]*\\]\\((resources/[^)]+)\\)")
+        private val RESOURCES_PATH_REGEX = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
     }
 }
