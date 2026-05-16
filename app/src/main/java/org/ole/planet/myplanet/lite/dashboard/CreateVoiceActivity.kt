@@ -1041,8 +1041,7 @@ class CreateVoiceActivity : BaseActivity() {
         if (markdown.isNullOrBlank()) {
             return null
         }
-        val pattern = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
-        val match = pattern.find(markdown)
+        val match = MARKDOWN_IMAGE_REGEX.find(markdown)
         return match?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
     }
 
@@ -1086,11 +1085,10 @@ class CreateVoiceActivity : BaseActivity() {
         if (markdown.isBlank()) {
             return "" to emptySet()
         }
-        val regex = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
         val builder = StringBuilder()
         var lastIndex = 0
         val seen = LinkedHashSet<String>()
-        regex.findAll(markdown).forEach { match ->
+        MARKDOWN_IMAGE_REGEX.findAll(markdown).forEach { match ->
             val path = match.groupValues.getOrNull(1)
             val normalized = path?.let { normalizeImagePath(it) }.orEmpty()
             val keep = normalized.isNotBlank() && seen.add(normalized)
@@ -1314,7 +1312,7 @@ class CreateVoiceActivity : BaseActivity() {
     }
 
     private fun extractResourcePath(markdown: String): String? {
-        val matcher = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)").find(markdown) ?: return null
+        val matcher = MARKDOWN_IMAGE_REGEX.find(markdown) ?: return null
         val rawPath = matcher.groupValues.getOrNull(1)?.trim('/') ?: return null
         val trimmed = when {
             rawPath.startsWith("db/resources/", ignoreCase = true) -> rawPath.removePrefix("db/")
@@ -1502,6 +1500,7 @@ class CreateVoiceActivity : BaseActivity() {
         private const val PREVIEW_DEBOUNCE_MS = 150L
         private const val MAX_HEADING_LEVEL = 6
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
+        private val MARKDOWN_IMAGE_REGEX = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
