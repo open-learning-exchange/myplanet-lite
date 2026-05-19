@@ -126,6 +126,7 @@ class DashboardSurveysRepository(
         @param:Json(name = "marks") @param:FlexibleInt val marks: Int? = null,
         @param:Json(name = "choices") val choices: List<SurveyChoice>? = null,
         @param:Json(name = "hasOtherOption") val hasOtherOption: Boolean = false,
+        @param:Json(name = "scaleMax") @param:FlexibleInt val scaleMax: Int? = null,
     ) : java.io.Serializable
 
     @JsonClass(generateAdapter = true)

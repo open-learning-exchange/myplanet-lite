@@ -1,6 +1,10 @@
 package org.ole.planet.myplanet.lite
 
 import android.os.Bundle
+import android.view.View
+import android.view.ViewGroup
+import android.widget.GridLayout
+import com.google.android.material.button.MaterialButton
 import androidx.fragment.app.FragmentActivity
 import androidx.test.core.app.ApplicationProvider
 import com.google.mlkit.common.sdkinternal.MlKitContext
@@ -135,5 +139,88 @@ class SurveyWizardFragmentTest {
 
         assertNotNull("Description view should be present", descriptionView)
         assertEquals("Test Survey Description", descriptionView?.text)
+    }
+
+    @Test
+    fun testOnViewCreated_withRatingScaleMax_displaysConfiguredNumberOfButtons() {
+        mapOf(
+            2 to 2,
+            3 to 3,
+            5 to 5,
+            6 to 3,
+            8 to 3,
+            9 to 3,
+            12 to 4
+        ).forEach { (scaleMax, expectedColumns) ->
+            assertRatingScaleButtons(scaleMax, expectedColumns)
+        }
+    }
+
+    private fun assertRatingScaleButtons(scaleMax: Int, expectedColumns: Int) {
+        MlKitContext.initializeIfNeeded(ApplicationProvider.getApplicationContext())
+
+        val controller = Robolectric.buildActivity(FragmentActivity::class.java)
+        val activity = controller.create().start().resume().get()
+        activity.setTheme(androidx.appcompat.R.style.Theme_AppCompat)
+
+        val questions = listOf(
+            SurveyQuestion(
+                body = "How much?",
+                type = "ratingScale",
+                scaleMax = scaleMax
+            )
+        )
+        val document = SurveyDocument(
+            id = "doc1",
+            rev = "rev1",
+            name = "Scaled Survey",
+            questions = questions
+        )
+        val args = Bundle().apply {
+            putSerializable("arg_document", document)
+        }
+
+        val fragment = SurveyWizardFragment().apply {
+            arguments = args
+        }
+
+        activity.supportFragmentManager.beginTransaction()
+            .add(android.R.id.content, fragment, "survey")
+            .commit()
+
+        activity.supportFragmentManager.executePendingTransactions()
+
+        SurveyWizardFragment::class.java.getDeclaredField("currentIndex").apply {
+            isAccessible = true
+            setInt(fragment, 1)
+        }
+        SurveyWizardFragment::class.java.getDeclaredMethod("showStep", Int::class.javaPrimitiveType).apply {
+            isAccessible = true
+            invoke(fragment, 1)
+        }
+
+        val ratingButtons = fragment.view
+            ?.let { findViewsOfType(it, MaterialButton::class.java) }
+            .orEmpty()
+            .filter { button -> button.text?.toString()?.toIntOrNull() != null }
+        val gridLayout = fragment.view
+            ?.let { findViewsOfType(it, GridLayout::class.java) }
+            ?.firstOrNull()
+
+        assertEquals((1..scaleMax).map { it.toString() }, ratingButtons.map { it.text.toString() })
+        assertEquals(expectedColumns, gridLayout?.columnCount)
+    }
+
+    private fun <T : View> findViewsOfType(root: View, type: Class<T>): List<T> {
+        val matches = mutableListOf<T>()
+        if (type.isInstance(root)) {
+            type.cast(root)?.let { matches.add(it) }
+        }
+        if (root is ViewGroup) {
+            for (index in 0 until root.childCount) {
+                matches.addAll(findViewsOfType(root.getChildAt(index), type))
+            }
+        }
+        return matches
     }
 }
