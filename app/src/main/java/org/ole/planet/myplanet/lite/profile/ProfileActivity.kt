@@ -615,31 +615,23 @@ class ProfileActivity : BaseActivity() {
     }
 
     private fun applyFormValuesToDocument(document: JSONObject, values: ProfileFormValues) {
-        document.putOrRemove("firstName", values.firstName)
         document.put("middleName", values.middleName.orEmpty())
-        document.putOrRemove("lastName", values.lastName)
-        document.putOrRemove("email", values.email)
-        document.putOrRemove("phoneNumber", values.phoneNumber)
-        document.putOrRemove("gender", values.gender)
-        document.putOrRemove("language", values.language)
-        document.putOrRemove("level", values.level)
 
-        if (values.birthDateIso != null) {
-            document.put("birthDate", values.birthDateIso)
-        } else {
-            document.remove("birthDate")
-        }
+        val properties = mapOf(
+            "firstName" to values.firstName,
+            "lastName" to values.lastName,
+            "email" to values.email,
+            "phoneNumber" to values.phoneNumber,
+            "gender" to values.gender,
+            "language" to values.language,
+            "level" to values.level,
+            "birthDate" to values.birthDateIso,
+            "birthYear" to values.birthYear,
+            "age" to values.age
+        )
 
-        if (values.birthYear != null) {
-            document.put("birthYear", values.birthYear)
-        } else {
-            document.remove("birthYear")
-        }
-
-        if (values.age != null) {
-            document.put("age", values.age)
-        } else {
-            document.remove("age")
+        properties.forEach { (key, value) ->
+            document.putOrRemove(key, value)
         }
     }
 
@@ -892,21 +884,12 @@ class ProfileActivity : BaseActivity() {
                 inJustDecodeBounds = true
             }
             val decoded = resolver.openInputStream(uri)?.use { input ->
-                val bufferedInput = BufferedInputStream(input)
-                bufferedInput.mark(8 * 1024 * 1024) // 8MB mark limit for decode bounds
-                BitmapFactory.decodeStream(bufferedInput, null, boundsOptions)
+                val bytes = input.readBytes()
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, boundsOptions)
                 val decodeOptions = BitmapFactory.Options().apply {
                     inSampleSize = calculateInSampleSize(boundsOptions, targetSize, targetSize)
                 }
-                try {
-                    bufferedInput.reset()
-                    BitmapFactory.decodeStream(bufferedInput, null, decodeOptions)
-                } catch (e: IOException) {
-                    // Fallback to reopening the stream if reset fails
-                    resolver.openInputStream(uri)?.use { fallbackInput ->
-                        BitmapFactory.decodeStream(fallbackInput, null, decodeOptions)
-                    }
-                }
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
             } ?: return null
             val square = cropToSquare(decoded)
             if (square !== decoded) {
