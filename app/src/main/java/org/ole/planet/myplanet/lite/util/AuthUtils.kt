@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.lite.util
 
+import java.net.InetAddress
 import java.net.URI
 
 object AuthUtils {
@@ -33,26 +34,11 @@ object AuthUtils {
     }
 
     private fun isLocalOrPrivateIp(host: String): Boolean {
-        if (host == "localhost" || host == "127.0.0.1") {
-            return true
+        return try {
+            val address = InetAddress.getByName(host)
+            address.isLoopbackAddress || address.isSiteLocalAddress
+        } catch (e: Exception) {
+            false
         }
-
-        // Check for private IPv4 ranges:
-        // 10.0.0.0 - 10.255.255.255
-        if (host.matches(Regex("^10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}$"))) {
-            return true
-        }
-
-        // 192.168.0.0 - 192.168.255.255
-        if (host.matches(Regex("^192\\.168\\.\\d{1,3}\\.\\d{1,3}$"))) {
-            return true
-        }
-
-        // 172.16.0.0 - 172.31.255.255
-        if (host.matches(Regex("^172\\.(1[6-9]|2[0-9]|3[0-1])\\.\\d{1,3}\\.\\d{1,3}$"))) {
-            return true
-        }
-
-        return false
     }
 }

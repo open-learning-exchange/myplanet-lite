@@ -420,8 +420,12 @@ class SignupActivity : BaseActivity() {
     }
 
     private fun setupFocusAndValidationListeners() {
-        levelInput.clearErrorOnTextChange(levelLayout)
+        setupGeneralFocusListeners()
+        setupTextChangeListeners()
+        setupSpecialInputListeners()
+    }
 
+    private fun setupGeneralFocusListeners() {
         val focusableInputs = listOf(
             usernameInput,
             firstNameInput,
@@ -448,12 +452,10 @@ class SignupActivity : BaseActivity() {
                 }
             }
         }
+    }
 
-        genderGroup.setOnCheckedChangeListener { _, _ ->
-            genderErrorView.visibility = View.GONE
-            ensureVisible(scrollView, genderGroup)
-        }
-
+    private fun setupTextChangeListeners() {
+        levelInput.clearErrorOnTextChange(levelLayout)
         usernameInput.clearErrorOnTextChange(usernameLayout)
         usernameInput.doAfterTextChanged {
             verifyServerAvailability(SignupStep.USERNAME, force = true)
@@ -463,6 +465,13 @@ class SignupActivity : BaseActivity() {
         lastNameInput.clearErrorOnTextChange(lastNameLayout)
         emailInput.clearErrorOnTextChange(emailLayout)
         phoneInput.clearErrorOnTextChange(phoneLayout)
+    }
+
+    private fun setupSpecialInputListeners() {
+        genderGroup.setOnCheckedChangeListener { _, _ ->
+            genderErrorView.visibility = View.GONE
+            ensureVisible(scrollView, genderGroup)
+        }
 
         birthDateInput.keyListener = null
         birthDateInput.setOnClickListener {

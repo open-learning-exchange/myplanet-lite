@@ -75,11 +75,14 @@ class DashboardSurveySubmissionsRepositoryTest {
     @Test
     fun `submitSurvey missing base url returns failure`() = runTest {
         val submission = createSubmission()
-        val result = repository.submitSurvey("   ", null, null, submission)
+        val invalidUrls = listOf("", "   ", "/", " / ")
+        for (url in invalidUrls) {
+            val result = repository.submitSurvey(url, null, null, submission)
 
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is IOException)
-        assertEquals("Missing server base URL", result.exceptionOrNull()?.message)
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is IOException)
+            assertEquals("Missing server base URL", result.exceptionOrNull()?.message)
+        }
     }
 
     @Test
@@ -190,19 +193,22 @@ class DashboardSurveySubmissionsRepositoryTest {
 
     @Test
     fun `fetchExistingSubmission missing base url returns failure`() = runTest {
-        val result = repository.fetchExistingSubmission(
-            baseUrl = "  ",
-            credentials = null,
-            sessionCookie = null,
-            parentId = "parent123",
-            userId = "user1",
-            userName = "Test User",
-            parentRev = "1"
-        )
+        val invalidUrls = listOf("", "   ", "/", " / ")
+        for (url in invalidUrls) {
+            val result = repository.fetchExistingSubmission(
+                baseUrl = url,
+                credentials = null,
+                sessionCookie = null,
+                parentId = "parent123",
+                userId = "user1",
+                userName = "Test User",
+                parentRev = "1"
+            )
 
-        assertTrue(result.isFailure)
-        assertTrue(result.exceptionOrNull() is IOException)
-        assertEquals("Missing server base URL", result.exceptionOrNull()?.message)
+            assertTrue(result.isFailure)
+            assertTrue(result.exceptionOrNull() is IOException)
+            assertEquals("Missing server base URL", result.exceptionOrNull()?.message)
+        }
     }
 
     @Test

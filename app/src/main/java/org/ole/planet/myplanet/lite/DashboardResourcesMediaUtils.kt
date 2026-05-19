@@ -162,6 +162,26 @@ object DashboardResourcesMediaUtils {
         }
     }
 
+    private fun prepareAudioCodec(extractor: MediaExtractor): MediaCodec? {
+        var audioTrackIndex = -1
+        for (i in 0 until extractor.trackCount) {
+            val format = extractor.getTrackFormat(i)
+            val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
+            if (mime.startsWith("audio/")) {
+                audioTrackIndex = i
+                break
+            }
+        }
+        if (audioTrackIndex == -1) return null
+        extractor.selectTrack(audioTrackIndex)
+        val format = extractor.getTrackFormat(audioTrackIndex)
+        val mime = format.getString(MediaFormat.KEY_MIME) ?: return null
+        val codec = MediaCodec.createDecoderByType(mime)
+        codec.configure(format, null, null, 0)
+        codec.start()
+        return codec
+    }
+
     suspend fun extractWaveform(context: Context, uri: Uri): FloatArray {
         return withContext(Dispatchers.IO) {
             val retriever = MediaMetadataRetriever()
@@ -172,22 +192,8 @@ object DashboardResourcesMediaUtils {
                 val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
                 if (durationMs <= 0) return@withContext floatArrayOf()
                 extractor.setDataSource(context, uri, null)
-                var audioTrackIndex = -1
-                for (i in 0 until extractor.trackCount) {
-                    val format = extractor.getTrackFormat(i)
-                    val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
-                    if (mime.startsWith("audio/")) {
-                        audioTrackIndex = i
-                        break
-                    }
-                }
-                if (audioTrackIndex == -1) return@withContext floatArrayOf()
-                extractor.selectTrack(audioTrackIndex)
-                val format = extractor.getTrackFormat(audioTrackIndex)
-                val mime = format.getString(MediaFormat.KEY_MIME)!!
-                codec = MediaCodec.createDecoderByType(mime)
-                codec.configure(format, null, null, 0)
-                codec.start()
+                codec = prepareAudioCodec(extractor)
+                if (codec == null) return@withContext floatArrayOf()
                 val info = MediaCodec.BufferInfo()
                 val amplitudes = mutableListOf<Float>()
                 var sawOutputEOS = false
@@ -304,9 +310,7 @@ object DashboardResourcesMediaUtils {
     }
 
     fun estimateAudioUploadSizeBytes(bitrateKbps: Int, durationMs: Long): Long {
-        val durationSeconds = durationMs / 1000.0
-        val bitsPerSecond = bitrateKbps * 1000.0
-        val bytes = (bitsPerSecond * durationSeconds) / 8.0
+        val bytes = (bitrateKbps.toDouble() * durationMs.toDouble()) / 8.0
         return (bytes * 1.05).toLong().coerceAtLeast(1024L)
     }
 
@@ -319,13 +323,12 @@ object DashboardResourcesMediaUtils {
         selectedEndMs: Long
     ): Long {
         val durationFactor = if (sourceDurationMs <= 0L) 1.0 else {
-            val selectedDuration = (selectedEndMs - selectedStartMs).coerceAtLeast(0L)
-            (selectedDuration.toDouble() / sourceDurationMs.toDouble()).coerceIn(0.0, 1.0)
+            ((selectedEndMs - selectedStartMs).toDouble() / sourceDurationMs.toDouble()).coerceIn(0.0, 1.0)
         }
-        val resolutionFactor = if (sourceHeight <= 0 || selectedHeight >= sourceHeight) 1.0 else {
+        val resolutionFactor = if (sourceHeight > 0 && selectedHeight < sourceHeight) {
             val ratio = selectedHeight.toDouble() / sourceHeight.toDouble()
             ratio * ratio
-        }
+        } else 1.0
         val estimated = (sourceSizeBytes * resolutionFactor * durationFactor * 0.95).toLong()
         return estimated.coerceAtLeast(64L * 1024L)
     }
