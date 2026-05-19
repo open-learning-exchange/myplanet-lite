@@ -20,8 +20,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 339
-        versionName = "0.3.39"
+        versionCode = 340
+        versionName = "0.3.40"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -40,31 +40,35 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_11
-        targetCompatibility = JavaVersion.VERSION_11
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
     }
 }
 
 tasks.withType<Test>().configureEach {
+    maxHeapSize = "2g"
     jvmArgs("-Xshare:off")
+    if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
+        jvmArgs(
+            "-XX:+EnableDynamicAgentLoading",
+            "--add-opens=java.base/java.lang=ALL-UNNAMED",
+            "--add-opens=java.base/java.util=ALL-UNNAMED",
+            "--add-opens=java.base/java.io=ALL-UNNAMED",
+            "--add-opens=java.base/java.net=ALL-UNNAMED",
+            "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+        )
+    }
     systemProperty("robolectric.logging", "none")
     systemProperty("robolectric.logging.enabled", "false")
-
-    doFirst {
-        val agentFile = mockkAgent.find { it.name.startsWith("byte-buddy-agent") }
-        if (agentFile != null) {
-            jvmArgs("-javaagent:$agentFile")
-        }
-        if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_21)) {
-            jvmArgs("-XX:+EnableDynamicAgentLoading")
-        }
-        jvmArgs("-javaagent:${mockitoAgent.singleFile}")
-    }
+    // Fix for JDK 25: avoid instrumenting system classes that ASM 9.x cannot read (version 69)
+    systemProperty("robolectric.instrumentPackage.include", "org.ole.planet.myplanet.lite")
 }
 
 kotlin {
     compilerOptions {
-        jvmTarget.set(JvmTarget.JVM_11)
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
 
@@ -118,18 +122,15 @@ dependencies {
     debugImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
-    debugImplementation(libs.androidx.fragment.testing)
     testImplementation(libs.core.ktx)
     testImplementation(libs.json)
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.mockito.core)
-    testImplementation(libs.mockito.inline)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.mockk)
     testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
-    debugImplementation(libs.androidx.fragment.testing)
 
     // androidTestImplementation
     // testing
