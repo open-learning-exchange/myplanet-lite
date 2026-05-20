@@ -7,6 +7,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -90,5 +91,45 @@ class ResourceDownloadServiceTest {
         val mockPrefs = context.getSharedPreferences("mock_secure_prefs", Context.MODE_PRIVATE)
         val storedJson = mockPrefs.getString("test_resources_key", null)
         assertTrue("Resource should be removed from secure prefs", storedJson == "[]" || storedJson == null)
+    }
+
+    @Test
+    fun testSaveDownloadedResourceFile_preventsPathTraversal() {
+        val maliciousResource = ResourceUi(
+            id = "res_789",
+            filename = "../../../malicious.pdf",
+            name = "Malicious Resource",
+            type = "PDF",
+            date = "2023-01-03",
+            createdDate = 1672704000000L,
+            isDownloaded = false,
+            isDownloadable = true,
+            isTeamResource = false
+        )
+
+        val bytes = "test content".toByteArray()
+        val result = downloadService.saveDownloadedResourceFile(maliciousResource, bytes)
+
+        assertNull("saveDownloadedResourceFile should return null for path traversal attempt", result)
+    }
+
+    @Test
+    fun testSaveDownloadedResourceFile_preventsIdTraversal() {
+        val maliciousResource = ResourceUi(
+            id = "../../../malicious_dir",
+            filename = "malicious.pdf",
+            name = "Malicious Resource",
+            type = "PDF",
+            date = "2023-01-03",
+            createdDate = 1672704000000L,
+            isDownloaded = false,
+            isDownloadable = true,
+            isTeamResource = false
+        )
+
+        val bytes = "test content".toByteArray()
+        val result = downloadService.saveDownloadedResourceFile(maliciousResource, bytes)
+
+        assertNull("saveDownloadedResourceFile should return null for id traversal attempt", result)
     }
 }
