@@ -15,11 +15,24 @@ import org.mockito.Mockito.*
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
 import org.robolectric.shadows.ShadowAlertDialog
+import org.robolectric.shadows.ShadowMediaRecorder
+import org.robolectric.shadows.ShadowToast
 import org.robolectric.Shadows.shadowOf
 import java.io.File
 
 class RecordAudioTestActivity : FragmentActivity()
+
+@Implements(MediaRecorder::class)
+class FailingShadowMediaRecorder : ShadowMediaRecorder() {
+    @Implementation
+    @Throws(Exception::class)
+    override fun start() {
+        throw RuntimeException("Simulated start failure")
+    }
+}
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30])
@@ -121,5 +134,24 @@ class DashboardResourcesRecordAudioExtensionsTest {
         shadowOf(Looper.getMainLooper()).idle()
 
         assertTrue(shadowOf(dialog).hasBeenDismissed())
+    }
+
+    @Test
+    @Config(shadows = [FailingShadowMediaRecorder::class])
+    fun testShowRecordAudioPopup_recordButton_startRecording_failure() {
+        fragment.showRecordAudioPopup()
+        val dialog = ShadowAlertDialog.getLatestAlertDialog()
+        assertNotNull(dialog)
+
+        val dialogView = shadowOf(dialog).view as LinearLayout
+        val buttonContainer = dialogView.getChildAt(1) as FrameLayout
+        val recordButton = buttonContainer.getChildAt(1) as ImageButton
+
+        recordButton.performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertNull(fragment.mediaRecorder)
+
+        assertEquals("Recording failed to start", ShadowToast.getTextOfLatestToast())
     }
 }
