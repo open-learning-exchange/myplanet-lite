@@ -1013,7 +1013,8 @@ class SignupActivity : BaseActivity() {
         return executeSignupRequest(requestUrl, payload, mediaType)
     }
 
-    private suspend fun executeSignupRequest(
+    @androidx.annotation.VisibleForTesting
+    internal suspend fun executeSignupRequest(
         requestUrl: String,
         payload: JSONObject,
         mediaType: okhttp3.MediaType
@@ -1091,7 +1092,8 @@ class SignupActivity : BaseActivity() {
 
     private enum class UsernameAvailability { AVAILABLE, TAKEN, UNKNOWN }
 
-    private enum class SignupSubmissionResult { SUCCESS, USERNAME_TAKEN, FAILED }
+    @androidx.annotation.VisibleForTesting
+    internal enum class SignupSubmissionResult { SUCCESS, USERNAME_TAKEN, FAILED }
 
     private fun validateUsername(): Boolean {
         val username = usernameInput.text?.toString()?.trim().orEmpty()
