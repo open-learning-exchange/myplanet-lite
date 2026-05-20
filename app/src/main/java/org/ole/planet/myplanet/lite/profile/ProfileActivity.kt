@@ -479,7 +479,7 @@ class ProfileActivity : BaseActivity() {
         return ProfileUpdateContext(storedProfile, normalizedBase, username, nonNullCookie)
     }
 
-    private suspend fun executeProfileUpdateRequest(
+    internal suspend fun executeProfileUpdateRequest(
         normalizedBase: String,
         username: String,
         nonNullCookie: String,
