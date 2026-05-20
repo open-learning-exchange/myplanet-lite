@@ -587,6 +587,10 @@ class MyPlanetLite : BaseActivity() {
                     setLoadingState(isLoading = false, loginButton = loginButtonView, progress = loginProgressView)
                     maybeAutoLogin()
                 }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                setLoadingState(isLoading = false, loginButton = loginButtonView, progress = loginProgressView)
+                maybeAutoLogin()
             } finally {
                 sessionRestoreInProgress = false
             }
