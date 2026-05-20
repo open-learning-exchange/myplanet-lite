@@ -86,6 +86,9 @@ object OfflineCourseStorage {
 
     fun deleteCourse(context: Context, courseId: String): Boolean {
         val safeCourseId = courseId.trim().takeIf { it.isNotEmpty() } ?: return false
+        if (safeCourseId.contains("..") || safeCourseId.contains("/") || safeCourseId.contains("\\")) {
+            return false
+        }
         val dir = courseDir(context, safeCourseId)
         return !dir.exists() || dir.deleteRecursively()
     }
