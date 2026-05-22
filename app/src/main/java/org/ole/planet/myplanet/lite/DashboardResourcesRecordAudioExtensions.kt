@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.lite
-
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.graphics.Color
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -16,33 +16,28 @@ import android.widget.Toast
 import androidx.core.content.FileProvider
 import java.io.File
 import org.ole.planet.myplanet.lite.util.RecordingWaveformView
-
 @SuppressLint("SetTextI18n")
 internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
     val context = requireContext()
     var isRecording = false
     currentAudioFile?.delete()
     currentAudioFile = null
-
     val dialogView = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
         gravity = Gravity.CENTER
         val padding = (24 * resources.displayMetrics.density).toInt()
         setPadding(padding, padding, padding, padding)
     }
-
     val timerText = TextView(context).apply {
         text = "00:00"
         textSize = 32f
         setTextColor(Color.BLACK)
         setPadding(0, 0, 0, (24 * resources.displayMetrics.density).toInt())
     }
-
     val waveformView = RecordingWaveformView(context).apply {
         val size = (120 * resources.displayMetrics.density).toInt()
         layoutParams = FrameLayout.LayoutParams(size, size)
     }
-
     val recordButton = ImageButton(context).apply {
         setImageResource(R.drawable.ic_add_record_24)
         setColorFilter(Color.RED)
@@ -51,7 +46,6 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
         layoutParams = FrameLayout.LayoutParams(size, size, Gravity.CENTER)
         scaleType = ImageView.ScaleType.FIT_CENTER
     }
-
     val buttonContainer = FrameLayout(context).apply {
         layoutParams = LinearLayout.LayoutParams(
             LinearLayout.LayoutParams.WRAP_CONTENT,
@@ -60,10 +54,8 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
         addView(waveformView)
         addView(recordButton)
     }
-
     dialogView.addView(timerText)
     dialogView.addView(buttonContainer)
-
     val dialog = AlertDialog.Builder(context)
         .setTitle(getString(R.string.dashboard_resources_record_audio))
         .setView(dialogView)
@@ -71,7 +63,6 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
         .setPositiveButton(R.string.dashboard_resources_record_audio_accept, null)
         .setCancelable(false)
         .create()
-
     val updateTimerTask = object : Runnable {
         override fun run() {
             if (isRecording) {
@@ -84,7 +75,6 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
             }
         }
     }
-
     fun stopRecording() {
         if (!isRecording) return
         isRecording = false
@@ -93,7 +83,7 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
         try {
             mediaRecorder?.stop()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("DashboardResources", "Error stopping recorder", e)
         }
         mediaRecorder?.reset()
         mediaRecorder?.release()
@@ -102,13 +92,11 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
         recordButton.setColorFilter(Color.RED)
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = true
     }
-
     fun startRecording() {
         currentAudioFile?.delete()
         val dir = File(context.cacheDir, "shared_images").apply { mkdirs() }
         val file = File(dir, "recorded_audio_${System.currentTimeMillis()}.m4a")
         currentAudioFile = file
-
         val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             MediaRecorder(context)
         } else {
@@ -136,7 +124,6 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
             isRecording = false
         }
     }
-
     recordButton.setOnClickListener {
         if (isRecording) {
             stopRecording()
@@ -144,7 +131,6 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
             startRecording()
         }
     }
-
     dialog.setOnShowListener {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = false
         dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
@@ -164,6 +150,5 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
             dialog.dismiss()
         }
     }
-
     dialog.show()
 }
