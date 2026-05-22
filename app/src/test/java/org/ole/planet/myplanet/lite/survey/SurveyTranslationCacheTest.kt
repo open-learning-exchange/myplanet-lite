@@ -1,9 +1,52 @@
 package org.ole.planet.myplanet.lite.survey
 
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import androidx.test.core.app.ApplicationProvider
 import kotlin.system.measureTimeMillis
+import kotlinx.coroutines.runBlocking
+import org.junit.Assert.assertThrows
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.Mockito.doReturn
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.spy
+import org.mockito.Mockito.verify
+import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
+import org.mockito.kotlin.whenever
+import org.ole.planet.myplanet.lite.surveys.SurveyTranslationCache
+import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class SurveyTranslationCacheTest {
+
+    @Test
+    fun `test saveTranslations error path`() = runBlocking {
+        val mockDb = mock(SQLiteDatabase::class.java)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val cache = spy(SurveyTranslationCache.getInstance(context))
+        doReturn(mockDb).whenever(cache).writableDatabase
+
+        whenever(mockDb.insertWithOnConflict(any(), anyOrNull(), any(), any())).thenThrow(RuntimeException("DB Error"))
+
+        val translations = mapOf(1 to SurveyTranslationManager.TranslatedQuestion("body", listOf("a")))
+
+        assertThrows(RuntimeException::class.java) {
+            runBlocking {
+                cache.saveTranslations("survey1", "es", translations)
+            }
+        }
+
+        verify(mockDb).beginTransaction()
+        verify(mockDb).endTransaction()
+        verify(mockDb, never()).setTransactionSuccessful()
+    }
 
     @Test
     fun benchmarkStringListComparison() {

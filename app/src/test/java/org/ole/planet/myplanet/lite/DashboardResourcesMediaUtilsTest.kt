@@ -10,6 +10,8 @@ import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import android.net.Uri
+import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
@@ -263,5 +265,16 @@ class DashboardResourcesMediaUtilsTest {
 
         val optionsNoEnglish = listOf("French", "Spanish")
         assertEquals(0, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, optionsNoEnglish))
+    }
+
+    @Test
+    fun extractWaveform_errorPath_returnsEmptyArray() = runBlocking {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.extractWaveform(context, uri)
+        assertEquals(0, result.size)
     }
 }
