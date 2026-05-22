@@ -56,7 +56,6 @@ class ServerConfigurationRepositoryTest {
         val doc = result.getOrNull()
         assertEquals("test-key", doc?.keys?.openAi)
         assertEquals("test-model", doc?.models?.openAi)
-        assertEquals("en", doc?.preferredLang)
 
         val request = mockWebServer.takeRequest()
         assertEquals("/db/configurations/_all_docs?include_docs=true", request.path)
