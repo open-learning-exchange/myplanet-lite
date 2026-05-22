@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -303,6 +304,24 @@ class PostShareHelperTest {
             clipDataStaticMock.close()
         }
     }
+    @Test
+    fun testSharePostNetworkException() = runTest {
+        mockWebServer.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
+        helper.sharePost(
+            _postId = "123",
+            author = "John Doe",
+            message = "Hello world!",
+            imagePaths = listOf("image1.jpg")
+        )
+        val intentCaptor = ArgumentCaptor.forClass(Intent::class.java)
+        verify(context).startActivity(intentCaptor.capture())
+        val targetIntent = IntentCompat.getParcelableExtra(intentCaptor.value, Intent.EXTRA_INTENT, Intent::class.java)
+        assertNotNull(targetIntent)
+        assertEquals(Intent.ACTION_SEND, targetIntent?.action)
+        assertEquals("text/plain", targetIntent?.type)
+        assertNull(targetIntent?.let { IntentCompat.getParcelableExtra(it, Intent.EXTRA_STREAM, Uri::class.java) })
+    }
+
     @Test
     fun testSharePostNetworkError() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(500))
