@@ -66,7 +66,6 @@ class ServerConfigurationRepository(
     data class ConfigurationDocument(
         @param:Json(name = "keys") val keys: AiKeys? = null,
         @param:Json(name = "models") val models: AiModels? = null,
-        @param:Json(name = "preferredLang") val preferredLang: String? = null,
     )
 
     @JsonClass(generateAdapter = true)
