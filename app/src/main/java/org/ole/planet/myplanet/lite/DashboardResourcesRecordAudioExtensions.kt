@@ -1,11 +1,11 @@
 package org.ole.planet.myplanet.lite
-
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.graphics.Color
 import android.media.MediaRecorder
 import android.net.Uri
 import android.os.Build
+import android.util.Log
 import android.view.Gravity
 import android.widget.FrameLayout
 import android.widget.ImageButton
@@ -93,7 +93,7 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
         try {
             mediaRecorder?.stop()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e("DashboardResources", "Error stopping recorder", e)
         }
         mediaRecorder?.reset()
         mediaRecorder?.release()
@@ -164,6 +164,5 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
             dialog.dismiss()
         }
     }
-
     dialog.show()
 }
