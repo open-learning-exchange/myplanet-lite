@@ -32,10 +32,8 @@ import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.yalantis.ucrop.UCrop
-import java.io.BufferedInputStream
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.IOException
 import java.security.MessageDigest
 import java.text.SimpleDateFormat
 import java.time.Instant
@@ -479,7 +477,7 @@ class ProfileActivity : BaseActivity() {
         return ProfileUpdateContext(storedProfile, normalizedBase, username, nonNullCookie)
     }
 
-    private suspend fun executeProfileUpdateRequest(
+    internal suspend fun executeProfileUpdateRequest(
         normalizedBase: String,
         username: String,
         nonNullCookie: String,

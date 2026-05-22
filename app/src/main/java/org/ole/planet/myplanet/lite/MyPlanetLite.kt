@@ -4,14 +4,13 @@
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
  */
-
 package org.ole.planet.myplanet.lite
-
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.os.Bundle
 import android.text.method.LinkMovementMethod
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -587,12 +586,15 @@ class MyPlanetLite : BaseActivity() {
                     setLoadingState(isLoading = false, loginButton = loginButtonView, progress = loginProgressView)
                     maybeAutoLogin()
                 }
+            } catch (e: Exception) {
+                Log.e("MyPlanetLite", "Error during session restore", e)
+                setLoadingState(isLoading = false, loginButton = loginButtonView, progress = loginProgressView)
+                maybeAutoLogin()
             } finally {
                 sessionRestoreInProgress = false
             }
         }
     }
-
     private fun maybeAutoLogin() {
         if (!shouldAutoLoginOnLaunch || credentialsAutoLoginAttempted) {
             return
@@ -1326,7 +1328,6 @@ class MyPlanetLite : BaseActivity() {
                 layoutParams.marginStart = desiredMargin
                 nameView.layoutParams = layoutParams
             }
-
             if (!isDropdown) {
                 flagView.setImageDrawable(null)
                 flagView.isVisible = false
