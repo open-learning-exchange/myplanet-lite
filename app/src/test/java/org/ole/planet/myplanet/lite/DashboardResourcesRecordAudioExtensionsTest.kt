@@ -27,6 +27,7 @@ class RecordAudioTestActivity : FragmentActivity()
 
 @Implements(MediaRecorder::class)
 class FailingShadowMediaRecorder : ShadowMediaRecorder() {
+
     @Implementation
     @Throws(Exception::class)
     override fun start() {
@@ -43,8 +44,14 @@ class DashboardResourcesRecordAudioExtensionsTest {
 
     @Before
     fun setup() {
-        activity = Robolectric.buildActivity(RecordAudioTestActivity::class.java).create().start().resume().get()
+        activity = Robolectric.buildActivity(RecordAudioTestActivity::class.java)
+            .create()
+            .start()
+            .resume()
+            .get()
+
         fragment = spy(DashboardResourcesPageFragment())
+
         doReturn(activity).`when`(fragment).requireContext()
         doReturn(activity.resources).`when`(fragment).resources
     }
@@ -52,19 +59,24 @@ class DashboardResourcesRecordAudioExtensionsTest {
     @Test
     fun testShowRecordAudioPopup_showsDialog() {
         fragment.showRecordAudioPopup()
+
         val dialog = ShadowAlertDialog.getLatestAlertDialog()
+
         assertNotNull(dialog)
         assertTrue(dialog.isShowing)
+
         assertEquals(
             activity.getString(R.string.dashboard_resources_record_audio),
-            (shadowOf(dialog).title.toString())
+            shadowOf(dialog).title.toString()
         )
+
         shadowOf(Looper.getMainLooper()).idle()
     }
 
     @Test
     fun testShowRecordAudioPopup_recordButton_togglesRecording() {
         fragment.showRecordAudioPopup()
+
         val dialog = ShadowAlertDialog.getLatestAlertDialog()
         assertNotNull(dialog)
 
@@ -74,11 +86,13 @@ class DashboardResourcesRecordAudioExtensionsTest {
 
         recordButton.performClick()
         shadowOf(Looper.getMainLooper()).idle()
+
         assertNotNull(fragment.mediaRecorder)
         assertFalse(dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled)
 
         recordButton.performClick()
         shadowOf(Looper.getMainLooper()).idle()
+
         assertNull(fragment.mediaRecorder)
         assertTrue(dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled)
     }
@@ -86,6 +100,7 @@ class DashboardResourcesRecordAudioExtensionsTest {
     @Test
     fun testShowRecordAudioPopup_negativeButton_dismissesAndStopsRecording() {
         fragment.showRecordAudioPopup()
+
         val dialog = ShadowAlertDialog.getLatestAlertDialog()
         assertNotNull(dialog)
 
@@ -95,6 +110,7 @@ class DashboardResourcesRecordAudioExtensionsTest {
 
         recordButton.performClick()
         shadowOf(Looper.getMainLooper()).idle()
+
         assertNotNull(fragment.mediaRecorder)
 
         val negativeButton = dialog.getButton(AlertDialog.BUTTON_NEGATIVE)
@@ -103,14 +119,17 @@ class DashboardResourcesRecordAudioExtensionsTest {
         shadowOf(Looper.getMainLooper()).idle()
 
         assertNull(fragment.mediaRecorder)
+
         val shadowDialog = shadowOf(dialog)
         assertTrue(shadowDialog.hasBeenDismissed())
+
         assertNull(fragment.currentAudioFile)
     }
 
     @Test
     fun testShowRecordAudioPopup_positiveButton_dismisses_whenFileExists() {
         fragment.showRecordAudioPopup()
+
         val dialog = ShadowAlertDialog.getLatestAlertDialog()
         assertNotNull(dialog)
 
@@ -131,6 +150,7 @@ class DashboardResourcesRecordAudioExtensionsTest {
 
         // Manually dismiss to avoid triggering unmockable extension functions
         dialog.dismiss()
+
         shadowOf(Looper.getMainLooper()).idle()
 
         assertTrue(shadowOf(dialog).hasBeenDismissed())
@@ -140,6 +160,7 @@ class DashboardResourcesRecordAudioExtensionsTest {
     @Config(shadows = [FailingShadowMediaRecorder::class])
     fun testShowRecordAudioPopup_recordButton_startRecording_failure() {
         fragment.showRecordAudioPopup()
+
         val dialog = ShadowAlertDialog.getLatestAlertDialog()
         assertNotNull(dialog)
 
@@ -148,10 +169,55 @@ class DashboardResourcesRecordAudioExtensionsTest {
         val recordButton = buttonContainer.getChildAt(1) as ImageButton
 
         recordButton.performClick()
+
         shadowOf(Looper.getMainLooper()).idle()
 
         assertNull(fragment.mediaRecorder)
 
-        assertEquals("Recording failed to start", ShadowToast.getTextOfLatestToast())
+        assertEquals(
+            "Recording failed to start",
+            ShadowToast.getTextOfLatestToast()
+        )
+    }
+
+    @Test
+    fun testShowRecordAudioPopup_stopRecording_handlesException() {
+        fragment.showRecordAudioPopup()
+
+        val dialog = ShadowAlertDialog.getLatestAlertDialog()
+        assertNotNull(dialog)
+
+        val dialogView = shadowOf(dialog).view as LinearLayout
+        val buttonContainer = dialogView.getChildAt(1) as FrameLayout
+        val recordButton = buttonContainer.getChildAt(1) as ImageButton
+
+        // Start recording
+        recordButton.performClick()
+
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertNotNull(fragment.mediaRecorder)
+
+        // Mock media recorder to throw exception on stop()
+        val mockMediaRecorder = mock(MediaRecorder::class.java)
+
+        doThrow(RuntimeException("Stop failed"))
+            .`when`(mockMediaRecorder)
+            .stop()
+
+        fragment.mediaRecorder = mockMediaRecorder
+
+        // Stop recording
+        recordButton.performClick()
+
+        shadowOf(Looper.getMainLooper()).idle()
+
+        // Verify exception was handled and resources were cleaned up
+        verify(mockMediaRecorder).reset()
+        verify(mockMediaRecorder).release()
+
+        assertNull(fragment.mediaRecorder)
+
+        assertTrue(dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled)
     }
 }
