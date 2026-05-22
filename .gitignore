@@ -163,4 +163,6 @@ plan.md
 
 fix.sh
 run_test.sh
+test_plan.sh
+test_script.sh
 .kotlin/sessions/
