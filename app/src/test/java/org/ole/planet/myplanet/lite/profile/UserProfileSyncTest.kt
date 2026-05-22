@@ -207,6 +207,74 @@ class UserProfileSyncTest {
     }
 
     @Test
+    fun `refreshProfile with invalid JSON returns false`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("invalid_json"))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = userProfileSync.refreshProfile(baseUrl, "testuser", null)
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun `refreshProfile with database exception returns false`() = runTest {
+        val jsonResponse = """
+            {
+                "name": "testuser",
+                "firstName": "Test"
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(jsonResponse))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        org.mockito.kotlin.whenever(mockDatabase.saveProfile(org.mockito.kotlin.any())).thenThrow(RuntimeException("Database error"))
+
+        val result = userProfileSync.refreshProfile(baseUrl, "testuser", null)
+
+        assertFalse(result)
+    }
+
+    @Test
+    fun `refreshProfile with valid profile and avatar but avatar fetch throws exception saves profile without avatar`() = runTest {
+        val jsonResponse = """
+            {
+                "name": "avataruser_throw",
+                "_attachments": {
+                    "img": {
+                        "content_type": "image/jpeg",
+                        "length": 100
+                    }
+                }
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(jsonResponse))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val failingClient = OkHttpClient.Builder()
+            .addInterceptor { chain ->
+                if (chain.request().url.encodedPath.endsWith("/img")) {
+                    throw IOException("Avatar fetch error")
+                }
+                chain.proceed(chain.request())
+            }
+            .build()
+        val customSync = UserProfileSync(failingClient, mockDatabase)
+
+        val result = customSync.refreshProfile(baseUrl, "avataruser_throw", null)
+
+        assertTrue(result)
+
+        val captor = argumentCaptor<UserProfile>()
+        verify(mockDatabase).saveProfile(captor.capture())
+
+        val savedProfile = captor.firstValue
+        assertEquals("avataruser_throw", savedProfile.username)
+        assertNull(savedProfile.avatarImage)
+    }
+
+    @Test
     fun `clearProfile calls database clearProfile`() = runTest {
         userProfileSync.clearProfile()
         verify(mockDatabase).clearProfile()
