@@ -199,4 +199,57 @@ class UserProfileDatabaseTest {
 
         verify(mockDb).execSQL(createTableSql)
     }
+
+    @Test
+    fun `test saveProfile exception ends transaction`() {
+        val mockDb = mock(SQLiteDatabase::class.java)
+        val dbSpy = org.mockito.Mockito.spy(UserProfileDatabase.getInstance(context))
+        org.mockito.Mockito.doReturn(mockDb).`when`(dbSpy).writableDatabase
+
+        org.mockito.Mockito.doThrow(IllegalStateException("Simulated exception")).`when`(mockDb).delete(
+            org.mockito.kotlin.any(),
+            org.mockito.kotlin.anyOrNull(),
+            org.mockito.kotlin.anyOrNull()
+        )
+
+        val profile = createDummyProfile("user_ex")
+        try {
+            dbSpy.saveProfile(profile)
+        } catch (e: Exception) {
+            // Expected
+        }
+
+        verify(mockDb).beginTransaction()
+        verify(mockDb).endTransaction()
+    }
+
+    @Test
+    fun `test getProfile returns null on readableDatabase IllegalStateException`() {
+        val dbSpy = org.mockito.Mockito.spy(UserProfileDatabase.getInstance(context))
+        org.mockito.Mockito.doThrow(IllegalStateException("Mocked Exception")).`when`(dbSpy).readableDatabase
+
+        val result = dbSpy.getProfile()
+        assertNull(result)
+    }
+
+    @Test
+    fun `test getProfile returns null on db query IllegalStateException`() {
+        val mockDb = mock(SQLiteDatabase::class.java)
+        val dbSpy = org.mockito.Mockito.spy(UserProfileDatabase.getInstance(context))
+        org.mockito.Mockito.doReturn(mockDb).`when`(dbSpy).readableDatabase
+
+        org.mockito.Mockito.doThrow(IllegalStateException("Mocked Exception")).`when`(mockDb).query(
+            org.mockito.kotlin.any(),
+            org.mockito.kotlin.anyOrNull(),
+            org.mockito.kotlin.anyOrNull(),
+            org.mockito.kotlin.anyOrNull(),
+            org.mockito.kotlin.anyOrNull(),
+            org.mockito.kotlin.anyOrNull(),
+            org.mockito.kotlin.anyOrNull(),
+            org.mockito.kotlin.anyOrNull()
+        )
+
+        val result = dbSpy.getProfile()
+        assertNull(result)
+    }
 }

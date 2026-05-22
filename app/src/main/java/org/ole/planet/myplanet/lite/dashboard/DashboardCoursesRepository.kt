@@ -661,10 +661,7 @@ class DashboardCoursesRepository(
     data class ShelfDocument(
         @param:Json(name = "_id") val id: String?,
         @param:Json(name = "_rev") val rev: String? = null,
-        val meetupIds: List<String> = emptyList(),
-        val resourceIds: List<String> = emptyList(),
-        val courseIds: List<String> = emptyList(),
-        val myTeamIds: List<String> = emptyList()
+        val courseIds: List<String> = emptyList()
     )
 
     @JsonClass(generateAdapter = true)
