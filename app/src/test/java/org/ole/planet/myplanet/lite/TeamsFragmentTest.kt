@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.junit.Before
 import org.junit.After
 import android.content.SharedPreferences
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.runTest
 import org.robolectric.shadows.ShadowLooper
 import kotlinx.coroutines.Dispatchers
@@ -39,6 +40,7 @@ import org.ole.planet.myplanet.lite.dashboard.TeamDocument
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], instrumentedPackages = ["androidx.loader.content"])
+@OptIn(ExperimentalCoroutinesApi::class)
 class TeamsFragmentTest {
 
     private lateinit var mockPrefs: FakeSharedPreferences
