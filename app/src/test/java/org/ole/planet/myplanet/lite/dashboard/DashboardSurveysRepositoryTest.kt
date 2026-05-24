@@ -102,7 +102,8 @@ class DashboardSurveysRepositoryTest {
                       "marks": "",
                       "correctChoice": [],
                       "choices": [],
-                      "hasOtherOption": false
+                      "hasOtherOption": false,
+                      "scaleMax": "5"
                     }
                   ]
                 }
@@ -126,6 +127,7 @@ class DashboardSurveysRepositoryTest {
         assertEquals(null, survey.passingPercentage)
         assertEquals(0, survey.totalMarks)
         assertEquals(null, survey.questions?.single()?.marks)
+        assertEquals(5, survey.questions?.single()?.scaleMax)
     }
 
     @Test

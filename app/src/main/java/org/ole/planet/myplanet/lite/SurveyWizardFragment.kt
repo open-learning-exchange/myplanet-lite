@@ -76,6 +76,7 @@ import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import androidx.core.graphics.toColorInt
 
 class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
@@ -261,7 +262,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             questionTranslations = emptyMap()
             translationApplied = false
             updateTranslationNotice(
-                showConsentNotice = translationPreferenceEnabled && !translationConsentAccepted,
+                showConsentNotice = translationPreferenceEnabled,
                 showAppliedNotice = false,
             )
             setTranslationInProgress(false)
@@ -305,7 +306,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             targetSurveyLanguage != null &&
             !detectedSurveyLanguage.equals(targetSurveyLanguage, ignoreCase = true))
         updateTranslationNotice(
-            showConsentNotice = translationPreferenceEnabled && !translationConsentAccepted,
+            showConsentNotice = false,
             showAppliedNotice = translationApplied,
         )
     }
@@ -470,7 +471,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             "textarea" -> renderTextInputQuestion(index, true)
             "select" -> renderSingleChoiceQuestion(question, index, translation)
             "selectMultiple" -> renderMultiChoiceQuestion(question, index, translation)
-            "ratingScale" -> renderRatingQuestion(index)
+            "ratingScale" -> renderRatingQuestion(question, index)
             else -> renderTextInputQuestion(index, false)
         }
     }
@@ -1607,11 +1608,13 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         return true
     }
 
-    private fun renderRatingQuestion(index: Int): Pair<View, () -> Boolean> {
+    private fun renderRatingQuestion(question: SurveyQuestion, index: Int): Pair<View, () -> Boolean> {
         val context = requireContext()
+        val scaleMax = question.scaleMax?.takeIf { it > 0 } ?: DEFAULT_RATING_SCALE_MAX
+        val columnCount = ratingScaleColumnCount(scaleMax)
         val gridLayout = GridLayout(context).apply {
-            rowCount = 3
-            columnCount = 3
+            rowCount = ((scaleMax + columnCount - 1) / columnCount).coerceAtLeast(1)
+            this.columnCount = columnCount
             layoutParams = LinearLayout.LayoutParams(
                 ViewGroup.LayoutParams.MATCH_PARENT,
                 ViewGroup.LayoutParams.WRAP_CONTENT,
@@ -1619,15 +1622,15 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         }
 
         val basePalette = listOf(
-            Color.parseColor("#F3C4E3"),
-            Color.parseColor("#F6CEDE"),
-            Color.parseColor("#F8D7DA"),
-            Color.parseColor("#FAE0D6"),
-            Color.parseColor("#FDEAD1"),
-            Color.parseColor("#FFF3CD"),
-            Color.parseColor("#F1F1D1"),
-            Color.parseColor("#E2EFD6"),
-            Color.parseColor("#D4EDDA"),
+            "#F3C4E3".toColorInt(),
+            "#F6CEDE".toColorInt(),
+            "#F8D7DA".toColorInt(),
+            "#FAE0D6".toColorInt(),
+            "#FDEAD1".toColorInt(),
+            "#FFF3CD".toColorInt(),
+            "#F1F1D1".toColorInt(),
+            "#E2EFD6".toColorInt(),
+            "#D4EDDA".toColorInt(),
         )
         val selectedColor = ContextCompat.getColor(context, R.color.survey_rating_selected_background)
         val selectedTextColor = ContextCompat.getColor(context, R.color.survey_rating_selected_text)
@@ -1644,7 +1647,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 val backgroundColor = if (isSelected) {
                     selectedColor
                 } else {
-                    basePalette[value - 1]
+                    ratingBackgroundColor(value, scaleMax, basePalette)
                 }
                 button.backgroundTintList = ColorStateList.valueOf(backgroundColor)
                 button.setTextColor(if (isSelected) selectedTextColor else defaultTextColor)
@@ -1652,7 +1655,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             }
         }
 
-        (1..9).forEach { value ->
+        (1..scaleMax).forEach { value ->
             val button = createRatingButton(context, value, horizontalMargin, bottomMargin) { selected ->
                 selectedValue = selected
                 applySelection()
@@ -1674,6 +1677,32 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             }
         }
         return gridLayout to collector
+    }
+
+    private fun ratingScaleColumnCount(scaleMax: Int): Int {
+        return when {
+            scaleMax <= 5 -> scaleMax.coerceAtLeast(1)
+            scaleMax <= DEFAULT_RATING_SCALE_MAX -> 3
+            else -> kotlin.math.ceil(kotlin.math.sqrt(scaleMax.toDouble())).toInt().coerceAtLeast(1)
+        }
+    }
+
+    private fun ratingBackgroundColor(value: Int, scaleMax: Int, palette: List<Int>): Int {
+        if (palette.isEmpty()) return Color.TRANSPARENT
+        if (scaleMax <= 1 || palette.size == 1) return palette.first()
+        val normalizedPosition = (value - 1).coerceAtLeast(0).toFloat() / (scaleMax - 1)
+        val palettePosition = normalizedPosition * (palette.size - 1)
+        val lowerIndex = palettePosition.toInt().coerceIn(0, palette.lastIndex)
+        val upperIndex = minOf(lowerIndex + 1, palette.lastIndex)
+        val fraction = palettePosition - lowerIndex
+        return blendColors(palette[lowerIndex], palette[upperIndex], fraction)
+    }
+
+    private fun blendColors(startColor: Int, endColor: Int, fraction: Float): Int {
+        val red = (Color.red(startColor) + (Color.red(endColor) - Color.red(startColor)) * fraction).roundToInt()
+        val green = (Color.green(startColor) + (Color.green(endColor) - Color.green(startColor)) * fraction).roundToInt()
+        val blue = (Color.blue(startColor) + (Color.blue(endColor) - Color.blue(startColor)) * fraction).roundToInt()
+        return Color.rgb(red, green, blue)
     }
 
     private fun createRatingButton(
@@ -1730,6 +1759,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         private const val ARG_IS_EXAM = "arg_is_exam"
         private const val OTHER_CHOICE_TAG = "other_choice"
         private const val BIRTH_DATE_PICKER_TAG = "survey_birth_date_picker"
+        private const val DEFAULT_RATING_SCALE_MAX = 9
         private const val DEFAULT_EXAM_PASSING_PERCENTAGE = 100
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
 
@@ -1754,11 +1784,26 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 }
 
 private sealed class WizardStep : java.io.Serializable {
-    object Basics : WizardStep()
-    object Names : WizardStep()
-    object BirthDate : WizardStep()
-    object Contact : WizardStep()
-    object LanguageLevel : WizardStep()
+    object Basics : WizardStep() {
+        private fun readResolve(): Any = Basics
+    }
+
+    object Names : WizardStep() {
+        private fun readResolve(): Any = Names
+    }
+
+    object BirthDate : WizardStep() {
+        private fun readResolve(): Any = BirthDate
+    }
+
+    object Contact : WizardStep() {
+        private fun readResolve(): Any = Contact
+    }
+
+    object LanguageLevel : WizardStep() {
+        private fun readResolve(): Any = LanguageLevel
+    }
+
     data class Question(val question: SurveyQuestion, val questionIndex: Int) : WizardStep()
 }
 
