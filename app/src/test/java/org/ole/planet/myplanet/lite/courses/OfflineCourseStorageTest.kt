@@ -90,6 +90,14 @@ class OfflineCourseStorageTest {
     }
 
     @Test
+    fun `deleteCourse returns false for path traversal attempts`() {
+        Assert.assertFalse(OfflineCourseStorage.deleteCourse(context, "../../../etc/passwd"))
+        Assert.assertFalse(OfflineCourseStorage.deleteCourse(context, "..\\..\\windows\\system32"))
+        Assert.assertFalse(OfflineCourseStorage.deleteCourse(context, "some/course/id"))
+        Assert.assertFalse(OfflineCourseStorage.deleteCourse(context, "course..id"))
+    }
+
+    @Test
     fun `deleteCourse returns true if course directory does not exist`() {
         val courseId = "non_existent_course"
         val courseDir = File(File(tempFilesDir, ".offline_courses"), courseId)
