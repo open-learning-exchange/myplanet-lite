@@ -69,11 +69,15 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
                     entry to result
                 }
             }
+            val successfulIds = mutableListOf<Long>()
             deferredResults.forEach { deferred ->
                 val (entry, result) = deferred.await()
                 if (result.isSuccess) {
-                    outboxStore.deleteEntry(entry.id)
+                    successfulIds.add(entry.id)
                 }
+            }
+            if (successfulIds.isNotEmpty()) {
+                outboxStore.deleteEntries(successfulIds)
             }
         }
     }

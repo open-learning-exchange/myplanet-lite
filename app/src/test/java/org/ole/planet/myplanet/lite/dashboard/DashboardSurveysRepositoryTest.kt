@@ -1,14 +1,29 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.Protocol
+import okhttp3.Request
+import okhttp3.Response
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.mockito.Mockito.doAnswer
+import org.mockito.Mockito.doThrow
+import org.mockito.Mockito.mock
+import org.mockito.Mockito.verify
+import org.mockito.kotlin.any
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import java.io.IOException
 
 class DashboardSurveysRepositoryTest {
 
@@ -87,7 +102,8 @@ class DashboardSurveysRepositoryTest {
                       "marks": "",
                       "correctChoice": [],
                       "choices": [],
-                      "hasOtherOption": false
+                      "hasOtherOption": false,
+                      "scaleMax": "5"
                     }
                   ]
                 }
@@ -111,6 +127,7 @@ class DashboardSurveysRepositoryTest {
         assertEquals(null, survey.passingPercentage)
         assertEquals(0, survey.totalMarks)
         assertEquals(null, survey.questions?.single()?.marks)
+        assertEquals(5, survey.questions?.single()?.scaleMax)
     }
 
     @Test
@@ -151,5 +168,139 @@ class DashboardSurveysRepositoryTest {
 
         assertTrue(result.isFailure)
         assertEquals("Unexpected response 404", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun fetchTeamSurveys_networkError() = runTest {
+        mockWebServer.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AT_START))
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val result = repository.fetchTeamSurveys(
+            baseUrl = baseUrl,
+            credentials = null,
+            sessionCookie = null,
+            teamId = "team1"
+        )
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IOException)
+    }
+
+    @Test
+    fun await_onFailure_throwsException() = runTest {
+        val mockCall = mock<Call>()
+        val expectedException = IOException("Network error")
+
+        doAnswer { invocation ->
+            val callback = invocation.arguments[0] as Callback
+            callback.onFailure(mockCall, expectedException)
+            null
+        }.`when`(mockCall).enqueue(any())
+
+        val result = runCatching { mockCall.await() }
+
+        assertTrue(result.isFailure)
+        assertEquals(expectedException.message, result.exceptionOrNull()?.message)
+        assertTrue(result.exceptionOrNull() is IOException)
+    }
+
+    @Test
+    fun await_onResponse_returnsResponse() = runTest {
+        val mockCall = mock<Call>()
+        val mockRequest = Request.Builder().url("http://localhost/").build()
+        val expectedResponse = Response.Builder()
+            .request(mockRequest)
+            .protocol(Protocol.HTTP_1_1)
+            .code(200)
+            .message("OK")
+            .build()
+
+        doAnswer { invocation ->
+            val callback = invocation.arguments[0] as Callback
+            callback.onResponse(mockCall, expectedResponse)
+            null
+        }.`when`(mockCall).enqueue(any())
+
+        val result = mockCall.await()
+
+        assertEquals(expectedResponse, result)
+    }
+
+    @Test
+    fun await_onCancellation_cancelsCall() = runTest {
+        val mockCall = mock<Call>()
+
+        // Suspend indefinitely on enqueue to allow cancellation
+        doAnswer {
+            // Do not invoke callback to keep coroutine suspended
+            null
+        }.`when`(mockCall).enqueue(any())
+
+        val job = launch {
+            mockCall.await()
+        }
+
+        // Wait for coroutine to start and suspend
+        delay(10)
+
+        // Cancel the job, triggering invokeOnCancellation
+        job.cancel()
+        job.join()
+
+        verify(mockCall).cancel()
+        assertTrue(job.isCancelled)
+    }
+
+    @Test
+    fun await_onCancellation_ignoresCancelException() = runTest {
+        val mockCall = mock<Call>()
+
+        // Setup cancel() to throw an exception to test the catch block
+        doThrow(RuntimeException("Cancel failed")).`when`(mockCall).cancel()
+
+        // Suspend indefinitely on enqueue to allow cancellation
+        doAnswer {
+            // Do not invoke callback to keep coroutine suspended
+            null
+        }.`when`(mockCall).enqueue(any())
+
+        val job = launch {
+            mockCall.await()
+        }
+
+        // Wait for coroutine to start and suspend
+        delay(10)
+
+        // Cancel the job, triggering invokeOnCancellation
+        job.cancel()
+        job.join()
+
+        // The test passes if no exception is thrown up, meaning the catch block worked
+        assertTrue(job.isCancelled)
+    }
+
+    @Test
+    fun await_onFailure_afterCancellation_isIgnored() = runTest {
+        val mockCall = mock<Call>()
+        lateinit var capturedCallback: Callback
+
+        doAnswer { invocation ->
+            capturedCallback = invocation.arguments[0] as Callback
+            null
+        }.`when`(mockCall).enqueue(any())
+
+        val job = launch {
+            mockCall.await()
+        }
+
+        delay(10)
+        job.cancel()
+        job.join()
+
+        // Simulate OkHttp failing after cancellation has already occurred
+        // The onFailure should just return and not throw or crash
+        capturedCallback.onFailure(mockCall, IOException("Late failure"))
+
+        assertTrue(job.isCancelled)
     }
 }

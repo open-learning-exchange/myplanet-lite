@@ -29,8 +29,18 @@ internal class ResourceDownloadService(
         return runCatching {
             val normalizedResourceFolder = item.id.takeIf { it.isNotBlank() } ?: "_no_id"
             val tabFolder = if (item.isTeamResource) "team" else "community"
-            val dir = File(context.filesDir, "resources/$tabFolder/$normalizedResourceFolder").apply { mkdirs() }
-            File(dir, item.filename).apply { writeBytes(bytes) }
+
+            val baseResourceDir = File(context.filesDir, "resources")
+            val intendedDir = File(baseResourceDir, "$tabFolder/$normalizedResourceFolder")
+
+            val destFile = File(intendedDir, item.filename)
+
+            if (!destFile.canonicalPath.startsWith(baseResourceDir.canonicalPath + File.separator)) {
+                return null
+            }
+
+            intendedDir.mkdirs()
+            destFile.apply { writeBytes(bytes) }
         }.getOrNull()
     }
 

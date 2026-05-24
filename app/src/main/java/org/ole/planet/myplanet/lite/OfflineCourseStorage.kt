@@ -253,6 +253,7 @@ object OfflineCourseStorage {
                                 .put("correctChoice", kotlinToJsonValue(question.correctChoice))
                                 .put("marks", question.marks)
                                 .put("hasOtherOption", question.hasOtherOption)
+                                .put("scaleMax", question.scaleMax)
                                 .put(
                                     "choices",
                                     JSONArray().apply {
@@ -290,7 +291,8 @@ object OfflineCourseStorage {
                 correctChoice = jsonToKotlinValue(item.opt("correctChoice")),
                 marks = item.optInt("marks").takeIf { item.has("marks") && !item.isNull("marks") },
                 choices = choices,
-                hasOtherOption = item.optBoolean("hasOtherOption", false)
+                hasOtherOption = item.optBoolean("hasOtherOption", false),
+                scaleMax = item.optInt("scaleMax").takeIf { item.has("scaleMax") && !item.isNull("scaleMax") }
             )
         }
         return SurveyDocument(

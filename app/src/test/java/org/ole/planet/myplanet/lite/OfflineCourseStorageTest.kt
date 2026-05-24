@@ -56,6 +56,7 @@ class OfflineCourseStorageTest {
                     body = "Question 1",
                     type = "radio",
                     marks = 5,
+                    scaleMax = 5,
                     choices = listOf(
                         SurveyChoice(text = "Choice A", id = "A"),
                         SurveyChoice(text = "Choice B", id = "B")
@@ -149,6 +150,7 @@ class OfflineCourseStorageTest {
         assertEquals("Question 1", question?.body)
         assertEquals("radio", question?.type)
         assertEquals(5, question?.marks)
+        assertEquals(5, question?.scaleMax)
         assertEquals(2, question?.choices?.size)
 
         assertNull(step.exam)
