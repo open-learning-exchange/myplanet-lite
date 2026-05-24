@@ -121,20 +121,34 @@ class SurveyTranslationCache private constructor(
             val db = writableDatabase
             db.beginTransaction()
             try {
-                translations.forEach { (questionIndex, translation) ->
-                    val values = ContentValues().apply {
-                        put(COLUMN_SURVEY_ID, surveyId)
-                        put(COLUMN_QUESTION_INDEX, questionIndex)
-                        put(COLUMN_TARGET_LANGUAGE, normalizedLanguage)
-                        put(COLUMN_BODY, translation.body)
-                        put(COLUMN_CHOICES, choicesAdapter.toJson(translation.choices))
+                val sql = """
+                    INSERT OR REPLACE INTO $TABLE_TRANSLATIONS
+                    ($COLUMN_SURVEY_ID, $COLUMN_QUESTION_INDEX, $COLUMN_TARGET_LANGUAGE, $COLUMN_BODY, $COLUMN_CHOICES)
+                    VALUES (?, ?, ?, ?, ?)
+                """.trimIndent()
+
+                db.compileStatement(sql).use { statement ->
+                    translations.forEach { (questionIndex, translation) ->
+                        statement.clearBindings()
+                        statement.bindString(1, surveyId)
+                        statement.bindLong(2, questionIndex.toLong())
+                        statement.bindString(3, normalizedLanguage)
+
+                        if (translation.body != null) {
+                            statement.bindString(4, translation.body)
+                        } else {
+                            statement.bindNull(4)
+                        }
+
+                        val choicesJson = choicesAdapter.toJson(translation.choices)
+                        if (choicesJson != null) {
+                            statement.bindString(5, choicesJson)
+                        } else {
+                            statement.bindNull(5)
+                        }
+
+                        statement.executeInsert()
                     }
-                    db.insertWithOnConflict(
-                        TABLE_TRANSLATIONS,
-                        null,
-                        values,
-                        SQLiteDatabase.CONFLICT_REPLACE,
-                    )
                 }
                 db.setTransactionSuccessful()
             } finally {

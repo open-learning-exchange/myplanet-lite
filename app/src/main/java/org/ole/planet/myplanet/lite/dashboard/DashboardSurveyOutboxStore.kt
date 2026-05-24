@@ -197,6 +197,22 @@ class DashboardSurveyOutboxStore private constructor(
         writableDatabase.delete(TABLE_SUBMISSIONS, "$COLUMN_ID = ?", arrayOf(id.toString())) > 0
     }
 
+    suspend fun deleteEntries(ids: Collection<Long>): Boolean = withContext(Dispatchers.IO) {
+        if (ids.isEmpty()) return@withContext false
+        var deletedCount = 0
+        val db = writableDatabase
+        db.beginTransaction()
+        try {
+            for (id in ids) {
+                deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID = ?", arrayOf(id.toString()))
+            }
+            db.setTransactionSuccessful()
+        } finally {
+            db.endTransaction()
+        }
+        deletedCount > 0
+    }
+
     data class OutboxEntry(
         val id: Long,
         val surveyId: String?,

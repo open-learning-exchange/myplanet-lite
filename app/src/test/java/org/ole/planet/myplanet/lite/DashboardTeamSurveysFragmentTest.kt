@@ -17,18 +17,23 @@ import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
+import androidx.lifecycle.Lifecycle
 import org.ole.planet.myplanet.lite.dashboard.DashboardOfflineSurveyStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore
+import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import okhttp3.mockwebserver.MockResponse
+import okhttp3.mockwebserver.MockWebServer
 
 @RunWith(RobolectricTestRunner::class)
-@Config(manifest = Config.NONE)
+@Config(manifest = Config.NONE, sdk = [33], instrumentedPackages = ["androidx.loader.content"])
 class DashboardTeamSurveysFragmentTest {
 
     private lateinit var mockPrefs: SharedPreferences
     private lateinit var mockEditor: SharedPreferences.Editor
+    private lateinit var mockWebServer: MockWebServer
 
     @Before
     fun setUp() {
@@ -37,6 +42,9 @@ class DashboardTeamSurveysFragmentTest {
         whenever(mockPrefs.edit()).thenReturn(mockEditor)
         whenever(mockEditor.putString(any(), any())).thenReturn(mockEditor)
         SecurePreferencesProvider.injectedPreferences = mockPrefs
+        mockWebServer = MockWebServer()
+        mockWebServer.start()
+        ProfileCredentialsStore.setSessionCredentials(org.ole.planet.myplanet.lite.profile.StoredCredentials("testuser", "testpass"))
     }
 
     @After
@@ -44,6 +52,8 @@ class DashboardTeamSurveysFragmentTest {
         SecurePreferencesProvider.injectedPreferences = null
         DashboardSurveyOutboxStore.resetForTesting(ApplicationProvider.getApplicationContext())
         DashboardOfflineSurveyStore.resetForTesting(ApplicationProvider.getApplicationContext())
+        ProfileCredentialsStore.setSessionCredentials(null)
+        mockWebServer.shutdown()
     }
 
     @Test
@@ -110,7 +120,8 @@ class DashboardTeamSurveysFragmentTest {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         // Mock server URL
         whenever(mockPrefs.getString("server_url", null)).thenReturn("http://test.com")
-        // Do not mock credentials, so it returns null
+        // Clear session credentials that were set in setUp
+        ProfileCredentialsStore.setSessionCredentials(null)
         val bundle = Bundle().apply {
             putString("arg_team_id", "team123")
             putString("arg_team_name", "Team Alpha")
@@ -125,6 +136,57 @@ class DashboardTeamSurveysFragmentTest {
                 assertTrue(errorView!!.isVisible)
                 assertEquals(context.getString(R.string.dashboard_surveys_missing_credentials), errorView.text)
             }
+        }
+    }
+
+    @Test
+    fun testLoadSurveys_FetchError_EmptyCache() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+
+        // Mock server to return 500
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+        val baseUrl = mockWebServer.url("/").toString()
+        whenever(mockPrefs.getString("server_url", null)).thenReturn(baseUrl)
+
+        val bundle = Bundle().apply {
+            putString("arg_team_id", "team123")
+            putString("arg_team_name", "Team Alpha")
+        }
+
+        launchFragmentInContainer<DashboardTeamSurveysFragment>(
+            fragmentArgs = bundle,
+            themeResId = R.style.Theme_MyPlanetLite
+        ).use { scenario ->
+
+            scenario.moveToState(Lifecycle.State.RESUMED)
+
+            var retries = 50
+            var isErrorVisible = false
+            var errorText = ""
+            var isRefreshing = false
+
+            while (retries > 0) {
+                Thread.sleep(100)
+                org.robolectric.shadows.ShadowLooper.idleMainLooper()
+
+                scenario.onFragment { fragment ->
+                    val errorView = fragment.view?.findViewById<TextView>(R.id.dashboardSurveysError)
+                    val swipeRefresh = fragment.view?.findViewById<androidx.swiperefreshlayout.widget.SwipeRefreshLayout>(R.id.dashboardSurveysSwipeRefresh)
+
+                    isErrorVisible = errorView?.isVisible == true
+                    errorText = errorView?.text?.toString() ?: ""
+                    isRefreshing = swipeRefresh?.isRefreshing == true
+                }
+
+                if (isErrorVisible && !isRefreshing) {
+                    break
+                }
+                retries--
+            }
+
+            assertTrue("Error view should be visible", isErrorVisible)
+            assertEquals(context.getString(R.string.dashboard_surveys_error_loading), errorText)
+            assertTrue("SwipeRefresh should not be refreshing", !isRefreshing)
         }
     }
 }
