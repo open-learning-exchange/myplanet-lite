@@ -13,10 +13,14 @@ import org.junit.Test
 import android.net.Uri
 import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
+import android.media.MediaMetadataRetriever
+import androidx.test.core.app.ApplicationProvider
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowMediaMetadataRetriever
+import org.robolectric.shadows.util.DataSource
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
@@ -276,5 +280,61 @@ class DashboardResourcesMediaUtilsTest {
 
         val result = DashboardResourcesMediaUtils.extractWaveform(context, uri)
         assertEquals(0, result.size)
+    }
+
+    @Test
+    fun resolveVideoDurationMs_validDuration_returnsDuration() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://media/external/video/media/1")
+        ShadowMediaMetadataRetriever.addMetadata(
+            DataSource.toDataSource(context, uri),
+            MediaMetadataRetriever.METADATA_KEY_DURATION,
+            "12345"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDurationMs(context, uri)
+
+        assertEquals(12345L, result)
+    }
+
+    @Test
+    fun resolveVideoDurationMs_invalidDuration_returnsZero() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://media/external/video/media/1")
+        ShadowMediaMetadataRetriever.addMetadata(
+            DataSource.toDataSource(context, uri),
+            MediaMetadataRetriever.METADATA_KEY_DURATION,
+            "invalid"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDurationMs(context, uri)
+
+        assertEquals(0L, result)
+    }
+
+    @Test
+    fun resolveVideoDurationMs_nullDuration_returnsZero() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://media/external/video/media/1")
+        ShadowMediaMetadataRetriever.addMetadata(
+            DataSource.toDataSource(context, uri),
+            MediaMetadataRetriever.METADATA_KEY_DURATION,
+            null
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDurationMs(context, uri)
+
+        assertEquals(0L, result)
+    }
+
+    @Test
+    fun resolveVideoDurationMs_exception_returnsZero() {
+        val context = mock(Context::class.java)
+        val uri = Uri.parse("content://media/external/video/media/1")
+        `when`(context.contentResolver).thenThrow(RuntimeException("Mocked Context Error"))
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDurationMs(context, uri)
+
+        assertEquals(0L, result)
     }
 }
