@@ -5,22 +5,90 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
 import java.util.Locale
+import android.content.ContentResolver
+import android.graphics.Bitmap
+import android.net.Uri
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import android.net.Uri
-import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
-import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.`when`
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
 class DashboardResourcesMediaUtilsTest {
+
+    @Test
+    fun resolveImageSize_validImage_returnsDimensions() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        `when`(context.contentResolver).thenReturn(contentResolver)
+
+        val bitmap = Bitmap.createBitmap(800, 600, Bitmap.Config.ARGB_8888)
+        val out = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        val bytes = out.toByteArray()
+
+        `when`(contentResolver.openInputStream(uri)).thenReturn(ByteArrayInputStream(bytes))
+
+        val result = DashboardResourcesMediaUtils.resolveImageSize(context, uri)
+
+        assertEquals(Pair(800, 600), result)
+    }
+
+    @Test
+    fun resolveImageSize_invalidImage_returnsNull() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        `when`(context.contentResolver).thenReturn(contentResolver)
+
+        val errorStream = object : ByteArrayInputStream(ByteArray(0)) {
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                throw RuntimeException("Simulated read error for invalid image")
+            }
+        }
+
+        `when`(contentResolver.openInputStream(uri)).thenReturn(errorStream)
+
+        val result = DashboardResourcesMediaUtils.resolveImageSize(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun resolveImageSize_nullInputStream_returnsNull() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(null)
+
+        val result = DashboardResourcesMediaUtils.resolveImageSize(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun resolveImageSize_errorPath_returnsNull() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.resolveImageSize(context, uri)
+
+        assertNull(result)
+    }
 
     @Test
     fun sanitizeResourceName_validName_noChanges() {
