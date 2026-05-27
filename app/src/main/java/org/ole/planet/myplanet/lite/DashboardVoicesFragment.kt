@@ -96,7 +96,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     )
     private val actionsRepository = DashboardNewsActionsRepository()
-    private val items = mutableListOf<DashboardNewsItem>()
+    @androidx.annotation.VisibleForTesting
+    internal val items = mutableListOf<DashboardNewsItem>()
     private val commentCounts = mutableMapOf<String, Int>()
     private var avatarLoader: DashboardAvatarLoader? = null
     private var postImageLoader: DashboardPostImageLoader? = null
@@ -119,7 +120,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     private var nextSkip = 0
     private var nextBookmark: String? = null
     private var currentEmptyMessage: Int = R.string.dashboard_voices_empty
-    private var pageSize: Int = DashboardActivity.VOICE_PAGE_SIZE_OPTIONS[1]
+    @androidx.annotation.VisibleForTesting
+    internal var pageSize: Int = DashboardActivity.VOICE_PAGE_SIZE_OPTIONS[1]
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -293,7 +295,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
     }
 
-    private fun loadInitial() {
+    @androidx.annotation.VisibleForTesting
+    internal fun loadInitial() {
         pageSize = DashboardActivity.getVoicePageSizePreference(requireContext())
         items.clear()
         adapter.submitList(items.toList())
@@ -305,7 +308,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         loadMore(pageSize)
     }
 
-    private fun loadMore(targetPosts: Int = pageSize) {
+    @androidx.annotation.VisibleForTesting
+    internal fun loadMore(targetPosts: Int = pageSize) {
         val base = baseUrl ?: return
         if (isLoading || !hasMore) {
             return
@@ -595,7 +599,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
     }
 
-    private data class DashboardNewsItem(
+    @androidx.annotation.VisibleForTesting
+    internal data class DashboardNewsItem(
         val id: String,
         val author: String,
         val username: String?,
