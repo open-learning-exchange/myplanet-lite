@@ -4,19 +4,24 @@ import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
 import android.os.Build
+import android.media.MediaMetadataRetriever
+import android.net.Uri
+import androidx.test.core.app.ApplicationProvider
 import java.util.Locale
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import android.net.Uri
-import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowMediaMetadataRetriever
+import org.robolectric.shadows.util.DataSource
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
@@ -276,5 +281,40 @@ class DashboardResourcesMediaUtilsTest {
 
         val result = DashboardResourcesMediaUtils.extractWaveform(context, uri)
         assertEquals(0, result.size)
+    }
+
+    @Test
+    fun resolveAudioBitrate_returnsBitrateInKbps() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://test/audio")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            DataSource.toDataSource(context, uri),
+            MediaMetadataRetriever.METADATA_KEY_BITRATE,
+            "128000"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveAudioBitrate(context, uri)
+        assertEquals(128, result)
+    }
+
+    @Test
+    fun resolveAudioBitrate_returnsNullWhenMissing() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://test/audio/missing")
+
+        val result = DashboardResourcesMediaUtils.resolveAudioBitrate(context, uri)
+        assertNull(result)
+    }
+
+    @Test
+    fun resolveAudioBitrate_returnsNullOnError() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.resolveAudioBitrate(context, uri)
+        assertNull(result)
     }
 }
