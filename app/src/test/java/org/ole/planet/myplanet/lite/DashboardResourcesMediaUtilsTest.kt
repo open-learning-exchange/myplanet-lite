@@ -12,6 +12,8 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import android.net.Uri
 import kotlinx.coroutines.runBlocking
+import androidx.test.core.app.ApplicationProvider
+import android.text.format.Formatter
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
@@ -265,6 +267,74 @@ class DashboardResourcesMediaUtilsTest {
 
         val optionsNoEnglish = listOf("French", "Spanish")
         assertEquals(0, DashboardResourcesMediaUtils.resolveDefaultLanguageIndex(context, resources, optionsNoEnglish))
+    }
+
+    @Test
+    fun buildVideoSizeEstimateText_nullSize_returnsUnknownText() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val result = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+            context = context,
+            unknownText = "Unknown",
+            estimateFormat = "Est: %s",
+            sourceSizeBytes = null,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+        assertEquals("Unknown", result)
+    }
+
+    @Test
+    fun buildVideoSizeEstimateText_zeroSize_returnsUnknownText() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val result = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+            context = context,
+            unknownText = "Unknown",
+            estimateFormat = "Est: %s",
+            sourceSizeBytes = 0L,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+        assertEquals("Unknown", result)
+    }
+
+    @Test
+    fun buildVideoSizeEstimateText_validSize_returnsFormattedEstimate() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        // 1000000L source size
+        // resolutionFactor = (720 / 1080)^2 = (2/3)^2 = 4/9 = ~0.4444
+        // durationFactor = 5000 / 10000 = 0.5
+        // estimated = 1000000 * 0.4444 * 0.5 * 0.95 = ~211111 bytes (211 KB)
+        val estimatedBytes = DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
+            sourceSizeBytes = 1000000L,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+
+        val expectedFormattedSize = Formatter.formatShortFileSize(context, estimatedBytes)
+        val expectedOutput = "Est: $expectedFormattedSize"
+
+        val result = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+            context = context,
+            unknownText = "Unknown",
+            estimateFormat = "Est: %s",
+            sourceSizeBytes = 1000000L,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+        assertEquals(expectedOutput, result)
     }
 
     @Test
