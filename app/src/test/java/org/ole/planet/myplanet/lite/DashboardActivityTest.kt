@@ -71,6 +71,29 @@ class DashboardActivityTest {
     }
 
     @Test
+    fun `getVoicePageSizePreference returns default 20 when not set`() {
+        assertEquals(20, DashboardActivity.getVoicePageSizePreference(context))
+    }
+
+    @Test
+    fun `getVoicePageSizePreference returns valid options`() {
+        val prefs = SecurePreferencesProvider.getServerPreferences(context)
+
+        prefs.edit().putInt("voice_page_size", 10).commit()
+        assertEquals(10, DashboardActivity.getVoicePageSizePreference(context))
+
+        prefs.edit().putInt("voice_page_size", 40).commit()
+        assertEquals(40, DashboardActivity.getVoicePageSizePreference(context))
+    }
+
+    @Test
+    fun `getVoicePageSizePreference returns default 20 for invalid options`() {
+        val prefs = SecurePreferencesProvider.getServerPreferences(context)
+        prefs.edit().putInt("voice_page_size", 30).commit()
+        assertEquals(20, DashboardActivity.getVoicePageSizePreference(context))
+    }
+
+    @Test
     fun `bottom navigation switches sections correctly`() {
         ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
