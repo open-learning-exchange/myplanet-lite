@@ -13,10 +13,13 @@ import org.junit.Test
 import android.net.Uri
 import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
+import android.media.MediaMetadataRetriever
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowMediaMetadataRetriever
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
@@ -276,5 +279,101 @@ class DashboardResourcesMediaUtilsTest {
 
         val result = DashboardResourcesMediaUtils.extractWaveform(context, uri)
         assertEquals(0, result.size)
+    }
+
+    @Test
+    fun testResolveVideoDimensions_success_noRotation() {
+        val context = RuntimeEnvironment.getApplication()
+        val uri = Uri.parse("content://dummy/video_norot.mp4")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_norot.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH,
+            "1920"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_norot.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
+            "1080"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_norot.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION,
+            "0"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+        assertEquals(Pair(1920, 1080), result)
+    }
+
+    @Test
+    fun testResolveVideoDimensions_success_rotated90() {
+        val context = RuntimeEnvironment.getApplication()
+        val uri = Uri.parse("content://dummy/video_rot90.mp4")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot90.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH,
+            "1920"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot90.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
+            "1080"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot90.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION,
+            "90"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+        assertEquals(Pair(1080, 1920), result) // Swapped
+    }
+
+    @Test
+    fun testResolveVideoDimensions_success_rotated270() {
+        val context = RuntimeEnvironment.getApplication()
+        val uri = Uri.parse("content://dummy/video_rot270.mp4")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot270.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH,
+            "1920"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot270.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
+            "1080"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot270.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION,
+            "270"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+        assertEquals(Pair(1080, 1920), result) // Swapped
+    }
+
+    @Test
+    fun testResolveVideoDimensions_missingMetadata_defaultsTo1280x720() {
+        val context = RuntimeEnvironment.getApplication()
+        val uri = Uri.parse("content://dummy/video_nometadata.mp4")
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+        assertEquals(Pair(1280, 720), result)
+    }
+
+    @Test
+    fun testResolveVideoDimensions_errorPath() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        // Mock context to throw exception when setDataSource is called
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+        assertEquals(Pair(1280, 720), result)
     }
 }
