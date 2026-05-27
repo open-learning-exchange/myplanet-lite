@@ -132,4 +132,78 @@ class ResourceDownloadServiceTest {
 
         assertNull("saveDownloadedResourceFile should return null for id traversal attempt", result)
     }
+
+    @Test
+    fun testFindLocalResourceFile_blankFilename() {
+        val result = downloadService.findLocalResourceFile("res_1", "   ", isTeamResource = false)
+        assertNull(result)
+    }
+
+    @Test
+    fun testFindLocalResourceFile_nonExistent() {
+        val result = downloadService.findLocalResourceFile("res_2", "nonexistent.pdf", isTeamResource = false)
+        assertNull(result)
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inFilesDirTeam() {
+        val file = java.io.File(context.filesDir, "resources/team/res_3/test.pdf")
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile("res_3", "test.pdf", isTeamResource = true)
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inFilesDirCommunity() {
+        val file = java.io.File(context.filesDir, "resources/community/res_4/test.pdf")
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile("res_4", "test.pdf", isTeamResource = false)
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inFilesDirNoId() {
+        val file = java.io.File(context.filesDir, "resources/team/_no_id/test.pdf")
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile("", "test.pdf", isTeamResource = true)
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inPublicDownloads() {
+        val publicDownloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+        val file = java.io.File(publicDownloads, "test_pub.pdf")
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile("res_5", "test_pub.pdf", isTeamResource = false)
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inExternalFilesDir() {
+        val externalFilesDir = context.getExternalFilesDir(null)
+        val file = java.io.File(externalFilesDir, "resources/community/res_6/test_ext.pdf")
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile("res_6", "test_ext.pdf", isTeamResource = false)
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
+    }
 }
