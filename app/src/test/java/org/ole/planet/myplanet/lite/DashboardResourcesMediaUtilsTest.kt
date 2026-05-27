@@ -17,6 +17,9 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.io.ByteArrayInputStream
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertArrayEquals
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
@@ -276,5 +279,50 @@ class DashboardResourcesMediaUtilsTest {
 
         val result = DashboardResourcesMediaUtils.extractWaveform(context, uri)
         assertEquals(0, result.size)
+    }
+
+    @Test
+    fun testReadBytesFromUri_success() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(android.content.ContentResolver::class.java)
+
+        val testData = "Hello World".toByteArray()
+        val inputStream = ByteArrayInputStream(testData)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(inputStream)
+
+        val result = DashboardResourcesMediaUtils.readBytesFromUri(context, uri)
+
+        assertArrayEquals(testData, result)
+    }
+
+    @Test
+    fun testReadBytesFromUri_nullStream() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(android.content.ContentResolver::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(null)
+
+        val result = DashboardResourcesMediaUtils.readBytesFromUri(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun testReadBytesFromUri_exception() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(android.content.ContentResolver::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.readBytesFromUri(context, uri)
+
+        assertNull(result)
     }
 }
