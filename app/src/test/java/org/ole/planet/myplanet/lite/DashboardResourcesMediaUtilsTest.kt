@@ -12,6 +12,10 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import android.net.Uri
 import kotlinx.coroutines.runBlocking
+import android.content.ContentResolver
+import java.io.ByteArrayInputStream
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertThrows
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
@@ -276,5 +280,48 @@ class DashboardResourcesMediaUtilsTest {
 
         val result = DashboardResourcesMediaUtils.extractWaveform(context, uri)
         assertEquals(0, result.size)
+    }
+
+    @Test
+    fun copyUriToTempFile_successPath_copiesDataSuccessfully() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val testData = "test byte data".toByteArray()
+        val inputStream = ByteArrayInputStream(testData)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(inputStream)
+
+        // We need a real cache dir for File.createTempFile
+        val tempDir = java.io.File(System.getProperty("java.io.tmpdir"))
+        `when`(context.cacheDir).thenReturn(tempDir)
+
+        val resultFile = DashboardResourcesMediaUtils.copyUriToTempFile(context, "Error message", uri)
+
+        assertTrue(resultFile.exists())
+        assertArrayEquals(testData, resultFile.readBytes())
+
+        resultFile.delete()
+    }
+
+    @Test
+    fun copyUriToTempFile_errorPath_throwsIllegalStateException() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val errorMessage = "Failed to read file"
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(null)
+
+        val tempDir = java.io.File(System.getProperty("java.io.tmpdir"))
+        `when`(context.cacheDir).thenReturn(tempDir)
+
+        val exception = assertThrows(IllegalStateException::class.java) {
+            DashboardResourcesMediaUtils.copyUriToTempFile(context, errorMessage, uri)
+        }
+
+        assertEquals(errorMessage, exception.message)
     }
 }
