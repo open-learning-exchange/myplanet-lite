@@ -6,8 +6,8 @@ import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -17,13 +17,19 @@ import org.robolectric.annotation.Config
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [Build.VERSION_CODES.P])
 class ResourceDownloadServiceTest {
+
     private lateinit var context: Context
     private lateinit var downloadService: ResourceDownloadService
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
-        val mockPrefs = context.getSharedPreferences("mock_secure_prefs", Context.MODE_PRIVATE)
+
+        val mockPrefs = context.getSharedPreferences(
+            "mock_secure_prefs",
+            Context.MODE_PRIVATE
+        )
+
         SecurePreferencesProvider.injectedPreferences = mockPrefs
 
         downloadService = ResourceDownloadService(
@@ -54,17 +60,29 @@ class ResourceDownloadServiceTest {
 
         downloadService.upsertDownloadedResource(resource)
 
-        val mockPrefs = context.getSharedPreferences("mock_secure_prefs", Context.MODE_PRIVATE)
-        val storedJson = mockPrefs.getString("test_resources_key", null)
-        assertTrue("Resource should be stored in secure prefs", storedJson?.contains("res_123") == true)
+        val mockPrefs = context.getSharedPreferences(
+            "mock_secure_prefs",
+            Context.MODE_PRIVATE
+        )
 
-        // Setup mock file so loadDownloadedResources can find it and return it
-        val publicDownloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+        val storedJson = mockPrefs.getString("test_resources_key", null)
+
+        assertTrue(
+            "Resource should be stored in secure prefs",
+            storedJson?.contains("res_123") == true
+        )
+
+        val publicDownloads =
+            android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS
+            )
+
         val mockFile = java.io.File(publicDownloads, "test_file.pdf")
         mockFile.parentFile?.mkdirs()
         mockFile.createNewFile()
 
         val loadedResources = downloadService.loadDownloadedResources()
+
         assertEquals(1, loadedResources.size)
         assertEquals("res_123", loadedResources[0].id)
 
@@ -88,9 +106,17 @@ class ResourceDownloadServiceTest {
         downloadService.upsertDownloadedResource(resource)
         downloadService.removeDownloadedResource(resource)
 
-        val mockPrefs = context.getSharedPreferences("mock_secure_prefs", Context.MODE_PRIVATE)
+        val mockPrefs = context.getSharedPreferences(
+            "mock_secure_prefs",
+            Context.MODE_PRIVATE
+        )
+
         val storedJson = mockPrefs.getString("test_resources_key", null)
-        assertTrue("Resource should be removed from secure prefs", storedJson == "[]" || storedJson == null)
+
+        assertTrue(
+            "Resource should be removed from secure prefs",
+            storedJson == "[]" || storedJson == null
+        )
     }
 
     @Test
@@ -110,7 +136,10 @@ class ResourceDownloadServiceTest {
         val bytes = "test content".toByteArray()
         val result = downloadService.saveDownloadedResourceFile(maliciousResource, bytes)
 
-        assertNull("saveDownloadedResourceFile should return null for path traversal attempt", result)
+        assertNull(
+            "saveDownloadedResourceFile should return null for path traversal attempt",
+            result
+        )
     }
 
     @Test
@@ -130,7 +159,140 @@ class ResourceDownloadServiceTest {
         val bytes = "test content".toByteArray()
         val result = downloadService.saveDownloadedResourceFile(maliciousResource, bytes)
 
-        assertNull("saveDownloadedResourceFile should return null for id traversal attempt", result)
+        assertNull(
+            "saveDownloadedResourceFile should return null for id traversal attempt",
+            result
+        )
+    }
+
+    @Test
+    fun testFindLocalResourceFile_blankFilename() {
+        val result = downloadService.findLocalResourceFile(
+            "res_1",
+            "   ",
+            isTeamResource = false
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun testFindLocalResourceFile_nonExistent() {
+        val result = downloadService.findLocalResourceFile(
+            "res_2",
+            "nonexistent.pdf",
+            isTeamResource = false
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inFilesDirTeam() {
+        val file = java.io.File(
+            context.filesDir,
+            "resources/team/res_3/test.pdf"
+        )
+
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile(
+            "res_3",
+            "test.pdf",
+            isTeamResource = true
+        )
+
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inFilesDirCommunity() {
+        val file = java.io.File(
+            context.filesDir,
+            "resources/community/res_4/test.pdf"
+        )
+
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile(
+            "res_4",
+            "test.pdf",
+            isTeamResource = false
+        )
+
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inFilesDirNoId() {
+        val file = java.io.File(
+            context.filesDir,
+            "resources/team/_no_id/test.pdf"
+        )
+
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile(
+            "",
+            "test.pdf",
+            isTeamResource = true
+        )
+
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inPublicDownloads() {
+        val publicDownloads =
+            android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS
+            )
+
+        val file = java.io.File(publicDownloads, "test_pub.pdf")
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile(
+            "res_5",
+            "test_pub.pdf",
+            isTeamResource = false
+        )
+
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
+    }
+
+    @Test
+    fun testFindLocalResourceFile_inExternalFilesDir() {
+        val externalFilesDir = context.getExternalFilesDir(null)
+
+        val file = java.io.File(
+            externalFilesDir,
+            "resources/community/res_6/test_ext.pdf"
+        )
+
+        file.parentFile?.mkdirs()
+        file.createNewFile()
+
+        val result = downloadService.findLocalResourceFile(
+            "res_6",
+            "test_ext.pdf",
+            isTeamResource = false
+        )
+
+        assertEquals(file.absolutePath, result?.absolutePath)
+
+        file.delete()
     }
 
     @Test
@@ -147,13 +309,20 @@ class ResourceDownloadServiceTest {
             isTeamResource = false
         )
 
-        // Setup mock file so findLocalResourceFile can find it
-        val publicDownloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+        val publicDownloads =
+            android.os.Environment.getExternalStoragePublicDirectory(
+                android.os.Environment.DIRECTORY_DOWNLOADS
+            )
+
         val mockFile = java.io.File(publicDownloads, "local_file.pdf")
         mockFile.parentFile?.mkdirs()
         mockFile.createNewFile()
 
-        val uri = downloadService.resolveResourceUri("http://example.com", resource)
+        val uri = downloadService.resolveResourceUri(
+            "http://example.com",
+            resource
+        )
+
         assertEquals(mockFile.toURI().toString(), uri)
 
         mockFile.delete()
@@ -173,7 +342,8 @@ class ResourceDownloadServiceTest {
             isTeamResource = false
         )
 
-        val expectedUri = "http://example.com/db/resources/res_remote/remote_file.pdf"
+        val expectedUri =
+            "http://example.com/db/resources/res_remote/remote_file.pdf"
 
         val baseUrls = listOf(
             "http://example.com",
@@ -184,7 +354,12 @@ class ResourceDownloadServiceTest {
 
         for (baseUrl in baseUrls) {
             val uri = downloadService.resolveResourceUri(baseUrl, resource)
-            assertEquals("Failed for baseUrl: '$baseUrl'", expectedUri, uri)
+
+            assertEquals(
+                "Failed for baseUrl: '$baseUrl'",
+                expectedUri,
+                uri
+            )
         }
     }
 
@@ -207,14 +382,39 @@ class ResourceDownloadServiceTest {
         val emptyFilenameResource = validResource.copy(filename = "")
         val blankFilenameResource = validResource.copy(filename = "   ")
 
-        assertNull("Should return null for null baseUrl", downloadService.resolveResourceUri(null, validResource))
-        assertNull("Should return null for empty baseUrl", downloadService.resolveResourceUri("", validResource))
-        assertNull("Should return null for blank baseUrl", downloadService.resolveResourceUri("   ", validResource))
+        assertNull(
+            "Should return null for null baseUrl",
+            downloadService.resolveResourceUri(null, validResource)
+        )
 
-        assertNull("Should return null for empty id", downloadService.resolveResourceUri("http://example.com", emptyIdResource))
-        assertNull("Should return null for blank id", downloadService.resolveResourceUri("http://example.com", blankIdResource))
+        assertNull(
+            "Should return null for empty baseUrl",
+            downloadService.resolveResourceUri("", validResource)
+        )
 
-        assertNull("Should return null for empty filename", downloadService.resolveResourceUri("http://example.com", emptyFilenameResource))
-        assertNull("Should return null for blank filename", downloadService.resolveResourceUri("http://example.com", blankFilenameResource))
+        assertNull(
+            "Should return null for blank baseUrl",
+            downloadService.resolveResourceUri("   ", validResource)
+        )
+
+        assertNull(
+            "Should return null for empty id",
+            downloadService.resolveResourceUri("http://example.com", emptyIdResource)
+        )
+
+        assertNull(
+            "Should return null for blank id",
+            downloadService.resolveResourceUri("http://example.com", blankIdResource)
+        )
+
+        assertNull(
+            "Should return null for empty filename",
+            downloadService.resolveResourceUri("http://example.com", emptyFilenameResource)
+        )
+
+        assertNull(
+            "Should return null for blank filename",
+            downloadService.resolveResourceUri("http://example.com", blankFilenameResource)
+        )
     }
 }
