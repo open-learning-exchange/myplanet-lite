@@ -26,6 +26,8 @@ import java.security.SecureRandom
 import kotlin.random.asKotlinRandom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
@@ -39,6 +41,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
+import org.ole.planet.myplanet.lite.dashboard.await
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
@@ -784,24 +787,24 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         creds: StoredCredentials,
         resources: List<CourseItem.LessonResource>
     ): Long = withContext(Dispatchers.IO) {
-        var total = 0L
-        resources.forEach { resource ->
-            val url = buildServerResourceUrl(base, resource) ?: return@forEach
-            val requestBuilder = Request.Builder()
-                .url(url)
-                .head()
-            if (url.startsWith("https://", ignoreCase = true)) {
-                requestBuilder.header("Authorization", Credentials.basic(creds.username, creds.password))
-            }
-            val request = requestBuilder.build()
-            runCatching {
-                httpClient.newCall(request).execute().use { response ->
-                    val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
-                    total += size.coerceAtLeast(0L)
+        resources.map { resource ->
+            async {
+                val url = buildServerResourceUrl(base, resource) ?: return@async 0L
+                val requestBuilder = Request.Builder()
+                    .url(url)
+                    .head()
+                if (url.startsWith("https://", ignoreCase = true)) {
+                    requestBuilder.header("Authorization", Credentials.basic(creds.username, creds.password))
                 }
+                val request = requestBuilder.build()
+                runCatching {
+                    httpClient.newCall(request).await().use { response ->
+                        val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
+                        size.coerceAtLeast(0L)
+                    }
+                }.getOrDefault(0L)
             }
-        }
-        total
+        }.awaitAll().sum()
     }
 
     private fun downloadCourseResources(
@@ -877,25 +880,25 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         creds: StoredCredentials,
         sources: List<String>
     ): Long = withContext(Dispatchers.IO) {
-        var total = 0L
         val authHeader = Credentials.basic(creds.username, creds.password)
-        sources.forEach { source ->
-            val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
-            val requestBuilder = Request.Builder()
-                .url(url)
-                .head()
-            if (url.startsWith("https://", ignoreCase = true)) {
-                requestBuilder.header("Authorization", authHeader)
-            }
-            val request = requestBuilder.build()
-            runCatching {
-                httpClient.newCall(request).execute().use { response ->
-                    val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
-                    total += size.coerceAtLeast(0L)
+        sources.map { source ->
+            async {
+                val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@async 0L
+                val requestBuilder = Request.Builder()
+                    .url(url)
+                    .head()
+                if (url.startsWith("https://", ignoreCase = true)) {
+                    requestBuilder.header("Authorization", authHeader)
                 }
+                val request = requestBuilder.build()
+                runCatching {
+                    httpClient.newCall(request).await().use { response ->
+                        val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
+                        size.coerceAtLeast(0L)
+                    }
+                }.getOrDefault(0L)
             }
-        }
-        total
+        }.awaitAll().sum()
     }
 
     private fun extractMarkdownImageSources(course: CourseItem): List<String> {
