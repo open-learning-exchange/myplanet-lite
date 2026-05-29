@@ -268,6 +268,64 @@ class DashboardResourcesMediaUtilsTest {
     }
 
     @Test
+    fun testResolveFileName_successFromCursor() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(android.content.ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(android.database.Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)).thenReturn(0)
+        `when`(cursor.moveToFirst()).thenReturn(true)
+        `when`(cursor.getString(0)).thenReturn("cursor_file_name.pdf")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("cursor_file_name.pdf", result)
+    }
+
+    @Test
+    fun testResolveFileName_fallbackToUriLastSegment_whenCursorEmpty() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(android.content.ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(android.database.Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)).thenReturn(-1)
+
+        `when`(uri.lastPathSegment).thenReturn("uri_file_name.mp4")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("uri_file_name.mp4", result)
+    }
+
+    @Test
+    fun testResolveFileName_fallbackToUriLastSegment_whenException() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+        `when`(uri.lastPathSegment).thenReturn("exception_file_name.jpg")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("exception_file_name.jpg", result)
+    }
+
+    @Test
+    fun testResolveFileName_fallbackToUriLastSegment_withSlash() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+        `when`(uri.lastPathSegment).thenReturn("folder/slash_file_name.txt")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("slash_file_name.txt", result)
+    }
+
+    @Test
     fun extractWaveform_errorPath_returnsEmptyArray() = runBlocking {
         val context = mock(Context::class.java)
         val uri = mock(Uri::class.java)
