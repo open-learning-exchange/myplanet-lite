@@ -11,9 +11,7 @@ import android.provider.OpenableColumns
 import android.text.format.Formatter
 import androidx.test.core.app.ApplicationProvider
 import java.util.Locale
-import android.content.ContentResolver
 import android.graphics.Bitmap
-import android.net.Uri
 import java.io.ByteArrayInputStream
 import java.io.ByteArrayOutputStream
 import kotlinx.coroutines.runBlocking
