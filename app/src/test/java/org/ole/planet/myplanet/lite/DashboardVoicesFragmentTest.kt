@@ -14,6 +14,9 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import io.noties.markwon.Markwon
+import org.junit.Assert.assertEquals
+import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
@@ -128,5 +131,70 @@ class DashboardVoicesFragmentTest {
         mockPreferencesProviderAndLaunch(null) { fragment ->
             assertFalse(fragment.isTeamFeedFor("team_123", "Test Team"))
         }
+    }
+
+    @Test
+    fun `adapter getPositionsForUsername returns correct indices`() {
+        val mockMarkwon = Mockito.mock(Markwon::class.java)
+        val adapter = DashboardVoicesFragment.DashboardNewsAdapter(
+            markwon = mockMarkwon,
+            avatarBinder = { _, _, _ -> },
+            imageBinder = { _, _ -> },
+            onImageClicked = { _, _ -> },
+            onPostClicked = {},
+            onDeleteClicked = {},
+            onShareClicked = {},
+            onEditClicked = {},
+            onAuthorClicked = {}
+        )
+
+        val createDummyItem = { id: String, username: String? ->
+            DashboardVoicesFragment.DashboardNewsItem(
+                id = id,
+                author = "Author $id",
+                username = username,
+                metadata = "Meta",
+                message = "Msg",
+                hasAvatar = false,
+                imagePaths = emptyList(),
+                commentCount = 0,
+                timestamp = 0L,
+                canEdit = false,
+                canDelete = false,
+                canShare = false,
+                document = NewsDocument(
+                    id = id, revision = null, docType = null, time = null, createdOn = null,
+                    parentCode = null, user = null, replyTo = null, viewIn = null, messageType = null,
+                    messagePlanetCode = null, message = null, images = null, updatedDate = null, isDeleted = null
+                )
+            )
+        }
+
+        val items = listOf(
+            createDummyItem("1", "alice"),
+            createDummyItem("2", "Bob"),
+            createDummyItem("3", "ALICE"),
+            createDummyItem("4", null),
+            createDummyItem("5", "bob")
+        )
+
+        adapter.submitList(items)
+        ShadowLooper.runUiThreadTasksIncludingDelayedTasks()
+
+        assertTrue(adapter.isIndexAvailable())
+
+        val alicePositions = adapter.getPositionsForUsername("alice")
+        assertNotNull(alicePositions)
+        assertEquals(listOf(0, 2), alicePositions)
+
+        val bobPositions = adapter.getPositionsForUsername("BOB")
+        assertNotNull(bobPositions)
+        assertEquals(listOf(1, 4), bobPositions)
+
+        val charliePositions = adapter.getPositionsForUsername("charlie")
+        assertEquals(emptyList<Int>(), charliePositions)
+
+        val nullPositions = adapter.getPositionsForUsername("null")
+        assertEquals(emptyList<Int>(), nullPositions)
     }
 }

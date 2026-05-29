@@ -40,8 +40,6 @@ class IntentUtilsTest {
 
     @Test
     fun `extractDeepLinkPostId returns postId from query parameter even if blank`() {
-        // The implementation does NOT return it if it is blank
-        // if (!queryPostId.isNullOrBlank()) { return queryPostId }
         val intent = Intent(Intent.ACTION_VIEW).apply {
             data = Uri.parse("https://example.com/some/path?postId=")
         }
