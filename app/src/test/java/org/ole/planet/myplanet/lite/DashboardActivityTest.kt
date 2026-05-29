@@ -91,6 +91,9 @@ class DashboardActivityTest {
         val prefs = SecurePreferencesProvider.getServerPreferences(context)
         prefs.edit().putInt("voice_page_size", 30).commit()
         assertEquals(20, DashboardActivity.getVoicePageSizePreference(context))
+    }
+
+    @Test
     fun `isSurveyTranslationEnabled returns default value when not set`() {
         ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
