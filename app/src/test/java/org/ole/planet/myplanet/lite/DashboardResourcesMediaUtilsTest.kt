@@ -3,15 +3,21 @@ package org.ole.planet.myplanet.lite
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.net.Uri
 import android.os.Build
+import android.content.ContentResolver
+import android.database.Cursor
+import android.provider.OpenableColumns
+import android.text.format.Formatter
+import androidx.test.core.app.ApplicationProvider
 import java.util.Locale
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import android.net.Uri
-import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
@@ -268,6 +274,133 @@ class DashboardResourcesMediaUtilsTest {
     }
 
     @Test
+    fun buildVideoSizeEstimateText_nullSize_returnsUnknownText() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val result = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+            context = context,
+            unknownText = "Unknown",
+            estimateFormat = "Est: %s",
+            sourceSizeBytes = null,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+
+        assertEquals("Unknown", result)
+    }
+
+    @Test
+    fun buildVideoSizeEstimateText_zeroSize_returnsUnknownText() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val result = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+            context = context,
+            unknownText = "Unknown",
+            estimateFormat = "Est: %s",
+            sourceSizeBytes = 0L,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+
+        assertEquals("Unknown", result)
+    }
+
+    @Test
+    fun buildVideoSizeEstimateText_validSize_returnsFormattedEstimate() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val estimatedBytes = DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
+            sourceSizeBytes = 1000000L,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+
+        val expectedFormattedSize = Formatter.formatShortFileSize(context, estimatedBytes)
+        val expectedOutput = "Est: $expectedFormattedSize"
+
+        val result = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+            context = context,
+            unknownText = "Unknown",
+            estimateFormat = "Est: %s",
+            sourceSizeBytes = 1000000L,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+
+        assertEquals(expectedOutput, result)
+    }
+
+    @Test
+    fun testResolveFileName_successFromCursor() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(android.content.ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(android.database.Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)).thenReturn(0)
+        `when`(cursor.moveToFirst()).thenReturn(true)
+        `when`(cursor.getString(0)).thenReturn("cursor_file_name.pdf")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("cursor_file_name.pdf", result)
+    }
+
+    @Test
+    fun testResolveFileName_fallbackToUriLastSegment_whenCursorEmpty() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(android.content.ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(android.database.Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(android.provider.OpenableColumns.DISPLAY_NAME)).thenReturn(-1)
+
+        `when`(uri.lastPathSegment).thenReturn("uri_file_name.mp4")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("uri_file_name.mp4", result)
+    }
+
+    @Test
+    fun testResolveFileName_fallbackToUriLastSegment_whenException() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+        `when`(uri.lastPathSegment).thenReturn("exception_file_name.jpg")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("exception_file_name.jpg", result)
+    }
+
+    @Test
+    fun testResolveFileName_fallbackToUriLastSegment_withSlash() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+        `when`(uri.lastPathSegment).thenReturn("folder/slash_file_name.txt")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("slash_file_name.txt", result)
+    }
+
+    @Test
     fun extractWaveform_errorPath_returnsEmptyArray() = runBlocking {
         val context = mock(Context::class.java)
         val uri = mock(Uri::class.java)
@@ -276,5 +409,64 @@ class DashboardResourcesMediaUtilsTest {
 
         val result = DashboardResourcesMediaUtils.extractWaveform(context, uri)
         assertEquals(0, result.size)
+    }
+
+    @Test
+    fun testResolveFileSizeBytes_success() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(OpenableColumns.SIZE)).thenReturn(1)
+        `when`(cursor.moveToFirst()).thenReturn(true)
+        `when`(cursor.getLong(1)).thenReturn(1024L)
+
+        val size = DashboardResourcesMediaUtils.resolveFileSizeBytes(context, uri)
+        assertEquals(1024L, size)
+    }
+
+    @Test
+    fun testResolveFileSizeBytes_nullCursor() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(null)
+
+        val size = DashboardResourcesMediaUtils.resolveFileSizeBytes(context, uri)
+        assertNull(size)
+    }
+
+    @Test
+    fun testResolveFileSizeBytes_emptyCursor() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(OpenableColumns.SIZE)).thenReturn(1)
+        `when`(cursor.moveToFirst()).thenReturn(false)
+
+        val size = DashboardResourcesMediaUtils.resolveFileSizeBytes(context, uri)
+        assertNull(size)
+    }
+
+    @Test
+    fun testResolveFileSizeBytes_exception() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenThrow(RuntimeException("DB error"))
+
+        val size = DashboardResourcesMediaUtils.resolveFileSizeBytes(context, uri)
+        assertNull(size)
     }
 }
