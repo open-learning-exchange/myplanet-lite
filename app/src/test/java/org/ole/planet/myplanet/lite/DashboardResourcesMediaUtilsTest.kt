@@ -7,7 +7,6 @@ import android.net.Uri
 import android.os.Build
 import android.content.ContentResolver
 import android.database.Cursor
-import android.net.Uri
 import android.provider.OpenableColumns
 import android.text.format.Formatter
 import androidx.test.core.app.ApplicationProvider
