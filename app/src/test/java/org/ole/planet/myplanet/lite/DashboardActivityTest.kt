@@ -122,6 +122,62 @@ class DashboardActivityTest {
     }
 
     @Test
+    fun `getVoicePageSizePreference returns default 20 when not set`() {
+        assertEquals(20, DashboardActivity.getVoicePageSizePreference(context))
+    }
+
+    @Test
+    fun `getVoicePageSizePreference returns valid options`() {
+        val prefs = SecurePreferencesProvider.getServerPreferences(context)
+
+        prefs.edit().putInt("voice_page_size", 10).commit()
+        assertEquals(10, DashboardActivity.getVoicePageSizePreference(context))
+
+        prefs.edit().putInt("voice_page_size", 40).commit()
+        assertEquals(40, DashboardActivity.getVoicePageSizePreference(context))
+    }
+
+    @Test
+    fun `getVoicePageSizePreference returns default 20 for invalid options`() {
+        val prefs = SecurePreferencesProvider.getServerPreferences(context)
+        prefs.edit().putInt("voice_page_size", 30).commit()
+        assertEquals(20, DashboardActivity.getVoicePageSizePreference(context))
+    }
+
+    @Test
+    fun `isSurveyTranslationEnabled returns default value when not set`() {
+        ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                assertEquals(true, activity.isSurveyTranslationEnabled())
+            }
+        }
+    }
+
+    @Test
+    fun `isSurveyTranslationEnabled returns true when enabled in preferences`() {
+        SecurePreferencesProvider.getServerPreferences(context).edit()
+            .putBoolean("survey_translations_enabled", true)
+            .commit()
+        ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                assertEquals(true, activity.isSurveyTranslationEnabled())
+            }
+        }
+    }
+
+    @Test
+    fun `isSurveyTranslationEnabled returns false when disabled in preferences`() {
+        SecurePreferencesProvider.getServerPreferences(context).edit()
+            .putBoolean("survey_translations_enabled", false)
+            .commit()
+        ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                assertEquals(false, activity.isSurveyTranslationEnabled())
+            }
+        }
+    }
+
+    @Test
     fun `bottom navigation switches sections correctly`() {
         ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
