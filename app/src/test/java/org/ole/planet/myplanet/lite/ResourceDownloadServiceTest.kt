@@ -132,4 +132,89 @@ class ResourceDownloadServiceTest {
 
         assertNull("saveDownloadedResourceFile should return null for id traversal attempt", result)
     }
+
+    @Test
+    fun testResolveResourceUri_localFileExists() {
+        val resource = ResourceUi(
+            id = "res_local",
+            filename = "local_file.pdf",
+            name = "Local Resource",
+            type = "PDF",
+            date = "2023-01-04",
+            createdDate = 1672790400000L,
+            isDownloaded = false,
+            isDownloadable = true,
+            isTeamResource = false
+        )
+
+        // Setup mock file so findLocalResourceFile can find it
+        val publicDownloads = android.os.Environment.getExternalStoragePublicDirectory(android.os.Environment.DIRECTORY_DOWNLOADS)
+        val mockFile = java.io.File(publicDownloads, "local_file.pdf")
+        mockFile.parentFile?.mkdirs()
+        mockFile.createNewFile()
+
+        val uri = downloadService.resolveResourceUri("http://example.com", resource)
+        assertEquals(mockFile.toURI().toString(), uri)
+
+        mockFile.delete()
+    }
+
+    @Test
+    fun testResolveResourceUri_remoteFileValid() {
+        val resource = ResourceUi(
+            id = "res_remote",
+            filename = "remote_file.pdf",
+            name = "Remote Resource",
+            type = "PDF",
+            date = "2023-01-05",
+            createdDate = 1672876800000L,
+            isDownloaded = false,
+            isDownloadable = true,
+            isTeamResource = false
+        )
+
+        val expectedUri = "http://example.com/db/resources/res_remote/remote_file.pdf"
+
+        val baseUrls = listOf(
+            "http://example.com",
+            "http://example.com/",
+            "   http://example.com   ",
+            "   http://example.com/   "
+        )
+
+        for (baseUrl in baseUrls) {
+            val uri = downloadService.resolveResourceUri(baseUrl, resource)
+            assertEquals("Failed for baseUrl: '$baseUrl'", expectedUri, uri)
+        }
+    }
+
+    @Test
+    fun testResolveResourceUri_invalidInputs() {
+        val validResource = ResourceUi(
+            id = "res_remote",
+            filename = "remote_file.pdf",
+            name = "Remote Resource",
+            type = "PDF",
+            date = "2023-01-05",
+            createdDate = 1672876800000L,
+            isDownloaded = false,
+            isDownloadable = true,
+            isTeamResource = false
+        )
+
+        val emptyIdResource = validResource.copy(id = "")
+        val blankIdResource = validResource.copy(id = "   ")
+        val emptyFilenameResource = validResource.copy(filename = "")
+        val blankFilenameResource = validResource.copy(filename = "   ")
+
+        assertNull("Should return null for null baseUrl", downloadService.resolveResourceUri(null, validResource))
+        assertNull("Should return null for empty baseUrl", downloadService.resolveResourceUri("", validResource))
+        assertNull("Should return null for blank baseUrl", downloadService.resolveResourceUri("   ", validResource))
+
+        assertNull("Should return null for empty id", downloadService.resolveResourceUri("http://example.com", emptyIdResource))
+        assertNull("Should return null for blank id", downloadService.resolveResourceUri("http://example.com", blankIdResource))
+
+        assertNull("Should return null for empty filename", downloadService.resolveResourceUri("http://example.com", emptyFilenameResource))
+        assertNull("Should return null for blank filename", downloadService.resolveResourceUri("http://example.com", blankFilenameResource))
+    }
 }
