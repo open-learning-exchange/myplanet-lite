@@ -31,9 +31,17 @@ class IntentUtilsTest {
     }
 
     @Test
+    fun `extractDeepLinkPostId returns null when intent host is invalid`() {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("https://example.com/post/12345")
+        }
+        assertNull(IntentUtils.extractDeepLinkPostId(intent))
+    }
+
+    @Test
     fun `extractDeepLinkPostId returns postId from query parameter`() {
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://example.com/some/path?postId=12345")
+            data = Uri.parse("https://midominio.com/post/path?postId=12345")
         }
         assertEquals("12345", IntentUtils.extractDeepLinkPostId(intent))
     }
@@ -41,7 +49,7 @@ class IntentUtilsTest {
     @Test
     fun `extractDeepLinkPostId returns postId from query parameter even if blank`() {
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://example.com/some/path?postId=")
+            data = Uri.parse("https://midominio.com/post/path?postId=")
         }
         // Will fallback to segments
         assertEquals("path", IntentUtils.extractDeepLinkPostId(intent))
@@ -50,7 +58,7 @@ class IntentUtilsTest {
     @Test
     fun `extractDeepLinkPostId returns null when there are no segments`() {
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://example.com")
+            data = Uri.parse("https://midominio.com")
         }
         assertNull(IntentUtils.extractDeepLinkPostId(intent))
     }
@@ -58,7 +66,7 @@ class IntentUtilsTest {
     @Test
     fun `extractDeepLinkPostId returns segment after post`() {
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://example.com/api/post/67890/details")
+            data = Uri.parse("https://midominio.com/post/67890/details")
         }
         assertEquals("67890", IntentUtils.extractDeepLinkPostId(intent))
     }
@@ -66,23 +74,15 @@ class IntentUtilsTest {
     @Test
     fun `extractDeepLinkPostId returns segment after POST case insensitive`() {
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://example.com/api/PoSt/67890/details")
+            data = Uri.parse("https://midominio.com/PoSt/67890/details")
         }
         assertEquals("67890", IntentUtils.extractDeepLinkPostId(intent))
     }
 
     @Test
-    fun `extractDeepLinkPostId falls back to last segment if post is last`() {
-        val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://example.com/api/post")
-        }
-        assertEquals("post", IntentUtils.extractDeepLinkPostId(intent))
-    }
-
-    @Test
     fun `extractDeepLinkPostId falls back to last segment if post is not found`() {
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://example.com/api/users/999")
+            data = Uri.parse("myplanetlite://post/999")
         }
         assertEquals("999", IntentUtils.extractDeepLinkPostId(intent))
     }
@@ -93,7 +93,7 @@ class IntentUtilsTest {
         // Let's create an explicit scenario where the final string is blank.
         // "takeIf { it.isNotBlank() }"
         val intent = Intent(Intent.ACTION_VIEW).apply {
-            data = Uri.parse("https://example.com/api/%20/")
+            data = Uri.parse("https://midominio.com/post/%20/")
         }
         assertNull(IntentUtils.extractDeepLinkPostId(intent))
     }
