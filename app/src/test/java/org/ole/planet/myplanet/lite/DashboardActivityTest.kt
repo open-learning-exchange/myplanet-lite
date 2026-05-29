@@ -13,8 +13,13 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
+import android.content.Intent
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -22,6 +27,7 @@ import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowNetworkCapabilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -42,6 +48,51 @@ class DashboardActivityTest {
     fun teardown() {
         Dispatchers.resetMain()
         SecurePreferencesProvider.resetForTesting()
+    }
+
+    private fun setupNetworkConnectivity(isConnected: Boolean) {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val shadowConnectivityManager = Shadows.shadowOf(connectivityManager)
+        if (isConnected) {
+            val capabilities = ShadowNetworkCapabilities.newInstance()
+            Shadows.shadowOf(capabilities).addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            shadowConnectivityManager.setDefaultNetworkActive(true)
+            val activeNetwork = connectivityManager.activeNetwork
+            if (activeNetwork != null) {
+                shadowConnectivityManager.setNetworkCapabilities(activeNetwork, capabilities)
+            }
+        } else {
+            shadowConnectivityManager.setDefaultNetworkActive(false)
+            val activeNetwork = connectivityManager.activeNetwork
+            if (activeNetwork != null) {
+                shadowConnectivityManager.setNetworkCapabilities(activeNetwork, null)
+            }
+        }
+    }
+
+    @Test
+    fun `isOfflineModeActive returns true when offline mode is active`() {
+        // Default Robolectric behavior is offline
+        ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertTrue("isOfflineModeActive should return true when offline", activity.isOfflineModeActive())
+            }
+        }
+    }
+
+    @Test
+    fun `isOfflineModeActive returns false when online`() {
+        setupNetworkConnectivity(true)
+        val intent = Intent(context, DashboardActivity::class.java).apply {
+            putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, false)
+        }
+        ActivityScenario.launch<DashboardActivity>(intent).use { scenario ->
+            scenario.onActivity { activity ->
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertFalse("isOfflineModeActive should return false when online", activity.isOfflineModeActive())
+            }
+        }
     }
 
     @Test
