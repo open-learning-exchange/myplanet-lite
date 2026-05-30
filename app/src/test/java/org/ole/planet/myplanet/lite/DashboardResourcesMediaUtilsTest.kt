@@ -482,6 +482,44 @@ class DashboardResourcesMediaUtilsTest {
     }
 
     @Test
+    fun resolveAudioBitrate_returnsBitrateInKbps() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://test/audio")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            DataSource.toDataSource(context, uri),
+            MediaMetadataRetriever.METADATA_KEY_BITRATE,
+            "128000"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveAudioBitrate(context, uri)
+
+        assertEquals(128, result)
+    }
+
+    @Test
+    fun resolveAudioBitrate_returnsNullWhenMissing() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://test/audio/missing")
+
+        val result = DashboardResourcesMediaUtils.resolveAudioBitrate(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun resolveAudioBitrate_returnsNullOnError() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.resolveAudioBitrate(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
     fun testReadBytesFromUri_success() {
         val context = mock(Context::class.java)
         val uri = mock(Uri::class.java)
