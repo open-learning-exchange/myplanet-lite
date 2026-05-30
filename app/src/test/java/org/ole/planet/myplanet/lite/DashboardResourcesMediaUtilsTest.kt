@@ -31,6 +31,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowMediaMetadataRetriever
 import org.robolectric.shadows.util.DataSource
+import java.io.File
+import java.lang.System.getProperty
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
@@ -492,8 +494,7 @@ class DashboardResourcesMediaUtilsTest {
 
         `when`(context.contentResolver).thenReturn(contentResolver)
         `when`(contentResolver.openInputStream(uri)).thenReturn(inputStream)
-
-        val tempDir = java.io.File(System.getProperty("java.io.tmpdir"))
+        val tempDir = File(getProperty("java.io.tmpdir") ?: ".")
         `when`(context.cacheDir).thenReturn(tempDir)
 
         val resultFile = DashboardResourcesMediaUtils.copyUriToTempFile(context, "Error message", uri)
@@ -514,7 +515,7 @@ class DashboardResourcesMediaUtilsTest {
         `when`(context.contentResolver).thenReturn(contentResolver)
         `when`(contentResolver.openInputStream(uri)).thenReturn(null)
 
-        val tempDir = java.io.File(System.getProperty("java.io.tmpdir"))
+        val tempDir = File(getProperty("java.io.tmpdir") ?: ".")
         `when`(context.cacheDir).thenReturn(tempDir)
 
         val exception = assertThrows(IllegalStateException::class.java) {
