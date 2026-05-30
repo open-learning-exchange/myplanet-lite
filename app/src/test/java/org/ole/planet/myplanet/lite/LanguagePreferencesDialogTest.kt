@@ -58,6 +58,8 @@ class LanguagePreferencesDialogTest {
 
         // Assert dialog is dismissed
         assertTrue(dialog?.isShowing == false)
+
+        controller.pause().stop().destroy()
     }
 
     @Test
@@ -82,5 +84,7 @@ class LanguagePreferencesDialogTest {
 
         // Assert dialog is dismissed
         assertTrue(dialog?.isShowing == false)
+
+        controller.pause().stop().destroy()
     }
 }
