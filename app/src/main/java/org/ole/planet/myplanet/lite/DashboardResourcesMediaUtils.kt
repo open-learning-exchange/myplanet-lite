@@ -3,6 +3,10 @@ package org.ole.planet.myplanet.lite
 import android.content.Context
 import android.content.res.Resources
 import android.database.Cursor
+import androidx.fragment.app.Fragment
+import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.media.MediaCodec
@@ -44,6 +48,38 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object DashboardResourcesMediaUtils {
+    data class ResourceUploadMetadata(
+        val fileName: String,
+        val defaultTitle: String,
+        val languageOptions: List<String>,
+        val credentials: StoredCredentials?,
+        val username: String,
+        val planetCode: String
+    )
+
+    fun extractResourceMetadata(fragment: Fragment, uri: Uri, defaultFileName: String, isPdf: Boolean = false): ResourceUploadMetadata {
+        val context = fragment.requireContext()
+        val fileName = resolveFileName(context, uri).ifBlank { defaultFileName }
+        val defaultTitle = if (isPdf) {
+            fileName.replace(Regex("\\.pdf$", RegexOption.IGNORE_CASE), "").ifBlank { fileName }
+        } else {
+            fileName.substringBeforeLast('.').ifBlank { fileName }
+        }
+        val languageOptions = fragment.resources.getStringArray(R.array.signup_language_options).toList()
+        val credentials = ProfileCredentialsStore.getStoredCredentials(context.applicationContext)
+        val username = credentials?.username.orEmpty()
+        val planetCode = DashboardServerPreferences.getServerCode(context).orEmpty()
+
+        return ResourceUploadMetadata(
+            fileName = fileName,
+            defaultTitle = defaultTitle,
+            languageOptions = languageOptions,
+            credentials = credentials,
+            username = username,
+            planetCode = planetCode
+        )
+    }
+
     fun sanitizeResourceName(name: String): String {
         return name.replace(Regex("[^a-zA-Z0-9\\-_]"), "_")
             .replace(Regex("_+"), "_")

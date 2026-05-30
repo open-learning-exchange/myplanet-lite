@@ -39,12 +39,13 @@ import org.ole.planet.myplanet.lite.util.AudioWaveformView
 @OptIn(UnstableApi::class)
 internal fun DashboardResourcesPageFragment.showAudioMetadataPopup(uri: Uri) {
         val context = requireContext()
-        val fileName = DashboardResourcesMediaUtils.resolveFileName(requireContext(), uri).ifBlank { "audio.mp3" }
-        val defaultTitle = fileName.substringBeforeLast('.').ifBlank { fileName }
-        val languageOptions = resources.getStringArray(R.array.signup_language_options).toList()
-        val credentials = ProfileCredentialsStore.getStoredCredentials(context.applicationContext)
-        val username = credentials?.username.orEmpty()
-        val planetCode = DashboardServerPreferences.getServerCode(context).orEmpty()
+        val metadata = DashboardResourcesMediaUtils.extractResourceMetadata(this, uri, "audio.mp3")
+        val fileName = metadata.fileName
+        val defaultTitle = metadata.defaultTitle
+        val languageOptions = metadata.languageOptions
+        val credentials = metadata.credentials
+        val username = metadata.username
+        val planetCode = metadata.planetCode
         val sourceDurationMs = DashboardResourcesMediaUtils.resolveVideoDurationMs(requireContext(), uri)
         val bitrates = listOf(96, 128, 192, 320)
         val sourceBitrate = DashboardResourcesMediaUtils.resolveAudioBitrate(requireContext(), uri) ?: 320

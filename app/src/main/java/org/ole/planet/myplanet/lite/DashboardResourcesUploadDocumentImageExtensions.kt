@@ -27,12 +27,13 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
         val context = requireContext()
-        val fileName = DashboardResourcesMediaUtils.resolveFileName(requireContext(), uri).ifBlank { "document.pdf" }
-        val defaultTitle = fileName.replace(Regex("\\.pdf$", RegexOption.IGNORE_CASE), "").ifBlank { fileName }
-        val languageOptions = resources.getStringArray(R.array.signup_language_options).toList()
-        val credentials = ProfileCredentialsStore.getStoredCredentials(context.applicationContext)
-        val username = credentials?.username.orEmpty()
-        val planetCode = DashboardServerPreferences.getServerCode(context).orEmpty()
+        val metadata = DashboardResourcesMediaUtils.extractResourceMetadata(this, uri, "document.pdf", isPdf = true)
+        val fileName = metadata.fileName
+        val defaultTitle = metadata.defaultTitle
+        val languageOptions = metadata.languageOptions
+        val credentials = metadata.credentials
+        val username = metadata.username
+        val planetCode = metadata.planetCode
 
         val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -143,12 +144,13 @@ internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
 
 internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
         val context = requireContext()
-        val fileName = DashboardResourcesMediaUtils.resolveFileName(requireContext(), uri).ifBlank { "image.jpg" }
-        val defaultTitle = fileName.substringBeforeLast('.').ifBlank { fileName }
-        val languageOptions = resources.getStringArray(R.array.signup_language_options).toList()
-        val credentials = ProfileCredentialsStore.getStoredCredentials(context.applicationContext)
-        val username = credentials?.username.orEmpty()
-        val planetCode = DashboardServerPreferences.getServerCode(context).orEmpty()
+        val metadata = DashboardResourcesMediaUtils.extractResourceMetadata(this, uri, "image.jpg")
+        val fileName = metadata.fileName
+        val defaultTitle = metadata.defaultTitle
+        val languageOptions = metadata.languageOptions
+        val credentials = metadata.credentials
+        val username = metadata.username
+        val planetCode = metadata.planetCode
         val mimeType = context.contentResolver.getType(uri).orEmpty().ifBlank { "image/jpeg" }
         val imageSize = DashboardResourcesMediaUtils.resolveImageSize(requireContext(), uri) ?: (0 to 0)
         var isUploaded = false
