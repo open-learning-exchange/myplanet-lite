@@ -1,0 +1,176 @@
+package org.ole.planet.myplanet.lite
+
+import android.content.SharedPreferences
+import android.os.Bundle
+import androidx.fragment.app.testing.FragmentScenario
+import androidx.test.core.app.ApplicationProvider
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.mockito.Mockito
+import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository
+import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
+
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33], instrumentedPackages = ["androidx.loader.content"]) // Helps prevent FragmentScenario crash
+class DashboardVoicesFragmentTest {
+
+    @After
+    fun tearDown() {
+        UserProfileDatabase.resetForTesting(ApplicationProvider.getApplicationContext())
+        SecurePreferencesProvider.resetForTesting()
+    }
+
+    @Test
+    fun `newInstanceForTeam creates fragment with correct arguments`() {
+        val teamId = "team_123"
+        val teamName = "Test Team"
+
+        val fragment = DashboardVoicesFragment.newInstanceForTeam(teamId, teamName)
+
+        val args = fragment.arguments
+        assertNotNull(args)
+        assertEquals(teamId, args?.getString("arg_team_id"))
+        assertEquals(teamName, args?.getString("arg_team_name"))
+    }
+
+    private fun mockPreferencesProviderAndLaunch(args: Bundle?, block: (DashboardVoicesFragment) -> Unit) {
+        val mockPrefs = Mockito.mock(SharedPreferences::class.java)
+        val mockEditor = Mockito.mock(SharedPreferences.Editor::class.java)
+
+        // We need to keep track of the page size when it's updated so loadInitial can retrieve the right size
+        val storedValues = mutableMapOf<String, Any>()
+
+        Mockito.`when`(mockPrefs.getInt(Mockito.eq("voice_page_size"), Mockito.anyInt())).thenAnswer { invocation ->
+            val defaultVal = invocation.getArgument<Int>(1)
+            storedValues["voice_page_size"] ?: defaultVal
+        }
+        Mockito.`when`(mockPrefs.getBoolean(Mockito.eq("survey_translations_enabled"), Mockito.anyBoolean())).thenReturn(true)
+
+        Mockito.`when`(mockPrefs.edit()).thenReturn(mockEditor)
+
+        // Using the actual injectedPreferences visibleForTesting property in SecurePreferencesProvider.kt
+        SecurePreferencesProvider.injectedPreferences = mockPrefs
+
+        // To ensure initializeSession reads the arguments from the Bundle provided through FragmentScenario,
+        // we must allow it to proceed to RESUMED since the method is triggered via lifecycleScope.launch in onViewCreated
+        FragmentScenario.launchInContainer(DashboardVoicesFragment::class.java, args, R.style.Theme_MyPlanetLite).use { scenario ->
+            scenario.onFragment { fragment ->
+                block(fragment)
+            }
+            ShadowLooper.idleMainLooper()
+        }
+
+        SecurePreferencesProvider.injectedPreferences = null
+    }
+
+    @Test
+    fun `isTeamFeedFor returns true when both id and name match`() {
+        val teamId = "team_123"
+        val teamName = "Test Team"
+
+        val args = Bundle().apply {
+            putString("arg_team_id", teamId)
+            putString("arg_team_name", teamName)
+        }
+
+        mockPreferencesProviderAndLaunch(args) { fragment ->
+            assertTrue(fragment.isTeamFeedFor(teamId, teamName))
+        }
+    }
+
+    @Test
+    fun `isTeamFeedFor returns true with case insensitive match`() {
+        val teamId = "team_123"
+        val teamName = "Test Team"
+
+        val args = Bundle().apply {
+            putString("arg_team_id", teamId)
+            putString("arg_team_name", teamName)
+        }
+
+        mockPreferencesProviderAndLaunch(args) { fragment ->
+            assertTrue(fragment.isTeamFeedFor("TEAM_123", "test team"))
+        }
+    }
+
+    @Test
+    fun `isTeamFeedFor returns false when id does not match`() {
+        val teamId = "team_123"
+        val teamName = "Test Team"
+
+        val args = Bundle().apply {
+            putString("arg_team_id", teamId)
+            putString("arg_team_name", teamName)
+        }
+
+        mockPreferencesProviderAndLaunch(args) { fragment ->
+            assertFalse(fragment.isTeamFeedFor("different_id", teamName))
+        }
+    }
+
+    @Test
+    fun `isTeamFeedFor returns false when name does not match`() {
+        val teamId = "team_123"
+        val teamName = "Test Team"
+
+        val args = Bundle().apply {
+            putString("arg_team_id", teamId)
+            putString("arg_team_name", teamName)
+        }
+
+        mockPreferencesProviderAndLaunch(args) { fragment ->
+            assertFalse(fragment.isTeamFeedFor(teamId, "Different Name"))
+        }
+    }
+
+    @Test
+    fun `isTeamFeedFor returns false when fragment has no team arguments`() {
+        mockPreferencesProviderAndLaunch(null) { fragment ->
+            assertFalse(fragment.isTeamFeedFor("team_123", "Test Team"))
+        }
+    }
+
+    @Test
+    fun `onPageSizeChanged updates pageSize and calls loadInitial when size changes`() {
+        mockPreferencesProviderAndLaunch(null) { fragment ->
+            // Pre-condition
+            val initialPageSize = 20
+            fragment.pageSize = initialPageSize
+
+            val dummyDoc = DashboardNewsRepository.NewsDocument(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+            val dummyItem = DashboardVoicesFragment.DashboardNewsItem("id", "author", null, "meta", null, false, emptyList(), 0, 0L, false, false, false, dummyDoc)
+            fragment.items.add(dummyItem)
+
+            val newPageSize = 40
+
+            // Action
+            fragment.onPageSizeChanged(newPageSize)
+
+            // Verification
+            // The implementation calls loadInitial(), which clears the items list.
+            assertEquals(newPageSize, fragment.pageSize)
+            assertTrue(fragment.items.isEmpty())
+        }
+    }
+
+    @Test
+    fun `onPageSizeChanged does nothing when size is unchanged`() {
+        mockPreferencesProviderAndLaunch(null) { fragment ->
+            fragment.pageSize = 20
+            val dummyDoc = DashboardNewsRepository.NewsDocument(null, null, null, null, null, null, null, null, null, null, null, null, null, null, null)
+            val dummyItem = DashboardVoicesFragment.DashboardNewsItem("id", "author", null, "meta", null, false, emptyList(), 0, 0L, false, false, false, dummyDoc)
+            fragment.items.add(dummyItem)
+            fragment.onPageSizeChanged(20)
+            assertFalse(fragment.items.isEmpty()) // Does not clear, loadInitial not called
+        }
+    }
+}
