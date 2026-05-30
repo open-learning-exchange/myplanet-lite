@@ -165,4 +165,5 @@ fix.sh
 run_test.sh
 test_plan.sh
 test_script.sh
+test_intent_utils.sh
 .kotlin/sessions/

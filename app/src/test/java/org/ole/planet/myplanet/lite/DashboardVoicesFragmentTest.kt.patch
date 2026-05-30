@@ -1,0 +1,27 @@
+--- app/src/test/java/org/ole/planet/myplanet/lite/DashboardVoicesFragmentTest.kt
++++ app/src/test/java/org/ole/planet/myplanet/lite/DashboardVoicesFragmentTest.kt
+@@ -48,16 +48,22 @@
+     private fun mockPreferencesProviderAndLaunch(args: Bundle?, block: (DashboardVoicesFragment) -> Unit) {
+         val mockPrefs = Mockito.mock(SharedPreferences::class.java)
+         val mockEditor = Mockito.mock(SharedPreferences.Editor::class.java)
+
+         Mockito.`when`(mockPrefs.getString(Mockito.anyString(), Mockito.nullable(String::class.java))).thenReturn(null)
+         Mockito.`when`(mockPrefs.getBoolean(Mockito.eq("survey_translations_enabled"), Mockito.anyBoolean())).thenReturn(true)
+-        Mockito.`when`(mockPrefs.getInt(Mockito.eq("voice_page_size"), Mockito.anyInt())).thenAnswer {
+-            // The default is returned. Since loadInitial asks for the value, we need to return the fragment's current pageSize
+-            // or 20 by default. Wait, the fragment resets its size based on the prefs, so we will just return 40 here when called during the test.
++
++        var storedPageSize = 20
++
++        Mockito.`when`(mockPrefs.getInt(Mockito.eq("voice_page_size"), Mockito.anyInt())).thenAnswer { invocation ->
++            storedPageSize
+         }
++        Mockito.`when`(mockEditor.putInt(Mockito.eq("voice_page_size"), Mockito.anyInt())).thenAnswer { invocation ->
++            storedPageSize = invocation.getArgument(1)
++            mockEditor
++        }
++
+         Mockito.`when`(mockPrefs.edit()).thenReturn(mockEditor)
+
+         // Using the actual injectedPreferences visibleForTesting property in SecurePreferencesProvider.kt
+         SecurePreferencesProvider.injectedPreferences = mockPrefs
