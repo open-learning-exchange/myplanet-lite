@@ -626,7 +626,8 @@ class DashboardActivity : BaseActivity() {
         }
     }
 
-    private fun isSurveyTranslationEnabled(): Boolean {
+    @androidx.annotation.VisibleForTesting
+    internal fun isSurveyTranslationEnabled(): Boolean {
         return serverPreferences.getBoolean(KEY_SURVEY_TRANSLATIONS_ENABLED, DEFAULT_SURVEY_TRANSLATION_ENABLED)
     }
 

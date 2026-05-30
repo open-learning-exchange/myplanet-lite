@@ -16,10 +16,13 @@ class DeepLinkResolverActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
 
         val postId = IntentUtils.extractDeepLinkPostId(intent)
+        if (postId == null) {
+            finish()
+            return
+        }
+
         val nextIntent = Intent(this, SplashScreen::class.java).apply {
-            if (postId != null) {
-                putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
-            }
+            putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
 
