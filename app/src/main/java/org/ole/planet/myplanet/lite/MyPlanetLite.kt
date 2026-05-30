@@ -587,7 +587,7 @@ class MyPlanetLite : BaseActivity() {
                     maybeAutoLogin()
                 }
             } catch (e: Exception) {
-                Log.e("MyPlanetLite", "Error during session restore", e)
+                Log.e("MyPlanetLite", "Error during session restore")
                 setLoadingState(isLoading = false, loginButton = loginButtonView, progress = loginProgressView)
                 maybeAutoLogin()
             } finally {

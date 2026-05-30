@@ -96,7 +96,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     )
     private val actionsRepository = DashboardNewsActionsRepository()
-    private val items = mutableListOf<DashboardNewsItem>()
+    @androidx.annotation.VisibleForTesting
+    internal val items = mutableListOf<DashboardNewsItem>()
     private val commentCounts = mutableMapOf<String, Int>()
     private var avatarLoader: DashboardAvatarLoader? = null
     private var postImageLoader: DashboardPostImageLoader? = null
@@ -119,7 +120,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     private var nextSkip = 0
     private var nextBookmark: String? = null
     private var currentEmptyMessage: Int = R.string.dashboard_voices_empty
-    private var pageSize: Int = DashboardActivity.VOICE_PAGE_SIZE_OPTIONS[1]
+    @androidx.annotation.VisibleForTesting
+    internal var pageSize: Int = DashboardActivity.VOICE_PAGE_SIZE_OPTIONS[1]
 
     override fun onAttach(context: Context) {
         super.onAttach(context)
@@ -259,7 +261,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
 
         val positions = if (adapter.isIndexAvailable()) {
-            adapter.getPositionsForUsername(username)?.toList() ?: emptyList()
+            adapter.getPositionsForUsername(username)
         } else {
             adapter.currentList.mapIndexedNotNull { index, item ->
                 if (item.username?.equals(username, ignoreCase = true) == true) {
@@ -293,7 +295,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
     }
 
-    private fun loadInitial() {
+    @androidx.annotation.VisibleForTesting
+    internal fun loadInitial() {
         pageSize = DashboardActivity.getVoicePageSizePreference(requireContext())
         items.clear()
         adapter.submitList(items.toList())
@@ -305,7 +308,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         loadMore(pageSize)
     }
 
-    private fun loadMore(targetPosts: Int = pageSize) {
+    @androidx.annotation.VisibleForTesting
+    internal fun loadMore(targetPosts: Int = pageSize) {
         val base = baseUrl ?: return
         if (isLoading || !hasMore) {
             return
@@ -595,7 +599,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
     }
 
-    private data class DashboardNewsItem(
+    @androidx.annotation.VisibleForTesting
+    internal data class DashboardNewsItem(
         val id: String,
         val author: String,
         val username: String?,
@@ -701,7 +706,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         return sameId && sameName
     }
 
-    private class DashboardNewsAdapter(
+    @androidx.annotation.VisibleForTesting
+    internal class DashboardNewsAdapter(
         private val markwon: Markwon,
         private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
         private val imageBinder: (ImageView, String) -> Unit,
@@ -734,7 +740,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             holder.bind(getItem(position))
         }
 
-        private var usernameIndex: Map<String, IntArray>? = null
+        private var usernameIndex: Map<String, List<Int>> = emptyMap()
 
         override fun onCurrentListChanged(
             previousList: List<DashboardNewsItem>,
@@ -744,15 +750,14 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             usernameIndex = currentList.mapIndexedNotNull { index, item ->
                 item.username?.let { it.lowercase() to index }
             }.groupBy({ it.first }, { it.second })
-            .mapValues { it.value.toIntArray() }
         }
 
-        fun getPositionsForUsername(username: String): IntArray? {
-            return usernameIndex?.get(username.lowercase())
+        fun getPositionsForUsername(username: String): List<Int> {
+            return usernameIndex[username.lowercase()] ?: emptyList()
         }
 
         fun isIndexAvailable(): Boolean {
-            return usernameIndex != null
+            return usernameIndex.isNotEmpty()
         }
 
         companion object {
@@ -760,7 +765,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
     }
 
-    private class DashboardNewsViewHolder(
+    internal class DashboardNewsViewHolder(
         view: View,
         private val markwon: Markwon,
         private val avatarBinder: (ImageView, String?, Boolean) -> Unit,

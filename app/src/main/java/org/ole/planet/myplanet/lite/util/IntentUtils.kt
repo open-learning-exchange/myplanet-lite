@@ -11,6 +11,13 @@ object IntentUtils {
         }
         val data = intent.data ?: return null
         if (data.isOpaque) return null
+
+        val scheme = data.scheme
+        val host = data.host
+        val isValidDeepLink = (scheme == "https" && host == "midominio.com" && data.path?.lowercase()?.startsWith("/post") == true) ||
+                              (scheme == "myplanetlite" && host == "post")
+        if (!isValidDeepLink) return null
+
         val queryPostId = data.getQueryParameter("postId")
         if (!queryPostId.isNullOrBlank() && queryPostId.matches(ID_PATTERN)) {
             return queryPostId
