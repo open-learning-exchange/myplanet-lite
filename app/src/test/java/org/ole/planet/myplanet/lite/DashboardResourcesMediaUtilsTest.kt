@@ -6,6 +6,7 @@ import android.content.res.Configuration
 import android.content.res.Resources
 import android.database.Cursor
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
@@ -22,6 +23,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -483,6 +485,141 @@ class DashboardResourcesMediaUtilsTest {
 
         val result = DashboardResourcesMediaUtils.extractWaveform(context, uri)
         assertEquals(0, result.size)
+    }
+
+
+    @Test
+    fun buildResizedImageBytes_validImageAndPng_returnsResizedPngBytes() {
+        val sourceBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+        val out = ByteArrayOutputStream()
+
+        sourceBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+
+        val bytes = out.toByteArray()
+        val stream = ByteArrayInputStream(bytes)
+
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenReturn(stream)
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            50f,
+            "image/png"
+        )
+
+        assertNotNull(result)
+
+        val decoded = BitmapFactory.decodeByteArray(result!!, 0, result.size)
+
+        assertEquals(50, decoded.width)
+        assertEquals(50, decoded.height)
+    }
+
+    @Test
+    fun buildResizedImageBytes_validImageAndJpeg_returnsResizedJpegBytes() {
+        val sourceBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+        val out = ByteArrayOutputStream()
+
+        sourceBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+
+        val bytes = out.toByteArray()
+        val stream = ByteArrayInputStream(bytes)
+
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenReturn(stream)
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            100f,
+            "image/jpeg"
+        )
+
+        assertNotNull(result)
+
+        val decoded = BitmapFactory.decodeByteArray(result!!, 0, result.size)
+
+        assertEquals(100, decoded.width)
+        assertEquals(100, decoded.height)
+    }
+
+    @Test
+    fun buildResizedImageBytes_percentBelowMin_coercesToMinScale() {
+        val sourceBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+        val out = ByteArrayOutputStream()
+
+        sourceBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+
+        val bytes = out.toByteArray()
+        val stream = ByteArrayInputStream(bytes)
+
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenReturn(stream)
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            10f,
+            "image/png"
+        )
+
+        assertNotNull(result)
+
+        val decoded = BitmapFactory.decodeByteArray(result!!, 0, result.size)
+
+        assertEquals(40, decoded.width)
+        assertEquals(40, decoded.height)
+    }
+
+    @Test
+    fun buildResizedImageBytes_errorPath_returnsNull() {
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenThrow(RuntimeException("Simulated exception"))
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            50f,
+            "image/png"
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun buildResizedImageBytes_invalidImageBytes_returnsNull() {
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenReturn(null)
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            50f,
+            "image/png"
+        )
+
+        assertNull(result)
     }
 
     @Test
