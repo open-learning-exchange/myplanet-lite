@@ -4,6 +4,7 @@ import android.content.SharedPreferences
 import android.os.Bundle
 import androidx.fragment.app.testing.FragmentScenario
 import androidx.test.core.app.ApplicationProvider
+import io.noties.markwon.Markwon
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -12,17 +13,16 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito
+import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import io.noties.markwon.Markwon
-import org.junit.Assert.assertEquals
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowLooper
 
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [33], instrumentedPackages = ["androidx.loader.content"]) // Helps prevent FragmentScenario crash
+@Config(sdk = [33], instrumentedPackages = ["androidx.loader.content"])
 class DashboardVoicesFragmentTest {
 
     @After
@@ -44,26 +44,60 @@ class DashboardVoicesFragmentTest {
         assertEquals(teamName, args?.getString("arg_team_name"))
     }
 
-    private fun mockPreferencesProviderAndLaunch(args: Bundle?, block: (DashboardVoicesFragment) -> Unit) {
+    private fun mockPreferencesProviderAndLaunch(
+        args: Bundle?,
+        block: (DashboardVoicesFragment, SharedPreferences) -> Unit
+    ) {
         val mockPrefs = Mockito.mock(SharedPreferences::class.java)
         val mockEditor = Mockito.mock(SharedPreferences.Editor::class.java)
 
-        Mockito.`when`(mockPrefs.getString(Mockito.anyString(), Mockito.nullable(String::class.java))).thenReturn(null)
+        Mockito.`when`(
+            mockPrefs.getString(
+                Mockito.anyString(),
+                Mockito.nullable(String::class.java)
+            )
+        ).thenReturn(null)
+
+        Mockito.`when`(
+            mockPrefs.getBoolean(
+                Mockito.eq("survey_translations_enabled"),
+                Mockito.anyBoolean()
+            )
+        ).thenReturn(true)
+
+        Mockito.`when`(
+            mockPrefs.getInt(
+                Mockito.eq("voice_page_size"),
+                Mockito.anyInt()
+            )
+        ).thenReturn(20)
+
         Mockito.`when`(mockPrefs.edit()).thenReturn(mockEditor)
 
-        // Using the actual injectedPreferences visibleForTesting property in SecurePreferencesProvider.kt
         SecurePreferencesProvider.injectedPreferences = mockPrefs
 
-        // To ensure initializeSession reads the arguments from the Bundle provided through FragmentScenario,
-        // we must allow it to proceed to RESUMED since the method is triggered via lifecycleScope.launch in onViewCreated
-        FragmentScenario.launchInContainer(DashboardVoicesFragment::class.java, args, R.style.Theme_MyPlanetLite).use { scenario ->
+        FragmentScenario.launchInContainer(
+            DashboardVoicesFragment::class.java,
+            args,
+            R.style.Theme_MyPlanetLite
+        ).use { scenario ->
             scenario.onFragment { fragment ->
-                block(fragment)
+                block(fragment, mockPrefs)
             }
+
             ShadowLooper.idleMainLooper()
         }
 
         SecurePreferencesProvider.injectedPreferences = null
+    }
+
+    private fun mockPreferencesProviderAndLaunch(
+        args: Bundle?,
+        block: (DashboardVoicesFragment) -> Unit
+    ) {
+        mockPreferencesProviderAndLaunch(args) { fragment, _ ->
+            block(fragment)
+        }
     }
 
     @Test
@@ -134,8 +168,87 @@ class DashboardVoicesFragmentTest {
     }
 
     @Test
+    fun `onPageSizeChanged updates pageSize and calls loadInitial when size changes`() {
+        mockPreferencesProviderAndLaunch(null) { fragment, mockPrefs ->
+            fragment.pageSize = 20
+
+            val dummyDoc = DashboardNewsRepository.NewsDocument(
+                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null
+            )
+
+            val dummyItem = DashboardVoicesFragment.DashboardNewsItem(
+                "id",
+                "author",
+                null,
+                "meta",
+                null,
+                false,
+                emptyList(),
+                0,
+                0L,
+                false,
+                false,
+                false,
+                dummyDoc
+            )
+
+            fragment.items.add(dummyItem)
+
+            val newPageSize = 40
+
+            Mockito.`when`(
+                mockPrefs.getInt(
+                    Mockito.eq("voice_page_size"),
+                    Mockito.anyInt()
+                )
+            ).thenReturn(newPageSize)
+
+            fragment.onPageSizeChanged(newPageSize)
+
+            assertEquals(newPageSize, fragment.pageSize)
+            assertTrue(fragment.items.isEmpty())
+        }
+    }
+
+    @Test
+    fun `onPageSizeChanged does nothing when size is unchanged`() {
+        mockPreferencesProviderAndLaunch(null) { fragment ->
+            fragment.pageSize = 20
+
+            val dummyDoc = DashboardNewsRepository.NewsDocument(
+                null, null, null, null, null, null, null, null,
+                null, null, null, null, null, null, null
+            )
+
+            val dummyItem = DashboardVoicesFragment.DashboardNewsItem(
+                "id",
+                "author",
+                null,
+                "meta",
+                null,
+                false,
+                emptyList(),
+                0,
+                0L,
+                false,
+                false,
+                false,
+                dummyDoc
+            )
+
+            fragment.items.add(dummyItem)
+
+            fragment.onPageSizeChanged(20)
+
+            assertFalse(fragment.items.isEmpty())
+        }
+    }
+
+    @Test
     fun `adapter getPositionsForUsername returns correct indices`() {
         val mockMarkwon = Mockito.mock(Markwon::class.java)
+
         val adapter = DashboardVoicesFragment.DashboardNewsAdapter(
             markwon = mockMarkwon,
             avatarBinder = { _, _, _ -> },
@@ -163,9 +276,21 @@ class DashboardVoicesFragmentTest {
                 canDelete = false,
                 canShare = false,
                 document = NewsDocument(
-                    id = id, revision = null, docType = null, time = null, createdOn = null,
-                    parentCode = null, user = null, replyTo = null, viewIn = null, messageType = null,
-                    messagePlanetCode = null, message = null, images = null, updatedDate = null, isDeleted = null
+                    id = id,
+                    revision = null,
+                    docType = null,
+                    time = null,
+                    createdOn = null,
+                    parentCode = null,
+                    user = null,
+                    replyTo = null,
+                    viewIn = null,
+                    messageType = null,
+                    messagePlanetCode = null,
+                    message = null,
+                    images = null,
+                    updatedDate = null,
+                    isDeleted = null
                 )
             )
         }
