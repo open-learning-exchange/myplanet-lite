@@ -97,4 +97,60 @@ class IntentUtilsTest {
         }
         assertNull(IntentUtils.extractDeepLinkPostId(intent))
     }
+
+    @Test
+    fun `extractDeepLinkSurvey parses learning survey link`() {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("https://planet.learning.ole.org/survey/c533316781dc0ed1f8d421ae4c5bc20d/00d2d353e83ebadf06f2051402d104a7")
+        }
+
+        val result = IntentUtils.extractDeepLinkSurvey(intent)
+
+        assertEquals("https://planet.learning.ole.org", result?.baseUrl)
+        assertEquals("c533316781dc0ed1f8d421ae4c5bc20d", result?.teamId)
+        assertEquals("00d2d353e83ebadf06f2051402d104a7", result?.surveyId)
+    }
+
+    @Test
+    fun `extractDeepLinkSurvey parses survey link from another server`() {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("https://example.com/survey/team/survey")
+        }
+
+        val result = IntentUtils.extractDeepLinkSurvey(intent)
+
+        assertEquals("https://example.com", result?.baseUrl)
+        assertEquals("team", result?.teamId)
+        assertEquals("survey", result?.surveyId)
+    }
+
+    @Test
+    fun `extractDeepLinkSurvey rejects non survey web links`() {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("https://example.com/news/team/survey")
+        }
+
+        assertNull(IntentUtils.extractDeepLinkSurvey(intent))
+    }
+
+    @Test
+    fun `extractDeepLinkSurvey parses custom scheme with server query`() {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("myplanetlite://survey/team-1/survey-1?server=https%3A%2F%2Fplanet.learning.ole.org%2F")
+        }
+
+        val result = IntentUtils.extractDeepLinkSurvey(intent)
+
+        assertEquals("https://planet.learning.ole.org", result?.baseUrl)
+        assertEquals("team-1", result?.teamId)
+        assertEquals("survey-1", result?.surveyId)
+    }
+
+    @Test
+    fun `sameServer ignores trailing slash and case`() {
+        assertEquals(
+            true,
+            IntentUtils.sameServer("https://PLANET.learning.ole.org/", "https://planet.learning.ole.org"),
+        )
+    }
 }
