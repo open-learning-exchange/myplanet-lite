@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Intent
-import android.graphics.Rect
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -22,18 +21,18 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import java.security.SecureRandom
-import kotlin.random.asKotlinRandom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.ole.planet.myplanet.lite.CourseWizardActivity
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
@@ -47,6 +46,9 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.NetworkUtils
+import java.security.SecureRandom
+import kotlin.random.asKotlinRandom
+import androidx.core.net.toUri
 
 class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses_page) {
 
@@ -196,24 +198,32 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         refreshLayout.setOnRefreshListener {
             refreshLayout.isRefreshing = false
             showLoadingOverlay(true)
-            if (tabPosition == 0) {
-                refreshUserCourses(adapter, refreshLayout)
-            } else if (tabPosition == 1) {
-                refreshAllCourses(adapter, refreshLayout)
-            } else {
-                refreshTeamCourses(adapter, refreshLayout, forceReload = true)
+            when (tabPosition) {
+                0 -> {
+                    refreshUserCourses(adapter, refreshLayout)
+                }
+                1 -> {
+                    refreshAllCourses(adapter, refreshLayout)
+                }
+                else -> {
+                    refreshTeamCourses(adapter, refreshLayout, forceReload = true)
+                }
             }
         }
     }
 
     private fun performInitialLoad() {
         showLoadingOverlay(true)
-        if (tabPosition == 0) {
-            refreshUserCourses(adapter, refreshLayout)
-        } else if (tabPosition == 1) {
-            refreshAllCourses(adapter, refreshLayout)
-        } else {
-            refreshTeamCourses(adapter, refreshLayout, forceReload = true)
+        when (tabPosition) {
+            0 -> {
+                refreshUserCourses(adapter, refreshLayout)
+            }
+            1 -> {
+                refreshAllCourses(adapter, refreshLayout)
+            }
+            else -> {
+                refreshTeamCourses(adapter, refreshLayout, forceReload = true)
+            }
         }
 
         loadCourseCategories()
@@ -787,92 +797,116 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         creds: StoredCredentials,
         resources: List<CourseItem.LessonResource>
     ): Long = withContext(Dispatchers.IO) {
-        resources.map { resource ->
-            async {
-                val url = buildServerResourceUrl(base, resource) ?: return@async 0L
-                val requestBuilder = Request.Builder()
-                    .url(url)
-                    .head()
-                if (url.startsWith("https://", ignoreCase = true)) {
-                    requestBuilder.header("Authorization", Credentials.basic(creds.username, creds.password))
-                }
-                val request = requestBuilder.build()
-                runCatching {
-                    httpClient.newCall(request).await().use { response ->
-                        val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
-                        size.coerceAtLeast(0L)
+        coroutineScope {
+            resources.map { resource ->
+                async {
+                    val url = buildServerResourceUrl(base, resource) ?: return@async 0L
+                    val requestBuilder = Request.Builder()
+                        .url(url)
+                        .head()
+                    if (url.startsWith("https://", ignoreCase = true)) {
+                        requestBuilder.header("Authorization", Credentials.basic(creds.username, creds.password))
                     }
-                }.getOrDefault(0L)
-            }
-        }.awaitAll().sum()
+                    val request = requestBuilder.build()
+                    runCatching {
+                        httpClient.newCall(request).await().use { response ->
+                            response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+                        }
+                    }.getOrDefault(0L)
+                }
+            }.awaitAll().sum()
+        }
     }
 
-    private fun downloadCourseResources(
+    private suspend fun downloadCourseResources(
         base: String,
         creds: StoredCredentials,
         course: CourseItem,
         resources: List<CourseItem.LessonResource>,
         markdownImageSources: List<String>,
         onProgress: (Pair<Int, Int>) -> Unit
-    ): Boolean {
+    ): Boolean = withContext(Dispatchers.IO) {
         val totalItems = resources.size + markdownImageSources.size
         if (totalItems == 0) {
             onProgress(0 to 0)
-            return true
+            return@withContext true
         }
         var downloaded = 0
+        val progressMutex = Mutex()
         val authHeader = Credentials.basic(creds.username, creds.password)
-        resources.forEach { resource ->
-            val url = buildServerResourceUrl(base, resource) ?: return false
-            val target = OfflineCourseStorage.resourceFile(requireContext(), course.id, resource.id, resource.filename)
-            target.parentFile?.mkdirs()
-            val requestBuilder = Request.Builder()
-                .url(url)
-            if (url.startsWith("https://", ignoreCase = true)) {
-                requestBuilder.header("Authorization", authHeader)
-            }
-            val request = requestBuilder.build()
-            val success = runCatching {
-                httpClient.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@use false
-                    val body = response.body
-                    body.byteStream().use { input ->
-                        target.outputStream().use { output ->
-                            input.copyTo(output)
+
+        coroutineScope {
+            val resourceJobs = resources.map { resource ->
+                async {
+                    val url = buildServerResourceUrl(base, resource) ?: return@async false
+                    val target = OfflineCourseStorage.resourceFile(requireContext(), course.id, resource.id, resource.filename)
+                    target.parentFile?.mkdirs()
+                    val requestBuilder = Request.Builder()
+                        .url(url)
+                    if (url.startsWith("https://", ignoreCase = true)) {
+                        requestBuilder.header("Authorization", authHeader)
+                    }
+                    val request = requestBuilder.build()
+                    val success = runCatching {
+                        httpClient.newCall(request).await().use { response ->
+                            if (!response.isSuccessful) return@use false
+                            val body = response.body
+                            body.byteStream().use { input ->
+                                target.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            true
                         }
+                    }.getOrDefault(false)
+                    if (!success) return@async false
+                    progressMutex.withLock {
+                        downloaded += 1
+                        onProgress(downloaded to totalItems)
                     }
                     true
                 }
-            }.getOrDefault(false)
-            if (!success) return false
-            downloaded += 1
-            onProgress(downloaded to totalItems)
-        }
-        markdownImageSources.forEach { source ->
-            val resolvedUrl = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@forEach
-            val target = OfflineCourseStorage.markdownImageFile(requireContext(), course.id, source)
-            target.parentFile?.mkdirs()
-            val requestBuilder = Request.Builder()
-                .url(resolvedUrl)
-            if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
-                requestBuilder.header("Authorization", authHeader)
             }
-            val request = requestBuilder.build()
-            runCatching {
-                httpClient.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@use false
-                    response.body.byteStream().use { input ->
-                        target.outputStream().use { output ->
-                            input.copyTo(output)
+
+            val markdownJobs = markdownImageSources.map { source ->
+                async {
+                    val resolvedUrl = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@async true
+                    val target = OfflineCourseStorage.markdownImageFile(requireContext(), course.id, source)
+                    target.parentFile?.mkdirs()
+                    val requestBuilder = Request.Builder()
+                        .url(resolvedUrl)
+                    if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
+                        requestBuilder.header("Authorization", authHeader)
+                    }
+                    val request = requestBuilder.build()
+                    runCatching {
+                        httpClient.newCall(request).await().use { response ->
+                            if (!response.isSuccessful) return@use false
+                            response.body.byteStream().use { input ->
+                                target.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            true
                         }
+                    }.getOrDefault(false)
+                    // We don't fail the whole course if a markdown image fails, just increment progress if success (or maybe increment anyway to not stall progress?)
+                    // The old code incremented downloaded unconditionally and continued, so we do the same.
+                    progressMutex.withLock {
+                        downloaded += 1
+                        onProgress(downloaded to totalItems)
                     }
                     true
                 }
-            }.getOrDefault(false)
-            downloaded += 1
-            onProgress(downloaded to totalItems)
+            }
+
+            val resourceResults = resourceJobs.awaitAll()
+            // Wait for markdown jobs to complete
+            markdownJobs.awaitAll()
+
+            // Return false if any resource download failed
+            !resourceResults.contains(false)
         }
-        return true
     }
 
     private suspend fun estimateMarkdownImagesSize(
@@ -881,24 +915,25 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         sources: List<String>
     ): Long = withContext(Dispatchers.IO) {
         val authHeader = Credentials.basic(creds.username, creds.password)
-        sources.map { source ->
-            async {
-                val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@async 0L
-                val requestBuilder = Request.Builder()
-                    .url(url)
-                    .head()
-                if (url.startsWith("https://", ignoreCase = true)) {
-                    requestBuilder.header("Authorization", authHeader)
-                }
-                val request = requestBuilder.build()
-                runCatching {
-                    httpClient.newCall(request).await().use { response ->
-                        val size = response.header("Content-Length")?.toLongOrNull() ?: 0L
-                        size.coerceAtLeast(0L)
+        coroutineScope {
+            sources.map { source ->
+                async {
+                    val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@async 0L
+                    val requestBuilder = Request.Builder()
+                        .url(url)
+                        .head()
+                    if (url.startsWith("https://", ignoreCase = true)) {
+                        requestBuilder.header("Authorization", authHeader)
                     }
-                }.getOrDefault(0L)
-            }
-        }.awaitAll().sum()
+                    val request = requestBuilder.build()
+                    runCatching {
+                        httpClient.newCall(request).await().use { response ->
+                            response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+                        }
+                    }.getOrDefault(0L)
+                }
+            }.awaitAll().sum()
+        }
     }
 
     private fun extractMarkdownImageSources(course: CourseItem): List<String> {
@@ -909,7 +944,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
 
     private fun buildServerResourceUrl(base: String, resource: CourseItem.LessonResource): String? {
         val normalizedBase = base.trim().trimEnd('/').takeIf { it.isNotEmpty() } ?: return null
-        val parsed = android.net.Uri.parse(normalizedBase)
+        val parsed = normalizedBase.toUri()
         val scheme = parsed.scheme ?: return null
         val authority = parsed.encodedAuthority ?: return null
         return parsed.buildUpon()
