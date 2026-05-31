@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite
 
 import android.content.Intent
-import android.graphics.Rect
 import android.os.Bundle
 import android.view.View
 import android.view.inputmethod.InputMethodManager
@@ -22,28 +21,18 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.chip.Chip
 import com.google.android.material.chip.ChipGroup
-import java.security.SecureRandom
-import kotlin.random.asKotlinRandom
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
-import okhttp3.Call
-import okhttp3.Callback
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
-import java.io.IOException
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import org.ole.planet.myplanet.lite.CourseWizardActivity
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
@@ -57,29 +46,9 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.NetworkUtils
-
-private suspend fun Call.await(): Response {
-    return suspendCancellableCoroutine { continuation ->
-        enqueue(object : Callback {
-            override fun onResponse(call: Call, response: Response) {
-                continuation.resume(response)
-            }
-
-            override fun onFailure(call: Call, e: IOException) {
-                if (continuation.isCancelled) return
-                continuation.resumeWithException(e)
-            }
-        })
-
-        continuation.invokeOnCancellation {
-            try {
-                cancel()
-            } catch (ex: Throwable) {
-                // Ignore cancel exception
-            }
-        }
-    }
-}
+import java.security.SecureRandom
+import kotlin.random.asKotlinRandom
+import androidx.core.net.toUri
 
 class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses_page) {
 
@@ -229,24 +198,32 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         refreshLayout.setOnRefreshListener {
             refreshLayout.isRefreshing = false
             showLoadingOverlay(true)
-            if (tabPosition == 0) {
-                refreshUserCourses(adapter, refreshLayout)
-            } else if (tabPosition == 1) {
-                refreshAllCourses(adapter, refreshLayout)
-            } else {
-                refreshTeamCourses(adapter, refreshLayout, forceReload = true)
+            when (tabPosition) {
+                0 -> {
+                    refreshUserCourses(adapter, refreshLayout)
+                }
+                1 -> {
+                    refreshAllCourses(adapter, refreshLayout)
+                }
+                else -> {
+                    refreshTeamCourses(adapter, refreshLayout, forceReload = true)
+                }
             }
         }
     }
 
     private fun performInitialLoad() {
         showLoadingOverlay(true)
-        if (tabPosition == 0) {
-            refreshUserCourses(adapter, refreshLayout)
-        } else if (tabPosition == 1) {
-            refreshAllCourses(adapter, refreshLayout)
-        } else {
-            refreshTeamCourses(adapter, refreshLayout, forceReload = true)
+        when (tabPosition) {
+            0 -> {
+                refreshUserCourses(adapter, refreshLayout)
+            }
+            1 -> {
+                refreshAllCourses(adapter, refreshLayout)
+            }
+            else -> {
+                refreshTeamCourses(adapter, refreshLayout, forceReload = true)
+            }
         }
 
         loadCourseCategories()
@@ -902,7 +879,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                         requestBuilder.header("Authorization", authHeader)
                     }
                     val request = requestBuilder.build()
-                    val success = runCatching {
+                    runCatching {
                         httpClient.newCall(request).await().use { response ->
                             if (!response.isSuccessful) return@use false
                             response.body.byteStream().use { input ->
@@ -967,7 +944,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
 
     private fun buildServerResourceUrl(base: String, resource: CourseItem.LessonResource): String? {
         val normalizedBase = base.trim().trimEnd('/').takeIf { it.isNotEmpty() } ?: return null
-        val parsed = android.net.Uri.parse(normalizedBase)
+        val parsed = normalizedBase.toUri()
         val scheme = parsed.scheme ?: return null
         val authority = parsed.encodedAuthority ?: return null
         return parsed.buildUpon()
