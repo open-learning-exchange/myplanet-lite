@@ -1,26 +1,108 @@
 package org.ole.planet.myplanet.lite
 
+import android.content.ContentResolver
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.database.Cursor
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.media.MediaMetadataRetriever
+import android.net.Uri
 import android.os.Build
+import android.provider.OpenableColumns
+import android.text.format.Formatter
+import androidx.test.core.app.ApplicationProvider
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.lang.System.getProperty
 import java.util.Locale
+import kotlinx.coroutines.runBlocking
 import org.json.JSONArray
 import org.json.JSONObject
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import android.net.Uri
-import kotlinx.coroutines.runBlocking
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.mock
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowMediaMetadataRetriever
+import org.robolectric.shadows.util.DataSource
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [Build.VERSION_CODES.P])
 class DashboardResourcesMediaUtilsTest {
+
+    @Test
+    fun resolveImageSize_validImage_returnsDimensions() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        `when`(context.contentResolver).thenReturn(contentResolver)
+
+        val bitmap = Bitmap.createBitmap(800, 600, Bitmap.Config.ARGB_8888)
+        val out = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+        val bytes = out.toByteArray()
+
+        `when`(contentResolver.openInputStream(uri)).thenReturn(ByteArrayInputStream(bytes))
+
+        val result = DashboardResourcesMediaUtils.resolveImageSize(context, uri)
+
+        assertEquals(Pair(800, 600), result)
+    }
+
+    @Test
+    fun resolveImageSize_invalidImage_returnsNull() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        `when`(context.contentResolver).thenReturn(contentResolver)
+
+        val errorStream = object : ByteArrayInputStream(ByteArray(0)) {
+            override fun read(b: ByteArray, off: Int, len: Int): Int {
+                throw RuntimeException("Simulated read error for invalid image")
+            }
+        }
+
+        `when`(contentResolver.openInputStream(uri)).thenReturn(errorStream)
+
+        val result = DashboardResourcesMediaUtils.resolveImageSize(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun resolveImageSize_nullInputStream_returnsNull() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(null)
+
+        val result = DashboardResourcesMediaUtils.resolveImageSize(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun resolveImageSize_errorPath_returnsNull() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.resolveImageSize(context, uri)
+
+        assertNull(result)
+    }
 
     @Test
     fun sanitizeResourceName_validName_noChanges() {
@@ -268,6 +350,133 @@ class DashboardResourcesMediaUtilsTest {
     }
 
     @Test
+    fun buildVideoSizeEstimateText_nullSize_returnsUnknownText() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val result = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+            context = context,
+            unknownText = "Unknown",
+            estimateFormat = "Est: %s",
+            sourceSizeBytes = null,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+
+        assertEquals("Unknown", result)
+    }
+
+    @Test
+    fun buildVideoSizeEstimateText_zeroSize_returnsUnknownText() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val result = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+            context = context,
+            unknownText = "Unknown",
+            estimateFormat = "Est: %s",
+            sourceSizeBytes = 0L,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+
+        assertEquals("Unknown", result)
+    }
+
+    @Test
+    fun buildVideoSizeEstimateText_validSize_returnsFormattedEstimate() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val estimatedBytes = DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
+            sourceSizeBytes = 1000000L,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+
+        val expectedFormattedSize = Formatter.formatShortFileSize(context, estimatedBytes)
+        val expectedOutput = "Est: $expectedFormattedSize"
+
+        val result = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+            context = context,
+            unknownText = "Unknown",
+            estimateFormat = "Est: %s",
+            sourceSizeBytes = 1000000L,
+            sourceHeight = 1080,
+            selectedHeight = 720,
+            sourceDurationMs = 10000L,
+            selectedStartMs = 0L,
+            selectedEndMs = 5000L
+        )
+
+        assertEquals(expectedOutput, result)
+    }
+
+    @Test
+    fun testResolveFileName_successFromCursor() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)).thenReturn(0)
+        `when`(cursor.moveToFirst()).thenReturn(true)
+        `when`(cursor.getString(0)).thenReturn("cursor_file_name.pdf")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("cursor_file_name.pdf", result)
+    }
+
+    @Test
+    fun testResolveFileName_fallbackToUriLastSegment_whenCursorEmpty() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)).thenReturn(-1)
+
+        `when`(uri.lastPathSegment).thenReturn("uri_file_name.mp4")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("uri_file_name.mp4", result)
+    }
+
+    @Test
+    fun testResolveFileName_fallbackToUriLastSegment_whenException() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+        `when`(uri.lastPathSegment).thenReturn("exception_file_name.jpg")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("exception_file_name.jpg", result)
+    }
+
+    @Test
+    fun testResolveFileName_fallbackToUriLastSegment_withSlash() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+        `when`(uri.lastPathSegment).thenReturn("folder/slash_file_name.txt")
+
+        val result = DashboardResourcesMediaUtils.resolveFileName(context, uri)
+        assertEquals("slash_file_name.txt", result)
+    }
+
+    @Test
     fun extractWaveform_errorPath_returnsEmptyArray() = runBlocking {
         val context = mock(Context::class.java)
         val uri = mock(Uri::class.java)
@@ -276,5 +485,490 @@ class DashboardResourcesMediaUtilsTest {
 
         val result = DashboardResourcesMediaUtils.extractWaveform(context, uri)
         assertEquals(0, result.size)
+    }
+
+
+    @Test
+    fun buildResizedImageBytes_validImageAndPng_returnsResizedPngBytes() {
+        val sourceBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+        val out = ByteArrayOutputStream()
+
+        sourceBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+
+        val bytes = out.toByteArray()
+        val stream = ByteArrayInputStream(bytes)
+
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenReturn(stream)
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            50f,
+            "image/png"
+        )
+
+        assertNotNull(result)
+
+        val decoded = BitmapFactory.decodeByteArray(result!!, 0, result.size)
+
+        assertEquals(50, decoded.width)
+        assertEquals(50, decoded.height)
+    }
+
+    @Test
+    fun buildResizedImageBytes_validImageAndJpeg_returnsResizedJpegBytes() {
+        val sourceBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+        val out = ByteArrayOutputStream()
+
+        sourceBitmap.compress(Bitmap.CompressFormat.JPEG, 100, out)
+
+        val bytes = out.toByteArray()
+        val stream = ByteArrayInputStream(bytes)
+
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenReturn(stream)
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            100f,
+            "image/jpeg"
+        )
+
+        assertNotNull(result)
+
+        val decoded = BitmapFactory.decodeByteArray(result!!, 0, result.size)
+
+        assertEquals(100, decoded.width)
+        assertEquals(100, decoded.height)
+    }
+
+    @Test
+    fun buildResizedImageBytes_percentBelowMin_coercesToMinScale() {
+        val sourceBitmap = Bitmap.createBitmap(100, 100, Bitmap.Config.ARGB_8888)
+        val out = ByteArrayOutputStream()
+
+        sourceBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+
+        val bytes = out.toByteArray()
+        val stream = ByteArrayInputStream(bytes)
+
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenReturn(stream)
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            10f,
+            "image/png"
+        )
+
+        assertNotNull(result)
+
+        val decoded = BitmapFactory.decodeByteArray(result!!, 0, result.size)
+
+        assertEquals(40, decoded.width)
+        assertEquals(40, decoded.height)
+    }
+
+    @Test
+    fun buildResizedImageBytes_errorPath_returnsNull() {
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenThrow(RuntimeException("Simulated exception"))
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            50f,
+            "image/png"
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun buildResizedImageBytes_invalidImageBytes_returnsNull() {
+        val context = mock(Context::class.java)
+        val resolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(resolver)
+        `when`(resolver.openInputStream(uri)).thenReturn(null)
+
+        val result = DashboardResourcesMediaUtils.buildResizedImageBytes(
+            context,
+            uri,
+            50f,
+            "image/png"
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun testResolveVideoDimensions_success_noRotation() {
+        val context = RuntimeEnvironment.getApplication()
+        val uri = Uri.parse("content://dummy/video_norot.mp4")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_norot.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH,
+            "1920"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_norot.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
+            "1080"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_norot.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION,
+            "0"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+
+        assertEquals(Pair(1920, 1080), result)
+    }
+
+    @Test
+    fun testResolveVideoDimensions_success_rotated90() {
+        val context = RuntimeEnvironment.getApplication()
+        val uri = Uri.parse("content://dummy/video_rot90.mp4")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot90.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH,
+            "1920"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot90.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
+            "1080"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot90.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION,
+            "90"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+
+        assertEquals(Pair(1080, 1920), result)
+    }
+
+    @Test
+    fun testResolveVideoDimensions_success_rotated270() {
+        val context = RuntimeEnvironment.getApplication()
+        val uri = Uri.parse("content://dummy/video_rot270.mp4")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot270.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH,
+            "1920"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot270.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT,
+            "1080"
+        )
+        ShadowMediaMetadataRetriever.addMetadata(
+            "content://dummy/video_rot270.mp4",
+            MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION,
+            "270"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+
+        assertEquals(Pair(1080, 1920), result)
+    }
+
+    @Test
+    fun testResolveVideoDimensions_missingMetadata_defaultsTo1280x720() {
+        val context = RuntimeEnvironment.getApplication()
+        val uri = Uri.parse("content://dummy/video_nometadata.mp4")
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+
+        assertEquals(Pair(1280, 720), result)
+    }
+
+    @Test
+    fun testResolveVideoDimensions_errorPath() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDimensions(context, uri)
+
+        assertEquals(Pair(1280, 720), result)
+    }
+
+    @Test
+    fun copyUriToTempFile_successPath_copiesDataSuccessfully() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val testData = "test byte data".toByteArray()
+        val inputStream = ByteArrayInputStream(testData)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(inputStream)
+
+        val tempDir = File(getProperty("java.io.tmpdir") ?: ".")
+        `when`(context.cacheDir).thenReturn(tempDir)
+
+        val resultFile = DashboardResourcesMediaUtils.copyUriToTempFile(context, "Error message", uri)
+
+        assertTrue(resultFile.exists())
+        assertArrayEquals(testData, resultFile.readBytes())
+
+        resultFile.delete()
+    }
+
+    @Test
+    fun copyUriToTempFile_errorPath_throwsIllegalStateException() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val errorMessage = "Failed to read file"
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(null)
+
+        val tempDir = File(getProperty("java.io.tmpdir") ?: ".")
+        `when`(context.cacheDir).thenReturn(tempDir)
+
+        val exception = assertThrows(IllegalStateException::class.java) {
+            DashboardResourcesMediaUtils.copyUriToTempFile(context, errorMessage, uri)
+        }
+
+        assertEquals(errorMessage, exception.message)
+    }
+
+    @Test
+    fun resolveAudioBitrate_returnsBitrateInKbps() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://test/audio")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            DataSource.toDataSource(context, uri),
+            MediaMetadataRetriever.METADATA_KEY_BITRATE,
+            "128000"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveAudioBitrate(context, uri)
+
+        assertEquals(128, result)
+    }
+
+    @Test
+    fun resolveAudioBitrate_returnsNullWhenMissing() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://test/audio/missing")
+
+        val result = DashboardResourcesMediaUtils.resolveAudioBitrate(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun resolveAudioBitrate_returnsNullOnError() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.resolveAudioBitrate(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun testReadBytesFromUri_success() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+
+        val testData = "Hello World".toByteArray()
+        val inputStream = ByteArrayInputStream(testData)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(inputStream)
+
+        val result = DashboardResourcesMediaUtils.readBytesFromUri(context, uri)
+
+        assertArrayEquals(testData, result)
+    }
+
+    @Test
+    fun testReadBytesFromUri_nullStream() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(null)
+
+        val result = DashboardResourcesMediaUtils.readBytesFromUri(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun testReadBytesFromUri_exception() {
+        val context = mock(Context::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri))
+            .thenThrow(RuntimeException("Simulated error"))
+
+        val result = DashboardResourcesMediaUtils.readBytesFromUri(context, uri)
+
+        assertNull(result)
+    }
+
+    @Test
+    fun resolveVideoDurationMs_validDuration_returnsDuration() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://media/external/video/media/1")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            DataSource.toDataSource(context, uri),
+            MediaMetadataRetriever.METADATA_KEY_DURATION,
+            "12345"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDurationMs(context, uri)
+
+        assertEquals(12345L, result)
+    }
+
+    @Test
+    fun resolveVideoDurationMs_invalidDuration_returnsZero() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://media/external/video/media/1")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            DataSource.toDataSource(context, uri),
+            MediaMetadataRetriever.METADATA_KEY_DURATION,
+            "invalid"
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDurationMs(context, uri)
+
+        assertEquals(0L, result)
+    }
+
+    @Test
+    fun resolveVideoDurationMs_nullDuration_returnsZero() {
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        val uri = Uri.parse("content://media/external/video/media/1")
+
+        ShadowMediaMetadataRetriever.addMetadata(
+            DataSource.toDataSource(context, uri),
+            MediaMetadataRetriever.METADATA_KEY_DURATION,
+            null
+        )
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDurationMs(context, uri)
+
+        assertEquals(0L, result)
+    }
+
+    @Test
+    fun resolveVideoDurationMs_exception_returnsZero() {
+        val context = mock(Context::class.java)
+        val uri = Uri.parse("content://media/external/video/media/1")
+
+        `when`(context.contentResolver).thenThrow(RuntimeException("Mocked Context Error"))
+
+        val result = DashboardResourcesMediaUtils.resolveVideoDurationMs(context, uri)
+
+        assertEquals(0L, result)
+    }
+
+    @Test
+    fun testResolveFileSizeBytes_success() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(OpenableColumns.SIZE)).thenReturn(1)
+        `when`(cursor.moveToFirst()).thenReturn(true)
+        `when`(cursor.getLong(1)).thenReturn(1024L)
+
+        val size = DashboardResourcesMediaUtils.resolveFileSizeBytes(context, uri)
+
+        assertEquals(1024L, size)
+    }
+
+    @Test
+    fun testResolveFileSizeBytes_nullCursor() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(null)
+
+        val size = DashboardResourcesMediaUtils.resolveFileSizeBytes(context, uri)
+
+        assertNull(size)
+    }
+
+    @Test
+    fun testResolveFileSizeBytes_emptyCursor() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+        val cursor = mock(Cursor::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(OpenableColumns.SIZE)).thenReturn(1)
+        `when`(cursor.moveToFirst()).thenReturn(false)
+
+        val size = DashboardResourcesMediaUtils.resolveFileSizeBytes(context, uri)
+
+        assertNull(size)
+    }
+
+    @Test
+    fun testResolveFileSizeBytes_exception() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.query(uri, null, null, null, null))
+            .thenThrow(RuntimeException("DB error"))
+
+        val size = DashboardResourcesMediaUtils.resolveFileSizeBytes(context, uri)
+
+        assertNull(size)
     }
 }
