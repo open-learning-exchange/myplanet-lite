@@ -15,8 +15,8 @@ object IntentUtils {
 
         val scheme = data.scheme
         val host = data.host
-        val isValidDeepLink = (scheme == "https" && host == "midominio.com" && data.path?.lowercase()?.startsWith("/post") == true) ||
-                              (scheme == "myplanetlite" && host == "post")
+        val isValidDeepLink = scheme == "myplanetlite" &&
+            host?.equals("post", ignoreCase = true) == true
         if (!isValidDeepLink) return null
 
         val queryPostId = data.getQueryParameter("postId")
