@@ -349,7 +349,14 @@ class SignupActivity : BaseActivity() {
     }
 
     private fun setupLanguageOptions() {
-        languageOptions = listOf(
+        languageOptions = buildLanguageOptionsList()
+        setupLanguageInputAdapter()
+        setupLanguageInputListeners()
+        initializeLanguageSelection()
+    }
+
+    private fun buildLanguageOptionsList(): List<SignupLanguageOption> {
+        return listOf(
             SignupLanguageOption(
                 languageTag = "en",
                 labelRes = R.string.language_name_english,
@@ -391,10 +398,15 @@ class SignupActivity : BaseActivity() {
                 levelArrayRes = R.array.signup_level_options_language_hi
             )
         )
+    }
 
+    private fun setupLanguageInputAdapter() {
         val languageLabels = languageOptions.map { getString(it.labelRes) }
         val languageAdapter = createNonFilteringAdapter(languageLabels)
         languageInput.setAdapter(languageAdapter)
+    }
+
+    private fun setupLanguageInputListeners() {
         languageInput.setOnItemClickListener { _, _, position, _ ->
             val option = languageOptions[position]
             languageLayout.error = null
@@ -409,8 +421,6 @@ class SignupActivity : BaseActivity() {
                 applySelectedLanguage(option, resetLevel = false)
             }
         }
-
-        initializeLanguageSelection()
     }
 
     private fun TextView.clearErrorOnTextChange(layout: TextInputLayout) {
