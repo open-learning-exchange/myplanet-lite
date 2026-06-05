@@ -67,12 +67,16 @@ class DashboardTeamMembersSupportTest {
             )
         )
 
-        runAcceptJoinRequest(
+        val context = DashboardTeamActionContext(
             fragment = fragment,
             repository = repository,
             baseUrl = null, // Invalid
             credentials = null, // Invalid
-            sessionCookie = null,
+            sessionCookie = null
+        )
+
+        runAcceptJoinRequest(
+            context = context,
             request = request,
             currentTeamPlanetCode = null,
             serverPlanetCode = null,
@@ -103,12 +107,16 @@ class DashboardTeamMembersSupportTest {
             )
         )
 
-        runRejectJoinRequest(
+        val context = DashboardTeamActionContext(
             fragment = fragment,
             repository = repository,
             baseUrl = null, // Invalid
             credentials = null, // Invalid
-            sessionCookie = null,
+            sessionCookie = null
+        )
+
+        runRejectJoinRequest(
+            context = context,
             request = request,
             onReload = {}
         )
@@ -128,13 +136,17 @@ class DashboardTeamMembersSupportTest {
             membership = null // Invalid
         )
 
-        runRemoveTeamMember(
+        val context = DashboardTeamActionContext(
             fragment = fragment,
             repository = repository,
-            teamId = null, // Invalid
             baseUrl = null, // Invalid
             credentials = null, // Invalid
-            sessionCookie = null,
+            sessionCookie = null
+        )
+
+        runRemoveTeamMember(
+            context = context,
+            teamId = null, // Invalid
             member = member,
             displayName = "User",
             onStart = {},
