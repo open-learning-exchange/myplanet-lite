@@ -559,8 +559,16 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             setSubmitting(true)
             val existingSubmission = fetchExistingSubmissionOrNull(base, username, parentId, survey)
             val submission = buildSurveySubmission(
-                survey, existingSubmission, username, fullName,
-                parentId, answersPayload, totalGrade, profile
+                SurveySubmissionParams(
+                    survey = survey,
+                    existingSubmission = existingSubmission,
+                    username = username,
+                    fullName = fullName,
+                    parentId = parentId,
+                    answersPayload = answersPayload,
+                    totalGrade = totalGrade,
+                    profile = profile
+                )
             )
             processSubmission(base, submission, survey, username)
         }
@@ -587,15 +595,17 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     }
 
     private fun buildSurveySubmission(
-        survey: SurveyDocument,
-        existingSubmission: DashboardSurveySubmissionsRepository.SubmissionLookup?,
-        username: String,
-        fullName: String,
-        parentId: String,
-        answersPayload: List<SubmissionAnswer>,
-        totalGrade: Int,
-        profile: UserProfile?
+        params: SurveySubmissionParams
     ): SurveySubmission {
+        val survey = params.survey
+        val existingSubmission = params.existingSubmission
+        val username = params.username
+        val fullName = params.fullName
+        val parentId = params.parentId
+        val answersPayload = params.answersPayload
+        val totalGrade = params.totalGrade
+        val profile = params.profile
+
         val rawProfile = parseProfileRawDocument(profile?.rawDocument)
         val fallbackUserId = "org.couchdb.user:$username"
         val resolvedUserId = rawProfile?.optString("_id").takeIf { !it.isNullOrBlank() } ?: fallbackUserId
@@ -1847,4 +1857,15 @@ private data class SubmissionOptionValue(
     @param:Json(name = "id") val id: String?,
     @param:Json(name = "text") val text: String?,
     @param:Json(name = "isOther") val isOther: Boolean = false,
+)
+
+private data class SurveySubmissionParams(
+    val survey: SurveyDocument,
+    val existingSubmission: DashboardSurveySubmissionsRepository.SubmissionLookup?,
+    val username: String,
+    val fullName: String,
+    val parentId: String,
+    val answersPayload: List<SubmissionAnswer>,
+    val totalGrade: Int,
+    val profile: UserProfile?
 )
