@@ -128,7 +128,7 @@ class DashboardTeamMembersSupportTest {
             membership = null // Invalid
         )
 
-        runRemoveTeamMember(
+        runRemoveTeamMember(RemoveTeamMemberParams(
             fragment = fragment,
             repository = repository,
             teamId = null, // Invalid
@@ -140,7 +140,7 @@ class DashboardTeamMembersSupportTest {
             onStart = {},
             onStop = {},
             onReload = {}
-        )
+        ))
 
         val latestToast = ShadowToast.getLatestToast()
         assertNotNull(latestToast)

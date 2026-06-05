@@ -450,10 +450,12 @@ class DashboardTeamMembersFragment : Fragment() {
     }
 
     private fun confirmMemberRemoval(member: TeamMemberDetails) = confirmMemberRemovalDialog(this, member) { selectedMember, displayName ->
-        runRemoveTeamMember(this, repository, currentTeamId, baseUrl, credentials, sessionCookie, selectedMember, displayName,
+        runRemoveTeamMember(RemoveTeamMemberParams(
+            this, repository, currentTeamId, baseUrl, credentials, sessionCookie, selectedMember, displayName,
             onStart = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = true },
             onStop = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false },
-            onReload = { currentTeamId?.let(::loadTeamMembers) })
+            onReload = { currentTeamId?.let(::loadTeamMembers) }
+        ))
     }
 
     private fun showInviteMembersDialog() {

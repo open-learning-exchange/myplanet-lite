@@ -158,19 +158,33 @@ internal fun runRejectJoinRequest(
     }
 }
 
-internal fun runRemoveTeamMember(
-    fragment: Fragment,
-    repository: DashboardTeamsRepository,
-    teamId: String?,
-    baseUrl: String?,
-    credentials: StoredCredentials?,
-    sessionCookie: String?,
-    member: TeamMemberDetails,
-    displayName: String,
-    onStart: () -> Unit,
-    onStop: () -> Unit,
-    onReload: () -> Unit,
-) {
+internal data class RemoveTeamMemberParams(
+    val fragment: Fragment,
+    val repository: DashboardTeamsRepository,
+    val teamId: String?,
+    val baseUrl: String?,
+    val credentials: StoredCredentials?,
+    val sessionCookie: String?,
+    val member: TeamMemberDetails,
+    val displayName: String,
+    val onStart: () -> Unit,
+    val onStop: () -> Unit,
+    val onReload: () -> Unit,
+)
+
+internal fun runRemoveTeamMember(params: RemoveTeamMemberParams) {
+    val fragment = params.fragment
+    val repository = params.repository
+    val teamId = params.teamId
+    val baseUrl = params.baseUrl
+    val credentials = params.credentials
+    val sessionCookie = params.sessionCookie
+    val member = params.member
+    val displayName = params.displayName
+    val onStart = params.onStart
+    val onStop = params.onStop
+    val onReload = params.onReload
+
     val membership = member.membership
     if (teamId.isNullOrBlank() || baseUrl.isNullOrBlank() || credentials == null || membership == null) {
         Toast.makeText(fragment.requireContext(), fragment.getString(R.string.dashboard_team_members_remove_error, displayName), Toast.LENGTH_SHORT).show()
