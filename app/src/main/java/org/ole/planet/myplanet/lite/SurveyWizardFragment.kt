@@ -1002,6 +1002,29 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         return container to collector
     }
 
+    private fun createTextInputLayout(
+        context: android.content.Context,
+        hintText: String,
+        inputTypeVal: Int = InputType.TYPE_CLASS_TEXT,
+        initialText: String = ""
+    ): Pair<TextInputLayout, TextInputEditText> {
+        val layout = TextInputLayout(context).apply {
+            hint = hintText
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+        val input = TextInputEditText(context).apply {
+            inputType = inputTypeVal
+            if (initialText.isNotEmpty()) {
+                setText(initialText)
+            }
+        }
+        layout.addView(input)
+        return layout to input
+    }
+
     private fun renderNamesStep(): Pair<View, () -> Boolean> {
         val context = requireContext()
         val container = LinearLayout(context).apply {
@@ -1012,38 +1035,23 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             )
         }
 
-        val firstLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_first_name_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val firstInput = TextInputEditText(context)
-        firstInput.setText(respondent.firstName.orEmpty())
-        firstLayout.addView(firstInput)
+        val (firstLayout, firstInput) = createTextInputLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_first_name_label),
+            initialText = respondent.firstName.orEmpty()
+        )
 
-        val middleLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_middle_name_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val middleInput = TextInputEditText(context)
-        middleInput.setText(respondent.middleName.orEmpty())
-        middleLayout.addView(middleInput)
+        val (middleLayout, middleInput) = createTextInputLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_middle_name_label),
+            initialText = respondent.middleName.orEmpty()
+        )
 
-        val lastLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_last_name_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val lastInput = TextInputEditText(context)
-        lastInput.setText(respondent.lastName.orEmpty())
-        lastLayout.addView(lastInput)
+        val (lastLayout, lastInput) = createTextInputLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_last_name_label),
+            initialText = respondent.lastName.orEmpty()
+        )
 
         container.addView(firstLayout)
         container.addView(middleLayout)
@@ -1068,21 +1076,18 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             )
         }
 
-        val birthDateLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_birth_date_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val birthDateInput = TextInputEditText(context)
+        val (birthDateLayout, birthDateInput) = createTextInputLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_birth_date_label),
+            inputTypeVal = InputType.TYPE_CLASS_DATETIME or InputType.TYPE_DATETIME_VARIATION_DATE,
+            initialText = respondent.birthDate?.let { formatBirthDateDisplay(it) }
+                ?: birthDateSelection?.let { formatBirthDateIso(it) }.orEmpty()
+        )
+
         birthDateInput.apply {
-            inputType = InputType.TYPE_CLASS_DATETIME or InputType.TYPE_DATETIME_VARIATION_DATE
             keyListener = null
             isFocusable = false
             isClickable = true
-            setText(respondent.birthDate?.let { formatBirthDateDisplay(it) }
-                ?: birthDateSelection?.let { formatBirthDateIso(it) }.orEmpty())
             setOnClickListener { showBirthDatePicker(this) }
             setOnFocusChangeListener { _, hasFocus ->
                 if (hasFocus) {
@@ -1090,7 +1095,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 }
             }
         }
-        birthDateLayout.addView(birthDateInput)
         container.addView(birthDateLayout)
 
         val collector = {
@@ -1160,31 +1164,19 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             )
         }
 
-        val emailLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_email_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val emailInput = TextInputEditText(context).apply {
-            inputType = InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-            setText(respondent.email.orEmpty())
-        }
-        emailLayout.addView(emailInput)
+        val (emailLayout, emailInput) = createTextInputLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_email_label),
+            inputTypeVal = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS,
+            initialText = respondent.email.orEmpty()
+        )
 
-        val phoneLayout = TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_phone_label)
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
-        val phoneInput = TextInputEditText(context).apply {
-            inputType = InputType.TYPE_CLASS_PHONE
-            setText(respondent.phoneNumber.orEmpty())
-        }
-        phoneLayout.addView(phoneInput)
+        val (phoneLayout, phoneInput) = createTextInputLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_phone_label),
+            inputTypeVal = InputType.TYPE_CLASS_PHONE,
+            initialText = respondent.phoneNumber.orEmpty()
+        )
 
         container.addView(emailLayout)
         container.addView(phoneLayout)
