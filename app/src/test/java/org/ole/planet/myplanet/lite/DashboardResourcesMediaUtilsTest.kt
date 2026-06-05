@@ -305,14 +305,14 @@ class DashboardResourcesMediaUtilsTest {
         assertEquals(
             211111L,
             DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
-                1000000L, 1080, 720, 10000L, 0L, 5000L
+                DashboardResourcesMediaUtils.VideoEstimateParams(1000000L, 1080, 720, 10000L, 0L, 5000L)
             )
         )
 
         assertEquals(
             65536L,
             DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
-                1L, 1080, 720, 10000L, 0L, 5000L
+                DashboardResourcesMediaUtils.VideoEstimateParams(1L, 1080, 720, 10000L, 0L, 5000L)
             )
         )
     }
@@ -357,12 +357,14 @@ class DashboardResourcesMediaUtilsTest {
             context = context,
             unknownText = "Unknown",
             estimateFormat = "Est: %s",
-            sourceSizeBytes = null,
-            sourceHeight = 1080,
-            selectedHeight = 720,
-            sourceDurationMs = 10000L,
-            selectedStartMs = 0L,
-            selectedEndMs = 5000L
+            DashboardResourcesMediaUtils.VideoEstimateParams(
+                sourceSizeBytes = null,
+                sourceHeight = 1080,
+                selectedHeight = 720,
+                sourceDurationMs = 10000L,
+                selectedStartMs = 0L,
+                selectedEndMs = 5000L
+            )
         )
 
         assertEquals("Unknown", result)
@@ -376,12 +378,14 @@ class DashboardResourcesMediaUtilsTest {
             context = context,
             unknownText = "Unknown",
             estimateFormat = "Est: %s",
-            sourceSizeBytes = 0L,
-            sourceHeight = 1080,
-            selectedHeight = 720,
-            sourceDurationMs = 10000L,
-            selectedStartMs = 0L,
-            selectedEndMs = 5000L
+            DashboardResourcesMediaUtils.VideoEstimateParams(
+                sourceSizeBytes = 0L,
+                sourceHeight = 1080,
+                selectedHeight = 720,
+                sourceDurationMs = 10000L,
+                selectedStartMs = 0L,
+                selectedEndMs = 5000L
+            )
         )
 
         assertEquals("Unknown", result)
@@ -391,7 +395,7 @@ class DashboardResourcesMediaUtilsTest {
     fun buildVideoSizeEstimateText_validSize_returnsFormattedEstimate() {
         val context = ApplicationProvider.getApplicationContext<Context>()
 
-        val estimatedBytes = DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(
+        val params = DashboardResourcesMediaUtils.VideoEstimateParams(
             sourceSizeBytes = 1000000L,
             sourceHeight = 1080,
             selectedHeight = 720,
@@ -399,6 +403,7 @@ class DashboardResourcesMediaUtilsTest {
             selectedStartMs = 0L,
             selectedEndMs = 5000L
         )
+        val estimatedBytes = DashboardResourcesMediaUtils.estimateVideoUploadSizeBytes(params)
 
         val expectedFormattedSize = Formatter.formatShortFileSize(context, estimatedBytes)
         val expectedOutput = "Est: $expectedFormattedSize"
@@ -407,12 +412,7 @@ class DashboardResourcesMediaUtilsTest {
             context = context,
             unknownText = "Unknown",
             estimateFormat = "Est: %s",
-            sourceSizeBytes = 1000000L,
-            sourceHeight = 1080,
-            selectedHeight = 720,
-            sourceDurationMs = 10000L,
-            selectedStartMs = 0L,
-            selectedEndMs = 5000L
+            params = params
         )
 
         assertEquals(expectedOutput, result)

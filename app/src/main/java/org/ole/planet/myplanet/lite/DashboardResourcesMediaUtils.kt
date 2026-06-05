@@ -312,26 +312,23 @@ object DashboardResourcesMediaUtils {
         }.getOrNull()
     }
 
+    data class VideoEstimateParams(
+        val sourceSizeBytes: Long?,
+        val sourceHeight: Int,
+        val selectedHeight: Int,
+        val sourceDurationMs: Long,
+        val selectedStartMs: Long,
+        val selectedEndMs: Long
+    )
+
     fun buildVideoSizeEstimateText(
         context: Context,
         unknownText: String,
         estimateFormat: String,
-        sourceSizeBytes: Long?,
-        sourceHeight: Int,
-        selectedHeight: Int,
-        sourceDurationMs: Long,
-        selectedStartMs: Long,
-        selectedEndMs: Long
+        params: VideoEstimateParams
     ): String {
-        if (sourceSizeBytes == null || sourceSizeBytes <= 0L) return unknownText
-        val estimatedBytes = estimateVideoUploadSizeBytes(
-            sourceSizeBytes,
-            sourceHeight,
-            selectedHeight,
-            sourceDurationMs,
-            selectedStartMs,
-            selectedEndMs
-        )
+        if (params.sourceSizeBytes == null || params.sourceSizeBytes <= 0L) return unknownText
+        val estimatedBytes = estimateVideoUploadSizeBytes(params)
         val formattedSize = Formatter.formatShortFileSize(context, estimatedBytes)
         return estimateFormat.format(formattedSize)
     }
@@ -350,22 +347,16 @@ object DashboardResourcesMediaUtils {
         return (bytes * 1.05).toLong().coerceAtLeast(1024L)
     }
 
-    fun estimateVideoUploadSizeBytes(
-        sourceSizeBytes: Long,
-        sourceHeight: Int,
-        selectedHeight: Int,
-        sourceDurationMs: Long,
-        selectedStartMs: Long,
-        selectedEndMs: Long
-    ): Long {
-        val durationFactor = if (sourceDurationMs <= 0L) 1.0 else {
-            ((selectedEndMs - selectedStartMs).toDouble() / sourceDurationMs.toDouble()).coerceIn(0.0, 1.0)
+    fun estimateVideoUploadSizeBytes(params: VideoEstimateParams): Long {
+        val durationFactor = if (params.sourceDurationMs <= 0L) 1.0 else {
+            ((params.selectedEndMs - params.selectedStartMs).toDouble() / params.sourceDurationMs.toDouble()).coerceIn(0.0, 1.0)
         }
-        val resolutionFactor = if (sourceHeight > 0 && selectedHeight < sourceHeight) {
-            val ratio = selectedHeight.toDouble() / sourceHeight.toDouble()
+        val resolutionFactor = if (params.sourceHeight > 0 && params.selectedHeight < params.sourceHeight) {
+            val ratio = params.selectedHeight.toDouble() / params.sourceHeight.toDouble()
             ratio * ratio
         } else 1.0
-        val estimated = (sourceSizeBytes * resolutionFactor * durationFactor * 0.95).toLong()
+        val sourceSize = params.sourceSizeBytes ?: 0L
+        val estimated = (sourceSize * resolutionFactor * durationFactor * 0.95).toLong()
         return estimated.coerceAtLeast(64L * 1024L)
     }
 
