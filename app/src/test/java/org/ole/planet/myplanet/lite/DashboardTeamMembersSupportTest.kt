@@ -68,15 +68,17 @@ class DashboardTeamMembersSupportTest {
         )
 
         runAcceptJoinRequest(
-            fragment = fragment,
-            repository = repository,
-            baseUrl = null, // Invalid
-            credentials = null, // Invalid
-            sessionCookie = null,
-            request = request,
-            currentTeamPlanetCode = null,
-            serverPlanetCode = null,
-            onReload = {}
+            AcceptJoinRequestParams(
+                fragment = fragment,
+                repository = repository,
+                baseUrl = null, // Invalid
+                credentials = null, // Invalid
+                sessionCookie = null,
+                request = request,
+                currentTeamPlanetCode = null,
+                serverPlanetCode = null,
+                onReload = {}
+            )
         )
 
         val latestToast = ShadowToast.getLatestToast()

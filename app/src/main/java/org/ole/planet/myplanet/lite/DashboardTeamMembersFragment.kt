@@ -437,7 +437,19 @@ class DashboardTeamMembersFragment : Fragment() {
         binding.dashboardTeamJoinRequestsList.isVisible = hasRequests
     }
 
-    private fun acceptJoinRequest(request: TeamJoinRequestUiModel) = runAcceptJoinRequest(this, repository, baseUrl, credentials, sessionCookie, request, currentTeamPlanetCode, serverPlanetCode) { currentTeamId?.let(::loadTeamMembers) }
+    private fun acceptJoinRequest(request: TeamJoinRequestUiModel) = runAcceptJoinRequest(
+        AcceptJoinRequestParams(
+            fragment = this,
+            repository = repository,
+            baseUrl = baseUrl,
+            credentials = credentials,
+            sessionCookie = sessionCookie,
+            request = request,
+            currentTeamPlanetCode = currentTeamPlanetCode,
+            serverPlanetCode = serverPlanetCode,
+            onReload = { currentTeamId?.let(::loadTeamMembers) }
+        )
+    )
 
     private fun confirmAcceptJoinRequest(request: TeamJoinRequestUiModel) {
         confirmAcceptJoinRequestDialog(this, request) { acceptJoinRequest(it) }
