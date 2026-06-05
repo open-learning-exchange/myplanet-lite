@@ -1229,6 +1229,56 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         }
     }
 
+    private fun updateLevelOptions(
+        context: android.content.Context,
+        levelInput: AutoCompleteTextView,
+        languageLabel: String?
+    ): List<String> {
+        val arrayRes = levelArrayForLanguage(languageLabel)
+        val options = resources.getStringArray(arrayRes).toList()
+        val adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, options)
+        levelInput.setAdapter(adapter)
+        val localizedLevel = LearningLevelTranslator.toLocalized(context, respondent.level, arrayRes)
+        if (!localizedLevel.isNullOrBlank() && options.contains(localizedLevel)) {
+            levelInput.setText(localizedLevel, false)
+        } else {
+            levelInput.setText("", false)
+        }
+        return options
+    }
+
+    private fun setupLanguageInput(
+        context: android.content.Context,
+        languageInput: AutoCompleteTextView,
+        languages: List<String>
+    ): ArrayAdapter<String> {
+        val languageAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, languages)
+        languageInput.setAdapter(languageAdapter)
+        respondent.language?.let { languageInput.setText(it, false) }
+        return languageAdapter
+    }
+
+    private fun createLanguageLevelCollector(
+        context: android.content.Context,
+        languageInput: AutoCompleteTextView,
+        levelInput: AutoCompleteTextView,
+        languages: List<String>,
+        currentLevelOptionsProvider: () -> List<String>
+    ): () -> Boolean {
+        return {
+            val selectedLanguage = languageInput.text?.toString()?.trim().orEmpty()
+            respondent.language = selectedLanguage.takeIf { languages.contains(it) }
+
+            val levelText = levelInput.text?.toString()?.trim().orEmpty()
+            respondent.level = if (currentLevelOptionsProvider().contains(levelText)) {
+                LearningLevelTranslator.toEnglish(context, levelText)
+            } else {
+                null
+            }
+            true
+        }
+    }
+
     private fun renderLanguageLevelStep(): Pair<View, () -> Boolean> {
         val context = requireContext()
         val container = LinearLayout(context).apply {
@@ -1249,48 +1299,27 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         )
 
         val languages = resources.getStringArray(R.array.signup_language_options).toList()
-        val languageAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, languages)
-        languageInput.setAdapter(languageAdapter)
-        respondent.language?.let { languageInput.setText(it, false) }
+        val languageAdapter = setupLanguageInput(context, languageInput, languages)
 
         var currentLevelOptions: List<String> = emptyList()
 
-        fun updateLevelOptions(languageLabel: String?) {
-            val arrayRes = levelArrayForLanguage(languageLabel)
-            val options = resources.getStringArray(arrayRes).toList()
-            currentLevelOptions = options
-            val adapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, options)
-            levelInput.setAdapter(adapter)
-            val localizedLevel = LearningLevelTranslator.toLocalized(context, respondent.level, arrayRes)
-            if (!localizedLevel.isNullOrBlank() && options.contains(localizedLevel)) {
-                levelInput.setText(localizedLevel, false)
-            } else {
-                levelInput.setText("", false)
-            }
-        }
-
         languageInput.setOnItemClickListener { _, _, position, _ ->
             val selected = languageAdapter.getItem(position)
-            updateLevelOptions(selected)
+            currentLevelOptions = updateLevelOptions(context, levelInput, selected)
         }
 
-        updateLevelOptions(respondent.language)
+        currentLevelOptions = updateLevelOptions(context, levelInput, respondent.language)
 
         container.addView(languageLayout)
         container.addView(levelLayout)
 
-        val collector = {
-            val selectedLanguage = languageInput.text?.toString()?.trim().orEmpty()
-            respondent.language = selectedLanguage.takeIf { languages.contains(it) }
-
-            val levelText = levelInput.text?.toString()?.trim().orEmpty()
-            respondent.level = if (currentLevelOptions.contains(levelText)) {
-                LearningLevelTranslator.toEnglish(context, levelText)
-            } else {
-                null
-            }
-            true
-        }
+        val collector = createLanguageLevelCollector(
+            context,
+            languageInput,
+            levelInput,
+            languages,
+            { currentLevelOptions }
+        )
         return container to collector
     }
 
