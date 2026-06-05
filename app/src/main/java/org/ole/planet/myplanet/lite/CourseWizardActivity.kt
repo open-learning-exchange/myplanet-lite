@@ -242,14 +242,7 @@ class CourseWizardActivity : BaseActivity() {
             descriptionView,
             resolveOfflineMarkdownImages(step.description).replace("\n", "  \n")
         )
-        bindAttachments(
-            step.resources,
-            step.survey,
-            step.exam,
-            attachmentsContainer,
-            attachmentsTitle,
-            attachmentsList
-        )
+        bindAttachments(step)
         previousButton.isEnabled = currentIndex > 0
         previousButton.setOnClickListener {
             if (currentIndex > 0) {
@@ -432,52 +425,41 @@ class CourseWizardActivity : BaseActivity() {
 
     private fun progressKey(courseId: String): String = "course_progress_$courseId"
 
-    private fun bindAttachments(
-        resources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
-        survey: SurveyDocument?,
-        exam: SurveyDocument?,
-        container: LinearLayout,
-        titleView: TextView,
-        listContainer: LinearLayout
-    ) {
-        resetAttachmentState(listContainer)
-        val videoResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("video") }
-        val imageResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("image") }
-        val displayResources = resources.filter { resource ->
+    private fun bindAttachments(step: StepDisplay) {
+        resetAttachmentState()
+        val videoResources = step.resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("video") }
+        val imageResources = step.resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("image") }
+        val displayResources = step.resources.filter { resource ->
             val mediaType = resource.mediaType.lowercase(Locale.ROOT)
             mediaType.contains("video") || mediaType.contains("pdf") || mediaType.contains("image") ||
                     mediaType.contains("audio")
         }
-        val hasSurvey = survey?.questions?.isNotEmpty() == true
-        val hasExam = exam?.questions?.isNotEmpty() == true
+        val hasSurvey = step.survey?.questions?.isNotEmpty() == true
+        val hasExam = step.exam?.questions?.isNotEmpty() == true
         if (displayResources.isEmpty() && !hasSurvey && !hasExam) {
-            container.visibility = View.GONE
+            attachmentsContainer.visibility = View.GONE
             return
         }
-        container.visibility = View.VISIBLE
-        titleView.visibility = View.VISIBLE
-        val inflater = layoutInflater
+        attachmentsContainer.visibility = View.VISIBLE
+        attachmentsTitle.visibility = View.VISIBLE
         prepareVideoPlaylist(videoResources)
         if (videoResources.isNotEmpty() && currentPlaylistUrls.isEmpty()) {
-            container.visibility = View.GONE
+            attachmentsContainer.visibility = View.GONE
             Toast.makeText(this, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT)
                 .show()
             return
         }
         populateAttachmentList(
-            survey,
+            step,
             hasSurvey,
-            exam,
             hasExam,
             displayResources,
-            imageResources,
-            inflater,
-            listContainer
+            imageResources
         )
     }
 
-    private fun resetAttachmentState(listContainer: LinearLayout) {
-        listContainer.removeAllViews()
+    private fun resetAttachmentState() {
+        attachmentsList.removeAllViews()
         playlistIndexByResourceId.clear()
         currentPlaylistUrls.clear()
         lastPlaybackIndex = 0
@@ -496,34 +478,29 @@ class CourseWizardActivity : BaseActivity() {
     }
 
     private fun populateAttachmentList(
-        survey: SurveyDocument?,
+        step: StepDisplay,
         hasSurvey: Boolean,
-        exam: SurveyDocument?,
         hasExam: Boolean,
         displayResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
-        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
-        inflater: android.view.LayoutInflater,
-        listContainer: LinearLayout
+        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>
     ) {
-        if (survey != null && hasSurvey) {
-            bindSurveyAttachment(survey, inflater, listContainer)
+        if (step.survey != null && hasSurvey) {
+            bindSurveyAttachment(step.survey)
         }
-        if (exam != null && hasExam) {
-            bindExamAttachment(exam, inflater, listContainer)
+        if (step.exam != null && hasExam) {
+            bindExamAttachment(step.exam)
         }
         displayResources.forEach { resource ->
-            bindResourceAttachment(resource, imageResources, inflater, listContainer)
+            bindResourceAttachment(resource, imageResources)
         }
     }
 
     private fun bindSurveyAttachment(
-        survey: SurveyDocument,
-        inflater: android.view.LayoutInflater,
-        listContainer: LinearLayout
+        survey: SurveyDocument
     ) {
-        val itemView = inflater.inflate(
+        val itemView = layoutInflater.inflate(
             R.layout.item_course_wizard_attachment,
-            listContainer,
+            attachmentsList,
             false
         )
         val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
@@ -549,17 +526,15 @@ class CourseWizardActivity : BaseActivity() {
         }
         itemView.setOnClickListener { openSurvey() }
         playButton.setOnClickListener { openSurvey() }
-        listContainer.addView(itemView)
+        attachmentsList.addView(itemView)
     }
 
     private fun bindExamAttachment(
-        exam: SurveyDocument,
-        inflater: android.view.LayoutInflater,
-        listContainer: LinearLayout
+        exam: SurveyDocument
     ) {
-        val itemView = inflater.inflate(
+        val itemView = layoutInflater.inflate(
             R.layout.item_course_wizard_attachment,
-            listContainer,
+            attachmentsList,
             false
         )
         val titleText: TextView = itemView.findViewById(R.id.courseWizardAttachmentTitle)
@@ -587,26 +562,24 @@ class CourseWizardActivity : BaseActivity() {
         }
         itemView.setOnClickListener { openExam() }
         playButton.setOnClickListener { openExam() }
-        listContainer.addView(itemView)
+        attachmentsList.addView(itemView)
     }
 
     private fun bindResourceAttachment(
         resource: DashboardCoursePageFragment.CourseItem.LessonResource,
-        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
-        inflater: android.view.LayoutInflater,
-        listContainer: LinearLayout
+        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>
     ) {
         val isAudio = resource.mediaType.lowercase(Locale.ROOT).contains("audio")
         val itemView = if (isAudio) {
-            inflater.inflate(
+            layoutInflater.inflate(
                 R.layout.item_course_wizard_audio_attachment,
-                listContainer,
+                attachmentsList,
                 false
             )
         } else {
-            inflater.inflate(
+            layoutInflater.inflate(
                 R.layout.item_course_wizard_attachment,
-                listContainer,
+                attachmentsList,
                 false
             )
         }
@@ -665,7 +638,7 @@ class CourseWizardActivity : BaseActivity() {
             itemView.setOnClickListener { openResource() }
             playButton.setOnClickListener { openResource() }
         }
-        listContainer.addView(itemView)
+        attachmentsList.addView(itemView)
     }
 
     private fun bindAudioPlayer(
