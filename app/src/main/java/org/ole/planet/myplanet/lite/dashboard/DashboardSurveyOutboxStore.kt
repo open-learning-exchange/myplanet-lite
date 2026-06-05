@@ -203,8 +203,10 @@ class DashboardSurveyOutboxStore private constructor(
         val db = writableDatabase
         db.beginTransaction()
         try {
-            for (id in ids) {
-                deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID = ?", arrayOf(id.toString()))
+            val idStrings = ids.map { it.toString() }
+            idStrings.chunked(900).forEach { chunk ->
+                val placeholders = chunk.joinToString(",") { "?" }
+                deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders)", chunk.toTypedArray())
             }
             db.setTransactionSuccessful()
         } finally {
