@@ -56,21 +56,21 @@ class SurveyWizardActivity : AppCompatActivity() {
         }
     }
 
-    companion object {
-        const val EXTRA_DOCUMENT = "extra_document"
-        private const val EXTRA_TEAM_ID = "extra_team_id"
-        private const val EXTRA_TEAM_NAME = "extra_team_name"
-        private const val EXTRA_COURSE_ID = "extra_course_id"
-        private const val EXTRA_IS_EXAM = "extra_is_exam"
+    class IntentBuilder(
+        private val context: Context,
+        private val document: SurveyDocument,
+    ) {
+        private var teamId: String? = null
+        private var teamName: String? = null
+        private var courseId: String? = null
+        private var isExam: Boolean = false
 
-        fun newIntent(
-            context: Context,
-            document: SurveyDocument,
-            teamId: String?,
-            teamName: String?,
-            courseId: String? = null,
-            isExam: Boolean = false,
-        ): Intent {
+        fun teamId(teamId: String?) = apply { this.teamId = teamId }
+        fun teamName(teamName: String?) = apply { this.teamName = teamName }
+        fun courseId(courseId: String?) = apply { this.courseId = courseId }
+        fun isExam(isExam: Boolean) = apply { this.isExam = isExam }
+
+        fun build(): Intent {
             return Intent(context, SurveyWizardActivity::class.java).apply {
                 putExtra(EXTRA_DOCUMENT, document)
                 putExtra(EXTRA_TEAM_ID, teamId)
@@ -79,5 +79,13 @@ class SurveyWizardActivity : AppCompatActivity() {
                 putExtra(EXTRA_IS_EXAM, isExam)
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_DOCUMENT = "extra_document"
+        private const val EXTRA_TEAM_ID = "extra_team_id"
+        private const val EXTRA_TEAM_NAME = "extra_team_name"
+        private const val EXTRA_COURSE_ID = "extra_course_id"
+        private const val EXTRA_IS_EXAM = "extra_is_exam"
     }
 }

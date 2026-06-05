@@ -48,14 +48,12 @@ class SurveyWizardActivityTest {
     @Test
     fun `onCreate with survey sets up toolbar and fragment`() {
         val surveyDocument = SurveyDocument(id = "survey123", name = "Test Survey")
-        val intent = SurveyWizardActivity.newIntent(
-            context = ApplicationProvider.getApplicationContext(),
-            document = surveyDocument,
-            teamId = "team1",
-            teamName = "Test Team",
-            courseId = "course1",
-            isExam = true
-        )
+        val intent = SurveyWizardActivity.IntentBuilder(ApplicationProvider.getApplicationContext(), surveyDocument)
+            .teamId("team1")
+            .teamName("Test Team")
+            .courseId("course1")
+            .isExam(true)
+            .build()
         val controller = Robolectric.buildActivity(SurveyWizardActivity::class.java, intent)
         val activity = controller.create().start().resume().visible().get()
         assertFalse(activity.isFinishing)
@@ -71,14 +69,12 @@ class SurveyWizardActivityTest {
     fun `newIntent creates correct intent`() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val surveyDocument = SurveyDocument(id = "survey123", name = "Test Survey")
-        val intent = SurveyWizardActivity.newIntent(
-            context = context,
-            document = surveyDocument,
-            teamId = "team1",
-            teamName = "Test Team",
-            courseId = "course1",
-            isExam = true
-        )
+        val intent = SurveyWizardActivity.IntentBuilder(context, surveyDocument)
+            .teamId("team1")
+            .teamName("Test Team")
+            .courseId("course1")
+            .isExam(true)
+            .build()
         assertEquals(SurveyWizardActivity::class.java.name, intent.component?.className)
         assertTrue(intent.hasExtra(SurveyWizardActivity.EXTRA_DOCUMENT))
         val extraDoc = IntentCompat.getSerializableExtra(intent, SurveyWizardActivity.EXTRA_DOCUMENT, SurveyDocument::class.java)!!

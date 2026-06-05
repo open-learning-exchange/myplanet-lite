@@ -318,12 +318,10 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
 
         document.id?.let { statusStore.markViewed(it) }
         startActivity(
-            SurveyWizardActivity.newIntent(
-                requireContext(),
-                document,
-                teamId,
-                teamName,
-            ),
+            SurveyWizardActivity.IntentBuilder(requireContext(), document)
+                .teamId(teamId)
+                .teamName(teamName)
+                .build()
         )
     }
 

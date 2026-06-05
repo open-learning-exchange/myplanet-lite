@@ -539,13 +539,11 @@ class CourseWizardActivity : BaseActivity() {
         iconView.contentDescription = getString(R.string.dashboard_surveys_title)
         playButton.contentDescription = getString(R.string.course_wizard_open_survey)
         val openSurvey = {
-            SurveyWizardActivity.newIntent(
-                this,
-                survey,
-                survey.teamId,
-                null,
-                courseId
-            ).also { startActivity(it) }
+            SurveyWizardActivity.IntentBuilder(this, survey)
+                .teamId(survey.teamId)
+                .courseId(courseId)
+                .build()
+                .also { startActivity(it) }
         }
         itemView.setOnClickListener { openSurvey() }
         playButton.setOnClickListener { openSurvey() }
@@ -576,14 +574,12 @@ class CourseWizardActivity : BaseActivity() {
         playButton.contentDescription = getString(R.string.course_wizard_open_exam)
         val openExam = {
             pendingExamStepIndex = currentIndex
-            SurveyWizardActivity.newIntent(
-                this,
-                exam,
-                exam.teamId,
-                null,
-                courseId,
-                isExam = true
-            ).also { examLauncher.launch(it) }
+            SurveyWizardActivity.IntentBuilder(this, exam)
+                .teamId(exam.teamId)
+                .courseId(courseId)
+                .isExam(true)
+                .build()
+                .also { examLauncher.launch(it) }
         }
         itemView.setOnClickListener { openExam() }
         playButton.setOnClickListener { openExam() }
