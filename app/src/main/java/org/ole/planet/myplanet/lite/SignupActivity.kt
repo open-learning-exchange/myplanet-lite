@@ -708,24 +708,8 @@ class SignupActivity : BaseActivity() {
     }
 
     private fun submitUsernameStep() {
-        if (isProcessingStepAction) {
-            return
-        }
-        if (!validateUsername()) {
-            return
-        }
-        if (isCheckingServerAvailability) {
-            Toast.makeText(this, R.string.signup_connection_checking, Toast.LENGTH_SHORT).show()
-            return
-        }
-        if (!isServerReachable) {
-            applyConnectivityState(SignupStep.USERNAME, reachable = false, checking = false)
-            verifyServerAvailability(SignupStep.USERNAME, force = true)
-            return
-        }
-
         val username = usernameInput.text?.toString()?.trim().orEmpty()
-        if (username.isEmpty()) {
+        if (!canProceedWithUsernameStep(username)) {
             return
         }
 
@@ -742,26 +726,46 @@ class SignupActivity : BaseActivity() {
             isProcessingStepAction = false
             showUsernameAvailabilityChecking(false)
 
-            when (availability) {
-                UsernameAvailability.AVAILABLE -> {
-                    usernameLayout.error = null
-                    if (usernameLayout.helperText == getString(R.string.signup_connection_error_input)) {
-                        usernameLayout.helperText = null
-                    }
-                    moveToNextStep()
-                }
-                UsernameAvailability.TAKEN -> {
-                    usernameLayout.error = getString(R.string.signup_username_error_taken)
-                }
-                UsernameAvailability.UNKNOWN -> {
-                    usernameLayout.error = null
-                    usernameLayout.helperText = getString(R.string.signup_connection_error_input)
-                    isServerReachable = false
-                    updateStepConnectivityMessage(SignupStep.USERNAME, reachable = false, checking = false)
-                }
-            }
+            handleUsernameAvailabilityResult(availability)
 
             updateStepActionState()
+        }
+    }
+
+    private fun canProceedWithUsernameStep(username: String): Boolean {
+        if (isProcessingStepAction) return false
+        if (!validateUsername()) return false
+        if (isCheckingServerAvailability) {
+            Toast.makeText(this, R.string.signup_connection_checking, Toast.LENGTH_SHORT).show()
+            return false
+        }
+        if (!isServerReachable) {
+            applyConnectivityState(SignupStep.USERNAME, reachable = false, checking = false)
+            verifyServerAvailability(SignupStep.USERNAME, force = true)
+            return false
+        }
+        if (username.isEmpty()) return false
+        return true
+    }
+
+    private fun handleUsernameAvailabilityResult(availability: UsernameAvailability) {
+        when (availability) {
+            UsernameAvailability.AVAILABLE -> {
+                usernameLayout.error = null
+                if (usernameLayout.helperText == getString(R.string.signup_connection_error_input)) {
+                    usernameLayout.helperText = null
+                }
+                moveToNextStep()
+            }
+            UsernameAvailability.TAKEN -> {
+                usernameLayout.error = getString(R.string.signup_username_error_taken)
+            }
+            UsernameAvailability.UNKNOWN -> {
+                usernameLayout.error = null
+                usernameLayout.helperText = getString(R.string.signup_connection_error_input)
+                isServerReachable = false
+                updateStepConnectivityMessage(SignupStep.USERNAME, reachable = false, checking = false)
+            }
         }
     }
 
