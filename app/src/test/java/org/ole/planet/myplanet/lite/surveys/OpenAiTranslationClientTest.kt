@@ -13,6 +13,59 @@ import org.junit.Test
 class OpenAiTranslationClientTest {
 
     @Test
+    fun `translate with blank text returns null`() = runTest {
+        val client = OpenAiTranslationClient()
+
+        val result = client.translate(
+            text = "   ",
+            targetLanguage = "es",
+            apiKey = "test-key",
+            model = "test-model"
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `translate with successful response returns translated text`() = runTest {
+        val successInterceptor = Interceptor { chain ->
+            val jsonResponse = """
+                {
+                  "choices": [
+                    {
+                      "message": {
+                        "content": "Hola"
+                      }
+                    }
+                  ]
+                }
+            """.trimIndent()
+            Response.Builder()
+                .code(200)
+                .message("OK")
+                .request(chain.request())
+                .protocol(Protocol.HTTP_1_1)
+                .body(jsonResponse.toResponseBody(null))
+                .build()
+        }
+
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(successInterceptor)
+            .build()
+
+        val client = OpenAiTranslationClient(client = okHttpClient)
+
+        val result = client.translate(
+            text = "Hello",
+            targetLanguage = "es",
+            apiKey = "test-key",
+            model = "test-model"
+        )
+
+        org.junit.Assert.assertEquals("Hola", result)
+    }
+
+    @Test
     fun `translate with unsuccessful response returns null`() = runTest {
         val errorInterceptor = Interceptor { chain ->
             Response.Builder()

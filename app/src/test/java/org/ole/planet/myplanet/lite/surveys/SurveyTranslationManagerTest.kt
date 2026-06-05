@@ -15,8 +15,10 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.never
 import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
@@ -48,8 +50,7 @@ class SurveyTranslationManagerTest {
         languageIdentifier = mock()
         translationClient = mock()
 
-        SurveyTranslationCache.resetForTesting(context)
-        translationCache = SurveyTranslationCache.getInstance(context)
+        translationCache = mock()
 
         translationManager = SurveyTranslationManager(
             appContext = context,
@@ -58,6 +59,197 @@ class SurveyTranslationManagerTest {
             translationClient = translationClient,
             translationCache = translationCache
         )
+    }
+
+    private fun mockSurvey(id: String = "survey123", questions: List<SurveyQuestion>? = null): SurveyDocument {
+        return SurveyDocument(
+            id = id,
+            name = "Test Survey",
+            questions = questions
+        )
+    }
+
+    private fun mockConfig(openAiKey: String? = "test-key", openAiModel: String? = "test-model"): ConfigurationDocument {
+        return ConfigurationDocument(
+            keys = AiKeys(openAi = openAiKey),
+            models = AiModels(openAi = openAiModel)
+        )
+    }
+
+    @Test
+    fun `translateQuestion returns null when targetLanguage is blank`() = runTest {
+        val survey = mockSurvey()
+        val result = translationManager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 0,
+            targetLanguage = "   "
+        )
+        assertNull(result)
+        verify(translationCache, never()).getTranslation(any<String>(), any<Int>(), any<String>())
+    }
+
+    @Test
+    fun `translateQuestion returns cached translation when forceRetranslate is false and cache exists`() = runTest {
+        val survey = mockSurvey(id = "survey123", questions = listOf(SurveyQuestion(body = "Original")))
+        val cachedTranslation = SurveyTranslationManager.TranslatedQuestion(
+            body = "Cached Question",
+            choices = listOf("Cached Choice")
+        )
+        whenever(translationCache.getTranslation(any(), any(), any())).thenReturn(cachedTranslation)
+
+        val result = translationManager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 0,
+            targetLanguage = "es"
+        )
+
+        assertEquals(cachedTranslation, result)
+        verify(configurationRepository, never()).fetchConfiguration(any<String>())
+    }
+
+    @Test
+    fun `translateQuestion fetches configuration and returns null if config fails`() = runTest {
+        val survey = mockSurvey(id = "survey123", questions = listOf(SurveyQuestion(body = "Original")))
+        whenever(translationCache.getTranslation(any(), any(), any())).thenReturn(null)
+        whenever(configurationRepository.fetchConfiguration("http://test.com")).thenReturn(Result.success(null))
+
+        val result = translationManager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 0,
+            targetLanguage = "es"
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `translateQuestion returns null if OpenAI key is missing`() = runTest {
+        val survey = mockSurvey(id = "survey123", questions = listOf(SurveyQuestion(body = "Original")))
+        whenever(translationCache.getTranslation(any(), any(), any())).thenReturn(null)
+        whenever(configurationRepository.fetchConfiguration("http://test.com")).thenReturn(Result.success(mockConfig(openAiKey = null)))
+
+        val result = translationManager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 0,
+            targetLanguage = "es"
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `translateQuestion returns null if detected language is same as target language`() = runTest {
+        val survey = mockSurvey(id = "survey123", questions = listOf(SurveyQuestion(body = "Original")))
+        whenever(translationCache.getTranslation(any(), any(), any())).thenReturn(null)
+        whenever(configurationRepository.fetchConfiguration("http://test.com")).thenReturn(Result.success(mockConfig()))
+
+        val result = translationManager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 0,
+            targetLanguage = "ES",
+            detectedLanguage = "es"
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `translateQuestion returns null when languages share same base tag`() = runTest {
+        val survey = mockSurvey(id = "survey123", questions = listOf(SurveyQuestion(body = "Original")))
+        whenever(translationCache.getTranslation(any(), any(), any())).thenReturn(null)
+        whenever(configurationRepository.fetchConfiguration("http://test.com")).thenReturn(Result.success(mockConfig()))
+
+        val result = translationManager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 0,
+            targetLanguage = "es-MX",
+            detectedLanguage = "es-ES"
+        )
+
+        assertNull(result)
+        verify(translationClient, never()).translate(any<String>(), any<String>(), any<String>(), any<String>(), anyOrNull())
+    }
+
+    @Test
+    fun `translateQuestion returns null if question index is out of bounds`() = runTest {
+        val survey = mockSurvey(id = "survey123", questions = listOf(SurveyQuestion(body = "Q1")))
+        whenever(translationCache.getTranslation(any(), any(), any())).thenReturn(null)
+        whenever(configurationRepository.fetchConfiguration("http://test.com")).thenReturn(Result.success(mockConfig()))
+
+        val result = translationManager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 1,
+            targetLanguage = "es",
+            detectedLanguage = "en"
+        )
+
+        assertNull(result)
+    }
+
+    @Test
+    fun `translateQuestion translates and caches result successfully`() = runTest {
+        val question = SurveyQuestion(
+            body = "Hello",
+            choices = listOf(org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyChoice(text = "Yes"), org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyChoice(text = "No"))
+        )
+        val survey = mockSurvey(id = "survey123", questions = listOf(question))
+
+        whenever(translationCache.getTranslation(any(), any(), any())).thenReturn(null)
+        whenever(configurationRepository.fetchConfiguration("http://test.com")).thenReturn(Result.success(mockConfig()))
+
+        whenever(translationClient.translate("Hello", "es", "test-key", "test-model", "en")).thenReturn("Hola")
+        whenever(translationClient.translate("Yes", "es", "test-key", "test-model", "en")).thenReturn("Sí")
+        whenever(translationClient.translate("No", "es", "test-key", "test-model", "en")).thenReturn("No")
+
+        val result = translationManager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 0,
+            targetLanguage = "es",
+            detectedLanguage = "en"
+        )
+
+        val expected = SurveyTranslationManager.TranslatedQuestion(
+            body = "Hola",
+            choices = listOf("Sí", "No")
+        )
+        assertEquals(expected, result)
+
+        verify(translationCache).saveTranslation("survey123", 0, "es", expected)
+    }
+
+    @Test
+    fun `translateQuestion ignores cache when forceRetranslate is true`() = runTest {
+        val question = SurveyQuestion(body = "Hello")
+        val survey = mockSurvey(id = "survey123", questions = listOf(question))
+        val cachedTranslation = SurveyTranslationManager.TranslatedQuestion(body = "Old Translation")
+
+        whenever(translationCache.getTranslation(any(), any(), any())).thenReturn(cachedTranslation)
+        whenever(configurationRepository.fetchConfiguration("http://test.com")).thenReturn(Result.success(mockConfig()))
+        whenever(translationClient.translate("Hello", "es", "test-key", "test-model", "en")).thenReturn("Hola")
+
+        val result = translationManager.translateQuestion(
+            baseUrl = "http://test.com",
+            survey = survey,
+            questionIndex = 0,
+            targetLanguage = "es",
+            detectedLanguage = "en",
+            forceRetranslate = true
+        )
+
+        val expected = SurveyTranslationManager.TranslatedQuestion(
+            body = "Hola",
+            choices = emptyList()
+        )
+        assertEquals(expected, result)
+        verify(translationCache).saveTranslation("survey123", 0, "es", expected)
     }
 
     @Test
@@ -121,7 +313,7 @@ class SurveyTranslationManagerTest {
             body = "Cached Title",
             choices = emptyList()
         )
-        translationCache.saveTranslation("survey1", -1, "es", cachedTranslation)
+        whenever(translationCache.getTranslations("survey1", "es")).thenReturn(mapOf(-1 to cachedTranslation))
 
         val survey = SurveyDocument(
             id = "survey1",
@@ -132,7 +324,7 @@ class SurveyTranslationManagerTest {
         )
 
         // Mock config to return null (failure)
-        whenever(configurationRepository.fetchConfiguration(any())).thenReturn(Result.success(null))
+        whenever(configurationRepository.fetchConfiguration(any<String>())).thenReturn(Result.success(null))
 
         val result = translationManager.translateSurvey(
             baseUrl = "http://example.com",
