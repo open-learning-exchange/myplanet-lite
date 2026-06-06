@@ -82,6 +82,49 @@ class DashboardSurveysRepositoryTest {
     }
 
     @Test
+    fun fetchPublicSurvey_success() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setResponseCode(200).setBody(
+                """
+                {
+                  "survey": {
+                    "_id": "survey1",
+                    "name": "Public Survey",
+                    "questions": [
+                      {
+                        "body": "How are you?",
+                        "type": "input",
+                        "choices": []
+                      }
+                    ]
+                  },
+                  "team": {
+                    "_id": "team1",
+                    "name": "Public Team",
+                    "type": "team"
+                  }
+                }
+                """.trimIndent()
+            )
+        )
+
+        val result = repository.fetchPublicSurvey(
+            baseUrl = mockWebServer.url("/").toString(),
+            teamId = "team1",
+            surveyId = "survey1",
+        )
+
+        assertTrue(result.isSuccess)
+        assertEquals("survey1", result.getOrNull()?.survey?.id)
+        assertEquals("Public Survey", result.getOrNull()?.survey?.name)
+        assertEquals("Public Team", result.getOrNull()?.team?.name)
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("/api/public/surveys/team1/survey1", request.path)
+        assertEquals("GET", request.method)
+    }
+
+    @Test
     fun fetchTeamSurveys_parsesMixedSurveyFieldTypes() = runTest {
         val jsonResponse = """
             {
