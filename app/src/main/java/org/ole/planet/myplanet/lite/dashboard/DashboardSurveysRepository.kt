@@ -23,6 +23,7 @@ import kotlinx.coroutines.withContext
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.Credentials
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -44,6 +45,8 @@ class DashboardSurveysRepository(
     private val findResponseAdapter = moshi.adapter(SurveysFindResponse::class.java)
     private val completionsRequestAdapter = moshi.adapter(SurveyCompletionsRequest::class.java)
     private val completionsResponseAdapter = moshi.adapter(SurveyCompletionsResponse::class.java)
+    private val surveyDocumentAdapter = moshi.adapter(SurveyDocument::class.java)
+    private val publicSurveyResponseAdapter = moshi.adapter(PublicSurveyResponse::class.java)
 
     suspend fun fetchTeamSurveys(
         baseUrl: String,
@@ -87,6 +90,89 @@ class DashboardSurveysRepository(
         }
     }
 
+    suspend fun fetchSurveyById(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        surveyId: String,
+    ): Result<SurveyDocument> {
+        return withContext(dispatcher) {
+            runCatching {
+                val normalizedBase = baseUrl.trim().trimEnd('/')
+                if (normalizedBase.isEmpty()) {
+                    throw IOException("Missing server base URL")
+                }
+                if (surveyId.isBlank()) {
+                    throw IOException("Missing survey id")
+                }
+                val base = normalizedBase.toHttpUrlOrNull()
+                    ?: throw IOException("Invalid server base URL")
+                val endpoint = base.newBuilder()
+                    .addPathSegment("db")
+                    .addPathSegment("exams")
+                    .addPathSegment(surveyId)
+                    .build()
+                val requestBuilder = Request.Builder().url(endpoint)
+                credentials?.let { creds ->
+                    requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
+                }
+                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                    requestBuilder.addHeader("Cookie", cookie)
+                }
+                client.newCall(requestBuilder.build()).await().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}")
+                    }
+                    val body = response.body.string()
+                    surveyDocumentAdapter.fromJson(body)
+                        ?: throw IOException("Invalid survey response")
+                }
+            }
+        }
+    }
+
+    suspend fun fetchPublicSurvey(
+        baseUrl: String,
+        teamId: String,
+        surveyId: String,
+    ): Result<PublicSurveyResponse> {
+        return withContext(dispatcher) {
+            runCatching {
+                val normalizedBase = baseUrl.trim().trimEnd('/')
+                if (normalizedBase.isEmpty()) {
+                    throw IOException("Missing server base URL")
+                }
+                if (teamId.isBlank()) {
+                    throw IOException("Missing team id")
+                }
+                if (surveyId.isBlank()) {
+                    throw IOException("Missing survey id")
+                }
+                val base = normalizedBase.toHttpUrlOrNull()
+                    ?: throw IOException("Invalid server base URL")
+                val endpoint = base.newBuilder()
+                    .addPathSegment("api")
+                    .addPathSegment("public")
+                    .addPathSegment("surveys")
+                    .addPathSegment(teamId)
+                    .addPathSegment(surveyId)
+                    .build()
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .get()
+                    .build()
+                client.newCall(request).await().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}")
+                    }
+                    val body = response.body.string()
+                    publicSurveyResponseAdapter.fromJson(body)
+                        ?: throw IOException("Invalid public survey response")
+                }
+            }
+        }
+    }
+
     @JsonClass(generateAdapter = true)
     data class SurveysFindRequest(
         @param:Json(name = "selector") val selector: SurveySelector,
@@ -117,6 +203,19 @@ class DashboardSurveysRepository(
         @param:Json(name = "questions") val questions: List<SurveyQuestion>? = null,
         @param:Json(name = "totalMarks") @param:FlexibleInt val totalMarks: Int? = null,
     ) : java.io.Serializable
+
+    @JsonClass(generateAdapter = true)
+    data class PublicSurveyResponse(
+        @param:Json(name = "survey") val survey: SurveyDocument,
+        @param:Json(name = "team") val team: PublicSurveyTeam? = null,
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class PublicSurveyTeam(
+        @param:Json(name = "_id") val id: String? = null,
+        @param:Json(name = "name") val name: String? = null,
+        @param:Json(name = "type") val type: String? = null,
+    )
 
     @JsonClass(generateAdapter = true)
     data class SurveyQuestion(
@@ -155,9 +254,16 @@ class DashboardSurveysRepository(
 
                 val counts = mutableMapOf<String, Int>()
                 val parentMatches = ArrayList<Map<String, Any>>(surveyIds.size * 2)
+                val parentIdKey = "parentId"
+                val regexKey = "\$regex"
                 for (surveyId in surveyIds) {
-                    parentMatches.add(mapOf("parentId" to surveyId))
-                    parentMatches.add(mapOf("parentId" to mapOf($$"$regex" to "^${surveyId}@")))
+                    parentMatches.add(java.util.Collections.singletonMap(parentIdKey, surveyId))
+                    parentMatches.add(
+                        java.util.Collections.singletonMap(
+                            parentIdKey,
+                            java.util.Collections.singletonMap(regexKey, "^${surveyId}@")
+                        )
+                    )
                 }
 
                 val selector = SurveyCompletionsSelector(
