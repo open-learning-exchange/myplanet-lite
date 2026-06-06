@@ -73,6 +73,27 @@ class DashboardSurveySubmissionsRepositoryTest {
     }
 
     @Test
+    fun `submitPublicSurvey success posts answers to public endpoint`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setResponseCode(201).setBody("""{"ok":true}""")
+        )
+
+        val result = repository.submitPublicSurvey(
+            baseUrl = mockWebServer.url("/").toString(),
+            teamId = "team1",
+            surveyId = "survey1",
+            answers = listOf("Yes", 7, null),
+        )
+
+        assertTrue(result.isSuccess)
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("/api/public/surveys/team1/survey1/submissions", request.path)
+        assertEquals("POST", request.method)
+        assertEquals("""{"answers":["Yes",7,null]}""", request.body.readUtf8())
+    }
+
+    @Test
     fun `submitSurvey missing base url returns failure`() = runTest {
         val submission = createSubmission()
         val invalidUrls = listOf("", "   ", "/", " / ")
