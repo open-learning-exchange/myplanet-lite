@@ -149,7 +149,15 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
     private fun setupRecyclerView() {
         markwon = Markwon.builder(requireContext()).build()
-        adapter = DashboardNewsAdapter(
+        adapter = createDashboardNewsAdapter()
+
+        recyclerView.layoutManager = LinearLayoutManager(requireContext())
+        recyclerView.adapter = adapter
+        setupScrollListener()
+    }
+
+    private fun createDashboardNewsAdapter(): DashboardNewsAdapter {
+        return DashboardNewsAdapter(
             markwon,
             avatarBinder = { imageView, username, hasAvatar ->
                 avatarLoader?.bind(imageView, username, hasAvatar)
@@ -182,9 +190,9 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 openTeamMemberProfile(item)
             }
         )
+    }
 
-        recyclerView.layoutManager = LinearLayoutManager(requireContext())
-        recyclerView.adapter = adapter
+    private fun setupScrollListener() {
         recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
             override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
                 super.onScrolled(recyclerView, dx, dy)
