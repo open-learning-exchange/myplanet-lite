@@ -861,42 +861,55 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             emptyList()
         }
         return when (question.type) {
-            "input", "textarea" -> {
-                val correctText = normalizedCorrect.firstOrNull()?.trim().orEmpty()
-                val response = (answer as? SurveyAnswer.Text)?.value?.trim().orEmpty()
-                if (correctText.isBlank()) {
-                    response.isNotBlank()
-                } else {
-                    response.equals(correctText, ignoreCase = true)
-                }
-            }
-            "select" -> {
-                val selectedChoice = (answer as? SurveyAnswer.SingleChoice)?.choice
-                if (correctIds.isNotEmpty()) {
-                    val selectedId = normalizeSelectedId(selectedChoice?.id)
-                    val resolvedId = selectedId?.takeIf { it.isNotBlank() }
-                        ?: selectedChoice?.text?.trim()?.let { choiceTextToId[it] }
-                    resolvedId != null && correctIds.contains(resolvedId)
-                } else {
-                    val selectedText = selectedChoice?.text?.trim()
-                    selectedText != null && correctTexts.any { it.equals(selectedText, ignoreCase = true) }
-                }
-            }
-            "selectMultiple" -> {
-                val selectedIds = (answer as? SurveyAnswer.MultipleChoice)?.choices
-                    ?.filter { !it.isOther }
-                    ?.mapNotNull { normalizeSelectedId(it.id) }
-                    ?.filter { it.isNotBlank() }
-                    .orEmpty()
-                selectedIds.size == correctIds.size && selectedIds.toSet() == correctIds.toSet()
-            }
-            "ratingScale" -> {
-                val correctValue = normalizedCorrect.firstOrNull()?.trim().orEmpty()
-                val selectedScore = (answer as? SurveyAnswer.Rating)?.score?.toString()
-                correctValue.isNotBlank() && selectedScore == correctValue
-            }
+            "input", "textarea" -> isTextInputCorrect(normalizedCorrect, answer)
+            "select" -> isSelectInputCorrect(correctIds, correctTexts, choiceTextToId, answer)
+            "selectMultiple" -> isSelectMultipleInputCorrect(correctIds, answer)
+            "ratingScale" -> isRatingScaleInputCorrect(normalizedCorrect, answer)
             else -> false
         }
+    }
+
+    private fun isTextInputCorrect(normalizedCorrect: List<String>, answer: SurveyAnswer?): Boolean {
+        val correctText = normalizedCorrect.firstOrNull()?.trim().orEmpty()
+        val response = (answer as? SurveyAnswer.Text)?.value?.trim().orEmpty()
+        return if (correctText.isBlank()) {
+            response.isNotBlank()
+        } else {
+            response.equals(correctText, ignoreCase = true)
+        }
+    }
+
+    private fun isSelectInputCorrect(
+        correctIds: List<String>,
+        correctTexts: List<String>,
+        choiceTextToId: Map<String, String>,
+        answer: SurveyAnswer?
+    ): Boolean {
+        val selectedChoice = (answer as? SurveyAnswer.SingleChoice)?.choice
+        return if (correctIds.isNotEmpty()) {
+            val selectedId = normalizeSelectedId(selectedChoice?.id)
+            val resolvedId = selectedId?.takeIf { it.isNotBlank() }
+                ?: selectedChoice?.text?.trim()?.let { choiceTextToId[it] }
+            resolvedId != null && correctIds.contains(resolvedId)
+        } else {
+            val selectedText = selectedChoice?.text?.trim()
+            selectedText != null && correctTexts.any { it.equals(selectedText, ignoreCase = true) }
+        }
+    }
+
+    private fun isSelectMultipleInputCorrect(correctIds: List<String>, answer: SurveyAnswer?): Boolean {
+        val selectedIds = (answer as? SurveyAnswer.MultipleChoice)?.choices
+            ?.filter { !it.isOther }
+            ?.mapNotNull { normalizeSelectedId(it.id) }
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        return selectedIds.size == correctIds.size && selectedIds.toSet() == correctIds.toSet()
+    }
+
+    private fun isRatingScaleInputCorrect(normalizedCorrect: List<String>, answer: SurveyAnswer?): Boolean {
+        val correctValue = normalizedCorrect.firstOrNull()?.trim().orEmpty()
+        val selectedScore = (answer as? SurveyAnswer.Rating)?.score?.toString()
+        return correctValue.isNotBlank() && selectedScore == correctValue
     }
 
     private fun normalizeCorrectChoice(correctChoice: Any?): List<String> {
