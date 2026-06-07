@@ -1691,52 +1691,20 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     private fun renderRatingQuestion(question: SurveyQuestion, index: Int): Pair<View, () -> Boolean> {
         val context = requireContext()
         val scaleMax = question.scaleMax?.takeIf { it > 0 } ?: DEFAULT_RATING_SCALE_MAX
-        val columnCount = ratingScaleColumnCount(scaleMax)
-        val gridLayout = GridLayout(context).apply {
-            rowCount = ((scaleMax + columnCount - 1) / columnCount).coerceAtLeast(1)
-            this.columnCount = columnCount
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
+        val gridLayout = createRatingGridLayout(context, scaleMax)
 
-        val basePalette = listOf(
-            "#F3C4E3".toColorInt(),
-            "#F6CEDE".toColorInt(),
-            "#F8D7DA".toColorInt(),
-            "#FAE0D6".toColorInt(),
-            "#FDEAD1".toColorInt(),
-            "#FFF3CD".toColorInt(),
-            "#F1F1D1".toColorInt(),
-            "#E2EFD6".toColorInt(),
-            "#D4EDDA".toColorInt(),
-        )
-        val selectedColor = ContextCompat.getColor(context, R.color.survey_rating_selected_background)
-        val selectedTextColor = ContextCompat.getColor(context, R.color.survey_rating_selected_text)
-        val defaultTextColor = ContextCompat.getColor(context, R.color.survey_rating_default_text)
-        val horizontalMargin = resources.getDimensionPixelSize(R.dimen.padding_small)
-        val bottomMargin = resources.getDimensionPixelSize(R.dimen.padding_small)
+        val styles = getRatingStyles(context)
         val buttons = mutableListOf<MaterialButton>()
         var selectedValue: Int? = (answers[index] as? SurveyAnswer.Rating)?.score
 
         fun applySelection() {
             buttons.forEachIndexed { idx, button ->
-                val value = idx + 1
-                val isSelected = selectedValue == value
-                val backgroundColor = if (isSelected) {
-                    selectedColor
-                } else {
-                    ratingBackgroundColor(value, scaleMax, basePalette)
-                }
-                button.backgroundTintList = ColorStateList.valueOf(backgroundColor)
-                button.setTextColor(if (isSelected) selectedTextColor else defaultTextColor)
-                button.strokeWidth = 0
+                updateRatingButtonSelection(button, idx + 1, selectedValue == idx + 1, scaleMax, styles)
             }
         }
 
         (1..scaleMax).forEach { value ->
-            val button = createRatingButton(context, value, horizontalMargin, bottomMargin) { selected ->
+            val button = createRatingButton(context, value, styles.horizontalMargin, styles.bottomMargin) { selected ->
                 selectedValue = selected
                 applySelection()
             }
@@ -1746,8 +1714,71 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
         applySelection()
 
-        val collector = {
-            val score = selectedValue
+        return gridLayout to createRatingCollector(index) { selectedValue }
+    }
+
+    private fun createRatingGridLayout(context: android.content.Context, scaleMax: Int): GridLayout {
+        val columnCount = ratingScaleColumnCount(scaleMax)
+        return GridLayout(context).apply {
+            rowCount = ((scaleMax + columnCount - 1) / columnCount).coerceAtLeast(1)
+            this.columnCount = columnCount
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+    }
+
+    private data class RatingStyles(
+        val basePalette: List<Int>,
+        val selectedColor: Int,
+        val selectedTextColor: Int,
+        val defaultTextColor: Int,
+        val horizontalMargin: Int,
+        val bottomMargin: Int
+    )
+
+    private fun getRatingStyles(context: android.content.Context): RatingStyles {
+        return RatingStyles(
+            basePalette = listOf(
+                "#F3C4E3".toColorInt(),
+                "#F6CEDE".toColorInt(),
+                "#F8D7DA".toColorInt(),
+                "#FAE0D6".toColorInt(),
+                "#FDEAD1".toColorInt(),
+                "#FFF3CD".toColorInt(),
+                "#F1F1D1".toColorInt(),
+                "#E2EFD6".toColorInt(),
+                "#D4EDDA".toColorInt(),
+            ),
+            selectedColor = ContextCompat.getColor(context, R.color.survey_rating_selected_background),
+            selectedTextColor = ContextCompat.getColor(context, R.color.survey_rating_selected_text),
+            defaultTextColor = ContextCompat.getColor(context, R.color.survey_rating_default_text),
+            horizontalMargin = resources.getDimensionPixelSize(R.dimen.padding_small),
+            bottomMargin = resources.getDimensionPixelSize(R.dimen.padding_small)
+        )
+    }
+
+    private fun updateRatingButtonSelection(
+        button: MaterialButton,
+        value: Int,
+        isSelected: Boolean,
+        scaleMax: Int,
+        styles: RatingStyles
+    ) {
+        val backgroundColor = if (isSelected) {
+            styles.selectedColor
+        } else {
+            ratingBackgroundColor(value, scaleMax, styles.basePalette)
+        }
+        button.backgroundTintList = ColorStateList.valueOf(backgroundColor)
+        button.setTextColor(if (isSelected) styles.selectedTextColor else styles.defaultTextColor)
+        button.strokeWidth = 0
+    }
+
+    private fun createRatingCollector(index: Int, getSelectedValue: () -> Int?): () -> Boolean {
+        return {
+            val score = getSelectedValue()
             if (score == null) {
                 showValidationMessage(R.string.dashboard_survey_wizard_rating_required)
                 false
@@ -1756,7 +1787,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 true
             }
         }
-        return gridLayout to collector
     }
 
     private fun ratingScaleColumnCount(scaleMax: Int): Int {
