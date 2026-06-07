@@ -712,56 +712,85 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         val markdownImageSources = extractMarkdownImageSources(course)
 
         val job = viewLifecycleOwner.lifecycleScope.launch {
-            val totalInventoryItems = resources.size + markdownImageSources.size
-            adapter.updateDownloadProgress(course.id, 0, totalInventoryItems)
-            val estimatedSize = estimateResourcesSize(base, creds, resources) +
-                estimateMarkdownImagesSize(base, creds, markdownImageSources)
-            val available = OfflineCourseStorage.availableStorageBytes(requireContext())
-            val required = estimatedSize + MIN_DOWNLOAD_BUFFER_BYTES
-            if (available <= required) {
-                adapter.updateDownloadProgress(course.id, null, null)
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.dashboard_course_insufficient_storage),
-                    Toast.LENGTH_SHORT
-                ).show()
-                activeDownloads.remove(course.id)
-                return@launch
-            }
-
-            val result = withContext(Dispatchers.IO) {
-                downloadCourseResources(
-                    base,
-                    creds,
-                    course,
-                    resources,
-                    markdownImageSources
-                ) { percent ->
-                    viewLifecycleOwner.lifecycleScope.launch {
-                        adapter.updateDownloadProgress(course.id, percent.first, percent.second)
-                    }
-                }
-            }
-            if (result) {
-                val source = if (tabPosition == 2) {
-                    OfflineCourseStorage.DownloadSource.TEAM_COURSES
-                } else {
-                    OfflineCourseStorage.DownloadSource.MY_COURSES
-                }
-                OfflineCourseStorage.saveCourseManifest(requireContext(), course, source)
-                adapter.updateDownloadProgress(course.id, null, null)
-                adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
-            } else {
-                adapter.updateDownloadProgress(course.id, null, null)
-                Toast.makeText(
-                    requireContext(),
-                    getString(R.string.dashboard_courses_loading_error),
-                    Toast.LENGTH_SHORT
-                ).show()
-            }
-            activeDownloads.remove(course.id)
+            performCourseDownload(course, base, creds, resources, markdownImageSources)
         }
         activeDownloads[course.id] = job
+    }
+
+    private suspend fun performCourseDownload(
+        course: CourseItem,
+        base: String,
+        creds: StoredCredentials,
+        resources: List<CourseItem.LessonResource>,
+        markdownImageSources: List<String>
+    ) {
+        val totalInventoryItems = resources.size + markdownImageSources.size
+        adapter.updateDownloadProgress(course.id, 0, totalInventoryItems)
+
+        if (!hasSufficientStorage(course, base, creds, resources, markdownImageSources)) {
+            activeDownloads.remove(course.id)
+            return
+        }
+
+        val result = withContext(Dispatchers.IO) {
+            downloadCourseResources(
+                base,
+                creds,
+                course,
+                resources,
+                markdownImageSources
+            ) { percent ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    adapter.updateDownloadProgress(course.id, percent.first, percent.second)
+                }
+            }
+        }
+
+        handleDownloadResult(course, result)
+        activeDownloads.remove(course.id)
+    }
+
+    private suspend fun hasSufficientStorage(
+        course: CourseItem,
+        base: String,
+        creds: StoredCredentials,
+        resources: List<CourseItem.LessonResource>,
+        markdownImageSources: List<String>
+    ): Boolean {
+        val estimatedSize = estimateResourcesSize(base, creds, resources) +
+            estimateMarkdownImagesSize(base, creds, markdownImageSources)
+        val available = OfflineCourseStorage.availableStorageBytes(requireContext())
+        val required = estimatedSize + MIN_DOWNLOAD_BUFFER_BYTES
+        if (available <= required) {
+            adapter.updateDownloadProgress(course.id, null, null)
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.dashboard_course_insufficient_storage),
+                Toast.LENGTH_SHORT
+            ).show()
+            return false
+        }
+        return true
+    }
+
+    private fun handleDownloadResult(course: CourseItem, result: Boolean) {
+        if (result) {
+            val source = if (tabPosition == 2) {
+                OfflineCourseStorage.DownloadSource.TEAM_COURSES
+            } else {
+                OfflineCourseStorage.DownloadSource.MY_COURSES
+            }
+            OfflineCourseStorage.saveCourseManifest(requireContext(), course, source)
+            adapter.updateDownloadProgress(course.id, null, null)
+            adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
+        } else {
+            adapter.updateDownloadProgress(course.id, null, null)
+            Toast.makeText(
+                requireContext(),
+                getString(R.string.dashboard_courses_loading_error),
+                Toast.LENGTH_SHORT
+            ).show()
+        }
     }
 
     private fun confirmDeleteDownloadedCourse(course: CourseItem) {
