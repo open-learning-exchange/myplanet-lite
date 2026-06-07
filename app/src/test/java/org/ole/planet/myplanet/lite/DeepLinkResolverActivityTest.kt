@@ -17,8 +17,8 @@ import org.robolectric.annotation.Config
 class DeepLinkResolverActivityTest {
 
     @Test
-    fun `test valid https deep link starts SplashScreen`() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://midominio.com/post/123"))
+    fun `test valid post deep link starts SplashScreen`() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("myplanetlite://post/123"))
 
         val controller = Robolectric.buildActivity(DeepLinkResolverActivity::class.java, intent)
         controller.create()
@@ -32,7 +32,7 @@ class DeepLinkResolverActivityTest {
 
     @Test
     fun `test invalid deep link scheme finishes activity without starting next`() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("http://midominio.com/post/123"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("http://example.com/post/123"))
 
         val controller = Robolectric.buildActivity(DeepLinkResolverActivity::class.java, intent)
         controller.create()
