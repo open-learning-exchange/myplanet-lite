@@ -201,6 +201,44 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
+    fun deleteEntries_removesMultipleEntries() = runTest {
+        val submission1 = createSubmission()
+        val submission2 = createSubmission()
+        val submission3 = createSubmission()
+
+        store.saveSubmission(submission1, "survey1", "Test Survey 1", "team1", "Team A")
+        store.saveSubmission(submission2, "survey2", "Test Survey 2", "team1", "Team A")
+        store.saveSubmission(submission3, "survey3", "Test Survey 3", "team1", "Team A")
+
+        val pending = store.getPendingForTeam("team1")
+        assertEquals(3, pending.size)
+
+        val idsToDelete = pending.take(2).map { it.id }
+        val deleted = store.deleteEntries(idsToDelete)
+        assertTrue(deleted)
+
+        val pendingAfter = store.getPendingForTeam("team1")
+        assertEquals(1, pendingAfter.size)
+        assertEquals(pending.last().surveyId, pendingAfter[0].surveyId)
+    }
+
+    @Test
+    fun deleteEntries_benchmark() = runTest {
+        val submission = createSubmission()
+        for (i in 1..2000) {
+            store.saveSubmission(submission, "survey$i", "Test Survey", "team1", "Team A")
+        }
+        val pending = store.getPendingForTeam("team1")
+        assertEquals(2000, pending.size)
+        val idsToDelete = pending.map { it.id }
+
+        val time = kotlin.system.measureTimeMillis {
+            store.deleteEntries(idsToDelete)
+        }
+        println("BENCHMARK: deleteEntries took $time ms for 2000 entries")
+    }
+
+    @Test
     fun saveSubmission_handlesSerializationFailure() = runTest {
         // Just verify basic saving again, serialization failures would require a custom moshi or interceptor.
         val submission = createSubmission()

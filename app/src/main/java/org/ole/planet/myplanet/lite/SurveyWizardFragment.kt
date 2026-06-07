@@ -85,6 +85,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     private var teamId: String? = null
     private var teamName: String? = null
     private var courseId: String? = null
+    private var baseUrlOverride: String? = null
+    private var includeUserContext: Boolean = true
     private var steps: List<WizardStep> = emptyList()
     private var currentIndex = 0
     private val answers: MutableMap<Int, SurveyAnswer> = mutableMapOf()
@@ -132,6 +134,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         teamName = arguments?.getString(ARG_TEAM_NAME)
         courseId = arguments?.getString(ARG_COURSE_ID)
         isExam = arguments?.getBoolean(ARG_IS_EXAM) == true
+        baseUrlOverride = arguments?.getString(ARG_BASE_URL)?.trim()?.trimEnd('/')?.takeIf { it.isNotBlank() }
+        includeUserContext = arguments?.getBoolean(ARG_INCLUDE_USER_CONTEXT, true) != false
         questions = document?.questions.orEmpty()
         applyProfileDefaultsForCourseContent()
         birthDateSelection = respondent.birthDate?.let { parseBirthDateIso(it) } ?: birthDateSelection
@@ -152,7 +156,9 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         lifecycleScope.launch {
             initializeSession()
             attemptSurveyTranslation()
-            flushPendingSurveySubmissions()
+            if (baseUrlOverride == null) {
+                flushPendingSurveySubmissions()
+            }
         }
 
         val survey = document
@@ -235,17 +241,23 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     override fun onStart() {
         super.onStart()
         viewLifecycleOwner.lifecycleScope.launch {
-            flushPendingSurveySubmissions()
+            if (baseUrlOverride == null) {
+                flushPendingSurveySubmissions()
+            }
         }
     }
 
     private suspend fun initializeSession() {
         val context = requireContext().applicationContext
-        baseUrl = DashboardServerPreferences.getServerBaseUrl(context)
-        credentials = ProfileCredentialsStore.getStoredCredentials(context)
-        serverCode = DashboardServerPreferences.getServerCode(context)
-        parentCode = DashboardServerPreferences.getServerParentCode(context)
-        baseUrl?.let { base ->
+        baseUrl = baseUrlOverride ?: DashboardServerPreferences.getServerBaseUrl(context)
+        credentials = if (includeUserContext) {
+            ProfileCredentialsStore.getStoredCredentials(context)
+        } else {
+            null
+        }
+        serverCode = if (includeUserContext) DashboardServerPreferences.getServerCode(context) else null
+        parentCode = if (includeUserContext) DashboardServerPreferences.getServerParentCode(context) else null
+        baseUrl?.takeIf { includeUserContext }?.let { base ->
             val authService = AuthDependencies.provideAuthService(context, base)
             sessionCookie = authService.getStoredToken()
         }
@@ -537,9 +549,19 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             return
         }
 
-        val profile = UserProfileDatabase.getInstance(requireContext()).getProfile()
-        val username = profile?.username ?: credentials?.username
-        if (username.isNullOrBlank()) {
+        if (baseUrlOverride != null && !includeUserContext) {
+            submitPublicSurvey(base, survey, answersPayload)
+            return
+        }
+
+        val profile = if (includeUserContext) {
+            UserProfileDatabase.getInstance(requireContext()).getProfile()
+        } else {
+            null
+        }
+        val username = (profile?.username ?: credentials?.username)
+            ?.takeIf { includeUserContext }
+        if (username.isNullOrBlank() && isExam) {
             showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
             return
         }
@@ -548,6 +570,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             .trim()
             .takeIf { it.isNotBlank() }
             ?: username
+            ?: ANONYMOUS_RESPONDENT_NAME
 
         val parentId = buildSubmissionParentId(survey)
         if (parentId == null) {
@@ -566,12 +589,48 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         }
     }
 
+    private fun submitPublicSurvey(
+        base: String,
+        survey: SurveyDocument,
+        answersPayload: List<SubmissionAnswer>,
+    ) {
+        val publicTeamId = teamId ?: survey.teamId
+        val publicSurveyId = survey.id
+        if (publicTeamId.isNullOrBlank() || publicSurveyId.isNullOrBlank()) {
+            showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
+            return
+        }
+        viewLifecycleOwner.lifecycleScope.launch {
+            setSubmitting(true)
+            val result = submissionRepository.submitPublicSurvey(
+                baseUrl = base,
+                teamId = publicTeamId,
+                surveyId = publicSurveyId,
+                answers = answersPayload.map { it.value },
+            )
+            setSubmitting(false)
+            if (result.isSuccess) {
+                Toast.makeText(
+                    requireContext(),
+                    getString(R.string.dashboard_survey_wizard_completed),
+                    Toast.LENGTH_SHORT,
+                ).show()
+                finishWithResult()
+            } else {
+                showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
+            }
+        }
+    }
+
     private suspend fun fetchExistingSubmissionOrNull(
         base: String,
-        username: String,
+        username: String?,
         parentId: String,
         survey: SurveyDocument
     ): DashboardSurveySubmissionsRepository.SubmissionLookup? {
+        if (username.isNullOrBlank()) {
+            return null
+        }
         return courseId?.let {
             submissionRepository.fetchExistingSubmission(
                 base,
@@ -589,7 +648,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     private fun buildSurveySubmission(
         survey: SurveyDocument,
         existingSubmission: DashboardSurveySubmissionsRepository.SubmissionLookup?,
-        username: String,
+        username: String?,
         fullName: String,
         parentId: String,
         answersPayload: List<SubmissionAnswer>,
@@ -597,7 +656,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         profile: UserProfile?
     ): SurveySubmission {
         val rawProfile = parseProfileRawDocument(profile?.rawDocument)
-        val fallbackUserId = "org.couchdb.user:$username"
+        val fallbackUserId = username?.let { "org.couchdb.user:$it" }
         val resolvedUserId = rawProfile?.optString("_id").takeIf { !it.isNullOrBlank() } ?: fallbackUserId
         val resolvedUserName = rawProfile?.optString("name").takeIf { !it.isNullOrBlank() }
             ?: listOfNotNull(respondent.firstName, respondent.middleName, respondent.lastName)
@@ -676,11 +735,15 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         base: String,
         submission: SurveySubmission,
         survey: SurveyDocument,
-        username: String
+        username: String?
     ) {
         val isOnline = NetworkUtils.isDeviceOnline(requireContext())
         if (!isOnline) {
             setSubmitting(false)
+            if (baseUrlOverride != null) {
+                showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
+                return
+            }
             queueSubmissionForOutbox(submission, survey)
             return
         }
@@ -705,6 +768,10 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             ).show()
             finishWithResult()
         } else {
+            if (baseUrlOverride != null) {
+                showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
+                return
+            }
             queueSubmissionForOutbox(submission, survey)
         }
     }
@@ -794,42 +861,55 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             emptyList()
         }
         return when (question.type) {
-            "input", "textarea" -> {
-                val correctText = normalizedCorrect.firstOrNull()?.trim().orEmpty()
-                val response = (answer as? SurveyAnswer.Text)?.value?.trim().orEmpty()
-                if (correctText.isBlank()) {
-                    response.isNotBlank()
-                } else {
-                    response.equals(correctText, ignoreCase = true)
-                }
-            }
-            "select" -> {
-                val selectedChoice = (answer as? SurveyAnswer.SingleChoice)?.choice
-                if (correctIds.isNotEmpty()) {
-                    val selectedId = normalizeSelectedId(selectedChoice?.id)
-                    val resolvedId = selectedId?.takeIf { it.isNotBlank() }
-                        ?: selectedChoice?.text?.trim()?.let { choiceTextToId[it] }
-                    resolvedId != null && correctIds.contains(resolvedId)
-                } else {
-                    val selectedText = selectedChoice?.text?.trim()
-                    selectedText != null && correctTexts.any { it.equals(selectedText, ignoreCase = true) }
-                }
-            }
-            "selectMultiple" -> {
-                val selectedIds = (answer as? SurveyAnswer.MultipleChoice)?.choices
-                    ?.filter { !it.isOther }
-                    ?.mapNotNull { normalizeSelectedId(it.id) }
-                    ?.filter { it.isNotBlank() }
-                    .orEmpty()
-                selectedIds.size == correctIds.size && selectedIds.toSet() == correctIds.toSet()
-            }
-            "ratingScale" -> {
-                val correctValue = normalizedCorrect.firstOrNull()?.trim().orEmpty()
-                val selectedScore = (answer as? SurveyAnswer.Rating)?.score?.toString()
-                correctValue.isNotBlank() && selectedScore == correctValue
-            }
+            "input", "textarea" -> isTextInputCorrect(normalizedCorrect, answer)
+            "select" -> isSelectInputCorrect(correctIds, correctTexts, choiceTextToId, answer)
+            "selectMultiple" -> isSelectMultipleInputCorrect(correctIds, answer)
+            "ratingScale" -> isRatingScaleInputCorrect(normalizedCorrect, answer)
             else -> false
         }
+    }
+
+    private fun isTextInputCorrect(normalizedCorrect: List<String>, answer: SurveyAnswer?): Boolean {
+        val correctText = normalizedCorrect.firstOrNull()?.trim().orEmpty()
+        val response = (answer as? SurveyAnswer.Text)?.value?.trim().orEmpty()
+        return if (correctText.isBlank()) {
+            response.isNotBlank()
+        } else {
+            response.equals(correctText, ignoreCase = true)
+        }
+    }
+
+    private fun isSelectInputCorrect(
+        correctIds: List<String>,
+        correctTexts: List<String>,
+        choiceTextToId: Map<String, String>,
+        answer: SurveyAnswer?
+    ): Boolean {
+        val selectedChoice = (answer as? SurveyAnswer.SingleChoice)?.choice
+        return if (correctIds.isNotEmpty()) {
+            val selectedId = normalizeSelectedId(selectedChoice?.id)
+            val resolvedId = selectedId?.takeIf { it.isNotBlank() }
+                ?: selectedChoice?.text?.trim()?.let { choiceTextToId[it] }
+            resolvedId != null && correctIds.contains(resolvedId)
+        } else {
+            val selectedText = selectedChoice?.text?.trim()
+            selectedText != null && correctTexts.any { it.equals(selectedText, ignoreCase = true) }
+        }
+    }
+
+    private fun isSelectMultipleInputCorrect(correctIds: List<String>, answer: SurveyAnswer?): Boolean {
+        val selectedIds = (answer as? SurveyAnswer.MultipleChoice)?.choices
+            ?.filter { !it.isOther }
+            ?.mapNotNull { normalizeSelectedId(it.id) }
+            ?.filter { it.isNotBlank() }
+            .orEmpty()
+        return selectedIds.size == correctIds.size && selectedIds.toSet() == correctIds.toSet()
+    }
+
+    private fun isRatingScaleInputCorrect(normalizedCorrect: List<String>, answer: SurveyAnswer?): Boolean {
+        val correctValue = normalizedCorrect.firstOrNull()?.trim().orEmpty()
+        val selectedScore = (answer as? SurveyAnswer.Rating)?.score?.toString()
+        return correctValue.isNotBlank() && selectedScore == correctValue
     }
 
     private fun normalizeCorrectChoice(correctChoice: Any?): List<String> {
@@ -1611,52 +1691,20 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     private fun renderRatingQuestion(question: SurveyQuestion, index: Int): Pair<View, () -> Boolean> {
         val context = requireContext()
         val scaleMax = question.scaleMax?.takeIf { it > 0 } ?: DEFAULT_RATING_SCALE_MAX
-        val columnCount = ratingScaleColumnCount(scaleMax)
-        val gridLayout = GridLayout(context).apply {
-            rowCount = ((scaleMax + columnCount - 1) / columnCount).coerceAtLeast(1)
-            this.columnCount = columnCount
-            layoutParams = LinearLayout.LayoutParams(
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                ViewGroup.LayoutParams.WRAP_CONTENT,
-            )
-        }
+        val gridLayout = createRatingGridLayout(context, scaleMax)
 
-        val basePalette = listOf(
-            "#F3C4E3".toColorInt(),
-            "#F6CEDE".toColorInt(),
-            "#F8D7DA".toColorInt(),
-            "#FAE0D6".toColorInt(),
-            "#FDEAD1".toColorInt(),
-            "#FFF3CD".toColorInt(),
-            "#F1F1D1".toColorInt(),
-            "#E2EFD6".toColorInt(),
-            "#D4EDDA".toColorInt(),
-        )
-        val selectedColor = ContextCompat.getColor(context, R.color.survey_rating_selected_background)
-        val selectedTextColor = ContextCompat.getColor(context, R.color.survey_rating_selected_text)
-        val defaultTextColor = ContextCompat.getColor(context, R.color.survey_rating_default_text)
-        val horizontalMargin = resources.getDimensionPixelSize(R.dimen.padding_small)
-        val bottomMargin = resources.getDimensionPixelSize(R.dimen.padding_small)
+        val styles = getRatingStyles(context)
         val buttons = mutableListOf<MaterialButton>()
         var selectedValue: Int? = (answers[index] as? SurveyAnswer.Rating)?.score
 
         fun applySelection() {
             buttons.forEachIndexed { idx, button ->
-                val value = idx + 1
-                val isSelected = selectedValue == value
-                val backgroundColor = if (isSelected) {
-                    selectedColor
-                } else {
-                    ratingBackgroundColor(value, scaleMax, basePalette)
-                }
-                button.backgroundTintList = ColorStateList.valueOf(backgroundColor)
-                button.setTextColor(if (isSelected) selectedTextColor else defaultTextColor)
-                button.strokeWidth = 0
+                updateRatingButtonSelection(button, idx + 1, selectedValue == idx + 1, scaleMax, styles)
             }
         }
 
         (1..scaleMax).forEach { value ->
-            val button = createRatingButton(context, value, horizontalMargin, bottomMargin) { selected ->
+            val button = createRatingButton(context, value, styles.horizontalMargin, styles.bottomMargin) { selected ->
                 selectedValue = selected
                 applySelection()
             }
@@ -1666,8 +1714,71 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
         applySelection()
 
-        val collector = {
-            val score = selectedValue
+        return gridLayout to createRatingCollector(index) { selectedValue }
+    }
+
+    private fun createRatingGridLayout(context: android.content.Context, scaleMax: Int): GridLayout {
+        val columnCount = ratingScaleColumnCount(scaleMax)
+        return GridLayout(context).apply {
+            rowCount = ((scaleMax + columnCount - 1) / columnCount).coerceAtLeast(1)
+            this.columnCount = columnCount
+            layoutParams = LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT,
+            )
+        }
+    }
+
+    private data class RatingStyles(
+        val basePalette: List<Int>,
+        val selectedColor: Int,
+        val selectedTextColor: Int,
+        val defaultTextColor: Int,
+        val horizontalMargin: Int,
+        val bottomMargin: Int
+    )
+
+    private fun getRatingStyles(context: android.content.Context): RatingStyles {
+        return RatingStyles(
+            basePalette = listOf(
+                "#F3C4E3".toColorInt(),
+                "#F6CEDE".toColorInt(),
+                "#F8D7DA".toColorInt(),
+                "#FAE0D6".toColorInt(),
+                "#FDEAD1".toColorInt(),
+                "#FFF3CD".toColorInt(),
+                "#F1F1D1".toColorInt(),
+                "#E2EFD6".toColorInt(),
+                "#D4EDDA".toColorInt(),
+            ),
+            selectedColor = ContextCompat.getColor(context, R.color.survey_rating_selected_background),
+            selectedTextColor = ContextCompat.getColor(context, R.color.survey_rating_selected_text),
+            defaultTextColor = ContextCompat.getColor(context, R.color.survey_rating_default_text),
+            horizontalMargin = resources.getDimensionPixelSize(R.dimen.padding_small),
+            bottomMargin = resources.getDimensionPixelSize(R.dimen.padding_small)
+        )
+    }
+
+    private fun updateRatingButtonSelection(
+        button: MaterialButton,
+        value: Int,
+        isSelected: Boolean,
+        scaleMax: Int,
+        styles: RatingStyles
+    ) {
+        val backgroundColor = if (isSelected) {
+            styles.selectedColor
+        } else {
+            ratingBackgroundColor(value, scaleMax, styles.basePalette)
+        }
+        button.backgroundTintList = ColorStateList.valueOf(backgroundColor)
+        button.setTextColor(if (isSelected) styles.selectedTextColor else styles.defaultTextColor)
+        button.strokeWidth = 0
+    }
+
+    private fun createRatingCollector(index: Int, getSelectedValue: () -> Int?): () -> Boolean {
+        return {
+            val score = getSelectedValue()
             if (score == null) {
                 showValidationMessage(R.string.dashboard_survey_wizard_rating_required)
                 false
@@ -1676,7 +1787,6 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 true
             }
         }
-        return gridLayout to collector
     }
 
     private fun ratingScaleColumnCount(scaleMax: Int): Int {
@@ -1757,11 +1867,14 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         private const val ARG_TEAM_NAME = "arg_team_name"
         private const val ARG_COURSE_ID = "arg_course_id"
         private const val ARG_IS_EXAM = "arg_is_exam"
+        private const val ARG_BASE_URL = "arg_base_url"
+        private const val ARG_INCLUDE_USER_CONTEXT = "arg_include_user_context"
         private const val OTHER_CHOICE_TAG = "other_choice"
         private const val BIRTH_DATE_PICKER_TAG = "survey_birth_date_picker"
         private const val DEFAULT_RATING_SCALE_MAX = 9
         private const val DEFAULT_EXAM_PASSING_PERCENTAGE = 100
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
+        private const val ANONYMOUS_RESPONDENT_NAME = "Anonymous"
 
         fun newInstance(
             document: SurveyDocument,
@@ -1769,6 +1882,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             teamName: String?,
             courseId: String?,
             isExam: Boolean = false,
+            baseUrl: String? = null,
+            includeUserContext: Boolean = true,
         ): SurveyWizardFragment {
             return SurveyWizardFragment().apply {
                 arguments = Bundle().apply {
@@ -1777,6 +1892,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                     putString(ARG_TEAM_NAME, teamName)
                     putString(ARG_COURSE_ID, courseId)
                     putBoolean(ARG_IS_EXAM, isExam)
+                    putString(ARG_BASE_URL, baseUrl)
+                    putBoolean(ARG_INCLUDE_USER_CONTEXT, includeUserContext)
                 }
             }
         }
