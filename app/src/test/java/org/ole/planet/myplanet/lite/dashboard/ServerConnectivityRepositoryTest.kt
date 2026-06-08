@@ -130,4 +130,50 @@ class ServerConnectivityRepositoryTest {
         assertNull(result.parentCode)
         assertNull(result.code)
     }
+
+    @Test
+    fun checkServerConnectivity_http200_onlyParentCode_returnsReachableWithParentCode() {
+        val json = """
+            {
+                "rows": [
+                    {
+                        "doc": {
+                            "parentCode": "pCode"
+                        }
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(json))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = repository.checkServerConnectivity(baseUrl)
+
+        assertTrue(result.reachable)
+        assertEquals("pCode", result.parentCode)
+        assertNull(result.code)
+    }
+
+    @Test
+    fun checkServerConnectivity_http200_onlyCode_returnsReachableWithCode() {
+        val json = """
+            {
+                "rows": [
+                    {
+                        "doc": {
+                            "code": "mCode"
+                        }
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(json))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = repository.checkServerConnectivity(baseUrl)
+
+        assertTrue(result.reachable)
+        assertNull(result.parentCode)
+        assertEquals("mCode", result.code)
+    }
 }
