@@ -19,6 +19,16 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
 
+    <style name="Theme.MyPlanetLite.DeepLinkResolver" parent="Theme.Material3.Light.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:colorBackgroundCacheHint">@null</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+    </style>
+
     <style name="Widget.MyPlanet.PopupMenu" parent="@style/ThemeOverlay.AppCompat.Light">
         <item name="popupMenuStyle">@style/Widget.MyPlanet.PopupMenuStyle</item>
     </style>
