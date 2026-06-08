@@ -8,6 +8,18 @@ val mockitoAgent by configurations.creating {
     isTransitive = false
 }
 val mockkAgent: Configuration by configurations.creating
+val sharedTestImplementation: Configuration by configurations.creating {
+    isCanBeConsumed = false
+    isCanBeResolved = false
+}
+
+configurations.named("testImplementation") {
+    extendsFrom(sharedTestImplementation)
+}
+
+configurations.named("androidTestImplementation") {
+    extendsFrom(sharedTestImplementation)
+}
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
@@ -20,8 +32,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 404
-        versionName = "0.4.4"
+        versionCode = 405
+        versionName = "0.4.5"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -120,26 +132,23 @@ dependencies {
     // testImplementation
     // testing
     debugImplementation(libs.androidx.fragment.testing)
-    testImplementation(libs.androidx.junit)
     testImplementation(libs.androidx.test.core)
-    testImplementation(libs.core.ktx)
     testImplementation(libs.json)
     testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
-    testImplementation(libs.mockito.core)
     testImplementation(libs.mockito.kotlin)
     testImplementation(libs.mockk)
-    testImplementation(libs.mockwebserver)
     testImplementation(libs.robolectric)
 
     // androidTestImplementation
     // testing
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.espresso.intents)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.core.ktx)
-    androidTestImplementation(libs.kotlinx.coroutines.test)
-    androidTestImplementation(libs.mockwebserver)
+
+    // shared testing
+    sharedTestImplementation(libs.androidx.junit)
+    sharedTestImplementation(libs.core.ktx)
+    sharedTestImplementation(libs.kotlinx.coroutines.test)
+    sharedTestImplementation(libs.mockwebserver)
 
     // Force consistent versions
     configurations.all {
