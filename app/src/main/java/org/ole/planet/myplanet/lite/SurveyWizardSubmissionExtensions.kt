@@ -325,6 +325,7 @@ internal fun JSONObject?.optIntOrNull(key: String): Int? {
     this ?: return null
     if (!has(key)) return null
     return when (val value = opt(key)) {
+        null -> null
         is Number -> value.toInt()
         is String -> value.toIntOrNull()
         else -> null
