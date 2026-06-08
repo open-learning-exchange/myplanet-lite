@@ -71,8 +71,8 @@ class DashboardTeamMembersSupportTest {
             AcceptJoinRequestParams(
                 fragment = fragment,
                 repository = repository,
-                baseUrl = null, // Invalid
-                credentials = null, // Invalid
+                baseUrl = null,
+                credentials = null,
                 sessionCookie = null,
                 request = request,
                 currentTeamPlanetCode = null,
@@ -105,12 +105,16 @@ class DashboardTeamMembersSupportTest {
             )
         )
 
-        runRejectJoinRequest(
+        val context = DashboardTeamActionContext(
             fragment = fragment,
             repository = repository,
-            baseUrl = null, // Invalid
-            credentials = null, // Invalid
-            sessionCookie = null,
+            baseUrl = null,
+            credentials = null,
+            sessionCookie = null
+        )
+
+        runRejectJoinRequest(
+            context = context,
             request = request,
             onReload = {}
         )
@@ -127,16 +131,20 @@ class DashboardTeamMembersSupportTest {
             fullName = "User",
             hasAvatar = false,
             isLeader = false,
-            membership = null // Invalid
+            membership = null
+        )
+
+        val context = DashboardTeamActionContext(
+            fragment = fragment,
+            repository = repository,
+            baseUrl = null,
+            credentials = null,
+            sessionCookie = null
         )
 
         runRemoveTeamMember(
-            fragment = fragment,
-            repository = repository,
-            teamId = null, // Invalid
-            baseUrl = null, // Invalid
-            credentials = null, // Invalid
-            sessionCookie = null,
+            context = context,
+            teamId = null,
             member = member,
             displayName = "User",
             onStart = {},
@@ -148,7 +156,6 @@ class DashboardTeamMembersSupportTest {
         assertNotNull(latestToast)
         verifyNoInteractions(repository)
     }
-
 
     @Test
     fun testAdaptersInstantiation() {
@@ -166,5 +173,4 @@ class DashboardTeamMembersSupportTest {
         )
         assertNotNull(requestsAdapter)
     }
-
 }

@@ -437,6 +437,10 @@ class DashboardTeamMembersFragment : Fragment() {
         binding.dashboardTeamJoinRequestsList.isVisible = hasRequests
     }
 
+    private fun createActionContext(): DashboardTeamActionContext {
+        return DashboardTeamActionContext(this, repository, baseUrl, credentials, sessionCookie)
+    }
+
     private fun acceptJoinRequest(request: TeamJoinRequestUiModel) = runAcceptJoinRequest(
         AcceptJoinRequestParams(
             fragment = this,
@@ -455,14 +459,14 @@ class DashboardTeamMembersFragment : Fragment() {
         confirmAcceptJoinRequestDialog(this, request) { acceptJoinRequest(it) }
     }
 
-    private fun rejectJoinRequest(request: TeamJoinRequestUiModel) = runRejectJoinRequest(this, repository, baseUrl, credentials, sessionCookie, request) { currentTeamId?.let(::loadTeamMembers) }
+    private fun rejectJoinRequest(request: TeamJoinRequestUiModel) = runRejectJoinRequest(createActionContext(), request) { currentTeamId?.let(::loadTeamMembers) }
 
     private fun confirmRejectJoinRequest(request: TeamJoinRequestUiModel) {
         confirmRejectJoinRequestDialog(this, request) { rejectJoinRequest(it) }
     }
 
     private fun confirmMemberRemoval(member: TeamMemberDetails) = confirmMemberRemovalDialog(this, member) { selectedMember, displayName ->
-        runRemoveTeamMember(this, repository, currentTeamId, baseUrl, credentials, sessionCookie, selectedMember, displayName,
+        runRemoveTeamMember(createActionContext(), currentTeamId, selectedMember, displayName,
             onStart = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = true },
             onStop = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false },
             onReload = { currentTeamId?.let(::loadTeamMembers) })
