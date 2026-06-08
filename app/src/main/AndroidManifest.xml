@@ -41,7 +41,7 @@
         <activity
             android:name=".DeepLinkResolverActivity"
             android:exported="true"
-            android:theme="@android:style/Theme.NoDisplay">
+            android:theme="@style/Theme.MyPlanetLite.DeepLinkResolver">
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
 
@@ -49,8 +49,54 @@
                 <category android:name="android.intent.category.BROWSABLE" />
 
                 <data
-                    android:host="midominio.com"
-                    android:pathPrefix="/post"
+                    android:host="planet.learning.ole.org"
+                    android:pathPrefix="/survey"
+                    android:scheme="https" />
+            </intent-filter>
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="planet.gt"
+                    android:pathPrefix="/survey"
+                    android:scheme="https" />
+                <data
+                    android:host="sanpablo.planet.gt"
+                    android:pathPrefix="/survey"
+                    android:scheme="https" />
+                <data
+                    android:host="planet.somalia.ole.org"
+                    android:pathPrefix="/survey"
+                    android:scheme="https" />
+                <data
+                    android:host="planet.earth.ole.org"
+                    android:pathPrefix="/survey"
+                    android:scheme="https" />
+                <data
+                    android:host="planet.vi.ole.org"
+                    android:pathPrefix="/survey"
+                    android:scheme="https" />
+                <data
+                    android:host="planet.uriur.ole.org"
+                    android:pathPrefix="/survey"
+                    android:scheme="https" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="*"
+                    android:pathPrefix="/survey"
+                    android:scheme="http" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/survey"
                     android:scheme="https" />
             </intent-filter>
             <intent-filter>
@@ -61,6 +107,16 @@
 
                 <data
                     android:host="post"
+                    android:scheme="myplanetlite" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="survey"
                     android:scheme="myplanetlite" />
             </intent-filter>
         </activity>

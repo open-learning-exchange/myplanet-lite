@@ -465,14 +465,16 @@ class CourseWizardActivity : BaseActivity() {
             return
         }
         populateAttachmentList(
-            survey,
-            hasSurvey,
-            exam,
-            hasExam,
-            displayResources,
-            imageResources,
-            inflater,
-            listContainer
+            AttachmentConfig(
+                survey = survey,
+                hasSurvey = hasSurvey,
+                exam = exam,
+                hasExam = hasExam,
+                displayResources = displayResources,
+                imageResources = imageResources,
+                inflater = inflater,
+                listContainer = listContainer
+            )
         )
     }
 
@@ -495,24 +497,26 @@ class CourseWizardActivity : BaseActivity() {
         }
     }
 
-    private fun populateAttachmentList(
-        survey: SurveyDocument?,
-        hasSurvey: Boolean,
-        exam: SurveyDocument?,
-        hasExam: Boolean,
-        displayResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
-        imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
-        inflater: android.view.LayoutInflater,
-        listContainer: LinearLayout
-    ) {
-        if (survey != null && hasSurvey) {
-            bindSurveyAttachment(survey, inflater, listContainer)
+    private data class AttachmentConfig(
+        val survey: SurveyDocument?,
+        val hasSurvey: Boolean,
+        val exam: SurveyDocument?,
+        val hasExam: Boolean,
+        val displayResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        val imageResources: List<DashboardCoursePageFragment.CourseItem.LessonResource>,
+        val inflater: android.view.LayoutInflater,
+        val listContainer: LinearLayout
+    )
+
+    private fun populateAttachmentList(config: AttachmentConfig) {
+        if (config.survey != null && config.hasSurvey) {
+            bindSurveyAttachment(config.survey, config.inflater, config.listContainer)
         }
-        if (exam != null && hasExam) {
-            bindExamAttachment(exam, inflater, listContainer)
+        if (config.exam != null && config.hasExam) {
+            bindExamAttachment(config.exam, config.inflater, config.listContainer)
         }
-        displayResources.forEach { resource ->
-            bindResourceAttachment(resource, imageResources, inflater, listContainer)
+        config.displayResources.forEach { resource ->
+            bindResourceAttachment(resource, config.imageResources, config.inflater, config.listContainer)
         }
     }
 
