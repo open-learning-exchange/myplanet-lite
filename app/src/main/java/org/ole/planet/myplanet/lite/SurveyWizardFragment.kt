@@ -189,6 +189,34 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         }
     }
 
+    fun showStep(index: Int) {
+        val step = steps[index]
+        progressBar.max = steps.size
+        counterView.text = getString(R.string.dashboard_survey_wizard_step_counter, index + 1, steps.size)
+        updateDescriptionVisibility(index)
+        questionBodyView.text = when (step) {
+            WizardStep.Basics -> getString(R.string.dashboard_survey_wizard_participant_basics_title)
+            WizardStep.Names -> getString(R.string.dashboard_survey_wizard_names_title)
+            WizardStep.BirthDate -> getString(R.string.dashboard_survey_wizard_birthdate_title)
+            WizardStep.Contact -> getString(R.string.dashboard_survey_wizard_contact_title)
+            WizardStep.LanguageLevel -> getString(R.string.dashboard_survey_wizard_language_level_title)
+            is WizardStep.Question -> questionTranslations[step.questionIndex]?.body
+                ?: step.question.body.orEmpty()
+        }
+        questionContainer.removeAllViews()
+        val (renderedView, collector) = renderStep(step)
+        questionContainer.addView(renderedView)
+        activeCollector = collector
+        progressBar.progress = index + 1
+        val isLast = index == steps.lastIndex
+        nextButton.text = if (isLast) {
+            getString(R.string.dashboard_survey_wizard_finish)
+        } else {
+            getString(R.string.dashboard_survey_wizard_next)
+        }
+        updateNavigationEnabled()
+    }
+
     companion object {
         private const val ARG_DOCUMENT = "arg_document"
         private const val ARG_TEAM_ID = "arg_team_id"

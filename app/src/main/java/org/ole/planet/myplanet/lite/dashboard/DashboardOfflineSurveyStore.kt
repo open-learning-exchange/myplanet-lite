@@ -25,7 +25,11 @@ class DashboardOfflineSurveyStore(
         .build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
 
-    private val documentAdapter = moshi.adapter(SurveyDocument::class.java)
+    private val documentAdapter = moshi.newBuilder()
+        .add(FlexibleSurveyJsonAdapter())
+        .addLast(KotlinJsonAdapterFactory())
+        .build()
+        .adapter(SurveyDocument::class.java)
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
