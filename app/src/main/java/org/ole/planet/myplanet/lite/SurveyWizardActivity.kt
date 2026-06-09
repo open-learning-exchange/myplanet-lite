@@ -50,6 +50,8 @@ class SurveyWizardActivity : AppCompatActivity() {
                         intent.getStringExtra(EXTRA_TEAM_NAME),
                         intent.getStringExtra(EXTRA_COURSE_ID),
                         intent.getBooleanExtra(EXTRA_IS_EXAM, false),
+                        intent.getStringExtra(EXTRA_BASE_URL),
+                        intent.getBooleanExtra(EXTRA_INCLUDE_USER_CONTEXT, true),
                     ),
                 )
                 .commit()
@@ -62,6 +64,8 @@ class SurveyWizardActivity : AppCompatActivity() {
         private const val EXTRA_TEAM_NAME = "extra_team_name"
         private const val EXTRA_COURSE_ID = "extra_course_id"
         private const val EXTRA_IS_EXAM = "extra_is_exam"
+        private const val EXTRA_BASE_URL = "extra_base_url"
+        private const val EXTRA_INCLUDE_USER_CONTEXT = "extra_include_user_context"
 
         fun newIntent(
             context: Context,
@@ -70,6 +74,8 @@ class SurveyWizardActivity : AppCompatActivity() {
             teamName: String?,
             courseId: String? = null,
             isExam: Boolean = false,
+            baseUrl: String? = null,
+            includeUserContext: Boolean = true,
         ): Intent {
             return Intent(context, SurveyWizardActivity::class.java).apply {
                 putExtra(EXTRA_DOCUMENT, document)
@@ -77,6 +83,8 @@ class SurveyWizardActivity : AppCompatActivity() {
                 putExtra(EXTRA_TEAM_NAME, teamName)
                 putExtra(EXTRA_COURSE_ID, courseId)
                 putExtra(EXTRA_IS_EXAM, isExam)
+                putExtra(EXTRA_BASE_URL, baseUrl)
+                putExtra(EXTRA_INCLUDE_USER_CONTEXT, includeUserContext)
             }
         }
     }

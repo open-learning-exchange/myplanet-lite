@@ -23,7 +23,7 @@ class IntentSecurityTest {
 
     @Test
     fun extractDeepLinkPostId_withValidHierarchicalUri_returnsPostId() {
-        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://midominio.com/post?postId=12345"))
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("myplanetlite://post?postId=12345"))
         val result = IntentUtils.extractDeepLinkPostId(intent)
         assertEquals("12345", result)
     }

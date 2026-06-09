@@ -194,6 +194,26 @@ class UserProfileSyncTest {
     }
 
     @Test
+    fun `refreshProfile with mocked OkHttpClient unsuccessful response returns false`() = runTest {
+        val mockClient: OkHttpClient = mock()
+        val mockCall: okhttp3.Call = mock()
+        val mockResponse = okhttp3.Response.Builder()
+            .request(okhttp3.Request.Builder().url("http://localhost").build())
+            .protocol(okhttp3.Protocol.HTTP_1_1)
+            .code(500)
+            .message("Server Error")
+            .build()
+
+        org.mockito.kotlin.whenever(mockClient.newCall(org.mockito.kotlin.any())).thenReturn(mockCall)
+        org.mockito.kotlin.whenever(mockCall.execute()).thenReturn(mockResponse)
+
+        val sync = UserProfileSync(mockClient, mockDatabase)
+        val result = sync.refreshProfile("http://localhost", "testuser", null)
+
+        assertFalse(result)
+    }
+
+    @Test
     fun `refreshProfile with exception returns false`() = runTest {
         val failingClient = OkHttpClient.Builder()
             .addInterceptor { chain ->
