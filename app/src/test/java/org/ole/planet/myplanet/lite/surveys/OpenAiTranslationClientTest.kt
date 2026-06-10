@@ -6,7 +6,9 @@ import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Response
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.ResponseBody.Companion.toResponseBody
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
@@ -28,24 +30,25 @@ class OpenAiTranslationClientTest {
 
     @Test
     fun `translate with successful response returns translated text`() = runTest {
-        val successInterceptor = Interceptor { chain ->
-            val jsonResponse = """
+        val jsonResponse = """
+            {
+              "choices": [
                 {
-                  "choices": [
-                    {
-                      "message": {
-                        "content": "Hola"
-                      }
-                    }
-                  ]
+                  "message": {
+                    "content": "Hola"
+                  }
                 }
-            """.trimIndent()
+              ]
+            }
+        """.trimIndent()
+
+        val successInterceptor = Interceptor { chain ->
             Response.Builder()
                 .code(200)
                 .message("OK")
                 .request(chain.request())
                 .protocol(Protocol.HTTP_1_1)
-                .body(jsonResponse.toResponseBody(null))
+                .body(jsonResponse.toResponseBody("application/json".toMediaTypeOrNull()))
                 .build()
         }
 
@@ -62,7 +65,37 @@ class OpenAiTranslationClientTest {
             model = "test-model"
         )
 
-        org.junit.Assert.assertEquals("Hola", result)
+        assertEquals("Hola", result)
+    }
+
+    @Test
+    fun `translate with malformed json response returns null`() = runTest {
+        val jsonResponse = "not a json string"
+
+        val successInterceptor = Interceptor { chain ->
+            Response.Builder()
+                .code(200)
+                .message("OK")
+                .request(chain.request())
+                .protocol(Protocol.HTTP_1_1)
+                .body(jsonResponse.toResponseBody("application/json".toMediaTypeOrNull()))
+                .build()
+        }
+
+        val okHttpClient = OkHttpClient.Builder()
+            .addInterceptor(successInterceptor)
+            .build()
+
+        val client = OpenAiTranslationClient(client = okHttpClient)
+
+        val result = client.translate(
+            text = "Hello",
+            targetLanguage = "es",
+            apiKey = "test-key",
+            model = "test-model"
+        )
+
+        assertNull(result)
     }
 
     @Test

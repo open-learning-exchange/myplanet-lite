@@ -604,4 +604,21 @@ class NetworkAuthServiceTest {
         assertEquals("Respuesta inválida del servidor", error.message)
     }
 
+    @Test
+    fun `login dispatcher exception returns generic error`() = runTest {
+        val mockApi = mock<AuthApi>()
+        val failingDispatcher = object : kotlinx.coroutines.CoroutineDispatcher() {
+            override fun dispatch(context: kotlin.coroutines.CoroutineContext, block: Runnable) {
+                throw RuntimeException("Dispatcher failure")
+            }
+        }
+
+        val serviceWithFailingDispatcher = NetworkAuthService(mockApi, tokenStorage, failingDispatcher)
+        val result = serviceWithFailingDispatcher.login("user", "pass")
+
+        assertTrue(result is AuthResult.Error)
+        val error = result as AuthResult.Error
+        assertEquals(null, error.code)
+        assertTrue(error.message.contains("Error inesperado: Dispatcher failure"))
+    }
 }

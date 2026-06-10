@@ -118,13 +118,18 @@ internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
             isVisible = sourceDurationMs > 1000L
         }
         val sizeEstimateValue = TextView(context).apply {
-            text = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(requireContext(), getString(R.string.dashboard_resources_video_size_unknown), getString(R.string.dashboard_resources_video_size_estimate), 
-                sourceSizeBytes = sourceFileSizeBytes,
-                sourceHeight = sourceHeight,
-                selectedHeight = allowedHeights.getOrElse(defaultIndex) { defaultHeight },
-                sourceDurationMs = sourceDurationMs,
-                selectedStartMs = selectedStartMs,
-                selectedEndMs = selectedEndMs
+            text = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+                requireContext(),
+                getString(R.string.dashboard_resources_video_size_unknown),
+                getString(R.string.dashboard_resources_video_size_estimate),
+                DashboardResourcesMediaUtils.VideoEstimateParameters(
+                    sourceSizeBytes = sourceFileSizeBytes ?: 0L,
+                    sourceHeight = sourceHeight,
+                    selectedHeight = allowedHeights.getOrElse(defaultIndex) { defaultHeight },
+                    sourceDurationMs = sourceDurationMs,
+                    selectedStartMs = selectedStartMs,
+                    selectedEndMs = selectedEndMs
+                )
             )
         }
         val previewTitle = TextView(context).apply {
@@ -291,13 +296,18 @@ internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
                     R.string.dashboard_resources_video_segment_total,
                     DashboardResourcesMediaUtils.formatDurationMs((selectedEndMs - selectedStartMs).coerceAtLeast(0L))
                 )
-                sizeEstimateValue.text = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(requireContext(), getString(R.string.dashboard_resources_video_size_unknown), getString(R.string.dashboard_resources_video_size_estimate), 
-                    sourceSizeBytes = sourceFileSizeBytes,
-                    sourceHeight = sourceHeight,
-                    selectedHeight = selectedHeightForEstimate,
-                    sourceDurationMs = sourceDurationMs,
-                    selectedStartMs = selectedStartMs,
-                    selectedEndMs = selectedEndMs
+                sizeEstimateValue.text = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+                    requireContext(),
+                    getString(R.string.dashboard_resources_video_size_unknown),
+                    getString(R.string.dashboard_resources_video_size_estimate),
+                    DashboardResourcesMediaUtils.VideoEstimateParameters(
+                        sourceSizeBytes = sourceFileSizeBytes ?: 0L,
+                        sourceHeight = sourceHeight,
+                        selectedHeight = selectedHeightForEstimate,
+                        sourceDurationMs = sourceDurationMs,
+                        selectedStartMs = selectedStartMs,
+                        selectedEndMs = selectedEndMs
+                    )
                 )
             }
         }
@@ -314,13 +324,18 @@ internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
                 val selectedHeight = allowedHeights[index]
                 selectedHeightForEstimate = selectedHeight
                 resolutionValue.text = getString(R.string.dashboard_resources_video_resolution_value, selectedHeight)
-                sizeEstimateValue.text = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(requireContext(), getString(R.string.dashboard_resources_video_size_unknown), getString(R.string.dashboard_resources_video_size_estimate), 
-                    sourceSizeBytes = sourceFileSizeBytes,
-                    sourceHeight = sourceHeight,
-                    selectedHeight = selectedHeight,
-                    sourceDurationMs = sourceDurationMs,
-                    selectedStartMs = selectedStartMs,
-                    selectedEndMs = selectedEndMs
+                sizeEstimateValue.text = DashboardResourcesMediaUtils.buildVideoSizeEstimateText(
+                    requireContext(),
+                    getString(R.string.dashboard_resources_video_size_unknown),
+                    getString(R.string.dashboard_resources_video_size_estimate),
+                    DashboardResourcesMediaUtils.VideoEstimateParameters(
+                        sourceSizeBytes = sourceFileSizeBytes ?: 0L,
+                        sourceHeight = sourceHeight,
+                        selectedHeight = selectedHeight,
+                        sourceDurationMs = sourceDurationMs,
+                        selectedStartMs = selectedStartMs,
+                        selectedEndMs = selectedEndMs
+                    )
                 )
             }
         }
