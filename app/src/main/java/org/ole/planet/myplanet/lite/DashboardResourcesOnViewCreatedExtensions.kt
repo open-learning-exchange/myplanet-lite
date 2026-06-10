@@ -22,17 +22,30 @@ internal fun DashboardResourcesPageFragment.setupResourcesView(view: View) {
     val sortBySpinner: Spinner = view.findViewById(R.id.resourcesSortBySpinner)
     val sortOrderToggle: ImageButton = view.findViewById(R.id.resourcesSortOrderToggle)
     val fab = view.findViewById<FloatingActionButton>(R.id.addResourceFab)
-    addResourceFab = fab
     val list: RecyclerView = view.findViewById(R.id.resourcesList)
     val content: LinearLayout = view.findViewById(R.id.resourcesExplorerContent)
     val empty: TextView = view.findViewById(R.id.resourcesEmptyView)
     val swipeRefresh: SwipeRefreshLayout = view.findViewById(R.id.resourcesSwipeRefresh)
+
+    addResourceFab = fab
     contentView = content
     emptyView = empty
     resourcesList = list
     swipeRefreshLayout = swipeRefresh
     uploadLoadingView = view.findViewById(R.id.resourcesUploadLoading)
 
+    setupSearchInput(searchInput)
+    setupTypeSpinner(typeSpinner)
+    setupSortBySpinner(sortBySpinner)
+    setupSortOrderToggle(sortOrderToggle)
+    setupFab(fab)
+    setupList(list)
+    setupSwipeRefresh(swipeRefresh)
+
+    refreshContent()
+}
+
+private fun DashboardResourcesPageFragment.setupSearchInput(searchInput: TextInputEditText) {
     searchInput.hint = getString(R.string.dashboard_resources_filter_name_hint)
     searchInput.setOnEditorActionListener { _, actionId, event ->
         val isSearchAction = actionId == EditorInfo.IME_ACTION_SEARCH
@@ -51,7 +64,9 @@ internal fun DashboardResourcesPageFragment.setupResourcesView(view: View) {
             false
         }
     }
+}
 
+private fun DashboardResourcesPageFragment.setupTypeSpinner(typeSpinner: Spinner) {
     typeSpinner.adapter = ArrayAdapter(
         requireContext(),
         android.R.layout.simple_spinner_dropdown_item,
@@ -82,6 +97,9 @@ internal fun DashboardResourcesPageFragment.setupResourcesView(view: View) {
 
         override fun onNothingSelected(parent: AdapterView<*>?) = Unit
     }
+}
+
+private fun DashboardResourcesPageFragment.setupSortBySpinner(sortBySpinner: Spinner) {
     sortBySpinner.adapter = ArrayAdapter(
         requireContext(),
         android.R.layout.simple_spinner_dropdown_item,
@@ -90,22 +108,6 @@ internal fun DashboardResourcesPageFragment.setupResourcesView(view: View) {
             getString(R.string.dashboard_resources_sort_by_date)
         )
     )
-    fun updateSortOrderIcon() {
-        val icon = if (isSortDescending) {
-            R.drawable.ic_sort_descending_24
-        } else {
-            R.drawable.ic_sort_ascending_24
-        }
-        sortOrderToggle.setImageResource(icon)
-    }
-    updateSortOrderIcon()
-    sortOrderToggle.setOnClickListener {
-        isSortDescending = !isSortDescending
-        updateSortOrderIcon()
-        hasLoadedMainResources = false
-        hasLoadedTeamResources = false
-        refreshContent(forceRefresh = true)
-    }
     sortBySpinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
         override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
             val nextSortBy = if (position == 1) ResourceSortBy.DATE else ResourceSortBy.NAME
@@ -119,11 +121,36 @@ internal fun DashboardResourcesPageFragment.setupResourcesView(view: View) {
 
         override fun onNothingSelected(parent: AdapterView<*>?) = Unit
     }
+}
+
+private fun DashboardResourcesPageFragment.updateSortOrderIcon(sortOrderToggle: ImageButton) {
+    val icon = if (isSortDescending) {
+        R.drawable.ic_sort_descending_24
+    } else {
+        R.drawable.ic_sort_ascending_24
+    }
+    sortOrderToggle.setImageResource(icon)
+}
+
+private fun DashboardResourcesPageFragment.setupSortOrderToggle(sortOrderToggle: ImageButton) {
+    updateSortOrderIcon(sortOrderToggle)
+    sortOrderToggle.setOnClickListener {
+        isSortDescending = !isSortDescending
+        updateSortOrderIcon(sortOrderToggle)
+        hasLoadedMainResources = false
+        hasLoadedTeamResources = false
+        refreshContent(forceRefresh = true)
+    }
+}
+
+private fun DashboardResourcesPageFragment.setupFab(fab: FloatingActionButton) {
     fab.setOnClickListener {
         showAddResourceMenu(fab)
     }
     fab.enableDrag()
+}
 
+private fun DashboardResourcesPageFragment.setupList(list: RecyclerView) {
     list.layoutManager = LinearLayoutManager(requireContext())
     list.addOnScrollListener(object : RecyclerView.OnScrollListener() {
         override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
@@ -139,8 +166,10 @@ internal fun DashboardResourcesPageFragment.setupResourcesView(view: View) {
             }
         }
     })
+}
+
+private fun DashboardResourcesPageFragment.setupSwipeRefresh(swipeRefresh: SwipeRefreshLayout) {
     swipeRefresh.setOnRefreshListener {
         refreshContent(forceRefresh = true)
     }
-    refreshContent()
 }
