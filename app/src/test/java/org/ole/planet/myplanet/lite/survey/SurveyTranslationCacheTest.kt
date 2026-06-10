@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.lite.survey
 
 import android.content.Context
 import android.database.sqlite.SQLiteDatabase
+import android.database.sqlite.SQLiteStatement
 import androidx.test.core.app.ApplicationProvider
 import kotlin.system.measureTimeMillis
 import kotlinx.coroutines.runBlocking
@@ -33,7 +34,9 @@ class SurveyTranslationCacheTest {
         val cache = spy(SurveyTranslationCache.getInstance(context))
         doReturn(mockDb).whenever(cache).writableDatabase
 
-        whenever(mockDb.insertWithOnConflict(any(), anyOrNull(), any(), any())).thenThrow(RuntimeException("DB Error"))
+        val mockStatement = mock(SQLiteStatement::class.java)
+        whenever(mockDb.compileStatement(any())).thenReturn(mockStatement)
+        whenever(mockStatement.executeInsert()).thenThrow(RuntimeException("DB Error"))
 
         val translations = mapOf(1 to SurveyTranslationManager.TranslatedQuestion("body", listOf("a")))
 

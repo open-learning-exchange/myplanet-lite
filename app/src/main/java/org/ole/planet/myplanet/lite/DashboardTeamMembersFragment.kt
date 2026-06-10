@@ -437,20 +437,36 @@ class DashboardTeamMembersFragment : Fragment() {
         binding.dashboardTeamJoinRequestsList.isVisible = hasRequests
     }
 
-    private fun acceptJoinRequest(request: TeamJoinRequestUiModel) = runAcceptJoinRequest(this, repository, baseUrl, credentials, sessionCookie, request, currentTeamPlanetCode, serverPlanetCode) { currentTeamId?.let(::loadTeamMembers) }
+    private fun createActionContext(): DashboardTeamActionContext {
+        return DashboardTeamActionContext(this, repository, baseUrl, credentials, sessionCookie)
+    }
+
+    private fun acceptJoinRequest(request: TeamJoinRequestUiModel) = runAcceptJoinRequest(
+        AcceptJoinRequestParams(
+            fragment = this,
+            repository = repository,
+            baseUrl = baseUrl,
+            credentials = credentials,
+            sessionCookie = sessionCookie,
+            request = request,
+            currentTeamPlanetCode = currentTeamPlanetCode,
+            serverPlanetCode = serverPlanetCode,
+            onReload = { currentTeamId?.let(::loadTeamMembers) }
+        )
+    )
 
     private fun confirmAcceptJoinRequest(request: TeamJoinRequestUiModel) {
         confirmAcceptJoinRequestDialog(this, request) { acceptJoinRequest(it) }
     }
 
-    private fun rejectJoinRequest(request: TeamJoinRequestUiModel) = runRejectJoinRequest(this, repository, baseUrl, credentials, sessionCookie, request) { currentTeamId?.let(::loadTeamMembers) }
+    private fun rejectJoinRequest(request: TeamJoinRequestUiModel) = runRejectJoinRequest(createActionContext(), request) { currentTeamId?.let(::loadTeamMembers) }
 
     private fun confirmRejectJoinRequest(request: TeamJoinRequestUiModel) {
         confirmRejectJoinRequestDialog(this, request) { rejectJoinRequest(it) }
     }
 
     private fun confirmMemberRemoval(member: TeamMemberDetails) = confirmMemberRemovalDialog(this, member) { selectedMember, displayName ->
-        runRemoveTeamMember(this, repository, currentTeamId, baseUrl, credentials, sessionCookie, selectedMember, displayName,
+        runRemoveTeamMember(createActionContext(), currentTeamId, selectedMember, displayName,
             onStart = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = true },
             onStop = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false },
             onReload = { currentTeamId?.let(::loadTeamMembers) })
