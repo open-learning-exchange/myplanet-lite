@@ -1,6 +1,7 @@
 package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
+import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteException
 import androidx.test.core.app.ApplicationProvider
 import org.junit.After
@@ -8,8 +9,14 @@ import org.junit.Assert.assertThrows
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.doReturn
 import org.mockito.Mockito.doThrow
+import org.mockito.Mockito.mock
 import org.mockito.Mockito.spy
+import org.mockito.Mockito.verify
+import org.mockito.ArgumentMatchers.any
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.ArgumentMatchers.isNull
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -78,5 +85,44 @@ class UserProfileDatabaseErrorTest {
         assertThrows(SQLiteException::class.java) {
             spyDatabase.clearProfile()
         }
+    }
+
+    @Test
+    fun testSaveProfileTransactionError() {
+        val spyDatabase = spy(database)
+        val mockDb = mock(SQLiteDatabase::class.java)
+
+        doReturn(mockDb).`when`(spyDatabase).writableDatabase
+
+        doThrow(SQLiteException("Mocked Transaction Exception")).`when`(mockDb).insertOrThrow(
+            anyString(),
+            isNull(),
+            any()
+        )
+
+        val profile = UserProfile(
+            username = "test",
+            firstName = "test",
+            middleName = "test",
+            lastName = "test",
+            email = "test",
+            language = "test",
+            phoneNumber = "test",
+            birthDate = "test",
+            gender = "test",
+            level = "test",
+            avatarImage = byteArrayOf(),
+            revision = "test",
+            derivedKey = "test",
+            rawDocument = "test",
+            isUserAdmin = false
+        )
+
+        assertThrows(SQLiteException::class.java) {
+            spyDatabase.saveProfile(profile)
+        }
+
+        verify(mockDb).beginTransaction()
+        verify(mockDb).endTransaction()
     }
 }
