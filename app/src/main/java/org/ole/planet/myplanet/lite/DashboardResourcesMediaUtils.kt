@@ -312,26 +312,23 @@ object DashboardResourcesMediaUtils {
         }.getOrNull()
     }
 
+    data class VideoEstimateParameters(
+        val sourceSizeBytes: Long,
+        val sourceHeight: Int,
+        val selectedHeight: Int,
+        val sourceDurationMs: Long,
+        val selectedStartMs: Long,
+        val selectedEndMs: Long
+    )
+
     fun buildVideoSizeEstimateText(
         context: Context,
         unknownText: String,
         estimateFormat: String,
-        sourceSizeBytes: Long?,
-        sourceHeight: Int,
-        selectedHeight: Int,
-        sourceDurationMs: Long,
-        selectedStartMs: Long,
-        selectedEndMs: Long
+        params: VideoEstimateParameters
     ): String {
-        if (sourceSizeBytes == null || sourceSizeBytes <= 0L) return unknownText
-        val estimatedBytes = estimateVideoUploadSizeBytes(
-            sourceSizeBytes,
-            sourceHeight,
-            selectedHeight,
-            sourceDurationMs,
-            selectedStartMs,
-            selectedEndMs
-        )
+        if (params.sourceSizeBytes <= 0L) return unknownText
+        val estimatedBytes = estimateVideoUploadSizeBytes(params)
         val formattedSize = Formatter.formatShortFileSize(context, estimatedBytes)
         return estimateFormat.format(formattedSize)
     }
@@ -350,14 +347,14 @@ object DashboardResourcesMediaUtils {
         return (bytes * 1.05).toLong().coerceAtLeast(1024L)
     }
 
-    fun estimateVideoUploadSizeBytes(
-        sourceSizeBytes: Long,
-        sourceHeight: Int,
-        selectedHeight: Int,
-        sourceDurationMs: Long,
-        selectedStartMs: Long,
-        selectedEndMs: Long
-    ): Long {
+    fun estimateVideoUploadSizeBytes(params: VideoEstimateParameters): Long {
+        val sourceSizeBytes = params.sourceSizeBytes
+        val sourceHeight = params.sourceHeight
+        val selectedHeight = params.selectedHeight
+        val sourceDurationMs = params.sourceDurationMs
+        val selectedStartMs = params.selectedStartMs
+        val selectedEndMs = params.selectedEndMs
+
         val durationFactor = if (sourceDurationMs <= 0L) 1.0 else {
             ((selectedEndMs - selectedStartMs).toDouble() / sourceDurationMs.toDouble()).coerceIn(0.0, 1.0)
         }

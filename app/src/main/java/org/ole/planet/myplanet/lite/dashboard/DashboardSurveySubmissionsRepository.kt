@@ -15,6 +15,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -32,6 +33,7 @@ class DashboardSurveySubmissionsRepository(
 ) {
 
     private val submissionAdapter = moshi.adapter(SurveySubmission::class.java)
+    private val publicSubmissionAdapter = moshi.adapter(PublicSurveySubmissionRequest::class.java)
     private val lookupRequestAdapter = moshi.adapter(SubmissionLookupRequest::class.java)
     private val lookupResponseAdapter = moshi.adapter(SubmissionLookupResponse::class.java)
 
@@ -59,6 +61,50 @@ class DashboardSurveySubmissionsRepository(
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
+                    val responseBody = response.body.string()
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${response.code}. body=$responseBody")
+                    }
+                    Unit
+                }
+            }
+        }
+    }
+
+    suspend fun submitPublicSurvey(
+        baseUrl: String,
+        teamId: String,
+        surveyId: String,
+        answers: List<Any?>,
+    ): Result<Unit> {
+        return withContext(dispatcher) {
+            runCatching {
+                val normalizedBase = baseUrl.trim().trimEnd('/')
+                if (normalizedBase.isEmpty()) {
+                    throw IOException("Missing server base URL")
+                }
+                if (teamId.isBlank()) {
+                    throw IOException("Missing team id")
+                }
+                if (surveyId.isBlank()) {
+                    throw IOException("Missing survey id")
+                }
+                val base = normalizedBase.toHttpUrlOrNull()
+                    ?: throw IOException("Invalid server base URL")
+                val endpoint = base.newBuilder()
+                    .addPathSegment("api")
+                    .addPathSegment("public")
+                    .addPathSegment("surveys")
+                    .addPathSegment(teamId)
+                    .addPathSegment(surveyId)
+                    .addPathSegment("submissions")
+                    .build()
+                val payload = publicSubmissionAdapter.toJson(PublicSurveySubmissionRequest(answers))
+                val request = Request.Builder()
+                    .url(endpoint)
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                    .build()
+                client.newCall(request).execute().use { response ->
                     val responseBody = response.body.string()
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}. body=$responseBody")
@@ -188,6 +234,11 @@ class DashboardSurveySubmissionsRepository(
         @param:Json(name = "mistakes") val mistakes: Int = 0,
         @param:Json(name = "passed") val passed: Boolean = true,
         @param:Json(name = "grade") val grade: Int = 0,
+    )
+
+    @JsonClass(generateAdapter = true)
+    data class PublicSurveySubmissionRequest(
+        @param:Json(name = "answers") val answers: List<Any?>,
     )
 
     @JsonClass(generateAdapter = true)
