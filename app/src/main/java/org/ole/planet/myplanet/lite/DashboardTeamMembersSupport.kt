@@ -45,6 +45,14 @@ internal fun confirmAcceptJoinRequestDialog(fragment: Fragment, request: TeamJoi
         .show()
 }
 
+internal data class DashboardTeamActionContext(
+    val fragment: Fragment,
+    val repository: DashboardTeamsRepository,
+    val baseUrl: String?,
+    val credentials: StoredCredentials?,
+    val sessionCookie: String?
+)
+
 internal fun confirmRejectJoinRequestDialog(fragment: Fragment, request: TeamJoinRequestUiModel, onReject: (TeamJoinRequestUiModel) -> Unit) {
     val displayName = request.fullName.ifBlank { request.username }
     AlertDialog.Builder(fragment.requireContext())
@@ -71,25 +79,32 @@ internal fun confirmMemberRemovalDialog(fragment: Fragment, member: TeamMemberDe
         .show()
 }
 
-internal fun runAcceptJoinRequest(
-    fragment: Fragment,
-    repository: DashboardTeamsRepository,
-    baseUrl: String?,
-    credentials: StoredCredentials?,
-    sessionCookie: String?,
-    request: TeamJoinRequestUiModel,
-    currentTeamPlanetCode: String?,
-    serverPlanetCode: String?,
-    onReload: () -> Unit,
-) {
-    val base = baseUrl
-    val creds = credentials
-    val teamId = request.request.teamId
-    val userId = request.request.userId
-    val teamPlanetCode = request.request.teamPlanetCode ?: currentTeamPlanetCode ?: serverPlanetCode
-    val userPlanetCode = request.request.userPlanetCode ?: serverPlanetCode
-    val requestId = request.request.id
-    val requestRevision = request.request.revision
+internal data class AcceptJoinRequestParams(
+    val fragment: Fragment,
+    val repository: DashboardTeamsRepository,
+    val baseUrl: String?,
+    val credentials: StoredCredentials?,
+    val sessionCookie: String?,
+    val request: TeamJoinRequestUiModel,
+    val currentTeamPlanetCode: String?,
+    val serverPlanetCode: String?,
+    val onReload: () -> Unit,
+)
+
+internal fun runAcceptJoinRequest(params: AcceptJoinRequestParams) {
+    val base = params.baseUrl
+    val creds = params.credentials
+    val teamId = params.request.request.teamId
+    val userId = params.request.request.userId
+    val teamPlanetCode =
+        params.request.request.teamPlanetCode
+            ?: params.currentTeamPlanetCode
+            ?: params.serverPlanetCode
+    val userPlanetCode =
+        params.request.request.userPlanetCode
+            ?: params.serverPlanetCode
+    val requestId = params.request.request.id
+    val requestRevision = params.request.request.revision
 
     if (
         base.isNullOrBlank() || creds == null ||
@@ -97,34 +112,42 @@ internal fun runAcceptJoinRequest(
         teamPlanetCode.isNullOrBlank() || userPlanetCode.isNullOrBlank() ||
         requestId.isNullOrBlank() || requestRevision.isNullOrBlank()
     ) {
-        Toast.makeText(fragment.requireContext(), fragment.getString(R.string.dashboard_invite_members_add_error_generic), Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            params.fragment.requireContext(),
+            params.fragment.getString(R.string.dashboard_invite_members_add_error_generic),
+            Toast.LENGTH_SHORT,
+        ).show()
         return
     }
 
-    fragment.viewLifecycleOwner.lifecycleScope.launch {
-        val addResult = repository.addTeamMember(
+    params.fragment.viewLifecycleOwner.lifecycleScope.launch {
+        val addResult = params.repository.addTeamMember(
             baseUrl = base,
             credentials = creds,
-            sessionCookie = sessionCookie,
+            sessionCookie = params.sessionCookie,
             teamId = teamId,
             teamPlanetCode = teamPlanetCode,
-            teamType = request.request.teamType ?: "local",
+            teamType = params.request.request.teamType ?: "local",
             userId = userId,
             userPlanetCode = userPlanetCode,
         )
+
         addResult.onSuccess {
-            repository.cancelJoinRequest(
+            params.repository.cancelJoinRequest(
                 baseUrl = base,
                 credentials = creds,
-                sessionCookie = sessionCookie,
+                sessionCookie = params.sessionCookie,
                 documentId = requestId,
                 revision = requestRevision,
             )
-            onReload()
+            params.onReload()
         }.onFailure {
             Toast.makeText(
-                fragment.requireContext(),
-                fragment.getString(R.string.dashboard_invite_members_add_error, request.fullName),
+                params.fragment.requireContext(),
+                params.fragment.getString(
+                    R.string.dashboard_invite_members_add_error,
+                    params.request.fullName,
+                ),
                 Toast.LENGTH_SHORT,
             ).show()
         }
@@ -132,39 +155,31 @@ internal fun runAcceptJoinRequest(
 }
 
 internal fun runRejectJoinRequest(
-    fragment: Fragment,
-    repository: DashboardTeamsRepository,
-    baseUrl: String?,
-    credentials: StoredCredentials?,
-    sessionCookie: String?,
+    context: DashboardTeamActionContext,
     request: TeamJoinRequestUiModel,
     onReload: () -> Unit,
 ) {
-    val base = baseUrl
-    val creds = credentials
+    val base = context.baseUrl
+    val creds = context.credentials
     val requestId = request.request.id
     val requestRevision = request.request.revision
     if (base.isNullOrBlank() || creds == null || requestId.isNullOrBlank() || requestRevision.isNullOrBlank()) {
-        Toast.makeText(fragment.requireContext(), fragment.getString(R.string.dashboard_invite_members_add_error_generic), Toast.LENGTH_SHORT).show()
+        Toast.makeText(context.fragment.requireContext(), context.fragment.getString(R.string.dashboard_invite_members_add_error_generic), Toast.LENGTH_SHORT).show()
         return
     }
 
-    fragment.viewLifecycleOwner.lifecycleScope.launch {
-        val result = repository.cancelJoinRequest(base, creds, sessionCookie, requestId, requestRevision)
+    context.fragment.viewLifecycleOwner.lifecycleScope.launch {
+        val result = context.repository.cancelJoinRequest(base, creds, context.sessionCookie, requestId, requestRevision)
         result.onSuccess { onReload() }
             .onFailure {
-                Toast.makeText(fragment.requireContext(), fragment.getString(R.string.dashboard_invite_members_add_error_generic), Toast.LENGTH_SHORT).show()
+                Toast.makeText(context.fragment.requireContext(), context.fragment.getString(R.string.dashboard_invite_members_add_error_generic), Toast.LENGTH_SHORT).show()
             }
     }
 }
 
 internal fun runRemoveTeamMember(
-    fragment: Fragment,
-    repository: DashboardTeamsRepository,
+    context: DashboardTeamActionContext,
     teamId: String?,
-    baseUrl: String?,
-    credentials: StoredCredentials?,
-    sessionCookie: String?,
     member: TeamMemberDetails,
     displayName: String,
     onStart: () -> Unit,
@@ -172,19 +187,19 @@ internal fun runRemoveTeamMember(
     onReload: () -> Unit,
 ) {
     val membership = member.membership
-    if (teamId.isNullOrBlank() || baseUrl.isNullOrBlank() || credentials == null || membership == null) {
-        Toast.makeText(fragment.requireContext(), fragment.getString(R.string.dashboard_team_members_remove_error, displayName), Toast.LENGTH_SHORT).show()
+    if (teamId.isNullOrBlank() || context.baseUrl.isNullOrBlank() || context.credentials == null || membership == null) {
+        Toast.makeText(context.fragment.requireContext(), context.fragment.getString(R.string.dashboard_team_members_remove_error, displayName), Toast.LENGTH_SHORT).show()
         return
     }
 
     onStart()
-    fragment.viewLifecycleOwner.lifecycleScope.launch {
-        val result = repository.removeTeamMember(baseUrl, credentials, sessionCookie, membership)
+    context.fragment.viewLifecycleOwner.lifecycleScope.launch {
+        val result = context.repository.removeTeamMember(context.baseUrl, context.credentials, context.sessionCookie, membership)
         result.onSuccess {
-            Toast.makeText(fragment.requireContext(), fragment.getString(R.string.dashboard_team_members_remove_success, displayName), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.fragment.requireContext(), context.fragment.getString(R.string.dashboard_team_members_remove_success, displayName), Toast.LENGTH_SHORT).show()
             onReload()
         }.onFailure {
-            Toast.makeText(fragment.requireContext(), fragment.getString(R.string.dashboard_team_members_remove_error, displayName), Toast.LENGTH_SHORT).show()
+            Toast.makeText(context.fragment.requireContext(), context.fragment.getString(R.string.dashboard_team_members_remove_error, displayName), Toast.LENGTH_SHORT).show()
             onStop()
         }
     }
