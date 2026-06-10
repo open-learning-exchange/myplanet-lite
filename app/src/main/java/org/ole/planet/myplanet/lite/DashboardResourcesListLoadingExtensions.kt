@@ -1,5 +1,7 @@
 package org.ole.planet.myplanet.lite
 
+import android.view.View
+import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
@@ -17,56 +19,75 @@ internal fun DashboardResourcesPageFragment.refreshContent(forceRefresh: Boolean
         addResourceFab?.isVisible = !offlineMode && (!isTeamResourcesTab || hasSelectedTeam())
 
         if (isTeamResourcesTab) {
-            if (offlineMode) {
-                content.isVisible = true
-                empty.isVisible = false
-                showDownloadedResourcesOnly(list)
-                swipeRefreshLayout?.isRefreshing = false
-                return
-            }
-            if (!hasSelectedTeam()) {
-                content.isVisible = false
-                empty.text = getString(R.string.dashboard_teams_select_team_hint)
-                empty.isVisible = true
-                swipeRefreshLayout?.isRefreshing = false
-                return
-            }
-
-            content.isVisible = true
-            empty.isVisible = false
-            if (forceRefresh || !hasLoadedTeamResources) {
-                loadTeamResources()
-                return
-            }
-            val currentAdapter = list.adapter as? DashboardResourcesPageFragment.ResourceExplorerAdapter
-            if (currentAdapter == null) {
-                list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(teamResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
-            } else {
-                currentAdapter.replaceResources(teamResourcesItems)
-            }
-            swipeRefreshLayout?.isRefreshing = false
-            return
+            refreshTeamResources(content, empty, list, offlineMode, forceRefresh)
+        } else {
+            refreshMainResources(content, empty, list, offlineMode, forceRefresh)
         }
+    }
 
+private fun DashboardResourcesPageFragment.refreshTeamResources(
+    content: View,
+    empty: TextView,
+    list: RecyclerView,
+    offlineMode: Boolean,
+    forceRefresh: Boolean
+) {
+    if (offlineMode) {
         content.isVisible = true
         empty.isVisible = false
-        if (offlineMode) {
-            showDownloadedResourcesOnly(list)
-            swipeRefreshLayout?.isRefreshing = false
-            return
-        }
-        if (forceRefresh || !hasLoadedMainResources) {
-            resetMainResourcesAndLoad()
-            return
-        }
-        val currentAdapter = list.adapter as? DashboardResourcesPageFragment.ResourceExplorerAdapter
-        if (currentAdapter == null) {
-            list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
-        } else {
-            currentAdapter.replaceResources(mainResourcesItems)
-        }
+        showDownloadedResourcesOnly(list)
         swipeRefreshLayout?.isRefreshing = false
+        return
     }
+    if (!hasSelectedTeam()) {
+        content.isVisible = false
+        empty.text = getString(R.string.dashboard_teams_select_team_hint)
+        empty.isVisible = true
+        swipeRefreshLayout?.isRefreshing = false
+        return
+    }
+
+    content.isVisible = true
+    empty.isVisible = false
+    if (forceRefresh || !hasLoadedTeamResources) {
+        loadTeamResources()
+        return
+    }
+    val currentAdapter = list.adapter as? DashboardResourcesPageFragment.ResourceExplorerAdapter
+    if (currentAdapter == null) {
+        list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(teamResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
+    } else {
+        currentAdapter.replaceResources(teamResourcesItems)
+    }
+    swipeRefreshLayout?.isRefreshing = false
+}
+
+private fun DashboardResourcesPageFragment.refreshMainResources(
+    content: View,
+    empty: TextView,
+    list: RecyclerView,
+    offlineMode: Boolean,
+    forceRefresh: Boolean
+) {
+    content.isVisible = true
+    empty.isVisible = false
+    if (offlineMode) {
+        showDownloadedResourcesOnly(list)
+        swipeRefreshLayout?.isRefreshing = false
+        return
+    }
+    if (forceRefresh || !hasLoadedMainResources) {
+        resetMainResourcesAndLoad()
+        return
+    }
+    val currentAdapter = list.adapter as? DashboardResourcesPageFragment.ResourceExplorerAdapter
+    if (currentAdapter == null) {
+        list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
+    } else {
+        currentAdapter.replaceResources(mainResourcesItems)
+    }
+    swipeRefreshLayout?.isRefreshing = false
+}
 
 internal fun DashboardResourcesPageFragment.showDownloadedResourcesOnly(list: RecyclerView) {
         val downloadedResources = loadDownloadedResourcesFiltered().toMutableList()
