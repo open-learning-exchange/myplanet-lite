@@ -17,12 +17,14 @@ class OpenAiTranslationClientTest {
     @Test
     fun `translate with blank text returns null`() = runTest {
         val client = OpenAiTranslationClient()
+
         val result = client.translate(
             text = "   ",
             targetLanguage = "es",
             apiKey = "test-key",
             model = "test-model"
         )
+
         assertNull(result)
     }
 
