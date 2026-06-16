@@ -19,6 +19,7 @@ import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.robolectric.annotation.Config
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.robolectric.shadows.ShadowToast
 
 @RunWith(AndroidJUnit4::class)
@@ -172,5 +173,22 @@ class DashboardTeamMembersSupportTest {
             onRejectClicked = {}
         )
         assertNotNull(requestsAdapter)
+    }
+
+    @Test
+    fun testAnimateFabClickSupport() {
+        // Use a themed context for Material Components
+        val themedContext = android.view.ContextThemeWrapper(
+            context,
+            com.google.android.material.R.style.Theme_MaterialComponents
+        )
+        val fab = FloatingActionButton(themedContext)
+        fab.rotation = 10f
+
+        animateFabClickSupport(fab)
+
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        // Verify it runs without crashing and final state is reached
+        org.junit.Assert.assertEquals(0f, fab.rotation)
     }
 }
