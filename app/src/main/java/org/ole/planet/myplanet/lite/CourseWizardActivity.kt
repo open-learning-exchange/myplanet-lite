@@ -441,13 +441,25 @@ class CourseWizardActivity : BaseActivity() {
         listContainer: LinearLayout
     ) {
         resetAttachmentState(listContainer)
-        val videoResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("video") }
-        val imageResources = resources.filter { it.mediaType.lowercase(Locale.ROOT).contains("image") }
-        val displayResources = resources.filter { resource ->
+
+        val videoResources = mutableListOf<DashboardCoursePageFragment.CourseItem.LessonResource>()
+        val imageResources = mutableListOf<DashboardCoursePageFragment.CourseItem.LessonResource>()
+        val displayResources = mutableListOf<DashboardCoursePageFragment.CourseItem.LessonResource>()
+
+        resources.forEach { resource ->
             val mediaType = resource.mediaType.lowercase(Locale.ROOT)
-            mediaType.contains("video") || mediaType.contains("pdf") || mediaType.contains("image") ||
-                    mediaType.contains("audio")
+            val isVideo = mediaType.contains("video")
+            val isImage = mediaType.contains("image")
+            val isPdf = mediaType.contains("pdf")
+            val isAudio = mediaType.contains("audio")
+
+            if (isVideo) videoResources.add(resource)
+            if (isImage) imageResources.add(resource)
+            if (isVideo || isImage || isPdf || isAudio) {
+                displayResources.add(resource)
+            }
         }
+
         val hasSurvey = survey?.questions?.isNotEmpty() == true
         val hasExam = exam?.questions?.isNotEmpty() == true
         if (displayResources.isEmpty() && !hasSurvey && !hasExam) {
