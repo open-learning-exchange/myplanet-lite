@@ -1,3 +1,4 @@
+
 /**
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
@@ -6,6 +7,7 @@
 
 package org.ole.planet.myplanet.lite
 
+import org.ole.planet.myplanet.lite.util.TimeUtils
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
@@ -501,8 +503,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             }
         } ?: (username ?: getString(R.string.dashboard_profile_name_placeholder))
         val timeMillis = document.time ?: 0L
-        val relativeTime = formatRelativeTime(timeMillis)
-        val metadata = buildMetadata(username, relativeTime)
+        val relativeTime = TimeUtils.formatRelativeTime(requireContext(), timeMillis)
+        val metadata = TimeUtils.buildMetadata(username, relativeTime)
         val rawMessage = document.message
         val messageImages = extractImagePaths(rawMessage)
         val documentImages = mapDocumentImages(document)
@@ -564,47 +566,6 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             return null
         }
         return "resources/$id/$name"
-    }
-
-    private fun buildMetadata(username: String?, relativeTime: String): String {
-        return if (!username.isNullOrBlank()) {
-            "@${username.trim()} • $relativeTime"
-        } else {
-            relativeTime
-        }
-    }
-
-    private fun formatRelativeTime(timestamp: Long): String {
-        val now = System.currentTimeMillis()
-        val diffMillis = max(0L, now - timestamp)
-        val minutes = diffMillis / MINUTE_MILLIS
-        val hours = diffMillis / HOUR_MILLIS
-        val days = diffMillis / DAY_MILLIS
-        val months = diffMillis / MONTH_MILLIS
-        val years = diffMillis / YEAR_MILLIS
-        return when {
-            years >= 1 -> if (years == 1L) getString(R.string.dashboard_relative_time_year) else getString(
-                R.string.dashboard_relative_time_years,
-                years
-            )
-            months >= 1 -> if (months == 1L) getString(R.string.dashboard_relative_time_month) else getString(
-                R.string.dashboard_relative_time_months,
-                months
-            )
-            days >= 1 -> if (days == 1L) getString(R.string.dashboard_relative_time_day) else getString(
-                R.string.dashboard_relative_time_days,
-                days
-            )
-            hours >= 1 -> if (hours == 1L) getString(R.string.dashboard_relative_time_hour) else getString(
-                R.string.dashboard_relative_time_hours,
-                hours
-            )
-            minutes >= 1 -> if (minutes == 1L) getString(R.string.dashboard_relative_time_minute) else getString(
-                R.string.dashboard_relative_time_minutes,
-                minutes
-            )
-            else -> getString(R.string.dashboard_relative_time_seconds)
-        }
     }
 
     @androidx.annotation.VisibleForTesting
@@ -898,11 +859,6 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             private const val ARG_TEAM_NAME = "arg_team_name"
             private const val LOAD_MORE_THRESHOLD = 3
             private val IMAGE_MARKDOWN_CAPTURE_REGEX = Regex("!\\[[^]]*]\\(([^)]+)\\)")
-        private const val MINUTE_MILLIS = 60_000L
-        private const val HOUR_MILLIS = 60 * MINUTE_MILLIS
-        private const val DAY_MILLIS = 24 * HOUR_MILLIS
-        private const val MONTH_MILLIS = 30 * DAY_MILLIS
-        private const val YEAR_MILLIS = 12 * MONTH_MILLIS
 
         fun newInstanceForTeam(teamId: String, teamName: String): DashboardVoicesFragment {
             return DashboardVoicesFragment().apply {

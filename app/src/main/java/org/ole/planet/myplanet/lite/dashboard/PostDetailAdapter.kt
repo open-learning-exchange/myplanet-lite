@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.lite.dashboard
 import android.annotation.SuppressLint
 import android.view.LayoutInflater
 import android.view.View
+import org.ole.planet.myplanet.lite.util.TimeUtils
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.LinearLayout
@@ -104,8 +105,8 @@ class PostDetailAdapter(
 
         fun bind(item: PostDetailItem.Header) {
             authorView.text = item.author
-            val relativeTime = DashboardPostDetailActivity.formatRelativeTime(itemView.context, item.timestamp)
-            metadataView.text = DashboardPostDetailActivity.buildMetadata(item.username, relativeTime)
+            val relativeTime = TimeUtils.formatRelativeTime(itemView.context, item.timestamp)
+            metadataView.text = TimeUtils.buildMetadata(item.username, relativeTime)
             if (item.message.isNullOrBlank()) {
                 bodyView.isVisible = false
                 bodyView.text = ""
@@ -218,8 +219,8 @@ class PostDetailAdapter(
 
         fun bind(item: PostDetailItem.Comment, isLast: Boolean) {
             authorView.text = item.author
-            val relativeTime = DashboardPostDetailActivity.formatRelativeTime(itemView.context, item.timestamp)
-            metadataView.text = DashboardPostDetailActivity.buildMetadata(item.username, relativeTime)
+            val relativeTime = TimeUtils.formatRelativeTime(itemView.context, item.timestamp)
+            metadataView.text = TimeUtils.buildMetadata(item.username, relativeTime)
             if (item.message.isNullOrBlank()) {
                 bodyView.isVisible = false
                 bodyView.text = ""
