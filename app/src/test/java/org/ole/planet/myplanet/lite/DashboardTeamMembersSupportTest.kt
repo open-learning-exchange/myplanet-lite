@@ -16,9 +16,12 @@ import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
+import androidx.appcompat.app.AlertDialog
+import org.junit.Assert.assertEquals
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowAlertDialog
 import org.robolectric.shadows.ShadowToast
 
 @RunWith(AndroidJUnit4::class)
@@ -172,5 +175,38 @@ class DashboardTeamMembersSupportTest {
             onRejectClicked = {}
         )
         assertNotNull(requestsAdapter)
+    }
+
+    @Test
+    fun testConfirmMemberRemovalDialog() {
+        val member = org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails(
+            username = "user1",
+            fullName = "Test User",
+            hasAvatar = false,
+            isLeader = false,
+            membership = null
+        )
+
+        var removedMember: org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails? = null
+        var removedName: String? = null
+
+        val onRemove: (org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails, String) -> Unit = { mem, name ->
+            removedMember = mem
+            removedName = name
+        }
+
+        // Action
+        confirmMemberRemovalDialog(fragment, member, onRemove)
+
+        // Verify Dialog
+        val dialog = ShadowAlertDialog.getLatestDialog() as? AlertDialog
+        assertNotNull(dialog)
+
+        // Click Positive Button
+        dialog!!.getButton(AlertDialog.BUTTON_POSITIVE).performClick()
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+
+        assertEquals(member, removedMember)
+        assertEquals("Test User", removedName)
     }
 }
