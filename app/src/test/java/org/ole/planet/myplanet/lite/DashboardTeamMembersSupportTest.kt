@@ -13,13 +13,19 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowAlertDialog
 import org.robolectric.shadows.ShadowToast
+import androidx.appcompat.view.ContextThemeWrapper
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33])
@@ -30,9 +36,8 @@ class DashboardTeamMembersSupportTest {
 
     @Before
     fun setUp() {
-        context = ApplicationProvider.getApplicationContext<Context>().apply {
-            setTheme(androidx.appcompat.R.style.Theme_AppCompat)
-        }
+        val applicationContext = ApplicationProvider.getApplicationContext<Context>()
+        context = ContextThemeWrapper(applicationContext, com.google.android.material.R.style.Theme_MaterialComponents_DayNight)
 
         val lifecycleOwner = mock<LifecycleOwner>()
         val lifecycle = LifecycleRegistry(lifecycleOwner)
@@ -172,5 +177,51 @@ class DashboardTeamMembersSupportTest {
             onRejectClicked = {}
         )
         assertNotNull(requestsAdapter)
+    }
+
+    @Test
+    fun testConfirmRejectJoinRequestDialog() {
+        val request = TeamJoinRequestUiModel(
+            id = "id",
+            username = "testuser",
+            fullName = "Test User",
+            hasAvatar = false,
+            request = JoinRequestDocument(
+                id = null,
+                revision = null,
+                docType = null,
+                teamId = null,
+                teamType = null,
+                teamPlanetCode = null,
+                userId = null,
+                userPlanetCode = null
+            )
+        )
+
+        var callbackCalled = false
+        confirmRejectJoinRequestDialog(fragment, request) {
+            callbackCalled = true
+            assertEquals(request, it)
+        }
+
+        verify(fragment).getString(
+            eq(R.string.dashboard_team_members_request_reject_confirm_message),
+            eq("Test User")
+        )
+
+        val dialog = androidx.appcompat.app.AlertDialog::class.java.cast(
+            org.robolectric.shadows.ShadowDialog.getLatestDialog()
+        )
+        assertNotNull(dialog)
+
+        // Using standard dialog getButton() which correctly returns the DialogInterface button
+        val button = dialog?.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+        assertNotNull(button)
+        button?.performClick()
+
+        // Wait for UI events
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+
+        assertTrue(callbackCalled)
     }
 }
