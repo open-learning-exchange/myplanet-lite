@@ -7,6 +7,21 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+
+import android.widget.ImageView
+import android.widget.TextView
+import com.google.android.material.imageview.ShapeableImageView
+import android.widget.ImageButton
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.mockito.kotlin.eq
+import org.mockito.kotlin.verify
+import android.view.View
+import android.widget.LinearLayout
+import org.ole.planet.myplanet.lite.databinding.ItemTeamMemberBinding
+import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
+
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
@@ -31,7 +46,7 @@ class DashboardTeamMembersSupportTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext<Context>().apply {
-            setTheme(androidx.appcompat.R.style.Theme_AppCompat)
+            setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight)
         }
 
         val lifecycleOwner = mock<LifecycleOwner>()
@@ -155,6 +170,129 @@ class DashboardTeamMembersSupportTest {
         val latestToast = ShadowToast.getLatestToast()
         assertNotNull(latestToast)
         verifyNoInteractions(repository)
+    }
+
+
+    @Test
+    fun testTeamMemberViewHolderBind() {
+        val binding = ItemTeamMemberBinding.inflate(
+            android.view.LayoutInflater.from(context)
+        )
+
+        val member = TeamMemberDetails(
+            username = "testuser",
+            fullName = "Test User",
+            hasAvatar = true,
+            isLeader = true,
+            membership = null
+        )
+
+        var avatarBinderCalled = false
+        val avatarBinder: (ImageView, String?, Boolean) -> Unit = { imageView, username, hasAvatar ->
+            assertEquals(binding.teamMemberAvatar, imageView)
+            assertEquals("testuser", username)
+            assertTrue(hasAvatar)
+            avatarBinderCalled = true
+        }
+
+        var onMemberClickedCalled = false
+        val onMemberClicked: (TeamMemberDetails) -> Unit = { m ->
+            assertEquals(member, m)
+            onMemberClickedCalled = true
+        }
+
+        var onRemoveMemberClickedCalled = false
+        val onRemoveMemberClicked: (TeamMemberDetails) -> Unit = { m ->
+            assertEquals(member, m)
+            onRemoveMemberClickedCalled = true
+        }
+
+        val viewHolder = TeamMemberViewHolder(
+            binding = binding,
+            avatarBinder = avatarBinder,
+            onMemberClicked = onMemberClicked,
+            onRemoveMemberClicked = onRemoveMemberClicked
+        )
+
+        viewHolder.bind(member = member, showRemoveAction = true, currentUsername = "otheruser")
+
+        assertTrue(avatarBinderCalled)
+        assertEquals("Test User", binding.teamMemberName.text)
+        assertEquals(context.getString(R.string.dashboard_team_member_profile_username_format, "testuser"), binding.teamMemberUsername.text) // Restore it
+
+        assertTrue(binding.teamMemberRemoveButton.visibility == View.VISIBLE)
+        assertEquals(context.getString(R.string.dashboard_team_members_leader_role), binding.teamMemberRole.text)
+
+
+        // Test clicks
+        binding.root.performClick()
+        assertTrue(onMemberClickedCalled)
+        onMemberClickedCalled = false
+
+        binding.teamMemberRemoveButton.performClick()
+        assertTrue(onRemoveMemberClickedCalled)
+    }
+
+
+    @Test
+    fun testTeamMemberViewHolderBind_nonLeaderAndIsCurrentUser() {
+        val binding = ItemTeamMemberBinding.inflate(
+            android.view.LayoutInflater.from(context)
+        )
+
+        val member = TeamMemberDetails(
+            username = "testuser",
+            fullName = "", // blank full name to fallback to username
+            hasAvatar = false,
+            isLeader = false,
+            membership = null
+        )
+
+        val viewHolder = TeamMemberViewHolder(
+            binding = binding,
+            avatarBinder = { _, _, _ -> },
+            onMemberClicked = {},
+            onRemoveMemberClicked = {}
+        )
+
+        viewHolder.bind(member = member, showRemoveAction = true, currentUsername = "testuser")
+
+        // Name should fallback to username since fullName is blank
+        assertEquals("testuser", binding.teamMemberName.text)
+
+        // Role should be member role
+        assertEquals(context.getString(R.string.dashboard_team_members_member_role), binding.teamMemberRole.text)
+
+        // Remove button should be invisible because currentUsername == member.username
+        assertFalse(binding.teamMemberRemoveButton.visibility == View.VISIBLE)
+    }
+
+
+    @Test
+    fun testTeamMemberViewHolderBind_noUsernameOrFullName() {
+        val binding = ItemTeamMemberBinding.inflate(
+            android.view.LayoutInflater.from(context)
+        )
+
+        val member = TeamMemberDetails(
+            username = null,
+            fullName = null,
+            hasAvatar = false,
+            isLeader = false,
+            membership = null
+        )
+
+        val viewHolder = TeamMemberViewHolder(
+            binding = binding,
+            avatarBinder = { _, _, _ -> },
+            onMemberClicked = {},
+            onRemoveMemberClicked = {}
+        )
+
+        viewHolder.bind(member = member, showRemoveAction = true, currentUsername = "testuser")
+
+        assertEquals(context.getString(R.string.dashboard_team_members_unknown), binding.teamMemberName.text)
+        assertEquals(context.getString(R.string.dashboard_team_members_unknown_username), binding.teamMemberUsername.text)
     }
 
     @Test
