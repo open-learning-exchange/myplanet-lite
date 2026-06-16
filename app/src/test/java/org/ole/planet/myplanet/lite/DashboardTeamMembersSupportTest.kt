@@ -7,16 +7,22 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import android.view.LayoutInflater
+import android.widget.ImageView
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.databinding.ItemTeamJoinRequestBinding
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowToast
@@ -31,7 +37,7 @@ class DashboardTeamMembersSupportTest {
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext<Context>().apply {
-            setTheme(androidx.appcompat.R.style.Theme_AppCompat)
+            setTheme(R.style.Theme_MyPlanetLite)
         }
 
         val lifecycleOwner = mock<LifecycleOwner>()
@@ -172,5 +178,53 @@ class DashboardTeamMembersSupportTest {
             onRejectClicked = {}
         )
         assertNotNull(requestsAdapter)
+    }
+
+    @Test
+    fun testTeamJoinRequestViewHolder_bind() {
+        val binding = ItemTeamJoinRequestBinding.inflate(LayoutInflater.from(context))
+
+        val avatarBinder: (ImageView, String?, Boolean) -> Unit = mock()
+        val onAcceptClicked: (TeamJoinRequestUiModel) -> Unit = mock()
+        val onRejectClicked: (TeamJoinRequestUiModel) -> Unit = mock()
+
+        val viewHolder = TeamJoinRequestViewHolder(
+            binding = binding,
+            avatarBinder = avatarBinder,
+            onAcceptClicked = onAcceptClicked,
+            onRejectClicked = onRejectClicked
+        )
+
+        val requestDocument = JoinRequestDocument(
+            id = "doc1",
+            revision = "rev1",
+            docType = "join_request",
+            teamId = "team1",
+            teamType = "team",
+            teamPlanetCode = "planet",
+            userId = "user1",
+            userPlanetCode = "planet"
+        )
+
+        val uiModel = TeamJoinRequestUiModel(
+            id = "doc1",
+            username = "testuser",
+            fullName = "Test User",
+            hasAvatar = true,
+            request = requestDocument
+        )
+
+        viewHolder.bind(uiModel)
+
+        assertEquals("Test User", binding.teamJoinRequestName.text.toString())
+        assertEquals("@testuser", binding.teamJoinRequestUsername.text.toString())
+
+        verify(avatarBinder).invoke(eq(binding.teamJoinRequestAvatar), eq("testuser"), eq(true))
+
+        binding.teamJoinRequestAcceptButton.performClick()
+        verify(onAcceptClicked).invoke(eq(uiModel))
+
+        binding.teamJoinRequestRejectButton.performClick()
+        verify(onRejectClicked).invoke(eq(uiModel))
     }
 }
