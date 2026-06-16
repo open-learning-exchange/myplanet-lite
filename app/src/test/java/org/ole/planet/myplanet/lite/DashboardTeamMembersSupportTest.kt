@@ -15,9 +15,16 @@ import org.mockito.kotlin.any
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verifyNoInteractions
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.mockito.kotlin.whenever
+import org.mockito.kotlin.verify
+import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
+import org.ole.planet.myplanet.lite.databinding.ItemInviteMemberBinding
+import android.view.LayoutInflater
 import org.robolectric.annotation.Config
 import org.robolectric.shadows.ShadowToast
 
@@ -30,9 +37,10 @@ class DashboardTeamMembersSupportTest {
 
     @Before
     fun setUp() {
-        context = ApplicationProvider.getApplicationContext<Context>().apply {
-            setTheme(androidx.appcompat.R.style.Theme_AppCompat)
-        }
+        context = androidx.appcompat.view.ContextThemeWrapper(
+            ApplicationProvider.getApplicationContext<Context>(),
+            com.google.android.material.R.style.Theme_MaterialComponents_DayNight
+        )
 
         val lifecycleOwner = mock<LifecycleOwner>()
         val lifecycle = LifecycleRegistry(lifecycleOwner)
@@ -172,5 +180,63 @@ class DashboardTeamMembersSupportTest {
             onRejectClicked = {}
         )
         assertNotNull(requestsAdapter)
+    }
+
+    @Test
+    fun testInviteMemberViewHolder_bind() {
+        val binding = ItemInviteMemberBinding.inflate(LayoutInflater.from(context))
+        val avatarLoader = mock<DashboardAvatarLoader>()
+        var clickedCandidate: InviteCandidate? = null
+        val onAddClicked: (InviteCandidate) -> Unit = { clickedCandidate = it }
+
+        val holder = InviteMemberViewHolder(binding, avatarLoader, onAddClicked)
+        val candidate = InviteCandidate(
+            name = "Test Name",
+            username = "testuser",
+            planetCode = "planet",
+            hasAvatar = true,
+            colorRes = R.color.blueOle
+        )
+
+        holder.bind(candidate, isDisabled = false)
+
+        assertEquals("Test Name", binding.inviteMemberName.text.toString())
+        assertEquals("@testuser", binding.inviteMemberUsername.text.toString())
+        assertTrue(binding.inviteMemberAdd.isEnabled)
+        assertEquals(1f, binding.inviteMemberAdd.alpha)
+
+        verify(avatarLoader).bind(binding.inviteMemberAvatar, "testuser", true)
+
+        binding.inviteMemberAdd.performClick()
+        assertEquals(candidate, clickedCandidate)
+    }
+
+    @Test
+    fun testInviteMemberViewHolder_bind_disabled() {
+        val binding = ItemInviteMemberBinding.inflate(LayoutInflater.from(context))
+        val avatarLoader = mock<DashboardAvatarLoader>()
+        var clickedCandidate: InviteCandidate? = null
+        val onAddClicked: (InviteCandidate) -> Unit = { clickedCandidate = it }
+
+        val holder = InviteMemberViewHolder(binding, avatarLoader, onAddClicked)
+        val candidate = InviteCandidate(
+            name = "Test Name Disabled",
+            username = "testuser_disabled",
+            planetCode = "planet",
+            hasAvatar = false,
+            colorRes = R.color.blueOle
+        )
+
+        holder.bind(candidate, isDisabled = true)
+
+        assertEquals("Test Name Disabled", binding.inviteMemberName.text.toString())
+        assertEquals("@testuser_disabled", binding.inviteMemberUsername.text.toString())
+        assertFalse(binding.inviteMemberAdd.isEnabled)
+        assertEquals(0.5f, binding.inviteMemberAdd.alpha)
+
+        verify(avatarLoader).bind(binding.inviteMemberAvatar, "testuser_disabled", true)
+
+        binding.inviteMemberAdd.performClick()
+        assertEquals(null, clickedCandidate)
     }
 }

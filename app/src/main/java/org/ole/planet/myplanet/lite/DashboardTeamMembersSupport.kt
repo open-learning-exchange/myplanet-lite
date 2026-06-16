@@ -419,8 +419,8 @@ internal data class TeamJoinRequestUiModel(val id: String, val username: String,
 private const val INVITE_PAGE_SIZE = 25
 private val INVITE_PLACEHOLDER_COLORS = listOf(R.color.login_primary, R.color.blueOle, R.color.greenOleLogo)
 
-private data class InviteCandidate(val name: String, val username: String, val planetCode: String?, val hasAvatar: Boolean, val colorRes: Int)
-private data class InviteCandidateUiModel(val candidate: InviteCandidate, val isDisabled: Boolean)
+internal data class InviteCandidate(val name: String, val username: String, val planetCode: String?, val hasAvatar: Boolean, val colorRes: Int)
+internal data class InviteCandidateUiModel(val candidate: InviteCandidate, val isDisabled: Boolean)
 
 internal class TeamMembersAdapter(
     private val avatarBinder: (ImageView, String?, Boolean) -> Unit,
@@ -498,7 +498,7 @@ internal class TeamMemberViewHolder(
     }
 }
 
-private class InviteMembersAdapter(
+internal class InviteMembersAdapter(
     private val avatarLoader: DashboardAvatarLoader?,
     private val onAddClicked: (InviteCandidate) -> Unit,
 ) : ListAdapter<InviteCandidateUiModel, InviteMemberViewHolder>(
@@ -525,7 +525,7 @@ private class InviteMembersAdapter(
     }
 }
 
-private class InviteMemberViewHolder(
+internal class InviteMemberViewHolder(
     private val binding: ItemInviteMemberBinding,
     private val avatarLoader: DashboardAvatarLoader?,
     private val onAddClicked: (InviteCandidate) -> Unit,
