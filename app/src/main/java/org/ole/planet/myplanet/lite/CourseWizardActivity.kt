@@ -600,7 +600,8 @@ class CourseWizardActivity : BaseActivity() {
         inflater: android.view.LayoutInflater,
         listContainer: LinearLayout
     ) {
-        val isAudio = resource.mediaType.lowercase(Locale.ROOT).contains("audio")
+        val mediaTypeLower = resource.mediaType.lowercase(Locale.ROOT)
+        val isAudio = mediaTypeLower.contains("audio")
         val itemView = if (isAudio) {
             inflater.inflate(
                 R.layout.item_course_wizard_audio_attachment,
@@ -620,8 +621,8 @@ class CourseWizardActivity : BaseActivity() {
             itemView.findViewById(R.id.courseWizardAttachmentIcon)
         titleText.text = resource.filename
         subtitle.text = resource.mediaType
-        val isVideo = resource.mediaType.lowercase(Locale.ROOT).contains("video")
-        val isImage = resource.mediaType.lowercase(Locale.ROOT).contains("image")
+        val isVideo = mediaTypeLower.contains("video")
+        val isImage = mediaTypeLower.contains("image")
         when {
             isVideo -> {
                 val playButton: ImageButton = itemView.findViewById(R.id.courseWizardAttachmentPlay)
