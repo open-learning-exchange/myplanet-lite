@@ -361,8 +361,8 @@ internal class DashboardTeamMembersInviteDialogController(
         }
     }
 
-    private fun handleFetchSuccess(users: List<UserDocument>, reset: Boolean) {
-        val candidates = users.mapNotNull { toInviteCandidate(it) }
+    private fun handleFetchSuccess(users: List<UserDocument>?, reset: Boolean) {
+        val candidates = users.orEmpty().mapNotNull { toInviteCandidate(it) }
         if (reset) {
             currentCandidates.clear()
             disabledCandidates.clear()
