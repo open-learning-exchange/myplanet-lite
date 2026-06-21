@@ -7,14 +7,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import android.view.LayoutInflater
 import android.widget.ImageView
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.robolectric.Robolectric
-import org.robolectric.shadows.ShadowAlertDialog
-import androidx.appcompat.app.AlertDialog
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNotNull
 import io.mockk.every
@@ -228,7 +224,8 @@ class DashboardTeamMembersSupportTest {
                 assertEquals("req_1", result.id)
             }
 
-            val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog() as? androidx.appcompat.app.AlertDialog
+            val dialog =
+                org.robolectric.shadows.ShadowDialog.getLatestDialog() as? androidx.appcompat.app.AlertDialog
             assertNotNull("AlertDialog should be shown", dialog)
             assertTrue("Dialog should be showing", dialog!!.isShowing)
 
@@ -308,61 +305,62 @@ class DashboardTeamMembersSupportTest {
 
         binding.teamJoinRequestRejectButton.performClick()
         verify(onRejectClicked).invoke(eq(uiModel))
-    fun testDashboardTeamMembersInviteDialogController_show() {
-        var context = ApplicationProvider.getApplicationContext<Context>()
-        context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
-        val lifecycleOwner = mock<LifecycleOwner>()
-        val lifecycle = LifecycleRegistry(lifecycleOwner)
-        lifecycle.currentState = Lifecycle.State.RESUMED
-        whenever(lifecycleOwner.lifecycle).thenReturn(lifecycle)
+        fun testDashboardTeamMembersInviteDialogController_show() {
+            var context = ApplicationProvider.getApplicationContext<Context>()
+            context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
+            val lifecycleOwner = mock<LifecycleOwner>()
+            val lifecycle = LifecycleRegistry(lifecycleOwner)
+            lifecycle.currentState = Lifecycle.State.RESUMED
+            whenever(lifecycleOwner.lifecycle).thenReturn(lifecycle)
 
-        val fragment = mock<Fragment> {
-            on { requireContext() } doReturn context
-            on { viewLifecycleOwner } doReturn lifecycleOwner
-            on { getString(any()) } doReturn "Mock Error"
-            on { getString(any(), any()) } doReturn "Mock Error with arg"
+            val fragment = mock<Fragment> {
+                on { requireContext() } doReturn context
+                on { viewLifecycleOwner } doReturn lifecycleOwner
+                on { getString(any()) } doReturn "Mock Error"
+                on { getString(any(), any()) } doReturn "Mock Error with arg"
+            }
+
+            val dialogBinding = DialogInviteMembersBinding.inflate(LayoutInflater.from(context))
+            runBlocking {
+                whenever(
+                    repository.fetchAllUsers(
+                        baseUrl = any(),
+                        credentials = anyOrNull(),
+                        sessionCookie = anyOrNull(),
+                        planetCode = anyOrNull(),
+                        parentCode = anyOrNull(),
+                        pageSize = any(),
+                        skip = any(),
+                        searchTerm = anyOrNull(),
+                        excludedUserIds = any(),
+                    )
+                ).thenReturn(Result.success(emptyList()))
+            }
+
+            val controller = DashboardTeamMembersInviteDialogController(
+                fragment = fragment,
+                dialogBinding = dialogBinding,
+                repository = repository,
+                lifecycleScope = lifecycle.coroutineScope,
+                avatarLoader = null,
+                base = "base",
+                creds = mock(),
+                teamId = "teamId",
+                teamPlanetCode = "planet",
+                teamType = "type",
+                sessionCookie = "cookie",
+                serverPlanetCode = "server",
+                serverParentCode = "parent",
+                currentMembersProvider = { emptyList() },
+                onReload = {}
+            )
+
+            controller.show()
+
+            val dialog = ShadowDialog.getLatestDialog()
+            assertNotNull(dialog)
+            assertNotNull(dialogBinding.inviteMembersList.adapter)
+            assertNotNull(dialogBinding.inviteMembersList.layoutManager)
         }
-
-        val dialogBinding = DialogInviteMembersBinding.inflate(LayoutInflater.from(context))
-        runBlocking {
-            whenever(
-                repository.fetchAllUsers(
-                    baseUrl = any(),
-                    credentials = anyOrNull(),
-                    sessionCookie = anyOrNull(),
-                    planetCode = anyOrNull(),
-                    parentCode = anyOrNull(),
-                    pageSize = any(),
-                    skip = any(),
-                    searchTerm = anyOrNull(),
-                    excludedUserIds = any(),
-                )
-            ).thenReturn(Result.success(emptyList()))
-        }
-
-        val controller = DashboardTeamMembersInviteDialogController(
-            fragment = fragment,
-            dialogBinding = dialogBinding,
-            repository = repository,
-            lifecycleScope = lifecycle.coroutineScope,
-            avatarLoader = null,
-            base = "base",
-            creds = mock(),
-            teamId = "teamId",
-            teamPlanetCode = "planet",
-            teamType = "type",
-            sessionCookie = "cookie",
-            serverPlanetCode = "server",
-            serverParentCode = "parent",
-            currentMembersProvider = { emptyList() },
-            onReload = {}
-        )
-
-        controller.show()
-
-        val dialog = ShadowDialog.getLatestDialog()
-        assertNotNull(dialog)
-        assertNotNull(dialogBinding.inviteMembersList.adapter)
-        assertNotNull(dialogBinding.inviteMembersList.layoutManager)
     }
 }
