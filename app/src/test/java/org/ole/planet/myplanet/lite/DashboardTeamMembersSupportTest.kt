@@ -7,11 +7,10 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import android.widget.ImageView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.robolectric.Robolectric
-import org.robolectric.shadows.ShadowAlertDialog
-import androidx.appcompat.app.AlertDialog
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNotNull
 import io.mockk.every
@@ -28,12 +27,15 @@ import org.junit.runner.RunWith
 import org.mockito.kotlin.any
 import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
+import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
+import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import android.view.LayoutInflater
 import androidx.lifecycle.coroutineScope
 import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.databinding.ItemTeamJoinRequestBinding
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.robolectric.annotation.Config
@@ -57,7 +59,7 @@ class DashboardTeamMembersSupportTest {
         every { SecurePreferencesProvider.getServerPreferences(any()) } returns mockSharedPreferences
 
         context = ApplicationProvider.getApplicationContext<Context>().apply {
-            setTheme(androidx.appcompat.R.style.Theme_AppCompat)
+            setTheme(R.style.Theme_MyPlanetLite)
         }
 
         val lifecycleOwner = mock<LifecycleOwner>()
@@ -222,7 +224,8 @@ class DashboardTeamMembersSupportTest {
                 assertEquals("req_1", result.id)
             }
 
-            val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog() as? androidx.appcompat.app.AlertDialog
+            val dialog =
+                org.robolectric.shadows.ShadowDialog.getLatestDialog() as? androidx.appcompat.app.AlertDialog
             assertNotNull("AlertDialog should be shown", dialog)
             assertTrue("Dialog should be showing", dialog!!.isShowing)
 
@@ -257,61 +260,107 @@ class DashboardTeamMembersSupportTest {
     }
 
     @Test
-    fun testDashboardTeamMembersInviteDialogController_show() {
-        var context = ApplicationProvider.getApplicationContext<Context>()
-        context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
-        val lifecycleOwner = mock<LifecycleOwner>()
-        val lifecycle = LifecycleRegistry(lifecycleOwner)
-        lifecycle.currentState = Lifecycle.State.RESUMED
-        whenever(lifecycleOwner.lifecycle).thenReturn(lifecycle)
+    fun testTeamJoinRequestViewHolder_bind() {
+        val binding = ItemTeamJoinRequestBinding.inflate(LayoutInflater.from(context))
 
-        val fragment = mock<Fragment> {
-            on { requireContext() } doReturn context
-            on { viewLifecycleOwner } doReturn lifecycleOwner
-            on { getString(any()) } doReturn "Mock Error"
-            on { getString(any(), any()) } doReturn "Mock Error with arg"
-        }
+        val avatarBinder: (ImageView, String?, Boolean) -> Unit = mock()
+        val onAcceptClicked: (TeamJoinRequestUiModel) -> Unit = mock()
+        val onRejectClicked: (TeamJoinRequestUiModel) -> Unit = mock()
 
-        val dialogBinding = DialogInviteMembersBinding.inflate(LayoutInflater.from(context))
-        runBlocking {
-            whenever(
-                repository.fetchAllUsers(
-                    baseUrl = any(),
-                    credentials = anyOrNull(),
-                    sessionCookie = anyOrNull(),
-                    planetCode = anyOrNull(),
-                    parentCode = anyOrNull(),
-                    pageSize = any(),
-                    skip = any(),
-                    searchTerm = anyOrNull(),
-                    excludedUserIds = any(),
-                )
-            ).thenReturn(Result.success(emptyList()))
-        }
-
-        val controller = DashboardTeamMembersInviteDialogController(
-            fragment = fragment,
-            dialogBinding = dialogBinding,
-            repository = repository,
-            lifecycleScope = lifecycle.coroutineScope,
-            avatarLoader = null,
-            base = "base",
-            creds = mock(),
-            teamId = "teamId",
-            teamPlanetCode = "planet",
-            teamType = "type",
-            sessionCookie = "cookie",
-            serverPlanetCode = "server",
-            serverParentCode = "parent",
-            currentMembersProvider = { emptyList() },
-            onReload = {}
+        val viewHolder = TeamJoinRequestViewHolder(
+            binding = binding,
+            avatarBinder = avatarBinder,
+            onAcceptClicked = onAcceptClicked,
+            onRejectClicked = onRejectClicked
         )
 
-        controller.show()
+        val requestDocument = JoinRequestDocument(
+            id = "doc1",
+            revision = "rev1",
+            docType = "join_request",
+            teamId = "team1",
+            teamType = "team",
+            teamPlanetCode = "planet",
+            userId = "user1",
+            userPlanetCode = "planet"
+        )
 
-        val dialog = ShadowDialog.getLatestDialog()
-        assertNotNull(dialog)
-        assertNotNull(dialogBinding.inviteMembersList.adapter)
-        assertNotNull(dialogBinding.inviteMembersList.layoutManager)
+        val uiModel = TeamJoinRequestUiModel(
+            id = "doc1",
+            username = "testuser",
+            fullName = "Test User",
+            hasAvatar = true,
+            request = requestDocument
+        )
+
+        viewHolder.bind(uiModel)
+
+        assertEquals("Test User", binding.teamJoinRequestName.text.toString())
+        assertEquals("@testuser", binding.teamJoinRequestUsername.text.toString())
+
+        verify(avatarBinder).invoke(eq(binding.teamJoinRequestAvatar), eq("testuser"), eq(true))
+
+        binding.teamJoinRequestAcceptButton.performClick()
+        verify(onAcceptClicked).invoke(eq(uiModel))
+
+        binding.teamJoinRequestRejectButton.performClick()
+        verify(onRejectClicked).invoke(eq(uiModel))
+        fun testDashboardTeamMembersInviteDialogController_show() {
+            var context = ApplicationProvider.getApplicationContext<Context>()
+            context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
+            val lifecycleOwner = mock<LifecycleOwner>()
+            val lifecycle = LifecycleRegistry(lifecycleOwner)
+            lifecycle.currentState = Lifecycle.State.RESUMED
+            whenever(lifecycleOwner.lifecycle).thenReturn(lifecycle)
+
+            val fragment = mock<Fragment> {
+                on { requireContext() } doReturn context
+                on { viewLifecycleOwner } doReturn lifecycleOwner
+                on { getString(any()) } doReturn "Mock Error"
+                on { getString(any(), any()) } doReturn "Mock Error with arg"
+            }
+
+            val dialogBinding = DialogInviteMembersBinding.inflate(LayoutInflater.from(context))
+            runBlocking {
+                whenever(
+                    repository.fetchAllUsers(
+                        baseUrl = any(),
+                        credentials = anyOrNull(),
+                        sessionCookie = anyOrNull(),
+                        planetCode = anyOrNull(),
+                        parentCode = anyOrNull(),
+                        pageSize = any(),
+                        skip = any(),
+                        searchTerm = anyOrNull(),
+                        excludedUserIds = any(),
+                    )
+                ).thenReturn(Result.success(emptyList()))
+            }
+
+            val controller = DashboardTeamMembersInviteDialogController(
+                fragment = fragment,
+                dialogBinding = dialogBinding,
+                repository = repository,
+                lifecycleScope = lifecycle.coroutineScope,
+                avatarLoader = null,
+                base = "base",
+                creds = mock(),
+                teamId = "teamId",
+                teamPlanetCode = "planet",
+                teamType = "type",
+                sessionCookie = "cookie",
+                serverPlanetCode = "server",
+                serverParentCode = "parent",
+                currentMembersProvider = { emptyList() },
+                onReload = {}
+            )
+
+            controller.show()
+
+            val dialog = ShadowDialog.getLatestDialog()
+            assertNotNull(dialog)
+            assertNotNull(dialogBinding.inviteMembersList.adapter)
+            assertNotNull(dialogBinding.inviteMembersList.layoutManager)
+        }
     }
 }
