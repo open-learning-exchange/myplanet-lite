@@ -7,11 +7,13 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertNotNull
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.kotlin.any
+import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verifyNoInteractions
@@ -195,11 +197,26 @@ class DashboardTeamMembersSupportTest {
         }
 
         val dialogBinding = DialogInviteMembersBinding.inflate(LayoutInflater.from(context))
+        runBlocking {
+            whenever(
+                repository.fetchAllUsers(
+                    baseUrl = any(),
+                    credentials = anyOrNull(),
+                    sessionCookie = anyOrNull(),
+                    planetCode = anyOrNull(),
+                    parentCode = anyOrNull(),
+                    pageSize = any(),
+                    skip = any(),
+                    searchTerm = anyOrNull(),
+                    excludedUserIds = any(),
+                )
+            ).thenReturn(Result.success(emptyList()))
+        }
 
         val controller = DashboardTeamMembersInviteDialogController(
             fragment = fragment,
             dialogBinding = dialogBinding,
-            repository = mock(),
+            repository = repository,
             lifecycleScope = lifecycle.coroutineScope,
             avatarLoader = null,
             base = "base",
