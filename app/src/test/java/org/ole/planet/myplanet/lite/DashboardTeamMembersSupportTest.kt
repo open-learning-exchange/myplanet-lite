@@ -19,6 +19,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
 import android.content.SharedPreferences
+import android.os.Looper
 import org.junit.After
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.junit.Before
@@ -36,6 +37,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.robolectric.annotation.Config
+import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowToast
 
@@ -189,46 +191,52 @@ class DashboardTeamMembersSupportTest {
 
     @Test
     fun testConfirmAcceptJoinRequestDialog_showsAlertDialog() {
-        val testActivity = Robolectric.buildActivity(TestActivity::class.java).setup().get()
-        val mockFragment = mock<Fragment> {
-            on { requireContext() } doReturn testActivity
-            on { getString(any(), any()) } doReturn "Are you sure you want to accept user Name?"
-        }
+        val controller = Robolectric.buildActivity(TestActivity::class.java).setup()
+        try {
+            val testActivity = controller.get()
+            val mockFragment = mock<Fragment> {
+                on { requireContext() } doReturn testActivity
+                on { getString(any(), any()) } doReturn "Are you sure you want to accept user Name?"
+            }
 
-        val request = TeamJoinRequestUiModel(
-            id = "req_1",
-            username = "username",
-            fullName = "Name",
-            hasAvatar = false,
-            request = JoinRequestDocument(
-                id = null,
-                revision = null,
-                docType = null,
-                teamId = null,
-                teamType = null,
-                teamPlanetCode = null,
-                userId = null,
-                userPlanetCode = null
+            val request = TeamJoinRequestUiModel(
+                id = "req_1",
+                username = "username",
+                fullName = "Name",
+                hasAvatar = false,
+                request = JoinRequestDocument(
+                    id = null,
+                    revision = null,
+                    docType = null,
+                    teamId = null,
+                    teamType = null,
+                    teamPlanetCode = null,
+                    userId = null,
+                    userPlanetCode = null
+                )
             )
-        )
 
-        var callbackTriggered = false
-        confirmAcceptJoinRequestDialog(mockFragment, request) { result ->
-            callbackTriggered = true
-            assertEquals("req_1", result.id)
+            var callbackTriggered = false
+            confirmAcceptJoinRequestDialog(mockFragment, request) { result ->
+                callbackTriggered = true
+                assertEquals("req_1", result.id)
+            }
+
+            val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog() as? androidx.appcompat.app.AlertDialog
+            assertNotNull("AlertDialog should be shown", dialog)
+            assertTrue("Dialog should be showing", dialog!!.isShowing)
+
+            val button = dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+            assertNotNull("Positive button should exist", button)
+
+            button.performClick()
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+            assertTrue("Callback should be triggered on accept", callbackTriggered)
+            dialog.dismiss()
+        } finally {
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+            controller.pause().stop().destroy()
         }
-
-        val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog() as? androidx.appcompat.app.AlertDialog
-        assertNotNull("AlertDialog should be shown", dialog)
-        assertTrue("Dialog should be showing", dialog!!.isShowing)
-
-        val button = dialog.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
-        assertNotNull("Positive button should exist", button)
-
-        // Trigger positive button and verify callback
-        button.performClick()
-        org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
-        assertTrue("Callback should be triggered on accept", callbackTriggered)
     }
 
     @Test
