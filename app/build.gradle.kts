@@ -32,8 +32,13 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
+<<<<<<< test-update-saved-surveys-15386669546053830364
         versionCode = 439
         versionName = "0.4.39"
+=======
+        versionCode = 438
+        versionName = "0.4.38"
+>>>>>>> main
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
