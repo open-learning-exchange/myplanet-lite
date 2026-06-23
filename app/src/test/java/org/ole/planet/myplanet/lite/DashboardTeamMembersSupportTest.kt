@@ -42,6 +42,8 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.databinding.ItemTeamJoinRequestBinding
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.dashboard.UserDocument
 import org.robolectric.annotation.Config
 import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowDialog
@@ -163,7 +165,7 @@ class DashboardTeamMembersSupportTest {
 
     @Test
     fun testRunRemoveTeamMember_invalidInputsShowsToast() {
-        val member = org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails(
+        val member = TeamMemberDetails(
             username = "user",
             fullName = "User",
             hasAvatar = false,
@@ -373,7 +375,6 @@ class DashboardTeamMembersSupportTest {
             controller.pause().stop().destroy()
         }
     }
-    }
 
     @Test
     fun testAdaptersInstantiation() {
@@ -442,7 +443,7 @@ class DashboardTeamMembersSupportTest {
 
     @Test
     fun testDashboardTeamMembersInviteDialogController_show() {
-        var context = ApplicationProvider.getApplicationContext<Context>()
+        val context = ApplicationProvider.getApplicationContext<Context>()
         context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
         val lifecycleOwner = mock<LifecycleOwner>()
         val lifecycle = LifecycleRegistry(lifecycleOwner)
@@ -460,17 +461,17 @@ class DashboardTeamMembersSupportTest {
         runBlocking {
             whenever(
                 repository.fetchAllUsers(
-                    baseUrl = any(),
-                    credentials = anyOrNull(),
-                    sessionCookie = anyOrNull(),
-                    planetCode = anyOrNull(),
-                    parentCode = anyOrNull(),
-                    pageSize = any(),
-                    skip = any(),
-                    searchTerm = anyOrNull(),
-                    excludedUserIds = any(),
+                    baseUrl = any<String>(),
+                    credentials = anyOrNull<StoredCredentials>(),
+                    sessionCookie = anyOrNull<String>(),
+                    planetCode = anyOrNull<String>(),
+                    parentCode = anyOrNull<String>(),
+                    pageSize = any<Int>(),
+                    skip = any<Int>(),
+                    searchTerm = anyOrNull<String>(),
+                    excludedUserIds = any<List<String>>(),
                 )
-            ).thenReturn(Result.success(emptyList()))
+            ).thenReturn(Result.success(emptyList<UserDocument>()))
         }
 
         val controller = DashboardTeamMembersInviteDialogController(
@@ -480,7 +481,7 @@ class DashboardTeamMembersSupportTest {
             lifecycleScope = lifecycle.coroutineScope,
             avatarLoader = null,
             base = "base",
-            creds = mock(),
+            creds = mock<StoredCredentials>(),
             teamId = "teamId",
             teamPlanetCode = "planet",
             teamType = "type",
