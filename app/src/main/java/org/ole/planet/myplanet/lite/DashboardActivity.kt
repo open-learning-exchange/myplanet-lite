@@ -749,8 +749,8 @@ class DashboardActivity : BaseActivity() {
         private const val STATE_CURRENT_SECTION = "state_current_section"
         private const val PREFS_NAME = "server_preferences"
         private const val KEY_VOICE_PAGE_SIZE = "voice_page_size"
-        private const val KEY_SURVEY_TRANSLATIONS_ENABLED = "survey_translations_enabled"
-        private const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
+        @androidx.annotation.VisibleForTesting const val KEY_SURVEY_TRANSLATIONS_ENABLED = "survey_translations_enabled"
+        @androidx.annotation.VisibleForTesting const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
         private const val DEFAULT_VOICE_PAGE_SIZE = 20
         private const val DEFAULT_SURVEY_TRANSLATION_ENABLED = true
         const val EXTRA_OFFLINE_MODE = "extra_offline_mode"

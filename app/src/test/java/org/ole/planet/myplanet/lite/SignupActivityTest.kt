@@ -267,4 +267,94 @@ class SignupActivityTest {
         assertEquals(GENDER_MALE, result?.getString("gender"))
         assertEquals("English", result?.getString("language"))
     }
+
+
+
+    @Test
+    fun `test validateCurrentStep`() {
+        val controller = Robolectric.buildActivity(SignupActivity::class.java).create().start().resume()
+        val activity = controller.get()
+
+        // Step USERNAME
+        activity.currentStepIndex = SignupStep.USERNAME.ordinal
+        var result = activity.validateCurrentStep()
+        assertFalse(result) // empty username by default
+
+        val usernameInput = activity.findViewById<TextInputEditText>(R.id.signupUsernameInput)
+        usernameInput.setText("validUser123")
+        result = activity.validateCurrentStep()
+        assertTrue(result)
+
+        // Step NAMES
+        activity.currentStepIndex = SignupStep.NAMES.ordinal
+        result = activity.validateCurrentStep()
+        assertFalse(result) // empty names
+
+        val firstNameInput = activity.findViewById<TextInputEditText>(R.id.signupFirstNameInput)
+        val lastNameInput = activity.findViewById<TextInputEditText>(R.id.signupLastNameInput)
+        firstNameInput.setText("John")
+        lastNameInput.setText("Doe")
+        result = activity.validateCurrentStep()
+        assertTrue(result)
+
+        // Step BIRTH_DATE
+        activity.currentStepIndex = SignupStep.BIRTH_DATE.ordinal
+        result = activity.validateCurrentStep()
+        assertFalse(result)
+
+        activity.birthDateSelection = 1000000L
+        result = activity.validateCurrentStep()
+        assertTrue(result)
+
+        // Step GENDER
+        activity.currentStepIndex = SignupStep.GENDER.ordinal
+        result = activity.validateCurrentStep()
+        assertFalse(result)
+
+        val genderGroup = activity.findViewById<RadioGroup>(R.id.signupGenderGroup)
+        genderGroup.check(R.id.signupGenderMale)
+        result = activity.validateCurrentStep()
+        assertTrue(result)
+
+        // Step CONTACT
+        activity.currentStepIndex = SignupStep.CONTACT.ordinal
+        result = activity.validateCurrentStep()
+        assertFalse(result)
+
+        val emailInput = activity.findViewById<TextInputEditText>(R.id.signupEmailInput)
+        val phoneInput = activity.findViewById<TextInputEditText>(R.id.signupPhoneInput)
+        emailInput.setText("test@example.com")
+        phoneInput.setText("1234567890")
+        result = activity.validateCurrentStep()
+        assertTrue(result)
+
+        // Step PASSWORD
+        activity.currentStepIndex = SignupStep.PASSWORD.ordinal
+        result = activity.validateCurrentStep()
+        assertFalse(result)
+
+        val passwordInput = activity.findViewById<TextInputEditText>(R.id.signupPasswordInput)
+        val confirmPasswordInput = activity.findViewById<TextInputEditText>(R.id.signupConfirmPasswordInput)
+        passwordInput.setText("password123")
+        confirmPasswordInput.setText("password123")
+        result = activity.validateCurrentStep()
+        assertTrue(result)
+
+        // Step LANGUAGE
+        activity.currentStepIndex = SignupStep.LANGUAGE.ordinal
+        result = activity.validateCurrentStep()
+        assertFalse(result)
+
+        val languageInput = activity.findViewById<AutoCompleteTextView>(R.id.signupLanguageInput)
+        val levelInput = activity.findViewById<AutoCompleteTextView>(R.id.signupLevelInput)
+        languageInput.setText("English")
+        levelInput.setText("Primary")
+        result = activity.validateCurrentStep()
+        assertTrue(result)
+
+        // Step LICENSE always true
+        activity.currentStepIndex = SignupStep.LICENSE.ordinal
+        result = activity.validateCurrentStep()
+        assertTrue(result)
+    }
 }
