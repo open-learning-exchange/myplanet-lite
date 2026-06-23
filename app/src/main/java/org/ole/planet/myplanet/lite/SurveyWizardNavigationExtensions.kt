@@ -289,9 +289,7 @@ internal fun SurveyWizardFragment.buildSteps(includeDetails: Boolean): List<Wiza
 }
 
 internal fun SurveyWizardFragment.finishWithResult() {
-    if (isExam) {
-        requireActivity().setResult(Activity.RESULT_OK)
-    }
+    requireActivity().setResult(Activity.RESULT_OK)
     requireActivity().finish()
 }
 

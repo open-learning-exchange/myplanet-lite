@@ -29,6 +29,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
+import com.google.android.material.snackbar.Snackbar
 import io.noties.markwon.Markwon
 import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
@@ -81,8 +82,8 @@ class CourseWizardActivity : BaseActivity() {
     private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(applicationContext) }
     private var hasAutoCompletedFirstStep = false
     private val audioPlayers = mutableListOf<ExoPlayer>()
-    private val completedExamSteps = mutableSetOf<Int>()
-    private var pendingExamStepIndex: Int? = null
+    private val completedRequiredSteps = mutableSetOf<Int>()
+    private var pendingRequiredStepIndex: Int? = null
     private var cachedProgressDocument: DashboardCoursesRepository.CourseProgressDocument? = null
 
     private val fullscreenLauncher =
@@ -95,14 +96,14 @@ class CourseWizardActivity : BaseActivity() {
             )
         }
 
-    private val examLauncher =
+    private val requiredStepLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == RESULT_OK) {
-                pendingExamStepIndex?.let { completedExamSteps.add(it) }
+                pendingRequiredStepIndex?.let { completedRequiredSteps.add(it) }
             }
-            pendingExamStepIndex = null
+            pendingRequiredStepIndex = null
             if (this::stepPositionView.isInitialized) {
-                    bindStep()
+                bindStep()
             }
         }
 
@@ -137,9 +138,9 @@ class CourseWizardActivity : BaseActivity() {
         val startIndex = intent.getIntExtra(EXTRA_START_STEP, 0)
         baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
         credentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
-        savedInstanceState?.getIntegerArrayList(EXTRA_COMPLETED_EXAM_STEPS)?.let { restored ->
-            completedExamSteps.clear()
-            completedExamSteps.addAll(restored)
+        savedInstanceState?.getIntegerArrayList(EXTRA_COMPLETED_REQUIRED_STEPS)?.let { restored ->
+            completedRequiredSteps.clear()
+            completedRequiredSteps.addAll(restored)
         }
         val rawSteps = IntentCompat.getSerializableExtra(
             intent,
@@ -196,8 +197,8 @@ class CourseWizardActivity : BaseActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putIntegerArrayList(
-            EXTRA_COMPLETED_EXAM_STEPS,
-            ArrayList(completedExamSteps)
+            EXTRA_COMPLETED_REQUIRED_STEPS,
+            ArrayList(completedRequiredSteps)
         )
     }
 
@@ -257,31 +258,47 @@ class CourseWizardActivity : BaseActivity() {
                 bindStep()
             }
         }
-        val examPending = step.exam?.questions?.isNotEmpty() == true &&
-                !completedExamSteps.contains(currentIndex)
+        val requiredStepPending = isRequiredStepPending(step)
         if (currentIndex >= steps.lastIndex) {
             nextButton.isEnabled = true
             (nextButton as? TextView)?.text = getString(R.string.course_wizard_finish)
             nextButton.setOnClickListener {
-                nextButton.isEnabled = false
-                lifecycleScope.launch {
-                    finishCourse()
+                if (requiredStepPending) {
+                    showCompleteRequiredStepSnackbar()
+                } else {
+                    nextButton.isEnabled = false
+                    lifecycleScope.launch {
+                        finishCourse()
+                    }
                 }
             }
         } else {
             nextButton.isEnabled = true
             (nextButton as? TextView)?.text = getString(R.string.course_wizard_next)
             nextButton.setOnClickListener {
-                if (currentIndex < steps.lastIndex) {
+                if (requiredStepPending) {
+                    showCompleteRequiredStepSnackbar()
+                } else if (currentIndex < steps.lastIndex) {
                     lifecycleScope.launch {
                         advanceToNextStep()
                     }
                 }
             }
         }
-        if (examPending) {
-            nextButton.isEnabled = false
-        }
+    }
+
+    private fun isRequiredStepPending(step: StepDisplay): Boolean {
+        val hasSurvey = step.survey?.questions?.isNotEmpty() == true
+        val hasExam = step.exam?.questions?.isNotEmpty() == true
+        return (hasSurvey || hasExam) && !completedRequiredSteps.contains(currentIndex)
+    }
+
+    private fun showCompleteRequiredStepSnackbar() {
+        Snackbar.make(
+            findViewById(R.id.courseWizardRoot),
+            getString(R.string.course_wizard_complete_required_step),
+            Snackbar.LENGTH_SHORT
+        ).show()
     }
 
     private fun advanceToNextStep() {
@@ -574,13 +591,14 @@ class CourseWizardActivity : BaseActivity() {
         iconView.contentDescription = getString(R.string.dashboard_surveys_title)
         playButton.contentDescription = getString(R.string.course_wizard_open_survey)
         val openSurvey = {
+            pendingRequiredStepIndex = currentIndex
             SurveyWizardActivity.newIntent(
                 this,
                 survey,
                 survey.teamId,
                 null,
                 courseId
-            ).also { startActivity(it) }
+            ).also { requiredStepLauncher.launch(it) }
         }
         itemView.setOnClickListener { openSurvey() }
         playButton.setOnClickListener { openSurvey() }
@@ -610,7 +628,7 @@ class CourseWizardActivity : BaseActivity() {
         iconView.contentDescription = getString(R.string.dashboard_exam_title)
         playButton.contentDescription = getString(R.string.course_wizard_open_exam)
         val openExam = {
-            pendingExamStepIndex = currentIndex
+            pendingRequiredStepIndex = currentIndex
             SurveyWizardActivity.newIntent(
                 this,
                 exam,
@@ -618,7 +636,7 @@ class CourseWizardActivity : BaseActivity() {
                 null,
                 courseId,
                 isExam = true
-            ).also { examLauncher.launch(it) }
+            ).also { requiredStepLauncher.launch(it) }
         }
         itemView.setOnClickListener { openExam() }
         playButton.setOnClickListener { openExam() }
@@ -878,11 +896,10 @@ class CourseWizardActivity : BaseActivity() {
         private const val EXTRA_COURSE_ID = "extra_course_id"
         private const val EXTRA_STEPS = "extra_steps"
         private const val EXTRA_START_STEP = "extra_start_step"
-        private const val EXTRA_COMPLETED_EXAM_STEPS = "extra_completed_exam_steps"
+        private const val EXTRA_COMPLETED_REQUIRED_STEPS = "extra_completed_required_steps"
         const val EXTRA_RESULT_COURSE_ID = "extra_result_course_id"
         const val EXTRA_RESULT_PROGRESS_PERCENT = "extra_result_progress_percent"
         const val EXTRA_RESULT_CURRENT_STEP = "extra_result_current_step"
-
         fun createIntent(
             context: Context,
             courseId: String,

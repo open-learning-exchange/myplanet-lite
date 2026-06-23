@@ -13,6 +13,7 @@ import androidx.core.content.edit
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.lite.util.BirthDateConstraints
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 internal fun SignupActivity.navigateBack() {
@@ -232,7 +233,8 @@ internal fun SignupActivity.showUsernameAvailabilityChecking(isChecking: Boolean
 }
 
 internal fun SignupActivity.validateBirthDate(): Boolean {
-    return if (birthDateSelection != null) {
+    val selection = birthDateSelection
+    return if (selection != null && !BirthDateConstraints.isFuture(selection)) {
         birthDateLayout.error = null
         true
     } else {

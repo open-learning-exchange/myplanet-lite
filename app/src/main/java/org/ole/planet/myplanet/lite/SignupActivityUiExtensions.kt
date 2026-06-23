@@ -21,6 +21,7 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import org.ole.planet.myplanet.lite.util.BirthDateConstraints
 
 internal fun SignupActivity.initializeViews() {
     scrollView = findViewById(R.id.signupScroll)
@@ -272,12 +273,16 @@ internal fun SignupActivity.showBirthDatePicker() {
 
     val picker = MaterialDatePicker.Builder.datePicker()
         .setTitleText(getString(R.string.signup_birth_date_picker_title))
+        .setCalendarConstraints(BirthDateConstraints.calendarConstraints())
         .apply {
-            birthDateSelection?.let { setSelection(it) }
+            setSelection(BirthDateConstraints.coerceSelection(birthDateSelection))
         }
         .build()
 
     picker.addOnPositiveButtonClickListener { selection ->
+        if (BirthDateConstraints.isFuture(selection)) {
+            return@addOnPositiveButtonClickListener
+        }
         birthDateSelection = selection
         birthDateInput.setText(formatBirthDate(selection))
         birthDateLayout.error = null

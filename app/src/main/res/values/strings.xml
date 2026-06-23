@@ -459,6 +459,7 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="dashboard_survey_wizard_gender_label">Select respondent gender</string>
     <string name="dashboard_survey_wizard_birth_year_label">Year of birth</string>
     <string name="dashboard_survey_wizard_birth_year_required">Enter a birth year to continue.</string>
+    <string name="dashboard_survey_wizard_birth_year_future">Birth year cannot be in the future.</string>
     <string name="dashboard_survey_wizard_additional_info_label">Additional details (optional)</string>
     <string name="dashboard_survey_wizard_names_title">Respondent name</string>
     <string name="dashboard_survey_wizard_first_name_label">First name (optional)</string>
@@ -597,6 +598,7 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="course_wizard_next">Next</string>
     <string name="course_wizard_finish">Finish course</string>
     <string name="course_wizard_step_position">Step %1$d of %2$d</string>
+    <string name="course_wizard_complete_required_step">Complete the test or survey to continue.</string>
     <string name="course_wizard_open_survey">Open survey</string>
     <string name="course_wizard_open_exam">Open exam</string>
     <string name="dashboard_exam_title">Exam</string>

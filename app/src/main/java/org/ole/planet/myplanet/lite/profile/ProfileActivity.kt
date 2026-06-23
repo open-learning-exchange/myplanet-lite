@@ -61,6 +61,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.model.LanguageOption
+import org.ole.planet.myplanet.lite.util.BirthDateConstraints
 import org.ole.planet.myplanet.lite.util.nullIfBlank
 
 class ProfileActivity : BaseActivity() {
@@ -312,7 +313,7 @@ class ProfileActivity : BaseActivity() {
             lastNameInput.setText(profile?.lastName.orEmpty())
             emailInput.setText(profile?.email.orEmpty())
             phoneInput.setText(profile?.phoneNumber.orEmpty())
-            selectedBirthDateIso = profile?.birthDate
+            selectedBirthDateIso = normalizeBirthDateIso(profile?.birthDate)
             birthDateInput.setText(formatBirthDate(selectedBirthDateIso))
 
             applyAvatarBitmap(decodeAvatarBytes(profile?.avatarImage))
@@ -375,7 +376,7 @@ class ProfileActivity : BaseActivity() {
             else -> null
         }
 
-        val birthDateIso = selectedBirthDateIso
+        val birthDateIso = normalizeBirthDateIso(selectedBirthDateIso)
 
         return ProfileFormValues(
             firstName = firstNameInput.text?.toString()?.trim().nullIfBlank(),
@@ -725,12 +726,17 @@ class ProfileActivity : BaseActivity() {
     }
 
     private fun showBirthDatePicker(targetView: TextInputEditText) {
+        val selection = BirthDateConstraints.coerceSelection(parseBirthDateToMillis(selectedBirthDateIso))
         val picker = MaterialDatePicker.Builder.datePicker()
             .setTitleText(R.string.profile_birth_date_picker_title)
-            .setSelection(parseBirthDateToMillis(selectedBirthDateIso) ?: MaterialDatePicker.todayInUtcMilliseconds())
+            .setSelection(selection)
+            .setCalendarConstraints(BirthDateConstraints.calendarConstraints())
             .build()
 
         picker.addOnPositiveButtonClickListener { selection ->
+            if (BirthDateConstraints.isFuture(selection)) {
+                return@addOnPositiveButtonClickListener
+            }
             val iso = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 Instant.ofEpochMilli(selection).atZone(ZoneOffset.UTC).toInstant().toString()
             } else {
@@ -744,6 +750,11 @@ class ProfileActivity : BaseActivity() {
         }
 
         picker.show(supportFragmentManager, "birthDatePicker")
+    }
+
+    private fun normalizeBirthDateIso(raw: String?): String? {
+        val millis = parseBirthDateToMillis(raw)
+        return raw?.takeIf { millis != null && !BirthDateConstraints.isFuture(millis) }
     }
 
     private fun parseBirthDateToMillis(raw: String?): Long? {

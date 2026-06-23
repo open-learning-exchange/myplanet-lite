@@ -387,6 +387,7 @@
     <string name="dashboard_survey_wizard_gender_label">प्रतिवादीको लिङ्ग छान्नुहोस्</string>
     <string name="dashboard_survey_wizard_birth_year_label">जन्म वर्ष</string>
     <string name="dashboard_survey_wizard_birth_year_required">जारी राख्न जन्म वर्ष लेख्नुहोस्।</string>
+    <string name="dashboard_survey_wizard_birth_year_future">जन्म वर्ष भविष्यमा हुन सक्दैन।</string>
     <string name="dashboard_survey_wizard_additional_info_label">थप विवरण (वैकल्पिक)</string>
     <string name="dashboard_survey_wizard_names_title">प्रतिवादीको नाम</string>
     <string name="dashboard_survey_wizard_first_name_label">पहिलो नाम (वैकल्पिक)</string>
@@ -565,6 +566,7 @@
     <string name="course_wizard_next">अर्को</string>
     <string name="course_wizard_finish">पाठ्यक्रम समाप्त गर्नुहोस्</string>
     <string name="course_wizard_step_position">चरण %1$d / %2$d</string>
+    <string name="course_wizard_complete_required_step">जारी राख्न परीक्षा वा सर्वेक्षण पूरा गर्नुहोस्।</string>
     <string name="course_wizard_attachments_title">संलग्नहरू</string>
     <string name="course_wizard_attachment_video">भिडियो</string>
     <string name="course_wizard_attachment_image">तस्बिर</string>

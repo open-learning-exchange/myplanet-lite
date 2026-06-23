@@ -444,6 +444,7 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="dashboard_survey_wizard_gender_label">प्रतिक्रिया देने वाले का लिंग चुनें</string>
     <string name="dashboard_survey_wizard_birth_year_label">जन्म वर्ष</string>
     <string name="dashboard_survey_wizard_birth_year_required">आगे बढ़ने के लिए जन्म वर्ष दर्ज करें।</string>
+    <string name="dashboard_survey_wizard_birth_year_future">जन्म वर्ष भविष्य में नहीं हो सकता।</string>
     <string name="dashboard_survey_wizard_additional_info_label">अतिरिक्त विवरण (वैकल्पिक)</string>
     <string name="dashboard_survey_wizard_names_title">प्रतिक्रिया देने वाले का नाम</string>
     <string name="dashboard_survey_wizard_first_name_label">पहला नाम (वैकल्पिक)</string>
@@ -584,6 +585,7 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="course_wizard_next">अगला</string>
     <string name="course_wizard_finish">कोर्स पूरा करें</string>
     <string name="course_wizard_step_position">चरण %1$d में से %2$d</string>
+    <string name="course_wizard_complete_required_step">जारी रखने के लिए परीक्षा या सर्वे पूरा करें।</string>
     <string name="course_wizard_attachments_title">संलग्नक</string>
     <string name="course_wizard_attachment_video">वीडियो</string>
     <string name="course_wizard_attachment_image">छवि</string>
