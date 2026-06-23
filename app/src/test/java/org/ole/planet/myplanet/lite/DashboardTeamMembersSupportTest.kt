@@ -47,6 +47,7 @@ import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.dashboard.UserDocument
 import org.robolectric.annotation.Config
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowToast
@@ -60,7 +61,7 @@ class DashboardTeamMembersSupportTest {
 
     @Before
     fun setUp() {
-val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
+        val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         every { mockSharedPreferences.getString(any(), any()) } returns "en"
 
         mockkObject(SecurePreferencesProvider)
@@ -393,6 +394,21 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
             onRejectClicked = {}
         )
         assertNotNull(requestsAdapter)
+    }
+
+    @Test
+    fun testAnimateFabClickSupport() {
+        val themedContext = android.view.ContextThemeWrapper(
+            context,
+            com.google.android.material.R.style.Theme_MaterialComponents
+        )
+        val fab = FloatingActionButton(themedContext)
+        fab.rotation = 10f
+
+        animateFabClickSupport(fab)
+
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+        assertEquals(0f, fab.rotation)
     }
 
     @Test
