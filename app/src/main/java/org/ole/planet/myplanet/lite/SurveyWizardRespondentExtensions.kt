@@ -74,6 +74,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
+import org.ole.planet.myplanet.lite.util.BirthDateConstraints
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import androidx.core.graphics.toColorInt
@@ -101,9 +102,12 @@ internal fun SurveyWizardFragment.applyProfileDefaultsForCourseContent() {
     respondent.language = assignIfEmpty(respondent.language, profile.language)
     respondent.level = assignIfEmpty(respondent.level, profile.level)
     if (respondent.birthDate.isNullOrBlank() && !profile.birthDate.isNullOrBlank()) {
-        respondent.birthDate = profile.birthDate
-        birthDateSelection = parseBirthDateIso(profile.birthDate)
-        hasOptionalDetails = true
+        val profileBirthDateSelection = parseBirthDateIso(profile.birthDate)
+        if (profileBirthDateSelection != null && !BirthDateConstraints.isFuture(profileBirthDateSelection)) {
+            respondent.birthDate = profile.birthDate
+            birthDateSelection = profileBirthDateSelection
+            hasOptionalDetails = true
+        }
     }
     val birthDateMillis = birthDateSelection
     if (birthDateMillis != null) {
@@ -200,8 +204,9 @@ internal fun SurveyWizardFragment.scrollFocusedFieldIntoView(view: View) {
 
 internal fun SurveyWizardFragment.updateRespondentBirthYear(value: String?) {
     val year = value?.trim().orEmpty().toIntOrNull()
-    respondent.birthYear = year
-    respondent.age = year?.let { Calendar.getInstance().get(Calendar.YEAR) - it }
+    val nowYear = Calendar.getInstance().get(Calendar.YEAR)
+    respondent.birthYear = year?.takeIf { it <= nowYear }
+    respondent.age = respondent.birthYear?.let { nowYear - it }
 }
 
 internal fun SurveyWizardFragment.createAdditionalCheckBox(context: android.content.Context): CheckBox {
@@ -236,6 +241,9 @@ internal fun SurveyWizardFragment.renderBasicsStep(): Pair<View, () -> Boolean> 
         val year = yearText.toIntOrNull()
         if (yearText.isNotEmpty() && year == null) {
             showValidationMessage(R.string.dashboard_survey_wizard_birth_year_required)
+            false
+        } else if (year != null && year > Calendar.getInstance().get(Calendar.YEAR)) {
+            showValidationMessage(R.string.dashboard_survey_wizard_birth_year_future)
             false
         } else {
             val nowYear = Calendar.getInstance().get(Calendar.YEAR)
@@ -345,7 +353,9 @@ internal fun SurveyWizardFragment.renderBirthDateStep(): Pair<View, () -> Boolea
     container.addView(birthDateLayout)
 
     val collector = {
-        respondent.birthDate = birthDateSelection?.let { formatBirthDateIso(it) }
+        respondent.birthDate = birthDateSelection
+            ?.takeUnless { BirthDateConstraints.isFuture(it) }
+            ?.let { formatBirthDateIso(it) }
         true
     }
     return container to collector
@@ -358,12 +368,16 @@ internal fun SurveyWizardFragment.showBirthDatePicker(input: TextInputEditText) 
 
     val picker = MaterialDatePicker.Builder.datePicker()
         .setTitleText(getString(R.string.signup_birth_date_picker_title))
+        .setCalendarConstraints(BirthDateConstraints.calendarConstraints())
         .apply {
-            birthDateSelection?.let { setSelection(it) }
+            setSelection(BirthDateConstraints.coerceSelection(birthDateSelection))
         }
         .build()
 
     picker.addOnPositiveButtonClickListener { selection ->
+        if (BirthDateConstraints.isFuture(selection)) {
+            return@addOnPositiveButtonClickListener
+        }
         birthDateSelection = selection
         input.setText(formatBirthDateIso(selection))
     }

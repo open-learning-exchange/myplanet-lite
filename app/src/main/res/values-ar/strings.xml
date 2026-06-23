@@ -428,6 +428,7 @@
     <string name="dashboard_survey_wizard_gender_label">اختر جنس المستجيب</string>
     <string name="dashboard_survey_wizard_birth_year_label">سنة الميلاد</string>
     <string name="dashboard_survey_wizard_birth_year_required">أدخل سنة الميلاد للمتابعة.</string>
+    <string name="dashboard_survey_wizard_birth_year_future">لا يمكن أن تكون سنة الميلاد في المستقبل.</string>
     <string name="dashboard_survey_wizard_additional_info_label">تفاصيل إضافية (اختياري)</string>
     <string name="dashboard_survey_wizard_names_title">اسم المستجيب</string>
     <string name="dashboard_survey_wizard_first_name_label">الاسم الأول (اختياري)</string>
