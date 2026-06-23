@@ -27,6 +27,12 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+
+import androidx.fragment.app.Fragment
+import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.Mockito.`when`
@@ -965,4 +971,107 @@ class DashboardResourcesMediaUtilsTest {
 
         assertNull(size)
     }
+
+    @Test
+    fun extractResourceMetadata_success() {
+        val fragment = mock(Fragment::class.java)
+        val context = mock(Context::class.java)
+
+        val appContext = mock(Context::class.java)
+        `when`(context.applicationContext).thenReturn(appContext)
+        `when`(appContext.applicationContext).thenReturn(appContext)
+
+        val resources = mock(Resources::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+
+        `when`(fragment.requireContext()).thenReturn(context)
+        `when`(context.applicationContext).thenReturn(appContext)
+        `when`(fragment.resources).thenReturn(resources)
+        `when`(resources.getStringArray(R.array.signup_language_options)).thenReturn(arrayOf("English", "Spanish"))
+
+        // Mock URI display name
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        val cursor = mock(Cursor::class.java)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)).thenReturn(0)
+        `when`(cursor.moveToFirst()).thenReturn(true)
+        `when`(cursor.getString(0)).thenReturn("test_file.mp4")
+
+        // Mock Credentials
+        val credentials = StoredCredentials("test_user", "test_pass")
+        ProfileCredentialsStore.setSessionCredentials(credentials)
+
+        // Mock Server Preferences
+        val sharedPrefs = mock(android.content.SharedPreferences::class.java)
+        `when`(sharedPrefs.getString("server_code", null)).thenReturn("test_planet")
+        SecurePreferencesProvider.injectedPreferences = sharedPrefs
+
+        val result = DashboardResourcesMediaUtils.extractResourceMetadata(fragment, uri, "default_file.mp4")
+
+        assertEquals("test_file.mp4", result.fileName)
+        assertEquals("test_file", result.defaultTitle)
+        assertEquals(listOf("English", "Spanish"), result.languageOptions)
+        assertEquals(credentials, result.credentials)
+        assertEquals("test_user", result.username)
+        assertEquals("test_planet", result.planetCode)
+
+        // Cleanup
+        ProfileCredentialsStore.setSessionCredentials(null)
+        SecurePreferencesProvider.injectedPreferences = null
+    }
+
+    @Test
+    fun extractResourceMetadata_pdfAndMissingDefaults() {
+        val fragment = mock(Fragment::class.java)
+        val context = mock(Context::class.java)
+
+        val appContext = mock(Context::class.java)
+        `when`(context.applicationContext).thenReturn(appContext)
+        `when`(appContext.applicationContext).thenReturn(appContext)
+
+        val resources = mock(Resources::class.java)
+        val uri = mock(Uri::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+
+        `when`(fragment.requireContext()).thenReturn(context)
+        `when`(context.applicationContext).thenReturn(appContext)
+        `when`(fragment.resources).thenReturn(resources)
+        `when`(resources.getStringArray(R.array.signup_language_options)).thenReturn(arrayOf("English"))
+
+        // Mock URI with empty display name to use default
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        val cursor = mock(Cursor::class.java)
+        `when`(contentResolver.query(uri, null, null, null, null)).thenReturn(cursor)
+        `when`(cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)).thenReturn(0)
+        `when`(cursor.moveToFirst()).thenReturn(true)
+        `when`(cursor.getString(0)).thenReturn("")
+
+
+        // Mock empty credentials
+        ProfileCredentialsStore.setSessionCredentials(null)
+        val mockPrefs = mock(android.content.SharedPreferences::class.java)
+        val mockEditor = mock(android.content.SharedPreferences.Editor::class.java)
+        `when`(mockPrefs.edit()).thenReturn(mockEditor)
+        `when`(mockEditor.putString(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.anyString())).thenReturn(mockEditor)
+        `when`(mockEditor.remove(org.mockito.ArgumentMatchers.anyString())).thenReturn(mockEditor)
+
+        // Needed for credentials fallback to securePrefs
+        `when`(mockPrefs.getString("remembered_username", null)).thenReturn(null)
+        `when`(mockPrefs.getString(org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences.KEY_SERVER_CODE, null)).thenReturn("")
+        `when`(mockPrefs.getString("server_code", null)).thenReturn(null)
+        SecurePreferencesProvider.injectedPreferences = mockPrefs
+
+        val result = DashboardResourcesMediaUtils.extractResourceMetadata(fragment, uri, "default_doc.pdf", isPdf = true)
+
+        assertEquals("default_doc.pdf", result.fileName)
+        assertEquals("default_doc", result.defaultTitle)
+        assertEquals(listOf("English"), result.languageOptions)
+        assertNull(result.credentials)
+        assertEquals("", result.username)
+        assertEquals("", result.planetCode)
+
+        SecurePreferencesProvider.injectedPreferences = null
+    }
+
 }
