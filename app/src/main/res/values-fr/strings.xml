@@ -424,6 +424,7 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_survey_wizard_gender_label">Sélectionnez le genre du répondant</string>
     <string name="dashboard_survey_wizard_birth_year_label">Année de naissance</string>
     <string name="dashboard_survey_wizard_birth_year_required">Saisissez l\'année de naissance pour continuer.</string>
+    <string name="dashboard_survey_wizard_birth_year_future">L\'année de naissance ne peut pas être dans le futur.</string>
     <string name="dashboard_survey_wizard_additional_info_label">Détails supplémentaires (facultatif)</string>
     <string name="dashboard_survey_wizard_names_title">Nom du répondant</string>
     <string name="dashboard_survey_wizard_first_name_label">Prénom (facultatif)</string>

@@ -427,6 +427,7 @@ Si no está de acuerdo, debe seleccionar "Cancelar" y dejar de usar la aplicaci�
     <string name="dashboard_survey_wizard_gender_label">Selecciona el género del encuestado</string>
     <string name="dashboard_survey_wizard_birth_year_label">Año de nacimiento</string>
     <string name="dashboard_survey_wizard_birth_year_required">Ingresa el año de nacimiento para continuar.</string>
+    <string name="dashboard_survey_wizard_birth_year_future">El año de nacimiento no puede estar en el futuro.</string>
     <string name="dashboard_survey_wizard_additional_info_label">Detalles adicionales (opcional)</string>
     <string name="dashboard_survey_wizard_names_title">Nombre del encuestado</string>
     <string name="dashboard_survey_wizard_first_name_label">Nombre (opcional)</string>
