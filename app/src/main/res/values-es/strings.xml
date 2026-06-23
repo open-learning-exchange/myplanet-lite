@@ -551,6 +551,7 @@ Si no está de acuerdo, debe seleccionar "Cancelar" y dejar de usar la aplicaci�
     <string name="dashboard_courses_tab_team">Cursos del equipo</string>
     <string name="dashboard_courses_content_description_icon">Icono del curso</string>
     <string name="dashboard_course_progress_value">Avance: %1$d%%</string>
+    <string name="dashboard_course_completed_progress">Completado: 100%</string>
     <string name="dashboard_courses_header_title">¿Qué te gustaría aprender hoy?</string>
     <string name="dashboard_courses_header_subtitle">Busca a continuación.</string>
     <string name="dashboard_courses_search_hint">Buscar cursos</string>

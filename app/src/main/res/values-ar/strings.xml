@@ -552,6 +552,7 @@
     <string name="dashboard_courses_tab_team">دورات الفريق</string>
     <string name="dashboard_courses_content_description_icon">أيقونة الدورة</string>
     <string name="dashboard_course_progress_value">التقدّم: %1$d%%</string>
+    <string name="dashboard_course_completed_progress">مكتمل: 100%</string>
     <string name="dashboard_courses_header_title">ماذا تريد أن تتعلم اليوم؟</string>
     <string name="dashboard_courses_header_subtitle">ابحث في الأسفل.</string>
     <string name="dashboard_courses_search_hint">ابحث عن الدورات</string>

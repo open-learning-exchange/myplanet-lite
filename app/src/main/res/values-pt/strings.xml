@@ -580,6 +580,7 @@ Se você não concordar, deve selecionar "Cancelar" e parar de usar o aplicativo
     <string name="dashboard_courses_tab_team">Cursos da equipe</string>
     <string name="dashboard_courses_content_description_icon">Ícone do curso</string>
     <string name="dashboard_course_progress_value">Progresso: %1$d%%</string>
+    <string name="dashboard_course_completed_progress">Concluído: 100%</string>
     <string name="dashboard_courses_header_title">O que você gostaria de aprender hoje?</string>
     <string name="dashboard_courses_header_subtitle">Pesquise abaixo.</string>
     <string name="dashboard_courses_search_hint">Pesquisar cursos</string>

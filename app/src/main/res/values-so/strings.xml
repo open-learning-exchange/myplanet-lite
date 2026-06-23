@@ -549,6 +549,7 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="dashboard_courses_tab_team">Koorsooyinka kooxda</string>
     <string name="dashboard_courses_content_description_icon">Astaanta koorsada</string>
     <string name="dashboard_course_progress_value">Horumarka: %1$d%%</string>
+    <string name="dashboard_course_completed_progress">La dhammeeyay: 100%</string>
     <string name="dashboard_courses_header_title">Maxaad rabtaa inaad maanta barato?</string>
     <string name="dashboard_courses_header_subtitle">Ka raadi hoosta.</string>
     <string name="dashboard_courses_search_hint">Raadi koorsooyin</string>

@@ -266,7 +266,10 @@ class CourseWizardActivity : BaseActivity() {
                 if (requiredStepPending) {
                     showCompleteRequiredStepSnackbar()
                 } else {
-                    finish()
+                    nextButton.isEnabled = false
+                    lifecycleScope.launch {
+                        finishCourse()
+                    }
                 }
             }
         } else {
@@ -321,19 +324,20 @@ class CourseWizardActivity : BaseActivity() {
         val existingDoc = existingDocuments?.get(id)
         val existingStep = existingDoc?.stepNum ?: 0
         if (existingStep >= targetStepNumber) return
+        val progressDoc = existingDoc ?: cachedProgressDocument
         val now = System.currentTimeMillis()
         val document = DashboardCoursesRepository.CourseProgressUpdateDocument(
-            id = cachedProgressDocument?.id,
-            rev = cachedProgressDocument?.rev,
+            id = progressDoc?.id,
+            rev = progressDoc?.rev,
             userId = "org.couchdb.user:${creds.username}",
             courseId = id,
             stepNum = targetStepNumber,
             passed = true,
-            createdOn = cachedProgressDocument?.createdOn
+            createdOn = progressDoc?.createdOn
                 ?: DashboardServerPreferences.getServerCode(applicationContext),
-            parentCode = cachedProgressDocument?.parentCode
+            parentCode = progressDoc?.parentCode
                 ?: DashboardServerPreferences.getServerParentCode(applicationContext),
-            createdDate = cachedProgressDocument?.createdDate ?: now,
+            createdDate = progressDoc?.createdDate ?: now,
             updatedDate = now
         )
         val saveResult = coursesRepository.saveCourseProgress(normalizedBase, creds, listOf(document))
@@ -356,6 +360,19 @@ class CourseWizardActivity : BaseActivity() {
                 parentCode = document.parentCode
             )
         }
+    }
+
+    private suspend fun finishCourse() {
+        runCatching { updateCourseProgressIfNeeded(steps.size) }
+        setResult(
+            RESULT_OK,
+            Intent().apply {
+                putExtra(EXTRA_RESULT_COURSE_ID, courseId)
+                putExtra(EXTRA_RESULT_PROGRESS_PERCENT, 100)
+                putExtra(EXTRA_RESULT_CURRENT_STEP, steps.lastIndex)
+            }
+        )
+        finish()
     }
 
     private suspend fun flushPendingCourseProgress() {
@@ -880,6 +897,24 @@ class CourseWizardActivity : BaseActivity() {
         private const val EXTRA_STEPS = "extra_steps"
         private const val EXTRA_START_STEP = "extra_start_step"
         private const val EXTRA_COMPLETED_REQUIRED_STEPS = "extra_completed_required_steps"
+        const val EXTRA_RESULT_COURSE_ID = "extra_result_course_id"
+        const val EXTRA_RESULT_PROGRESS_PERCENT = "extra_result_progress_percent"
+        const val EXTRA_RESULT_CURRENT_STEP = "extra_result_current_step"
+        fun createIntent(
+            context: Context,
+            courseId: String,
+            courseTitle: String,
+            steps: List<DashboardCoursePageFragment.CourseItem.LessonStep>,
+            startStep: Int
+        ): Intent {
+            return Intent(context, CourseWizardActivity::class.java).apply {
+                putExtra(EXTRA_COURSE_ID, courseId)
+                putExtra(EXTRA_TITLE, courseTitle)
+                putExtra(EXTRA_STEPS, ArrayList(steps))
+                putExtra(EXTRA_START_STEP, startStep)
+            }
+        }
+
         fun start(
             context: Context,
             courseId: String,
@@ -887,12 +922,7 @@ class CourseWizardActivity : BaseActivity() {
             steps: List<DashboardCoursePageFragment.CourseItem.LessonStep>,
             startStep: Int
         ) {
-            val intent = Intent(context, CourseWizardActivity::class.java).apply {
-                putExtra(EXTRA_COURSE_ID, courseId)
-                putExtra(EXTRA_TITLE, courseTitle)
-                putExtra(EXTRA_STEPS, ArrayList(steps))
-                putExtra(EXTRA_START_STEP, startStep)
-            }
+            val intent = createIntent(context, courseId, courseTitle, steps, startStep)
             context.startActivity(intent)
         }
     }

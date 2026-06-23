@@ -548,6 +548,7 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_courses_tab_team">Cours de l\'équipe</string>
     <string name="dashboard_courses_content_description_icon">Icône du cours</string>
     <string name="dashboard_course_progress_value">Progression : %1$d%%</string>
+    <string name="dashboard_course_completed_progress">Terminé : 100%</string>
     <string name="dashboard_courses_header_title">Que voulez-vous apprendre aujourd\'hui ?</string>
     <string name="dashboard_courses_header_subtitle">Recherchez ci-dessous.</string>
     <string name="dashboard_courses_search_hint">Rechercher des cours</string>
