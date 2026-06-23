@@ -38,9 +38,11 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.verifyNoInteractions
 import androidx.lifecycle.coroutineScope
 import org.mockito.kotlin.whenever
+import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.databinding.ItemTeamJoinRequestBinding
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
+import org.ole.planet.myplanet.lite.databinding.ItemInviteMemberBinding
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.dashboard.UserDocument
@@ -58,7 +60,7 @@ class DashboardTeamMembersSupportTest {
 
     @Before
     fun setUp() {
-        val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
+val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         every { mockSharedPreferences.getString(any(), any()) } returns "en"
 
         mockkObject(SecurePreferencesProvider)
@@ -391,6 +393,64 @@ class DashboardTeamMembersSupportTest {
             onRejectClicked = {}
         )
         assertNotNull(requestsAdapter)
+    }
+
+    @Test
+    fun testInviteMemberViewHolder_bind() {
+        val binding = ItemInviteMemberBinding.inflate(LayoutInflater.from(context))
+        val avatarLoader = mock<DashboardAvatarLoader>()
+        var clickedCandidate: InviteCandidate? = null
+        val onAddClicked: (InviteCandidate) -> Unit = { clickedCandidate = it }
+
+        val holder = InviteMemberViewHolder(binding, avatarLoader, onAddClicked)
+        val candidate = InviteCandidate(
+            name = "Test Name",
+            username = "testuser",
+            planetCode = "planet",
+            hasAvatar = true,
+            colorRes = R.color.blueOle
+        )
+
+        holder.bind(candidate, isDisabled = false)
+
+        assertEquals("Test Name", binding.inviteMemberName.text.toString())
+        assertEquals("@testuser", binding.inviteMemberUsername.text.toString())
+        assertTrue(binding.inviteMemberAdd.isEnabled)
+        assertEquals(1f, binding.inviteMemberAdd.alpha)
+
+        verify(avatarLoader).bind(binding.inviteMemberAvatar, "testuser", true)
+
+        binding.inviteMemberAdd.performClick()
+        assertEquals(candidate, clickedCandidate)
+    }
+
+    @Test
+    fun testInviteMemberViewHolder_bind_disabled() {
+        val binding = ItemInviteMemberBinding.inflate(LayoutInflater.from(context))
+        val avatarLoader = mock<DashboardAvatarLoader>()
+        var clickedCandidate: InviteCandidate? = null
+        val onAddClicked: (InviteCandidate) -> Unit = { clickedCandidate = it }
+
+        val holder = InviteMemberViewHolder(binding, avatarLoader, onAddClicked)
+        val candidate = InviteCandidate(
+            name = "Test Name Disabled",
+            username = "testuser_disabled",
+            planetCode = "planet",
+            hasAvatar = false,
+            colorRes = R.color.blueOle
+        )
+
+        holder.bind(candidate, isDisabled = true)
+
+        assertEquals("Test Name Disabled", binding.inviteMemberName.text.toString())
+        assertEquals("@testuser_disabled", binding.inviteMemberUsername.text.toString())
+        assertFalse(binding.inviteMemberAdd.isEnabled)
+        assertEquals(0.5f, binding.inviteMemberAdd.alpha)
+
+        verify(avatarLoader).bind(binding.inviteMemberAvatar, "testuser_disabled", true)
+
+        binding.inviteMemberAdd.performClick()
+        assertEquals(null, clickedCandidate)
     }
 
     @Test
