@@ -563,6 +563,7 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="course_wizard_next">Suivant</string>
     <string name="course_wizard_finish">Terminer le cours</string>
     <string name="course_wizard_step_position">Étape %1$d sur %2$d</string>
+    <string name="course_wizard_complete_required_step">Terminez le test ou le sondage pour continuer.</string>
     <string name="course_wizard_open_survey">Ouvrir le sondage</string>
     <string name="course_wizard_open_exam">Ouvrir l\'examen</string>
     <string name="dashboard_exam_title">Examen</string>
