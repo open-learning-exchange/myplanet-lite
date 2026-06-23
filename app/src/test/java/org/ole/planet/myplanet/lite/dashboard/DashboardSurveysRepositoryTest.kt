@@ -299,7 +299,7 @@ class DashboardSurveysRepositoryTest {
         val mockCall = mock<Call>()
 
         // Setup cancel() to throw an exception to test the catch block
-        doThrow(RuntimeException("Cancel failed")).`when`(mockCall).cancel()
+        doThrow(kotlinx.coroutines.CancellationException("Cancel failed")).`when`(mockCall).cancel()
 
         // Suspend indefinitely on enqueue to allow cancellation
         doAnswer {

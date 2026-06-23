@@ -501,8 +501,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             }
         } ?: (username ?: getString(R.string.dashboard_profile_name_placeholder))
         val timeMillis = document.time ?: 0L
-        val relativeTime = formatRelativeTime(timeMillis)
-        val metadata = buildMetadata(username, relativeTime)
+        val relativeTime = org.ole.planet.myplanet.lite.util.DateUtils.formatRelativeTime(requireContext(), timeMillis)
+        val metadata = org.ole.planet.myplanet.lite.util.DateUtils.buildMetadata(username, relativeTime)
         val rawMessage = document.message
         val messageImages = extractImagePaths(rawMessage)
         val documentImages = mapDocumentImages(document)
@@ -564,47 +564,6 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             return null
         }
         return "resources/$id/$name"
-    }
-
-    private fun buildMetadata(username: String?, relativeTime: String): String {
-        return if (!username.isNullOrBlank()) {
-            "@${username.trim()} • $relativeTime"
-        } else {
-            relativeTime
-        }
-    }
-
-    private fun formatRelativeTime(timestamp: Long): String {
-        val now = System.currentTimeMillis()
-        val diffMillis = max(0L, now - timestamp)
-        val minutes = diffMillis / MINUTE_MILLIS
-        val hours = diffMillis / HOUR_MILLIS
-        val days = diffMillis / DAY_MILLIS
-        val months = diffMillis / MONTH_MILLIS
-        val years = diffMillis / YEAR_MILLIS
-        return when {
-            years >= 1 -> if (years == 1L) getString(R.string.dashboard_relative_time_year) else getString(
-                R.string.dashboard_relative_time_years,
-                years
-            )
-            months >= 1 -> if (months == 1L) getString(R.string.dashboard_relative_time_month) else getString(
-                R.string.dashboard_relative_time_months,
-                months
-            )
-            days >= 1 -> if (days == 1L) getString(R.string.dashboard_relative_time_day) else getString(
-                R.string.dashboard_relative_time_days,
-                days
-            )
-            hours >= 1 -> if (hours == 1L) getString(R.string.dashboard_relative_time_hour) else getString(
-                R.string.dashboard_relative_time_hours,
-                hours
-            )
-            minutes >= 1 -> if (minutes == 1L) getString(R.string.dashboard_relative_time_minute) else getString(
-                R.string.dashboard_relative_time_minutes,
-                minutes
-            )
-            else -> getString(R.string.dashboard_relative_time_seconds)
-        }
     }
 
     @androidx.annotation.VisibleForTesting
