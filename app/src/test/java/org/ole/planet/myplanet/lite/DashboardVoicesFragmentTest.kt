@@ -101,6 +101,64 @@ class DashboardVoicesFragmentTest {
     }
 
     @Test
+    fun `loadMore returns early if baseUrl is null`() {
+        mockPreferencesProviderAndLaunch(null) { fragment ->
+            // In setup baseUrl is initially null
+            fragment.loadMore(10)
+
+            val isLoadingField = fragment.javaClass.getDeclaredField("isLoading")
+            isLoadingField.isAccessible = true
+            assertFalse(isLoadingField.getBoolean(fragment))
+        }
+    }
+
+    @Test
+    fun `loadMore returns early if isLoading is true`() {
+        mockPreferencesProviderAndLaunch(null) { fragment ->
+            val baseUrlField = fragment.javaClass.getDeclaredField("baseUrl")
+            baseUrlField.isAccessible = true
+            baseUrlField.set(fragment, "http://example.com")
+
+            val isLoadingField = fragment.javaClass.getDeclaredField("isLoading")
+            isLoadingField.isAccessible = true
+            isLoadingField.setBoolean(fragment, true)
+
+            fragment.loadMore(10)
+
+            val fetchJobField = fragment.javaClass.getDeclaredField("fetchJob")
+            fetchJobField.isAccessible = true
+            val job = fetchJobField.get(fragment)
+
+            org.junit.Assert.assertNull(job)
+        }
+    }
+
+    @Test
+    fun `loadMore returns early if hasMore is false`() {
+        mockPreferencesProviderAndLaunch(null) { fragment ->
+            val baseUrlField = fragment.javaClass.getDeclaredField("baseUrl")
+            baseUrlField.isAccessible = true
+            baseUrlField.set(fragment, "http://example.com")
+
+            val hasMoreField = fragment.javaClass.getDeclaredField("hasMore")
+            hasMoreField.isAccessible = true
+            hasMoreField.setBoolean(fragment, false)
+
+            fragment.loadMore(10)
+
+            val fetchJobField = fragment.javaClass.getDeclaredField("fetchJob")
+            fetchJobField.isAccessible = true
+            val job = fetchJobField.get(fragment)
+
+            org.junit.Assert.assertNull(job)
+
+            val isLoadingField = fragment.javaClass.getDeclaredField("isLoading")
+            isLoadingField.isAccessible = true
+            assertFalse(isLoadingField.getBoolean(fragment))
+        }
+    }
+
+    @Test
     fun `isTeamFeedFor returns true when both id and name match`() {
         val teamId = "team_123"
         val teamName = "Test Team"

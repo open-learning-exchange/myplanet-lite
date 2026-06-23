@@ -36,8 +36,8 @@ internal fun SignupActivity.completeSignup() {
         if (autoLogin) {
             val username = usernameInput.text?.toString()?.trim().orEmpty()
             val password = passwordInput.text?.toString().orEmpty()
-                putExtra(SignupActivity.EXTRA_USERNAME, username)
-                org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.saveTemporarySignUpPassword(this@completeSignup, password)
+            putExtra(SignupActivity.EXTRA_USERNAME, username)
+            org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.saveTemporarySignUpPassword(this@completeSignup, password)
         }
     }
     if (autoLogin) {
