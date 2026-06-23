@@ -15,6 +15,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.robolectric.Robolectric
+import org.robolectric.annotation.Config
 import org.ole.planet.myplanet.lite.databinding.ItemTeamMemberBinding
 import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
 import org.junit.Assert.assertNotNull
