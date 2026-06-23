@@ -104,8 +104,8 @@ class PostDetailAdapter(
 
         fun bind(item: PostDetailItem.Header) {
             authorView.text = item.author
-            val relativeTime = DashboardPostDetailActivity.formatRelativeTime(itemView.context, item.timestamp)
-            metadataView.text = DashboardPostDetailActivity.buildMetadata(item.username, relativeTime)
+            val relativeTime = org.ole.planet.myplanet.lite.util.DateUtils.formatRelativeTime(itemView.context, item.timestamp)
+            metadataView.text = org.ole.planet.myplanet.lite.util.DateUtils.buildMetadata(item.username, relativeTime)
             if (item.message.isNullOrBlank()) {
                 bodyView.isVisible = false
                 bodyView.text = ""
@@ -218,8 +218,8 @@ class PostDetailAdapter(
 
         fun bind(item: PostDetailItem.Comment, isLast: Boolean) {
             authorView.text = item.author
-            val relativeTime = DashboardPostDetailActivity.formatRelativeTime(itemView.context, item.timestamp)
-            metadataView.text = DashboardPostDetailActivity.buildMetadata(item.username, relativeTime)
+            val relativeTime = org.ole.planet.myplanet.lite.util.DateUtils.formatRelativeTime(itemView.context, item.timestamp)
+            metadataView.text = org.ole.planet.myplanet.lite.util.DateUtils.buildMetadata(item.username, relativeTime)
             if (item.message.isNullOrBlank()) {
                 bodyView.isVisible = false
                 bodyView.text = ""
