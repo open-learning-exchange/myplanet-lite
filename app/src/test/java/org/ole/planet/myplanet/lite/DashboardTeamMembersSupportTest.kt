@@ -51,6 +51,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowToast
+import androidx.appcompat.view.ContextThemeWrapper
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33])
@@ -61,7 +62,7 @@ class DashboardTeamMembersSupportTest {
 
     @Before
     fun setUp() {
-        val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
+val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         every { mockSharedPreferences.getString(any(), any()) } returns "en"
 
         mockkObject(SecurePreferencesProvider)
@@ -394,6 +395,50 @@ class DashboardTeamMembersSupportTest {
             onRejectClicked = {}
         )
         assertNotNull(requestsAdapter)
+    }
+
+    @Test
+    fun testConfirmRejectJoinRequestDialog() {
+        val request = TeamJoinRequestUiModel(
+            id = "id",
+            username = "testuser",
+            fullName = "Test User",
+            hasAvatar = false,
+            request = JoinRequestDocument(
+                id = null,
+                revision = null,
+                docType = null,
+                teamId = null,
+                teamType = null,
+                teamPlanetCode = null,
+                userId = null,
+                userPlanetCode = null
+            )
+        )
+
+        var callbackCalled = false
+        confirmRejectJoinRequestDialog(fragment, request) {
+            callbackCalled = true
+            assertEquals(request, it)
+        }
+
+        verify(fragment).getString(
+            eq(R.string.dashboard_team_members_request_reject_confirm_message),
+            eq("Test User")
+        )
+
+        val dialog = androidx.appcompat.app.AlertDialog::class.java.cast(
+            org.robolectric.shadows.ShadowDialog.getLatestDialog()
+        )
+        assertNotNull(dialog)
+
+        val button = dialog?.getButton(android.content.DialogInterface.BUTTON_POSITIVE)
+        assertNotNull(button)
+        button?.performClick()
+
+        org.robolectric.shadows.ShadowLooper.idleMainLooper()
+
+        assertTrue(callbackCalled)
     }
 
     @Test
