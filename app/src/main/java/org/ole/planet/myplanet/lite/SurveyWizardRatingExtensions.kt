@@ -181,8 +181,8 @@ internal fun SurveyWizardFragment.createRatingCollector(index: Int, getSelectedV
 
 internal fun SurveyWizardFragment.ratingScaleColumnCount(scaleMax: Int): Int {
     return when {
-        scaleMax <= 5 -> scaleMax.coerceAtLeast(1)
-        scaleMax <= DEFAULT_RATING_SCALE_MAX -> 3
+        scaleMax <= MAX_SINGLE_ROW_RATING_SCALE -> scaleMax.coerceAtLeast(1)
+        scaleMax <= DEFAULT_RATING_SCALE_MAX -> DEFAULT_MULTI_ROW_COLUMN_COUNT
         else -> kotlin.math.ceil(kotlin.math.sqrt(scaleMax.toDouble())).toInt().coerceAtLeast(1)
     }
 }
