@@ -15,7 +15,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.robolectric.Robolectric
-import org.robolectric.annotation.Config
 import org.ole.planet.myplanet.lite.databinding.ItemTeamMemberBinding
 import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
 import org.junit.Assert.assertNotNull
@@ -48,6 +47,7 @@ import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.dashboard.UserDocument
 import com.google.android.material.floatingactionbutton.FloatingActionButton
+import org.robolectric.annotation.Config
 import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowToast
