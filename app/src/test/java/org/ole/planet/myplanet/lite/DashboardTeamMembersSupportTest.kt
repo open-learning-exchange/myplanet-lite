@@ -559,5 +559,4 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         assertNotNull(dialogBinding.inviteMembersList.adapter)
         assertNotNull(dialogBinding.inviteMembersList.layoutManager)
     }
-    }
 }
