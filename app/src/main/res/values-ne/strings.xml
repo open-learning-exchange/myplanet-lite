@@ -548,6 +548,7 @@
     <string name="dashboard_courses_tab_team">टोलीका पाठ्यक्रमहरू</string>
     <string name="dashboard_courses_content_description_icon">कोर्स आइकन</string>
     <string name="dashboard_course_progress_value">प्रगति: %1$d%%</string>
+    <string name="dashboard_course_completed_progress">पूरा भयो: 100%</string>
     <string name="dashboard_courses_header_title">आज तपाईं के सिक्न चाहनुहुन्छ?</string>
     <string name="dashboard_courses_header_subtitle">तल खोज्नुहोस्।</string>
     <string name="dashboard_courses_search_hint">पाठ्यक्रम खोज्नुहोस्</string>

@@ -13,6 +13,7 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -76,6 +77,24 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private val httpClient = OkHttpClient()
     private val activeDownloads = mutableMapOf<String, Job>()
     private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
+    private val courseWizardLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode != android.app.Activity.RESULT_OK) return@registerForActivityResult
+            val data = result.data
+            val courseId = data?.getStringExtra(CourseWizardActivity.EXTRA_RESULT_COURSE_ID)
+            val progressPercent = data?.getIntExtra(
+                CourseWizardActivity.EXTRA_RESULT_PROGRESS_PERCENT,
+                -1
+            )?.takeIf { it >= 0 }
+            val currentStep = data?.getIntExtra(
+                CourseWizardActivity.EXTRA_RESULT_CURRENT_STEP,
+                -1
+            )?.takeIf { it >= 0 }
+            if (!courseId.isNullOrBlank() && progressPercent != null && currentStep != null) {
+                adapter.updateCourseProgress(courseId, progressPercent, currentStep)
+            }
+            refreshCoursesAfterWizard()
+        }
 
     private fun isOfflineModeActive(): Boolean {
         return (activity as? DashboardActivity)?.isOfflineModeActive() == true
@@ -690,7 +709,24 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             return
         }
         val startStep = course.currentStep?.coerceIn(0, course.steps.lastIndex) ?: 0
-        CourseWizardActivity.start(requireContext(), course.id, course.title, course.steps, startStep)
+        courseWizardLauncher.launch(
+            CourseWizardActivity.createIntent(
+                requireContext(),
+                course.id,
+                course.title,
+                course.steps,
+                startStep
+            )
+        )
+    }
+
+    private fun refreshCoursesAfterWizard() {
+        if (!this::adapter.isInitialized) return
+        when (tabPosition) {
+            0 -> refreshUserCourses(adapter, refreshLayout)
+            1 -> refreshAllCourses(adapter, refreshLayout)
+            else -> refreshTeamCourses(adapter, refreshLayout, forceReload = false)
+        }
     }
 
     private fun downloadCourse(course: CourseItem) {
@@ -1215,6 +1251,28 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             }
         }
 
+        fun updateCourseProgress(courseId: String, progressPercent: Int, currentStep: Int) {
+            val update: (CourseItem) -> CourseItem = { item ->
+                if (item.id == courseId) {
+                    item.copy(
+                        progressPercent = progressPercent.coerceIn(0, 100),
+                        currentStep = currentStep.coerceAtLeast(0)
+                    )
+                } else {
+                    item
+                }
+            }
+            val itemIndex = items.indexOfFirst { it.id == courseId }
+            if (itemIndex >= 0) {
+                items[itemIndex] = update(items[itemIndex])
+            }
+            val displayedIndex = displayedItems.indexOfFirst { it.id == courseId }
+            if (displayedIndex >= 0) {
+                displayedItems[displayedIndex] = update(displayedItems[displayedIndex])
+                notifyItemChanged(displayedIndex + 1)
+            }
+        }
+
         fun submitCourses(newItems: List<CourseItem>) {
             val oldDisplayed = displayedItems.toList()
 
@@ -1467,10 +1525,14 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 if (showProgress) {
                     progressContainer.visibility = View.VISIBLE
                     progressView.visibility = View.VISIBLE
-                    progressView.text = itemView.context.getString(
-                        R.string.dashboard_course_progress_value,
-                        course.progressPercent
-                    )
+                    progressView.text = if (course.progressPercent >= 100) {
+                        itemView.context.getString(R.string.dashboard_course_completed_progress)
+                    } else {
+                        itemView.context.getString(
+                            R.string.dashboard_course_progress_value,
+                            course.progressPercent
+                        )
+                    }
                     progressIndicator.visibility = View.VISIBLE
                     progressIndicator.progress = course.progressPercent
                 } else {

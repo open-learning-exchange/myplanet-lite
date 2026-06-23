@@ -582,6 +582,7 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="dashboard_courses_tab_team">Team courses</string>
     <string name="dashboard_courses_content_description_icon">Course icon</string>
     <string name="dashboard_course_progress_value">Progress: %1$d%%</string>
+    <string name="dashboard_course_completed_progress">Completed: 100%</string>
     <string name="dashboard_courses_header_title">What would you like to learn today?</string>
     <string name="dashboard_courses_header_subtitle">Search below.</string>
     <string name="dashboard_courses_search_hint">Search courses</string>

@@ -567,6 +567,7 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="dashboard_courses_tab_team">टीम के पाठ्यक्रम</string>
     <string name="dashboard_courses_content_description_icon">कोर्स आइकन</string>
     <string name="dashboard_course_progress_value">प्रगति: %1$d%%</string>
+    <string name="dashboard_course_completed_progress">पूर्ण: 100%</string>
     <string name="dashboard_courses_header_title">आज आप क्या सीखना चाहेंगे?</string>
     <string name="dashboard_courses_header_subtitle">नीचे खोजें।</string>
     <string name="dashboard_courses_search_hint">पाठ्यक्रम खोजें</string>
