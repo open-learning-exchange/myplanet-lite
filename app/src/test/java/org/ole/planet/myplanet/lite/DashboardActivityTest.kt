@@ -156,7 +156,7 @@ class DashboardActivityTest {
     @Test
     fun `isSurveyTranslationEnabled returns true when enabled in preferences`() {
         SecurePreferencesProvider.getServerPreferences(context).edit()
-            .putBoolean("survey_translations_enabled", true)
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATIONS_ENABLED, true)
             .commit()
         ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
@@ -168,13 +168,49 @@ class DashboardActivityTest {
     @Test
     fun `isSurveyTranslationEnabled returns false when disabled in preferences`() {
         SecurePreferencesProvider.getServerPreferences(context).edit()
-            .putBoolean("survey_translations_enabled", false)
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATIONS_ENABLED, false)
             .commit()
         ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 assertEquals(false, activity.isSurveyTranslationEnabled())
             }
         }
+    }
+
+    @Test
+    fun `isSurveyTranslationActive returns true when enabled and accepted`() {
+        SecurePreferencesProvider.getServerPreferences(context).edit()
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATIONS_ENABLED, true)
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, true)
+            .commit()
+        assertTrue(DashboardActivity.isSurveyTranslationActive(context))
+    }
+
+    @Test
+    fun `isSurveyTranslationActive returns false when enabled but not accepted`() {
+        SecurePreferencesProvider.getServerPreferences(context).edit()
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATIONS_ENABLED, true)
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
+            .commit()
+        assertFalse(DashboardActivity.isSurveyTranslationActive(context))
+    }
+
+    @Test
+    fun `isSurveyTranslationActive returns false when not enabled but accepted`() {
+        SecurePreferencesProvider.getServerPreferences(context).edit()
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATIONS_ENABLED, false)
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, true)
+            .commit()
+        assertFalse(DashboardActivity.isSurveyTranslationActive(context))
+    }
+
+    @Test
+    fun `isSurveyTranslationActive returns false when neither enabled nor accepted`() {
+        SecurePreferencesProvider.getServerPreferences(context).edit()
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATIONS_ENABLED, false)
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
+            .commit()
+        assertFalse(DashboardActivity.isSurveyTranslationActive(context))
     }
 
     @Test
@@ -185,7 +221,7 @@ class DashboardActivityTest {
     @Test
     fun `isSurveyTranslationConsentAccepted returns true when set to true in preferences`() {
         SecurePreferencesProvider.getServerPreferences(context).edit()
-            .putBoolean("survey_translation_consent_accepted", true)
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, true)
             .commit()
         assertEquals(true, DashboardActivity.isSurveyTranslationConsentAccepted(context))
     }
@@ -193,7 +229,7 @@ class DashboardActivityTest {
     @Test
     fun `isSurveyTranslationConsentAccepted returns false when set to false in preferences`() {
         SecurePreferencesProvider.getServerPreferences(context).edit()
-            .putBoolean("survey_translation_consent_accepted", false)
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
             .commit()
         assertEquals(false, DashboardActivity.isSurveyTranslationConsentAccepted(context))
     }
