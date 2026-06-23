@@ -459,6 +459,7 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="dashboard_survey_wizard_gender_label">Select respondent gender</string>
     <string name="dashboard_survey_wizard_birth_year_label">Year of birth</string>
     <string name="dashboard_survey_wizard_birth_year_required">Enter a birth year to continue.</string>
+    <string name="dashboard_survey_wizard_birth_year_future">Birth year cannot be in the future.</string>
     <string name="dashboard_survey_wizard_additional_info_label">Additional details (optional)</string>
     <string name="dashboard_survey_wizard_names_title">Respondent name</string>
     <string name="dashboard_survey_wizard_first_name_label">First name (optional)</string>
