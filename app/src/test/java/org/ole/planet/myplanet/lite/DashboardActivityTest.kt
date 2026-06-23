@@ -214,6 +214,27 @@ class DashboardActivityTest {
     }
 
     @Test
+    fun `isSurveyTranslationConsentAccepted returns default false when not set`() {
+        assertEquals(false, DashboardActivity.isSurveyTranslationConsentAccepted(context))
+    }
+
+    @Test
+    fun `isSurveyTranslationConsentAccepted returns true when set to true in preferences`() {
+        SecurePreferencesProvider.getServerPreferences(context).edit()
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, true)
+            .commit()
+        assertEquals(true, DashboardActivity.isSurveyTranslationConsentAccepted(context))
+    }
+
+    @Test
+    fun `isSurveyTranslationConsentAccepted returns false when set to false in preferences`() {
+        SecurePreferencesProvider.getServerPreferences(context).edit()
+            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
+            .commit()
+        assertEquals(false, DashboardActivity.isSurveyTranslationConsentAccepted(context))
+    }
+
+    @Test
     fun `bottom navigation switches sections correctly`() {
         ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
