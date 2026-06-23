@@ -224,7 +224,8 @@ class DashboardTeamMembersSupportTest {
                 assertEquals("req_1", result.id)
             }
 
-            val dialog = org.robolectric.shadows.ShadowDialog.getLatestDialog() as? androidx.appcompat.app.AlertDialog
+            val dialog =
+                org.robolectric.shadows.ShadowDialog.getLatestDialog() as? androidx.appcompat.app.AlertDialog
             assertNotNull("AlertDialog should be shown", dialog)
             assertTrue("Dialog should be showing", dialog!!.isShowing)
 
@@ -363,6 +364,5 @@ class DashboardTeamMembersSupportTest {
         assertNotNull(dialog)
         assertNotNull(dialogBinding.inviteMembersList.adapter)
         assertNotNull(dialogBinding.inviteMembersList.layoutManager)
-    }
     }
 }
