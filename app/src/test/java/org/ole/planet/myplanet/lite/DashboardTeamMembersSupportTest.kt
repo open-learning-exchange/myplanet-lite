@@ -8,11 +8,15 @@ import androidx.lifecycle.LifecycleRegistry
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.ImageView
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.robolectric.Robolectric
+import org.ole.planet.myplanet.lite.databinding.ItemTeamMemberBinding
+import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
 import org.junit.Assert.assertNotNull
 import io.mockk.every
 import io.mockk.mockk
@@ -38,6 +42,8 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.databinding.ItemTeamJoinRequestBinding
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.dashboard.UserDocument
 import org.robolectric.annotation.Config
 import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowDialog
@@ -59,7 +65,7 @@ class DashboardTeamMembersSupportTest {
         every { SecurePreferencesProvider.getServerPreferences(any()) } returns mockSharedPreferences
 
         context = ApplicationProvider.getApplicationContext<Context>().apply {
-            setTheme(R.style.Theme_MyPlanetLite)
+            setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight)
         }
 
         val lifecycleOwner = mock<LifecycleOwner>()
@@ -159,7 +165,7 @@ class DashboardTeamMembersSupportTest {
 
     @Test
     fun testRunRemoveTeamMember_invalidInputsShowsToast() {
-        val member = org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails(
+        val member = TeamMemberDetails(
             username = "user",
             fullName = "User",
             hasAvatar = false,
@@ -190,6 +196,134 @@ class DashboardTeamMembersSupportTest {
         verifyNoInteractions(repository)
     }
 
+
+    @Test
+    fun testTeamMemberViewHolderBind() {
+        val binding = ItemTeamMemberBinding.inflate(
+            LayoutInflater.from(context)
+        )
+
+        val member = TeamMemberDetails(
+            username = "testuser",
+            fullName = "Test User",
+            hasAvatar = true,
+            isLeader = true,
+            membership = null
+        )
+
+        var avatarBinderCalled = false
+        val avatarBinder: (ImageView, String?, Boolean) -> Unit = { imageView, username, hasAvatar ->
+            assertEquals(binding.teamMemberAvatar, imageView)
+            assertEquals("testuser", username)
+            assertTrue(hasAvatar)
+            avatarBinderCalled = true
+        }
+
+        var onMemberClickedCalled = false
+        val onMemberClicked: (TeamMemberDetails) -> Unit = { m ->
+            assertEquals(member, m)
+            onMemberClickedCalled = true
+        }
+
+        var onRemoveMemberClickedCalled = false
+        val onRemoveMemberClicked: (TeamMemberDetails) -> Unit = { m ->
+            assertEquals(member, m)
+            onRemoveMemberClickedCalled = true
+        }
+
+        val viewHolder = TeamMemberViewHolder(
+            binding = binding,
+            avatarBinder = avatarBinder,
+            onMemberClicked = onMemberClicked,
+            onRemoveMemberClicked = onRemoveMemberClicked
+        )
+
+        viewHolder.bind(member = member, showRemoveAction = true, currentUsername = "otheruser")
+
+        assertTrue(avatarBinderCalled)
+        assertEquals("Test User", binding.teamMemberName.text)
+        assertEquals(
+            context.getString(R.string.dashboard_team_member_profile_username_format, "testuser"),
+            binding.teamMemberUsername.text
+        )
+
+        assertTrue(binding.teamMemberRemoveButton.visibility == View.VISIBLE)
+        assertEquals(
+            context.getString(R.string.dashboard_team_members_leader_role),
+            binding.teamMemberRole.text
+        )
+
+        binding.root.performClick()
+        assertTrue(onMemberClickedCalled)
+        onMemberClickedCalled = false
+
+        binding.teamMemberRemoveButton.performClick()
+        assertTrue(onRemoveMemberClickedCalled)
+    }
+
+    @Test
+    fun testTeamMemberViewHolderBind_nonLeaderAndIsCurrentUser() {
+        val binding = ItemTeamMemberBinding.inflate(
+            LayoutInflater.from(context)
+        )
+
+        val member = TeamMemberDetails(
+            username = "testuser",
+            fullName = "",
+            hasAvatar = false,
+            isLeader = false,
+            membership = null
+        )
+
+        val viewHolder = TeamMemberViewHolder(
+            binding = binding,
+            avatarBinder = { _, _, _ -> },
+            onMemberClicked = {},
+            onRemoveMemberClicked = {}
+        )
+
+        viewHolder.bind(member = member, showRemoveAction = true, currentUsername = "testuser")
+
+        assertEquals("testuser", binding.teamMemberName.text)
+        assertEquals(
+            context.getString(R.string.dashboard_team_members_member_role),
+            binding.teamMemberRole.text
+        )
+        assertFalse(binding.teamMemberRemoveButton.visibility == View.VISIBLE)
+    }
+
+    @Test
+    fun testTeamMemberViewHolderBind_noUsernameOrFullName() {
+        val binding = ItemTeamMemberBinding.inflate(
+            LayoutInflater.from(context)
+        )
+
+        val member = TeamMemberDetails(
+            username = null,
+            fullName = null,
+            hasAvatar = false,
+            isLeader = false,
+            membership = null
+        )
+
+        val viewHolder = TeamMemberViewHolder(
+            binding = binding,
+            avatarBinder = { _, _, _ -> },
+            onMemberClicked = {},
+            onRemoveMemberClicked = {}
+        )
+
+        viewHolder.bind(member = member, showRemoveAction = true, currentUsername = "testuser")
+
+        assertEquals(
+            context.getString(R.string.dashboard_team_members_unknown),
+            binding.teamMemberName.text
+        )
+        assertEquals(
+            context.getString(R.string.dashboard_team_members_unknown_username),
+            binding.teamMemberUsername.text
+        )
+    }
 
     @Test
     fun testConfirmAcceptJoinRequestDialog_showsAlertDialog() {
@@ -309,7 +443,7 @@ class DashboardTeamMembersSupportTest {
 
     @Test
     fun testDashboardTeamMembersInviteDialogController_show() {
-        var context = ApplicationProvider.getApplicationContext<Context>()
+        val context = ApplicationProvider.getApplicationContext<Context>()
         context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
         val lifecycleOwner = mock<LifecycleOwner>()
         val lifecycle = LifecycleRegistry(lifecycleOwner)
@@ -327,17 +461,17 @@ class DashboardTeamMembersSupportTest {
         runBlocking {
             whenever(
                 repository.fetchAllUsers(
-                    baseUrl = any(),
-                    credentials = anyOrNull(),
-                    sessionCookie = anyOrNull(),
-                    planetCode = anyOrNull(),
-                    parentCode = anyOrNull(),
-                    pageSize = any(),
-                    skip = any(),
-                    searchTerm = anyOrNull(),
-                    excludedUserIds = any(),
+                    baseUrl = any<String>(),
+                    credentials = anyOrNull<StoredCredentials>(),
+                    sessionCookie = anyOrNull<String>(),
+                    planetCode = anyOrNull<String>(),
+                    parentCode = anyOrNull<String>(),
+                    pageSize = any<Int>(),
+                    skip = any<Int>(),
+                    searchTerm = anyOrNull<String>(),
+                    excludedUserIds = any<List<String>>(),
                 )
-            ).thenReturn(Result.success(emptyList()))
+            ).thenReturn(Result.success(emptyList<UserDocument>()))
         }
 
         val controller = DashboardTeamMembersInviteDialogController(
@@ -347,7 +481,7 @@ class DashboardTeamMembersSupportTest {
             lifecycleScope = lifecycle.coroutineScope,
             avatarLoader = null,
             base = "base",
-            creds = mock(),
+            creds = mock<StoredCredentials>(),
             teamId = "teamId",
             teamPlanetCode = "planet",
             teamType = "type",
