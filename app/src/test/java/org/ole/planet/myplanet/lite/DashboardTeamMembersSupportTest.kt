@@ -46,8 +46,8 @@ import org.ole.planet.myplanet.lite.databinding.ItemInviteMemberBinding
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.dashboard.UserDocument
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.robolectric.annotation.Config
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowToast
