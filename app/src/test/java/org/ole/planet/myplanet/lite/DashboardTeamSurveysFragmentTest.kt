@@ -191,7 +191,6 @@ class DashboardTeamSurveysFragmentTest {
     }
 
     @Test
-<<<<<<< test-update-saved-surveys-15386669546053830364
     fun testUpdateSavedSurveys() {
         val bundle = Bundle().apply {
             putString("arg_team_id", "team123")
@@ -275,7 +274,7 @@ class DashboardTeamSurveysFragmentTest {
         }
     }
 
-=======
+    @Test
     fun testNewInstanceForTeam() {
         val teamId = "test_team_id"
         val teamName = "Test Team Name"
@@ -287,5 +286,4 @@ class DashboardTeamSurveysFragmentTest {
         assertEquals(teamId, fragment.arguments?.getString("arg_team_id"))
         assertEquals(teamName, fragment.arguments?.getString("arg_team_name"))
     }
->>>>>>> main
 }
