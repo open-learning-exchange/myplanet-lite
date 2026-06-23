@@ -568,6 +568,7 @@
     <string name="course_wizard_next">التالي</string>
     <string name="course_wizard_finish">إنهاء الدورة</string>
     <string name="course_wizard_step_position">الخطوة %1$d من %2$d</string>
+    <string name="course_wizard_complete_required_step">أكمل الاختبار أو الاستبيان للمتابعة.</string>
     <string name="course_wizard_open_survey">فتح الاستبيان</string>
     <string name="course_wizard_open_exam">فتح الامتحان</string>
     <string name="dashboard_exam_title">امتحان</string>

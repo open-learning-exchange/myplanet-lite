@@ -584,6 +584,7 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="course_wizard_next">अगला</string>
     <string name="course_wizard_finish">कोर्स पूरा करें</string>
     <string name="course_wizard_step_position">चरण %1$d में से %2$d</string>
+    <string name="course_wizard_complete_required_step">जारी रखने के लिए परीक्षा या सर्वे पूरा करें।</string>
     <string name="course_wizard_attachments_title">संलग्नक</string>
     <string name="course_wizard_attachment_video">वीडियो</string>
     <string name="course_wizard_attachment_image">छवि</string>

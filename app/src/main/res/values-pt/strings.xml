@@ -594,6 +594,7 @@ Se você não concordar, deve selecionar "Cancelar" e parar de usar o aplicativo
     <string name="course_wizard_next">Próximo</string>
     <string name="course_wizard_finish">Concluir curso</string>
     <string name="course_wizard_step_position">Etapa %1$d de %2$d</string>
+    <string name="course_wizard_complete_required_step">Conclua o teste ou a pesquisa para continuar.</string>
     <string name="course_wizard_open_survey">Abrir pesquisa</string>
     <string name="course_wizard_open_exam">Abrir prova</string>
     <string name="dashboard_exam_title">Prova</string>
