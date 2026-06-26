@@ -31,7 +31,7 @@ import org.robolectric.shadows.ShadowNetworkCapabilities
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
-class SplashScreenTest {
+class SplashScreenImplTest {
 
     private lateinit var context: Context
     private lateinit var mockPrefs: SharedPreferences
@@ -107,7 +107,7 @@ class SplashScreenTest {
         )
     }
 
-    private fun waitForNextIntent(scenario: ActivityScenario<SplashScreen>): Intent? {
+    private fun waitForNextIntent(scenario: ActivityScenario<SplashScreenImpl>): Intent? {
         val maxWaitTimeMs = 5000
         val incrementMs = 100
         var totalWaitTime = 0
@@ -134,7 +134,7 @@ class SplashScreenTest {
     fun `test splash screen routes to MyPlanetLite when no server URL is set`() {
         mockPrefs.edit().clear().commit()
 
-        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+        ActivityScenario.launch<SplashScreenImpl>(SplashScreenImpl::class.java).use { scenario ->
             val nextIntent = waitForNextIntent(scenario)
             assertNotNull("Expected nextIntent to not be null", nextIntent)
             assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
@@ -150,7 +150,7 @@ class SplashScreenTest {
         mockAuth.storedToken = null
         AuthDependencies.overrideAuthService(mockAuth)
 
-        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+        ActivityScenario.launch<SplashScreenImpl>(SplashScreenImpl::class.java).use { scenario ->
             val nextIntent = waitForNextIntent(scenario)
             assertNotNull("Expected nextIntent to not be null", nextIntent)
             assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
@@ -166,7 +166,7 @@ class SplashScreenTest {
         mockAuth.storedToken = "valid_token"
         AuthDependencies.overrideAuthService(mockAuth)
 
-        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+        ActivityScenario.launch<SplashScreenImpl>(SplashScreenImpl::class.java).use { scenario ->
             val nextIntent = waitForNextIntent(scenario)
             assertNotNull("Expected nextIntent to not be null", nextIntent)
             assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)
@@ -185,7 +185,7 @@ class SplashScreenTest {
         UserProfileDatabase.getInstance(context).saveProfile(createTestUserProfile())
         setNetworkState(false)
 
-        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+        ActivityScenario.launch<SplashScreenImpl>(SplashScreenImpl::class.java).use { scenario ->
             val nextIntent = waitForNextIntent(scenario)
             assertNotNull("Expected nextIntent to not be null for offline", nextIntent)
             assertEquals(DashboardActivity::class.java.name, nextIntent?.component?.className)
@@ -210,7 +210,7 @@ class SplashScreenTest {
             .setResponseCode(200)
             .setBody("{\"_id\":\"org.couchdb.user:testuser\",\"name\":\"testuser\",\"roles\":[]}"))
 
-        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+        ActivityScenario.launch<SplashScreenImpl>(SplashScreenImpl::class.java).use { scenario ->
             val nextIntent = waitForNextIntent(scenario)
             assertNotNull("Expected nextIntent to not be null for online", nextIntent)
             assertEquals(DashboardActivity::class.java.name, nextIntent?.component?.className)
@@ -233,7 +233,7 @@ class SplashScreenTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
         mockWebServer.enqueue(MockResponse().setResponseCode(401))
 
-        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+        ActivityScenario.launch<SplashScreenImpl>(SplashScreenImpl::class.java).use { scenario ->
             val nextIntent = waitForNextIntent(scenario)
             assertNotNull("Expected nextIntent to not be null for failed refresh", nextIntent)
             assertEquals(MyPlanetLite::class.java.name, nextIntent?.component?.className)

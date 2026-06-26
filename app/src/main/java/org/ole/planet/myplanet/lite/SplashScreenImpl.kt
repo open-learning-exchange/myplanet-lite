@@ -31,7 +31,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
-class SplashScreen : BaseActivity() {
+class SplashScreenImpl : BaseActivity() {
 
     private val connectivityClient: OkHttpClient by lazy { OkHttpClient.Builder().build() }
     private val connectivityMoshi: Moshi by lazy { Moshi.Builder().build() }
@@ -123,11 +123,11 @@ class SplashScreen : BaseActivity() {
     private suspend fun routeToNextActivity() {
         val launchMode = attemptDirectDashboardLaunch()
         val nextIntent = when (launchMode) {
-            DashboardLaunchMode.ONLINE -> Intent(this@SplashScreen, DashboardActivity::class.java)
-            DashboardLaunchMode.OFFLINE -> Intent(this@SplashScreen, DashboardActivity::class.java).apply {
+            DashboardLaunchMode.ONLINE -> Intent(this@SplashScreenImpl, DashboardActivity::class.java)
+            DashboardLaunchMode.OFFLINE -> Intent(this@SplashScreenImpl, DashboardActivity::class.java).apply {
                 putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
             }
-            DashboardLaunchMode.NONE -> Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
+            DashboardLaunchMode.NONE -> Intent(this@SplashScreenImpl, MyPlanetLite::class.java).apply {
                 putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
             }
         }

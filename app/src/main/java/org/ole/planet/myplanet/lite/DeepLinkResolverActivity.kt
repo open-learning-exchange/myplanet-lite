@@ -39,7 +39,7 @@ class DeepLinkResolverActivity : ComponentActivity() {
     }
 
     private fun openPost(postId: String) {
-        val nextIntent = Intent(this, SplashScreen::class.java).apply {
+        val nextIntent = Intent(this, SplashScreenImpl::class.java).apply {
             putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
         }
