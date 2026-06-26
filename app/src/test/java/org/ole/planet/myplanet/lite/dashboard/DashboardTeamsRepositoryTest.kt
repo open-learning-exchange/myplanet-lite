@@ -119,13 +119,15 @@ class DashboardTeamsRepositoryTest {
 
         val baseUrl = mockWebServer.url("/").toString()
         val result = repository.addTeamMember(
-            baseUrl = baseUrl,
-            credentials = StoredCredentials("testuser", "pass"),
-            sessionCookie = "cookie",
-            teamId = "team1",
-            teamPlanetCode = "planet1",
-            userId = "user1",
-            userPlanetCode = "planet2"
+            AddTeamMemberRequest(
+                baseUrl = baseUrl,
+                credentials = StoredCredentials("testuser", "pass"),
+                sessionCookie = "cookie",
+                teamId = "team1",
+                teamPlanetCode = "planet1",
+                userId = "user1",
+                userPlanetCode = "planet2"
+            )
         )
 
         if (!result.isSuccess) throw result.exceptionOrNull()!!

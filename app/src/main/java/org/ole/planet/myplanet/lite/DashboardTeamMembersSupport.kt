@@ -122,14 +122,16 @@ internal fun runAcceptJoinRequest(params: AcceptJoinRequestParams) {
 
     params.fragment.viewLifecycleOwner.lifecycleScope.launch {
         val addResult = params.repository.addTeamMember(
-            baseUrl = base,
-            credentials = creds,
-            sessionCookie = params.sessionCookie,
-            teamId = teamId,
-            teamPlanetCode = teamPlanetCode,
-            teamType = params.request.request.teamType ?: "local",
-            userId = userId,
-            userPlanetCode = userPlanetCode,
+            org.ole.planet.myplanet.lite.dashboard.AddTeamMemberRequest(
+                baseUrl = base,
+                credentials = creds,
+                sessionCookie = params.sessionCookie,
+                teamId = teamId,
+                teamPlanetCode = teamPlanetCode,
+                teamType = params.request.request.teamType ?: "local",
+                userId = userId,
+                userPlanetCode = userPlanetCode,
+            )
         )
 
         addResult.onSuccess {
@@ -285,14 +287,16 @@ internal class DashboardTeamMembersInviteDialogController(
         submitCandidates()
         lifecycleScope.launch {
             val result = repository.addTeamMember(
-                baseUrl = base,
-                credentials = creds,
-                sessionCookie = sessionCookie,
-                teamId = teamId,
-                teamPlanetCode = teamPlanetCode,
-                teamType = teamType,
-                userId = "org.couchdb.user:${candidate.username}",
-                userPlanetCode = userPlanet,
+                org.ole.planet.myplanet.lite.dashboard.AddTeamMemberRequest(
+                    baseUrl = base,
+                    credentials = creds,
+                    sessionCookie = sessionCookie,
+                    teamId = teamId,
+                    teamPlanetCode = teamPlanetCode,
+                    teamType = teamType,
+                    userId = "org.couchdb.user:${candidate.username}",
+                    userPlanetCode = userPlanet,
+                )
             )
             result.onSuccess {
                 Toast.makeText(fragment.requireContext(), fragment.getString(R.string.dashboard_invite_members_add_success, candidate.name), Toast.LENGTH_SHORT).show()

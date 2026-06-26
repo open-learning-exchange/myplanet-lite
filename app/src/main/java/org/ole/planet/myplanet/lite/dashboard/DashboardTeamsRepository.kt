@@ -26,17 +26,8 @@ class DashboardTeamsRepository(
     private val dispatcher = overrideDispatcher ?: dispatcher
     private val operations = DashboardTeamsOperations(client, moshi, teamMemberDetailsCache)
 
-    suspend fun addTeamMember(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        teamId: String,
-        teamPlanetCode: String,
-        teamType: String = "local",
-        userId: String,
-        userPlanetCode: String,
-    ): Result<Unit> = runInDispatcher {
-        operations.addTeamMember(baseUrl, credentials, sessionCookie, teamId, teamPlanetCode, teamType, userId, userPlanetCode)
+    suspend fun addTeamMember(request: AddTeamMemberRequest): Result<Unit> = runInDispatcher {
+        operations.addTeamMember(request)
     }
 
     suspend fun fetchMemberships(

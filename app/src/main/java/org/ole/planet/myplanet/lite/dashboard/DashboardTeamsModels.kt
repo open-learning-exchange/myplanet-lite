@@ -205,6 +205,18 @@ data class JoinRequestDocument(
 @JsonClass(generateAdapter = true)
 data class JoinRequestFindResponse(val docs: List<JoinRequestDocument>?)
 
+
+data class AddTeamMemberRequest(
+    val baseUrl: String,
+    val credentials: org.ole.planet.myplanet.lite.profile.StoredCredentials?,
+    val sessionCookie: String?,
+    val teamId: String,
+    val teamPlanetCode: String,
+    val teamType: String = "local",
+    val userId: String,
+    val userPlanetCode: String,
+)
+
 @JsonClass(generateAdapter = true)
 data class JoinTeamRequest(
     val docType: String = "request",

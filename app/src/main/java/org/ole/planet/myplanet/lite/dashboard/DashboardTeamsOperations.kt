@@ -35,32 +35,23 @@ internal class DashboardTeamsOperations(
     private val membershipBulkAddAdapter = moshi.adapter(BulkMembershipAddRequest::class.java)
     private val usersFindResponseAdapter = moshi.adapter(UsersFindResponse::class.java)
 
-    fun addTeamMember(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        teamId: String,
-        teamPlanetCode: String,
-        teamType: String = "local",
-        userId: String,
-        userPlanetCode: String,
-    ) {
-        val normalizedBase = baseUrl.trim().trimEnd('/')
+    fun addTeamMember(request: AddTeamMemberRequest) {
+        val normalizedBase = request.baseUrl.trim().trimEnd('/')
         if (normalizedBase.isEmpty()) throw IOException("Missing server base URL")
-        if (teamId.isBlank()) throw IOException("Missing team id")
-        if (teamPlanetCode.isBlank()) throw IOException("Missing team planet code")
-        if (userId.isBlank()) throw IOException("Missing user id")
-        if (userPlanetCode.isBlank()) throw IOException("Missing user planet code")
+        if (request.teamId.isBlank()) throw IOException("Missing team id")
+        if (request.teamPlanetCode.isBlank()) throw IOException("Missing team planet code")
+        if (request.userId.isBlank()) throw IOException("Missing user id")
+        if (request.userPlanetCode.isBlank()) throw IOException("Missing user planet code")
 
         val payload = membershipBulkAddAdapter.toJson(
             BulkMembershipAddRequest(
                 docs = listOf(
                     BulkMembershipAddDoc(
-                        teamId = teamId,
-                        teamPlanetCode = teamPlanetCode,
-                        teamType = teamType.nullIfBlank() ?: "local",
-                        userId = userId,
-                        userPlanetCode = userPlanetCode,
+                        teamId = request.teamId,
+                        teamPlanetCode = request.teamPlanetCode,
+                        teamType = request.teamType.nullIfBlank() ?: "local",
+                        userId = request.userId,
+                        userPlanetCode = request.userPlanetCode,
                         docType = "membership",
                         isLeader = false,
                     ),
@@ -70,11 +61,11 @@ internal class DashboardTeamsOperations(
         val requestBuilder = Request.Builder()
             .url("$normalizedBase/db/teams/_bulk_docs")
             .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-            .withAuth(credentials, sessionCookie)
+            .withAuth(request.credentials, request.sessionCookie)
 
         client.newCall(requestBuilder.build()).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Unexpected response ${response.code}")
-            teamMemberDetailsCache.remove(teamId)
+            teamMemberDetailsCache.remove(request.teamId)
         }
     }
 

@@ -47,13 +47,15 @@ class DashboardTeamsOperationsTest {
         val baseUrl = mockWebServer.url("/").toString()
         cache["team1"] = listOf()
         operations.addTeamMember(
-            baseUrl = baseUrl,
-            credentials = StoredCredentials("testuser", "pass"),
-            sessionCookie = "cookie",
-            teamId = "team1",
-            teamPlanetCode = "planet1",
-            userId = "user1",
-            userPlanetCode = "planet2"
+            AddTeamMemberRequest(
+                baseUrl = baseUrl,
+                credentials = StoredCredentials("testuser", "pass"),
+                sessionCookie = "cookie",
+                teamId = "team1",
+                teamPlanetCode = "planet1",
+                userId = "user1",
+                userPlanetCode = "planet2"
+            )
         )
 
         val request = mockWebServer.takeRequest()
@@ -73,13 +75,15 @@ class DashboardTeamsOperationsTest {
     fun addTeamMember_missingBaseUrl() {
         val exception = assertThrows(IOException::class.java) {
             operations.addTeamMember(
-                baseUrl = "",
-                credentials = StoredCredentials("testuser", "pass"),
-                sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "planet1",
-                userId = "user1",
-                userPlanetCode = "planet2"
+                AddTeamMemberRequest(
+                    baseUrl = "",
+                    credentials = StoredCredentials("testuser", "pass"),
+                    sessionCookie = "cookie",
+                    teamId = "team1",
+                    teamPlanetCode = "planet1",
+                    userId = "user1",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertEquals("Missing server base URL", exception.message)
@@ -89,13 +93,15 @@ class DashboardTeamsOperationsTest {
     fun addTeamMember_missingTeamId() {
         val exception = assertThrows(IOException::class.java) {
             operations.addTeamMember(
-                baseUrl = mockWebServer.url("/").toString(),
-                credentials = StoredCredentials("testuser", "pass"),
-                sessionCookie = "cookie",
-                teamId = "",
-                teamPlanetCode = "planet1",
-                userId = "user1",
-                userPlanetCode = "planet2"
+                AddTeamMemberRequest(
+                    baseUrl = mockWebServer.url("/").toString(),
+                    credentials = StoredCredentials("testuser", "pass"),
+                    sessionCookie = "cookie",
+                    teamId = "",
+                    teamPlanetCode = "planet1",
+                    userId = "user1",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertEquals("Missing team id", exception.message)
@@ -105,13 +111,15 @@ class DashboardTeamsOperationsTest {
     fun addTeamMember_missingTeamPlanetCode() {
         val exception = assertThrows(IOException::class.java) {
             operations.addTeamMember(
-                baseUrl = mockWebServer.url("/").toString(),
-                credentials = StoredCredentials("testuser", "pass"),
-                sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "",
-                userId = "user1",
-                userPlanetCode = "planet2"
+                AddTeamMemberRequest(
+                    baseUrl = mockWebServer.url("/").toString(),
+                    credentials = StoredCredentials("testuser", "pass"),
+                    sessionCookie = "cookie",
+                    teamId = "team1",
+                    teamPlanetCode = "",
+                    userId = "user1",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertEquals("Missing team planet code", exception.message)
@@ -121,13 +129,15 @@ class DashboardTeamsOperationsTest {
     fun addTeamMember_missingUserId() {
         val exception = assertThrows(IOException::class.java) {
             operations.addTeamMember(
-                baseUrl = mockWebServer.url("/").toString(),
-                credentials = StoredCredentials("testuser", "pass"),
-                sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "planet1",
-                userId = "",
-                userPlanetCode = "planet2"
+                AddTeamMemberRequest(
+                    baseUrl = mockWebServer.url("/").toString(),
+                    credentials = StoredCredentials("testuser", "pass"),
+                    sessionCookie = "cookie",
+                    teamId = "team1",
+                    teamPlanetCode = "planet1",
+                    userId = "",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertEquals("Missing user id", exception.message)
@@ -137,13 +147,15 @@ class DashboardTeamsOperationsTest {
     fun addTeamMember_missingUserPlanetCode() {
         val exception = assertThrows(IOException::class.java) {
             operations.addTeamMember(
-                baseUrl = mockWebServer.url("/").toString(),
-                credentials = StoredCredentials("testuser", "pass"),
-                sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "planet1",
-                userId = "user1",
-                userPlanetCode = ""
+                AddTeamMemberRequest(
+                    baseUrl = mockWebServer.url("/").toString(),
+                    credentials = StoredCredentials("testuser", "pass"),
+                    sessionCookie = "cookie",
+                    teamId = "team1",
+                    teamPlanetCode = "planet1",
+                    userId = "user1",
+                    userPlanetCode = ""
+                )
             )
         }
         assertEquals("Missing user planet code", exception.message)
@@ -155,13 +167,15 @@ class DashboardTeamsOperationsTest {
 
         val exception = assertThrows(IOException::class.java) {
             operations.addTeamMember(
-                baseUrl = mockWebServer.url("/").toString(),
-                credentials = StoredCredentials("testuser", "pass"),
-                sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "planet1",
-                userId = "user1",
-                userPlanetCode = "planet2"
+                AddTeamMemberRequest(
+                    baseUrl = mockWebServer.url("/").toString(),
+                    credentials = StoredCredentials("testuser", "pass"),
+                    sessionCookie = "cookie",
+                    teamId = "team1",
+                    teamPlanetCode = "planet1",
+                    userId = "user1",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertTrue(exception.message?.startsWith("Unexpected response") == true)
