@@ -326,17 +326,19 @@ class DashboardResourcesRepository {
                 }.getOrDefault(emptyList())
 
                 fetchTeamResourcesByIds(
-                    normalizedBase = normalizedBase,
-                    sessionCookie = sessionCookie,
-                    username = username,
-                    password = password,
-                    teamId = teamId.trim(),
-                    resourceIds = resourceIds,
-                    searchQuery = searchQuery,
-                    mediaTypeFilter = mediaTypeFilter,
-                    sortBy = sortBy,
-                    sortDescending = sortDescending,
-                    limit = limit
+                    FetchTeamResourcesByIdsParams(
+                        normalizedBase = normalizedBase,
+                        sessionCookie = sessionCookie,
+                        username = username,
+                        password = password,
+                        teamId = teamId.trim(),
+                        resourceIds = resourceIds,
+                        searchQuery = searchQuery,
+                        mediaTypeFilter = mediaTypeFilter,
+                        sortBy = sortBy,
+                        sortDescending = sortDescending,
+                        limit = limit
+                    )
                 )
             }.onFailure { }
         }
@@ -377,19 +379,35 @@ class DashboardResourcesRepository {
         }
     }
 
+
+    private data class FetchTeamResourcesByIdsParams(
+        val normalizedBase: String,
+        val sessionCookie: String?,
+        val username: String?,
+        val password: String?,
+        val teamId: String,
+        val resourceIds: List<String>,
+        val searchQuery: String,
+        val mediaTypeFilter: String?,
+        val sortBy: String,
+        val sortDescending: Boolean,
+        val limit: Int
+    )
+
     private fun fetchTeamResourcesByIds(
-        normalizedBase: String,
-        sessionCookie: String?,
-        username: String?,
-        password: String?,
-        teamId: String,
-        resourceIds: List<String>,
-        searchQuery: String,
-        mediaTypeFilter: String?,
-        sortBy: String,
-        sortDescending: Boolean,
-        limit: Int
+        params: FetchTeamResourcesByIdsParams
     ): List<ResourceDocument> {
+        val normalizedBase = params.normalizedBase
+        val sessionCookie = params.sessionCookie
+        val username = params.username
+        val password = params.password
+        val teamId = params.teamId
+        val resourceIds = params.resourceIds
+        val searchQuery = params.searchQuery
+        val mediaTypeFilter = params.mediaTypeFilter
+        val sortBy = params.sortBy
+        val sortDescending = params.sortDescending
+        val limit = params.limit
         val requestUrl = "$normalizedBase/db/resources/_find"
 
         val idsArray = JSONArray()
