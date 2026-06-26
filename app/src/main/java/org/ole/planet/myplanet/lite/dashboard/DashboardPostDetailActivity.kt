@@ -770,13 +770,17 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun clearPendingReplyImages() {
-        pendingReplyImages.values.forEach { pending ->
-            if (pending.file.exists()) {
-                pending.file.delete()
-            }
-        }
+        val filesToDelete = pendingReplyImages.values.map { it.file }.toList()
         pendingReplyImages.clear()
         updateReplyPreviewImages()
+
+        lifecycleScope.launch(Dispatchers.IO) {
+            filesToDelete.forEach { file ->
+                if (file.exists()) {
+                    file.delete()
+                }
+            }
+        }
     }
 
     private fun setReplyPosting(posting: Boolean) {
