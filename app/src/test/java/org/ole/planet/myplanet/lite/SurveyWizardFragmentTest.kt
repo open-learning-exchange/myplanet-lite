@@ -223,4 +223,26 @@ class SurveyWizardFragmentTest {
         }
         return matches
     }
+
+    @Test
+    fun testParseBirthDateIso() {
+        val fragment = SurveyWizardFragment()
+
+        val formatter = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }
+
+        // Valid dates
+        assertEquals(formatter.parse("2000-01-01")?.time, fragment.parseBirthDateIso("2000-01-01"))
+        assertEquals(formatter.parse("2023-01-01")?.time, fragment.parseBirthDateIso("2023-01-01"))
+
+        // Invalid strings
+        assertEquals(null, fragment.parseBirthDateIso("invalid"))
+        assertEquals(null, fragment.parseBirthDateIso("2000/01/01"))
+
+        // Null and blank strings
+        assertEquals(null, fragment.parseBirthDateIso(null))
+        assertEquals(null, fragment.parseBirthDateIso(""))
+        assertEquals(null, fragment.parseBirthDateIso("   "))
+    }
 }
