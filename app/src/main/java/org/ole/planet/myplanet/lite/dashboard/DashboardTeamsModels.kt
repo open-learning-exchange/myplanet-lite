@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.lite.dashboard
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import org.ole.planet.myplanet.lite.util.BirthDateString
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 @JsonClass(generateAdapter = true)
 data class MembershipFindRequest(val selector: MembershipSelector)
@@ -292,3 +293,16 @@ data class UserIdSelector(@param:Json(name = "_id") val ids: IdsInClause)
 
 @JsonClass(generateAdapter = true)
 data class UsersFindResponse(val docs: List<UserDocument>?)
+
+
+data class FetchAllUsersRequest(
+    val baseUrl: String,
+    val credentials: StoredCredentials?,
+    val sessionCookie: String?,
+    val planetCode: String?,
+    val parentCode: String?,
+    val pageSize: Int = 25,
+    val skip: Int = 0,
+    val searchTerm: String? = null,
+    val excludedUserIds: List<String> = emptyList(),
+)

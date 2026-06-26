@@ -40,6 +40,7 @@ import androidx.lifecycle.coroutineScope
 import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.dashboard.FetchAllUsersRequest
 import org.ole.planet.myplanet.lite.databinding.ItemTeamJoinRequestBinding
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.databinding.ItemInviteMemberBinding
@@ -581,17 +582,7 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         val dialogBinding = DialogInviteMembersBinding.inflate(LayoutInflater.from(context))
         runBlocking {
             whenever(
-                repository.fetchAllUsers(
-                    baseUrl = any<String>(),
-                    credentials = anyOrNull<StoredCredentials>(),
-                    sessionCookie = anyOrNull<String>(),
-                    planetCode = anyOrNull<String>(),
-                    parentCode = anyOrNull<String>(),
-                    pageSize = any<Int>(),
-                    skip = any<Int>(),
-                    searchTerm = anyOrNull<String>(),
-                    excludedUserIds = any<List<String>>(),
-                )
+                repository.fetchAllUsers(any<FetchAllUsersRequest>())
             ).thenReturn(Result.success(emptyList<UserDocument>()))
         }
 

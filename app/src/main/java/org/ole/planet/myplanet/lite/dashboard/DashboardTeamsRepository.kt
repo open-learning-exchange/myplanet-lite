@@ -180,28 +180,8 @@ class DashboardTeamsRepository(
         operations.fetchUserProfiles(baseUrl, credentials, sessionCookie, userIds)
     }
 
-    suspend fun fetchAllUsers(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        planetCode: String?,
-        parentCode: String?,
-        pageSize: Int = 25,
-        skip: Int = 0,
-        searchTerm: String? = null,
-        excludedUserIds: List<String> = emptyList(),
-    ): Result<List<UserDocument>> = runInDispatcher {
-        operations.fetchAllUsers(
-            baseUrl = baseUrl,
-            credentials = credentials,
-            sessionCookie = sessionCookie,
-            planetCode = planetCode,
-            parentCode = parentCode,
-            pageSize = pageSize,
-            skip = skip,
-            searchTerm = searchTerm,
-            excludedUserIds = excludedUserIds,
-        )
+    suspend fun fetchAllUsers(request: FetchAllUsersRequest): Result<List<UserDocument>> = runInDispatcher {
+        operations.fetchAllUsers(request)
     }
 
     private suspend fun <T> runInDispatcher(block: () -> T): Result<T> {

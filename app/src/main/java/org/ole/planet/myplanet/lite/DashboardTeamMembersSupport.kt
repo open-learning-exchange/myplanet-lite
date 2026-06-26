@@ -24,6 +24,7 @@ import kotlin.math.abs
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.dashboard.FetchAllUsersRequest
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
 import org.ole.planet.myplanet.lite.dashboard.UserDocument
@@ -308,15 +309,17 @@ internal class DashboardTeamMembersInviteDialogController(
         if (!prepareForLoad(reset)) return
         lifecycleScope.launch {
             val result = repository.fetchAllUsers(
-                baseUrl = base,
-                credentials = creds,
-                sessionCookie = sessionCookie,
-                planetCode = serverPlanetCode,
-                parentCode = serverParentCode,
-                pageSize = INVITE_PAGE_SIZE,
-                skip = nextSkip,
-                searchTerm = currentSearchTerm.takeIf { it.isNotBlank() },
-                excludedUserIds = getExcludedIds(),
+                FetchAllUsersRequest(
+                    baseUrl = base,
+                    credentials = creds,
+                    sessionCookie = sessionCookie,
+                    planetCode = serverPlanetCode,
+                    parentCode = serverParentCode,
+                    pageSize = INVITE_PAGE_SIZE,
+                    skip = nextSkip,
+                    searchTerm = currentSearchTerm.takeIf { it.isNotBlank() },
+                    excludedUserIds = getExcludedIds(),
+                )
             )
             result.onSuccess { users -> handleFetchSuccess(users, reset) }
                 .onFailure {
