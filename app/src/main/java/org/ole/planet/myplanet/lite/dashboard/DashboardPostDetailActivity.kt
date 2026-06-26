@@ -774,7 +774,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         pendingReplyImages.clear()
         updateReplyPreviewImages()
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.SupervisorJob() + Dispatchers.IO).launch {
             filesToDelete.forEach { file ->
                 if (file.exists()) {
                     file.delete()
