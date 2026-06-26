@@ -24,6 +24,7 @@ import kotlin.math.abs
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.dashboard.AddTeamMemberRequest
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
 import org.ole.planet.myplanet.lite.dashboard.UserDocument
@@ -125,11 +126,13 @@ internal fun runAcceptJoinRequest(params: AcceptJoinRequestParams) {
             baseUrl = base,
             credentials = creds,
             sessionCookie = params.sessionCookie,
-            teamId = teamId,
-            teamPlanetCode = teamPlanetCode,
-            teamType = params.request.request.teamType ?: "local",
-            userId = userId,
-            userPlanetCode = userPlanetCode,
+            request = AddTeamMemberRequest(
+                teamId = teamId,
+                teamPlanetCode = teamPlanetCode,
+                teamType = params.request.request.teamType ?: "local",
+                userId = userId,
+                userPlanetCode = userPlanetCode,
+            ),
         )
 
         addResult.onSuccess {
@@ -288,11 +291,13 @@ internal class DashboardTeamMembersInviteDialogController(
                 baseUrl = base,
                 credentials = creds,
                 sessionCookie = sessionCookie,
-                teamId = teamId,
-                teamPlanetCode = teamPlanetCode,
-                teamType = teamType,
-                userId = "org.couchdb.user:${candidate.username}",
-                userPlanetCode = userPlanet,
+                request = AddTeamMemberRequest(
+                    teamId = teamId,
+                    teamPlanetCode = teamPlanetCode,
+                    teamType = teamType,
+                    userId = "org.couchdb.user:${candidate.username}",
+                    userPlanetCode = userPlanet,
+                ),
             )
             result.onSuccess {
                 Toast.makeText(fragment.requireContext(), fragment.getString(R.string.dashboard_invite_members_add_success, candidate.name), Toast.LENGTH_SHORT).show()
