@@ -34,15 +34,15 @@ class DashboardOfflineSurveyStore(
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
-            CREATE TABLE $TABLE_SURVEYS(
-                $COLUMN_ID TEXT PRIMARY KEY,
-                $COLUMN_REV TEXT,
-                $COLUMN_TEAM_ID TEXT,
-                $COLUMN_DOCUMENT TEXT NOT NULL
+            CREATE TABLE surveys(
+                id TEXT PRIMARY KEY,
+                rev TEXT,
+                team_id TEXT,
+                document TEXT NOT NULL
             )
             """.trimIndent(),
         )
-        db.execSQL("CREATE INDEX idx_surveys_team_id ON $TABLE_SURVEYS($COLUMN_TEAM_ID)")
+        db.execSQL("CREATE INDEX idx_surveys_team_id ON surveys(team_id)")
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
