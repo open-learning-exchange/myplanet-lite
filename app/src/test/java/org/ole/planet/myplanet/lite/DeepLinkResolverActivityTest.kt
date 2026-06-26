@@ -17,7 +17,7 @@ import org.robolectric.annotation.Config
 class DeepLinkResolverActivityTest {
 
     @Test
-    fun `test valid post deep link starts SplashScreenImpl`() {
+    fun `test valid post deep link starts SplashScreen`() {
         val intent = Intent(Intent.ACTION_VIEW, Uri.parse("myplanetlite://post/123"))
 
         val controller = Robolectric.buildActivity(DeepLinkResolverActivity::class.java, intent)
@@ -26,7 +26,7 @@ class DeepLinkResolverActivityTest {
         val shadowActivity = shadowOf(controller.get())
         val nextIntent = shadowActivity.nextStartedActivity
 
-        assertEquals(SplashScreenImpl::class.java.name, nextIntent?.component?.className)
+        assertEquals(SplashScreen::class.java.name, nextIntent?.component?.className)
         assertEquals("123", nextIntent?.getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID))
     }
 

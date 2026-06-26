@@ -28,21 +28,17 @@
         <meta-data
             android:name="preloaded_fonts"
             android:resource="@array/preloaded_fonts" />
-        <activity
-            android:name=".SplashScreenImpl"
-            android:exported="false">
-        </activity>
 
-        <activity-alias
+        <activity
             android:name=".SplashScreen"
-            android:targetActivity=".SplashScreenImpl"
-            android:exported="true">
+            android:exported="true"
+            tools:ignore="ExportedActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
-        </activity-alias>
+        </activity>
         <activity
             android:name=".DeepLinkResolverActivity"
             android:exported="true"
