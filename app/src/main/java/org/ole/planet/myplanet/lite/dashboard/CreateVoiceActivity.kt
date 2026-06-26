@@ -507,12 +507,15 @@ class CreateVoiceActivity : BaseActivity() {
     private fun transformMarkdownForPreview(markdown: String): String {
         var processed = markdown.replace("\n", "  \n")
         if (pendingImages.isNotEmpty()) {
-            pendingImages.values.forEach { pending ->
-                val pattern = Regex("(!\\[[^\\]]*\\]\\()${Regex.escape(pending.fileName)}(\\))")
-                processed = pattern.replace(processed) { matchResult ->
-                    val prefix = matchResult.groupValues.getOrNull(1).orEmpty()
-                    val suffix = matchResult.groupValues.getOrNull(2).orEmpty()
-                    "$prefix${pending.file.toURI()}$suffix"
+            val pendingByFileName = pendingImages.values.associateBy { it.fileName }
+            processed = IMAGE_MARKDOWN_REGEX.replace(processed) { matchResult ->
+                val path = matchResult.groupValues.getOrNull(1).orEmpty()
+                val pending = pendingByFileName[path]
+                if (pending != null) {
+                    val prefix = matchResult.value.substringBeforeLast("(") + "("
+                    "$prefix${pending.file.toURI()})"
+                } else {
+                    matchResult.value
                 }
             }
         }
@@ -1497,6 +1500,7 @@ class CreateVoiceActivity : BaseActivity() {
     }
 
     companion object {
+        private val IMAGE_MARKDOWN_REGEX = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
         private const val PREVIEW_DEBOUNCE_MS = 150L
         private const val MAX_HEADING_LEVEL = 6
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
