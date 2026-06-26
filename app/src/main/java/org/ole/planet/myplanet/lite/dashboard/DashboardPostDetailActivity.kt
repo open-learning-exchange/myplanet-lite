@@ -1230,16 +1230,19 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
-        val escapedName = Regex.escape(fileName)
-        val pattern = Regex("!\\[([^\\]]*)\\]\\($escapedName\\)")
         var matched = false
-        val updated = pattern.replace(source) { matchResult ->
-            matched = true
+        val updated = IMAGE_MARKDOWN_REGEX.replace(source) { matchResult ->
             val altText = matchResult.groupValues.getOrNull(1).orEmpty()
-            if (altText.isBlank()) {
-                replacement
+            val url = matchResult.groupValues.getOrNull(2).orEmpty()
+            if (url == fileName) {
+                matched = true
+                if (altText.isBlank()) {
+                    replacement
+                } else {
+                    MarkdownUtils.applyAltText(replacement, altText)
+                }
             } else {
-                MarkdownUtils.applyAltText(replacement, altText)
+                matchResult.value
             }
         }
         if (matched) {
