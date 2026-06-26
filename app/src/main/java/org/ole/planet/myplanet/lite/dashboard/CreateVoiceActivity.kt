@@ -227,12 +227,18 @@ class CreateVoiceActivity : BaseActivity() {
 
     override fun onDestroy() {
         previewJob?.cancel()
-        pendingImages.values.forEach { pending ->
-            if (pending.file.exists()) {
-                pending.file.delete()
+
+        val filesToDelete = pendingImages.values.map { it.file }.toList()
+        pendingImages.clear()
+
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+            filesToDelete.forEach { file ->
+                if (file.exists()) {
+                    file.delete()
+                }
             }
         }
-        pendingImages.clear()
+
         decodedBitmaps.values.forEach { bitmap ->
             if (!bitmap.isRecycled) {
                 bitmap.recycle()
