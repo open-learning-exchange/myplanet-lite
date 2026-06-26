@@ -203,9 +203,13 @@ class DashboardSurveyOutboxStore private constructor(
         val db = writableDatabase
         db.beginTransaction()
         try {
-            val maxChunkSize = 999
+            // Use 900 instead of 999 to leave deliberate headroom below SQLite's parameter limit of 999.
+            // We reuse a single array to avoid allocation overhead during iteration.
+            // This is safe because db.delete() executes synchronously and binds the array
+            // values before returning, avoiding any aliasing with the next iteration.
+            val maxChunkSize = 900
             val idStrings = Array(maxChunkSize) { "" }
-            val placeholders999 = "?,".repeat(maxChunkSize).dropLast(1)
+            val placeholders900 = "?,".repeat(maxChunkSize).dropLast(1)
 
             val iterator = ids.iterator()
             while (iterator.hasNext()) {
@@ -216,7 +220,7 @@ class DashboardSurveyOutboxStore private constructor(
                 }
 
                 if (count == maxChunkSize) {
-                    deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders999)", idStrings)
+                    deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders900)", idStrings)
                 } else {
                     val remainingStrings = idStrings.copyOfRange(0, count)
                     val placeholders = "?,".repeat(count).dropLast(1)
