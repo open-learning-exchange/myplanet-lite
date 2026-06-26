@@ -203,10 +203,25 @@ class DashboardSurveyOutboxStore private constructor(
         val db = writableDatabase
         db.beginTransaction()
         try {
-            val idStrings = ids.map { it.toString() }
-            idStrings.chunked(900).forEach { chunk ->
-                val placeholders = chunk.joinToString(",") { "?" }
-                deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders)", chunk.toTypedArray())
+            val maxChunkSize = 999
+            val idStrings = Array(maxChunkSize) { "" }
+            val placeholders999 = "?,".repeat(maxChunkSize).dropLast(1)
+
+            val iterator = ids.iterator()
+            while (iterator.hasNext()) {
+                var count = 0
+                while (iterator.hasNext() && count < maxChunkSize) {
+                    idStrings[count] = iterator.next().toString()
+                    count++
+                }
+
+                if (count == maxChunkSize) {
+                    deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders999)", idStrings)
+                } else {
+                    val remainingStrings = idStrings.copyOfRange(0, count)
+                    val placeholders = "?,".repeat(count).dropLast(1)
+                    deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders)", remainingStrings)
+                }
             }
             db.setTransactionSuccessful()
         } finally {
