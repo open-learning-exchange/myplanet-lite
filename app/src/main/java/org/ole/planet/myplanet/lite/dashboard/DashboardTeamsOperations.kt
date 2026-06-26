@@ -436,17 +436,16 @@ internal class DashboardTeamsOperations(
         }
     }
 
-    fun fetchAllUsers(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        planetCode: String?,
-        parentCode: String?,
-        pageSize: Int = 25,
-        skip: Int = 0,
-        searchTerm: String? = null,
-        excludedUserIds: List<String> = emptyList(),
-    ): List<UserDocument> {
+    fun fetchAllUsers(request: FetchUsersRequest): List<UserDocument> {
+        val baseUrl = request.baseUrl
+        val credentials = request.credentials
+        val sessionCookie = request.sessionCookie
+        val planetCode = request.planetCode
+        val parentCode = request.parentCode
+        val pageSize = request.pageSize
+        val skip = request.skip
+        val searchTerm = request.searchTerm
+        val excludedUserIds = request.excludedUserIds
         val normalizedBase = baseUrl.trim().trimEnd('/')
         if (normalizedBase.isEmpty()) throw IOException("Missing server base URL")
         val basicAuth = credentials?.let { Credentials.basic(it.username, it.password) }

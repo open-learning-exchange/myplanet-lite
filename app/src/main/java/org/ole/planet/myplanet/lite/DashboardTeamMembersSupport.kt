@@ -308,15 +308,17 @@ internal class DashboardTeamMembersInviteDialogController(
         if (!prepareForLoad(reset)) return
         lifecycleScope.launch {
             val result = repository.fetchAllUsers(
-                baseUrl = base,
-                credentials = creds,
-                sessionCookie = sessionCookie,
-                planetCode = serverPlanetCode,
-                parentCode = serverParentCode,
-                pageSize = INVITE_PAGE_SIZE,
-                skip = nextSkip,
-                searchTerm = currentSearchTerm.takeIf { it.isNotBlank() },
-                excludedUserIds = getExcludedIds(),
+                org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest(
+                    baseUrl = base,
+                    credentials = creds,
+                    sessionCookie = sessionCookie,
+                    planetCode = serverPlanetCode,
+                    parentCode = serverParentCode,
+                    pageSize = INVITE_PAGE_SIZE,
+                    skip = nextSkip,
+                    searchTerm = currentSearchTerm.takeIf { it.isNotBlank() },
+                    excludedUserIds = getExcludedIds(),
+                )
             )
             result.onSuccess { users -> handleFetchSuccess(users, reset) }
                 .onFailure {

@@ -582,15 +582,7 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         runBlocking {
             whenever(
                 repository.fetchAllUsers(
-                    baseUrl = any<String>(),
-                    credentials = anyOrNull<StoredCredentials>(),
-                    sessionCookie = anyOrNull<String>(),
-                    planetCode = anyOrNull<String>(),
-                    parentCode = anyOrNull<String>(),
-                    pageSize = any<Int>(),
-                    skip = any<Int>(),
-                    searchTerm = anyOrNull<String>(),
-                    excludedUserIds = any<List<String>>(),
+                    any<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>()
                 )
             ).thenReturn(Result.success(emptyList<UserDocument>()))
         }

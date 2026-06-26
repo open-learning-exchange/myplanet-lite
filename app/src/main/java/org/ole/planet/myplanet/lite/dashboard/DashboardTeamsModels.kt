@@ -4,6 +4,18 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import org.ole.planet.myplanet.lite.util.BirthDateString
 
+data class FetchUsersRequest(
+    val baseUrl: String,
+    val credentials: org.ole.planet.myplanet.lite.profile.StoredCredentials?,
+    val sessionCookie: String?,
+    val planetCode: String?,
+    val parentCode: String?,
+    val pageSize: Int = 25,
+    val skip: Int = 0,
+    val searchTerm: String? = null,
+    val excludedUserIds: List<String> = emptyList(),
+)
+
 @JsonClass(generateAdapter = true)
 data class MembershipFindRequest(val selector: MembershipSelector)
 
