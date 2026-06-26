@@ -157,16 +157,18 @@ class ResourceSyncServiceTest {
         )
 
         val result = service.fetchTeamResources(
-            baseUrl = "http://base",
-            sessionCookie = null,
-            username = "user",
-            password = "pwd",
-            teamId = "team1",
-            searchQuery = "",
-            mediaTypeFilter = null,
-            isSortDescending = false,
-            limit = 100,
-            downloadedResources = listOf(downloadedResource)
+            params = TeamResourcesFetchParams(
+                baseUrl = "http://base",
+                sessionCookie = null,
+                username = "user",
+                password = "pwd",
+                teamId = "team1",
+                searchQuery = "",
+                mediaTypeFilter = null,
+                isSortDescending = false,
+                limit = 100,
+                downloadedResources = listOf(downloadedResource)
+            )
         )
 
         assertEquals(2, result.size)

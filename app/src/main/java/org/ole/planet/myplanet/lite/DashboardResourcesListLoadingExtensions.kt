@@ -188,16 +188,18 @@ internal fun DashboardResourcesPageFragment.loadTeamResources() {
             }.getOrNull()
 
             val mergedResources = resourceSyncService.fetchTeamResources(
-                baseUrl = resolvedBaseUrl,
-                sessionCookie = sessionCookie,
-                username = credentials?.username,
-                password = credentials?.password,
-                teamId = teamId,
-                searchQuery = searchQuery,
-                mediaTypeFilter = selectedMediaType,
-                isSortDescending = isSortDescending,
-                limit = DashboardResourcesPageFragment.MAIN_RESOURCES_PAGE_SIZE,
-                downloadedResources = loadDownloadedResourcesFiltered()
+                params = TeamResourcesFetchParams(
+                    baseUrl = resolvedBaseUrl,
+                    sessionCookie = sessionCookie,
+                    username = credentials?.username,
+                    password = credentials?.password,
+                    teamId = teamId,
+                    searchQuery = searchQuery,
+                    mediaTypeFilter = selectedMediaType,
+                    isSortDescending = isSortDescending,
+                    limit = DashboardResourcesPageFragment.MAIN_RESOURCES_PAGE_SIZE,
+                    downloadedResources = loadDownloadedResourcesFiltered()
+                )
             )
             isLoadingTeamResources = false
             if (isAdded) {

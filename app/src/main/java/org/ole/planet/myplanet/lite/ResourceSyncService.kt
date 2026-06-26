@@ -8,6 +8,19 @@ internal data class MainResourcesFetchResult(
     val page: List<ResourceUi>
 )
 
+internal data class TeamResourcesFetchParams(
+    val baseUrl: String,
+    val sessionCookie: String?,
+    val username: String?,
+    val password: String?,
+    val teamId: String,
+    val searchQuery: String,
+    val mediaTypeFilter: String?,
+    val isSortDescending: Boolean,
+    val limit: Int,
+    val downloadedResources: List<ResourceUi>
+)
+
 internal class ResourceSyncService(
     private val repository: DashboardResourcesRepository,
     private val downloadService: ResourceDownloadService
@@ -61,28 +74,19 @@ internal class ResourceSyncService(
     }
 
     suspend fun fetchTeamResources(
-        baseUrl: String,
-        sessionCookie: String?,
-        username: String?,
-        password: String?,
-        teamId: String,
-        searchQuery: String,
-        mediaTypeFilter: String?,
-        isSortDescending: Boolean,
-        limit: Int,
-        downloadedResources: List<ResourceUi>
+        params: TeamResourcesFetchParams
     ): List<ResourceUi> {
         val result = repository.fetchTeamResources(
-            baseUrl = baseUrl,
-            sessionCookie = sessionCookie,
-            username = username,
-            password = password,
-            teamId = teamId,
-            searchQuery = searchQuery,
-            mediaTypeFilter = mediaTypeFilter,
+            baseUrl = params.baseUrl,
+            sessionCookie = params.sessionCookie,
+            username = params.username,
+            password = params.password,
+            teamId = params.teamId,
+            searchQuery = params.searchQuery,
+            mediaTypeFilter = params.mediaTypeFilter,
             sortBy = "title",
-            sortDescending = isSortDescending,
-            limit = limit
+            sortDescending = params.isSortDescending,
+            limit = params.limit
         )
         val page = result.getOrDefault(emptyList())
         val allRemoteItems = page.map { resource ->
@@ -103,7 +107,7 @@ internal class ResourceSyncService(
             )
         }
         val remoteKeys = allRemoteItems.map { it.resourceIdentityKey() }.toSet()
-        val downloaded = downloadedResources.filter { remoteKeys.contains(it.resourceIdentityKey()) }
+        val downloaded = params.downloadedResources.filter { remoteKeys.contains(it.resourceIdentityKey()) }
         val existingKeys = downloaded.map { it.resourceIdentityKey() }.toMutableSet()
         val remoteItems = allRemoteItems.filter { item ->
             val key = item.resourceIdentityKey()
