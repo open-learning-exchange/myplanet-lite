@@ -93,7 +93,7 @@ internal fun DashboardResourcesPageFragment.showRecordAudioPopup() {
         try {
             mediaRecorder?.stop()
         } catch (e: Exception) {
-            Log.e("DashboardResources", "Error stopping recorder", e)
+            Log.e("DashboardResources", "Error stopping recorder: ${e.message}")
         }
         mediaRecorder?.reset()
         mediaRecorder?.release()
