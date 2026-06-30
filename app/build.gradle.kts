@@ -4,11 +4,11 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-val mockitoAgent by configurations.creating {
+val mockitoAgent = configurations.create("mockitoAgent") {
     isTransitive = false
 }
-val mockkAgent: Configuration by configurations.creating
-val sharedTestImplementation: Configuration by configurations.creating {
+val mockkAgent = configurations.create("mockkAgent")
+val sharedTestImplementation = configurations.create("sharedTestImplementation") {
     isCanBeConsumed = false
     isCanBeResolved = false
 }

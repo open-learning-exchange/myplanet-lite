@@ -300,48 +300,52 @@ class DashboardResourcesRepository {
         }
     }
 
+    data class TeamResourcesRequest(
+        val baseUrl: String,
+        val sessionCookie: String?,
+        val username: String?,
+        val password: String?,
+        val teamId: String,
+        val searchQuery: String,
+        val mediaTypeFilter: String?,
+        val sortBy: String,
+        val sortDescending: Boolean,
+        val limit: Int = 1000
+    )
+
     suspend fun fetchTeamResources(
-        baseUrl: String,
-        sessionCookie: String?,
-        username: String?,
-        password: String?,
-        teamId: String,
-        searchQuery: String,
-        mediaTypeFilter: String?,
-        sortBy: String,
-        sortDescending: Boolean,
-        limit: Int = 1000
+        request: TeamResourcesRequest
     ): Result<List<ResourceDocument>> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
+                val normalizedBase = request.baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
-                if (teamId.isBlank()) {
+                if (request.teamId.isBlank()) {
                     throw IOException("Missing team id")
                 }
                 val resourceIds = runCatching {
                     fetchTeamResourceIds(
                         normalizedBase = normalizedBase,
-                        username = username,
-                        password = password,
-                        teamId = teamId.trim()
+                        username = request.username,
+                        password = request.password,
+                        teamId = request.teamId.trim()
                     )
                 }.getOrDefault(emptyList())
 
                 fetchTeamResourcesByIds(
                     normalizedBase = normalizedBase,
-                    sessionCookie = sessionCookie,
-                    username = username,
-                    password = password,
-                    teamId = teamId.trim(),
+                    sessionCookie = request.sessionCookie,
+                    username = request.username,
+                    password = request.password,
+                    teamId = request.teamId.trim(),
                     resourceIds = resourceIds,
-                    searchQuery = searchQuery,
-                    mediaTypeFilter = mediaTypeFilter,
-                    sortBy = sortBy,
-                    sortDescending = sortDescending,
-                    limit = limit
+                    searchQuery = request.searchQuery,
+                    mediaTypeFilter = request.mediaTypeFilter,
+                    sortBy = request.sortBy,
+                    sortDescending = request.sortDescending,
+                    limit = request.limit
                 )
             }.onFailure { }
         }

@@ -39,28 +39,24 @@ internal class DashboardTeamsOperations(
         baseUrl: String,
         credentials: StoredCredentials?,
         sessionCookie: String?,
-        teamId: String,
-        teamPlanetCode: String,
-        teamType: String = "local",
-        userId: String,
-        userPlanetCode: String,
+        request: AddTeamMemberRequest,
     ) {
         val normalizedBase = baseUrl.trim().trimEnd('/')
         if (normalizedBase.isEmpty()) throw IOException("Missing server base URL")
-        if (teamId.isBlank()) throw IOException("Missing team id")
-        if (teamPlanetCode.isBlank()) throw IOException("Missing team planet code")
-        if (userId.isBlank()) throw IOException("Missing user id")
-        if (userPlanetCode.isBlank()) throw IOException("Missing user planet code")
+        if (request.teamId.isBlank()) throw IOException("Missing team id")
+        if (request.teamPlanetCode.isBlank()) throw IOException("Missing team planet code")
+        if (request.userId.isBlank()) throw IOException("Missing user id")
+        if (request.userPlanetCode.isBlank()) throw IOException("Missing user planet code")
 
         val payload = membershipBulkAddAdapter.toJson(
             BulkMembershipAddRequest(
                 docs = listOf(
                     BulkMembershipAddDoc(
-                        teamId = teamId,
-                        teamPlanetCode = teamPlanetCode,
-                        teamType = teamType.nullIfBlank() ?: "local",
-                        userId = userId,
-                        userPlanetCode = userPlanetCode,
+                        teamId = request.teamId,
+                        teamPlanetCode = request.teamPlanetCode,
+                        teamType = request.teamType.nullIfBlank() ?: "local",
+                        userId = request.userId,
+                        userPlanetCode = request.userPlanetCode,
                         docType = "membership",
                         isLeader = false,
                     ),
@@ -74,7 +70,7 @@ internal class DashboardTeamsOperations(
 
         client.newCall(requestBuilder.build()).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Unexpected response ${response.code}")
-            teamMemberDetailsCache.remove(teamId)
+            teamMemberDetailsCache.remove(request.teamId)
         }
     }
 
@@ -436,17 +432,16 @@ internal class DashboardTeamsOperations(
         }
     }
 
-    fun fetchAllUsers(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        planetCode: String?,
-        parentCode: String?,
-        pageSize: Int = 25,
-        skip: Int = 0,
-        searchTerm: String? = null,
-        excludedUserIds: List<String> = emptyList(),
-    ): List<UserDocument> {
+    fun fetchAllUsers(request: FetchUsersRequest): List<UserDocument> {
+        val baseUrl = request.baseUrl
+        val credentials = request.credentials
+        val sessionCookie = request.sessionCookie
+        val planetCode = request.planetCode
+        val parentCode = request.parentCode
+        val pageSize = request.pageSize
+        val skip = request.skip
+        val searchTerm = request.searchTerm
+        val excludedUserIds = request.excludedUserIds
         val normalizedBase = baseUrl.trim().trimEnd('/')
         if (normalizedBase.isEmpty()) throw IOException("Missing server base URL")
         val basicAuth = credentials?.let { Credentials.basic(it.username, it.password) }
