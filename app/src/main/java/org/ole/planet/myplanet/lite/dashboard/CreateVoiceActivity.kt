@@ -52,6 +52,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -227,12 +228,19 @@ class CreateVoiceActivity : BaseActivity() {
 
     override fun onDestroy() {
         previewJob?.cancel()
-        pendingImages.values.forEach { pending ->
-            if (pending.file.exists()) {
-                pending.file.delete()
+
+        val filesToDelete = pendingImages.values.map { it.file }.toList()
+        pendingImages.clear()
+
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
+            filesToDelete.forEach { file ->
+                if (file.exists()) {
+                    file.delete()
+                }
             }
         }
-        pendingImages.clear()
+
         decodedBitmaps.values.forEach { bitmap ->
             if (!bitmap.isRecycled) {
                 bitmap.recycle()

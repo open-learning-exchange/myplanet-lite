@@ -53,6 +53,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.R
@@ -772,12 +773,17 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun clearPendingReplyImages() {
-        pendingReplyImages.values.forEach { pending ->
-            if (pending.file.exists()) {
-                pending.file.delete()
+        val filesToDelete = pendingReplyImages.values.map { it.file }.toList()
+        pendingReplyImages.clear()
+
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
+            filesToDelete.forEach { file ->
+                if (file.exists()) {
+                    file.delete()
+                }
             }
         }
-        pendingReplyImages.clear()
         updateReplyPreviewImages()
     }
 
