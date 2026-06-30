@@ -30,13 +30,9 @@ class DashboardTeamsRepository(
         baseUrl: String,
         credentials: StoredCredentials?,
         sessionCookie: String?,
-        teamId: String,
-        teamPlanetCode: String,
-        teamType: String = "local",
-        userId: String,
-        userPlanetCode: String,
+        request: AddTeamMemberRequest,
     ): Result<Unit> = runInDispatcher {
-        operations.addTeamMember(baseUrl, credentials, sessionCookie, teamId, teamPlanetCode, teamType, userId, userPlanetCode)
+        operations.addTeamMember(baseUrl, credentials, sessionCookie, request)
     }
 
     suspend fun fetchMemberships(
@@ -180,28 +176,8 @@ class DashboardTeamsRepository(
         operations.fetchUserProfiles(baseUrl, credentials, sessionCookie, userIds)
     }
 
-    suspend fun fetchAllUsers(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        planetCode: String?,
-        parentCode: String?,
-        pageSize: Int = 25,
-        skip: Int = 0,
-        searchTerm: String? = null,
-        excludedUserIds: List<String> = emptyList(),
-    ): Result<List<UserDocument>> = runInDispatcher {
-        operations.fetchAllUsers(
-            baseUrl = baseUrl,
-            credentials = credentials,
-            sessionCookie = sessionCookie,
-            planetCode = planetCode,
-            parentCode = parentCode,
-            pageSize = pageSize,
-            skip = skip,
-            searchTerm = searchTerm,
-            excludedUserIds = excludedUserIds,
-        )
+    suspend fun fetchAllUsers(request: FetchUsersRequest): Result<List<UserDocument>> = runInDispatcher {
+        operations.fetchAllUsers(request)
     }
 
     private suspend fun <T> runInDispatcher(block: () -> T): Result<T> {

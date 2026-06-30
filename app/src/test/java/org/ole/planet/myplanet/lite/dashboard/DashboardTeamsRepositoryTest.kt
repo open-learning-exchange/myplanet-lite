@@ -11,6 +11,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.dashboard.AddTeamMemberRequest
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class DashboardTeamsRepositoryTest {
@@ -122,10 +123,12 @@ class DashboardTeamsRepositoryTest {
             baseUrl = baseUrl,
             credentials = StoredCredentials("testuser", "pass"),
             sessionCookie = "cookie",
-            teamId = "team1",
-            teamPlanetCode = "planet1",
-            userId = "user1",
-            userPlanetCode = "planet2"
+            request = AddTeamMemberRequest(
+                teamId = "team1",
+                teamPlanetCode = "planet1",
+                userId = "user1",
+                userPlanetCode = "planet2"
+            )
         )
 
         if (!result.isSuccess) throw result.exceptionOrNull()!!

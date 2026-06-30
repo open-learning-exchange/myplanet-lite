@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -494,32 +493,10 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
     private fun requiredPermissionsFor(action: ResourceMenuAction): List<String> {
         val permissions = linkedSetOf<String>()
         when (action) {
-            ResourceMenuAction.AddImage -> {
-                permissions += if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    Manifest.permission.READ_MEDIA_IMAGES
-                } else {
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                }
-            }
-            ResourceMenuAction.AddVideo -> {
-                permissions += if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    Manifest.permission.READ_MEDIA_VIDEO
-                } else {
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                }
-            }
-            ResourceMenuAction.AddAudio -> {
-                permissions += if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    Manifest.permission.READ_MEDIA_AUDIO
-                } else {
-                    Manifest.permission.READ_EXTERNAL_STORAGE
-                }
-            }
-            ResourceMenuAction.AddPdf -> {
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
-                    permissions += Manifest.permission.READ_EXTERNAL_STORAGE
-                }
-            }
+            ResourceMenuAction.AddImage,
+            ResourceMenuAction.AddVideo,
+            ResourceMenuAction.AddAudio,
+            ResourceMenuAction.AddPdf -> Unit
             ResourceMenuAction.TakePhoto -> {
                 permissions += Manifest.permission.CAMERA
             }
