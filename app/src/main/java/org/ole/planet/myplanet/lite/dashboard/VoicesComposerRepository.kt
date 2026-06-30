@@ -31,53 +31,58 @@ class VoicesComposerRepository(
     private val resourceCreationAdapter = moshi.adapter(ResourceCreationResponse::class.java)
     private val resourceUploadAdapter = moshi.adapter(ResourceUploadResponse::class.java)
 
+
+    data class CreateVoiceParams(
+        val baseUrl: String,
+        val credentials: StoredCredentials?,
+        val sessionCookie: String?,
+        val message: String,
+        val createdOn: String?,
+        val parentCode: String?,
+        val replyTo: String?,
+        val images: List<ImagePayload>,
+        val labels: List<String>,
+        val userPayload: UserPayload?,
+        val teamId: String? = null,
+        val teamName: String? = null
+    )
+
     suspend fun createVoice(
-        baseUrl: String,
-        credentials: StoredCredentials?,
-        sessionCookie: String?,
-        message: String,
-        createdOn: String?,
-        parentCode: String?,
-        replyTo: String?,
-        images: List<ImagePayload>,
-        labels: List<String>,
-        userPayload: UserPayload?,
-        teamId: String? = null,
-        teamName: String? = null
+        params: CreateVoiceParams
     ): Result<CreateVoiceResponse> {
         return withContext(dispatcher) {
             runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
+                val normalizedBase = params.baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
                 val timestamp = System.currentTimeMillis()
                 val payload = CreateVoiceRequest(
                     chat = false,
-                    message = message,
+                    message = params.message,
                     time = timestamp,
-                    createdOn = createdOn,
+                    createdOn = params.createdOn,
                     docType = "message",
-                    viewIn = buildViewInEntries(createdOn, parentCode, teamId, teamName),
+                    viewIn = buildViewInEntries(params.createdOn, params.parentCode, params.teamId, params.teamName),
                     avatar = "",
                     messageType = "news",
-                    messagePlanetCode = createdOn,
-                    replyTo = replyTo ?: "",
-                    parentCode = parentCode,
-                    images = images,
-                    labels = labels,
-                    user = userPayload,
-                    news = buildNewsMetadata(userPayload?.id ?: userPayload?.name, timestamp)
+                    messagePlanetCode = params.createdOn,
+                    replyTo = params.replyTo ?: "",
+                    parentCode = params.parentCode,
+                    images = params.images,
+                    labels = params.labels,
+                    user = params.userPayload,
+                    news = buildNewsMetadata(params.userPayload?.id ?: params.userPayload?.name, timestamp)
                 )
                 val requestBody = requestAdapter.toJson(payload)
                     .toRequestBody(JSON_MEDIA_TYPE)
                 val requestBuilder = Request.Builder()
                     .url("$normalizedBase/db/news")
                     .post(requestBody)
-                credentials?.let {
+                params.credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                params.sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
