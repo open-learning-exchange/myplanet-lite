@@ -32,17 +32,8 @@ class DashboardOfflineSurveyStore(
         .adapter(SurveyDocument::class.java)
 
     override fun onCreate(db: SQLiteDatabase) {
-        db.execSQL(
-            """
-            CREATE TABLE $TABLE_SURVEYS(
-                $COLUMN_ID TEXT PRIMARY KEY,
-                $COLUMN_REV TEXT,
-                $COLUMN_TEAM_ID TEXT,
-                $COLUMN_DOCUMENT TEXT NOT NULL
-            )
-            """.trimIndent(),
-        )
-        db.execSQL("CREATE INDEX idx_surveys_team_id ON $TABLE_SURVEYS($COLUMN_TEAM_ID)")
+        db.execSQL(CREATE_TABLE_QUERY)
+        db.execSQL(CREATE_INDEX_QUERY)
     }
 
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
@@ -145,6 +136,16 @@ class DashboardOfflineSurveyStore(
         private const val COLUMN_REV = "rev"
         private const val COLUMN_TEAM_ID = "team_id"
         private const val COLUMN_DOCUMENT = "document"
+
+        private const val CREATE_TABLE_QUERY = """
+            CREATE TABLE $TABLE_SURVEYS(
+                $COLUMN_ID TEXT PRIMARY KEY,
+                $COLUMN_REV TEXT,
+                $COLUMN_TEAM_ID TEXT,
+                $COLUMN_DOCUMENT TEXT NOT NULL
+            )
+        """
+        private const val CREATE_INDEX_QUERY = "CREATE INDEX idx_surveys_team_id ON $TABLE_SURVEYS($COLUMN_TEAM_ID)"
 
         @Volatile
         private var instance: DashboardOfflineSurveyStore? = null

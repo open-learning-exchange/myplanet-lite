@@ -41,6 +41,10 @@ class OfflineCourseStorageTest {
         }
     }
 
+    private fun normalizedPath(file: File): String {
+        return file.absolutePath.replace('\\', '/')
+    }
+
     private fun createDummyCourse(id: String = "test-course-1"): DashboardCoursePageFragment.CourseItem {
         val survey = SurveyDocument(
             id = "survey-1",
@@ -169,7 +173,7 @@ class OfflineCourseStorageTest {
     @Test
     fun testResourceFile() {
         val file = OfflineCourseStorage.resourceFile(context, "course-1", "res-1", "file.pdf")
-        assertTrue(file.absolutePath.endsWith(".offline_courses/course-1/resources/res-1/file.pdf"))
+        assertTrue(normalizedPath(file).endsWith(".offline_courses/course-1/resources/res-1/file.pdf"))
     }
 
     @Test
@@ -231,7 +235,7 @@ class OfflineCourseStorageTest {
         val file = OfflineCourseStorage.markdownImageFile(context, courseId, source)
 
         assertTrue(file.absolutePath.endsWith(".png"))
-        assertTrue(file.absolutePath.contains(".offline_courses/course-img/markdown/"))
+        assertTrue(normalizedPath(file).contains(".offline_courses/course-img/markdown/"))
     }
 
     @Test
