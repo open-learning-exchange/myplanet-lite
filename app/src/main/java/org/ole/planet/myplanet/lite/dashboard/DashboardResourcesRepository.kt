@@ -194,33 +194,38 @@ class DashboardResourcesRepository {
         }
     }
 
+
+    data class UploadAttachmentRequest(
+        val baseUrl: String,
+        val sessionCookie: String?,
+        val username: String?,
+        val password: String?,
+        val resourceId: String,
+        val filename: String,
+        val revision: String,
+        val mimeType: String,
+        val bytes: ByteArray
+    )
+
     suspend fun uploadResourceAttachment(
-        baseUrl: String,
-        sessionCookie: String?,
-        username: String?,
-        password: String?,
-        resourceId: String,
-        filename: String,
-        revision: String,
-        mimeType: String,
-        bytes: ByteArray
+        request: UploadAttachmentRequest
     ): Result<JSONObject> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
+                val normalizedBase = request.baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
-                val encodedRev = URLEncoder.encode(revision, Charsets.UTF_8.name())
-                val requestUrl = "$normalizedBase/db/resources/${resourceId.trim()}/${filename.trim()}?rev=$encodedRev"
+                val encodedRev = URLEncoder.encode(request.revision, Charsets.UTF_8.name())
+                val requestUrl = "$normalizedBase/db/resources/${request.resourceId.trim()}/${request.filename.trim()}?rev=$encodedRev"
                 val requestBuilder = Request.Builder()
                     .url(requestUrl)
-                    .put(bytes.toRequestBody(mimeType.toMediaType()))
+                    .put(request.bytes.toRequestBody(request.mimeType.toMediaType()))
 
-                if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
-                    requestBuilder.addHeader("Authorization", Credentials.basic(username, password))
+                if (!request.username.isNullOrBlank() && !request.password.isNullOrBlank()) {
+                    requestBuilder.addHeader("Authorization", Credentials.basic(request.username, request.password))
                 }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                request.sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie.substringBefore(";"))
                 }
 
@@ -295,48 +300,52 @@ class DashboardResourcesRepository {
         }
     }
 
+    data class TeamResourcesRequest(
+        val baseUrl: String,
+        val sessionCookie: String?,
+        val username: String?,
+        val password: String?,
+        val teamId: String,
+        val searchQuery: String,
+        val mediaTypeFilter: String?,
+        val sortBy: String,
+        val sortDescending: Boolean,
+        val limit: Int = 1000
+    )
+
     suspend fun fetchTeamResources(
-        baseUrl: String,
-        sessionCookie: String?,
-        username: String?,
-        password: String?,
-        teamId: String,
-        searchQuery: String,
-        mediaTypeFilter: String?,
-        sortBy: String,
-        sortDescending: Boolean,
-        limit: Int = 1000
+        request: TeamResourcesRequest
     ): Result<List<ResourceDocument>> {
         return withContext(Dispatchers.IO) {
             runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
+                val normalizedBase = request.baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
-                if (teamId.isBlank()) {
+                if (request.teamId.isBlank()) {
                     throw IOException("Missing team id")
                 }
                 val resourceIds = runCatching {
                     fetchTeamResourceIds(
                         normalizedBase = normalizedBase,
-                        username = username,
-                        password = password,
-                        teamId = teamId.trim()
+                        username = request.username,
+                        password = request.password,
+                        teamId = request.teamId.trim()
                     )
                 }.getOrDefault(emptyList())
 
                 fetchTeamResourcesByIds(
                     normalizedBase = normalizedBase,
-                    sessionCookie = sessionCookie,
-                    username = username,
-                    password = password,
-                    teamId = teamId.trim(),
+                    sessionCookie = request.sessionCookie,
+                    username = request.username,
+                    password = request.password,
+                    teamId = request.teamId.trim(),
                     resourceIds = resourceIds,
-                    searchQuery = searchQuery,
-                    mediaTypeFilter = mediaTypeFilter,
-                    sortBy = sortBy,
-                    sortDescending = sortDescending,
-                    limit = limit
+                    searchQuery = request.searchQuery,
+                    mediaTypeFilter = request.mediaTypeFilter,
+                    sortBy = request.sortBy,
+                    sortDescending = request.sortDescending,
+                    limit = request.limit
                 )
             }.onFailure { }
         }

@@ -15,6 +15,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.dashboard.AddTeamMemberRequest
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
 class DashboardTeamsOperationsTest {
@@ -50,10 +51,12 @@ class DashboardTeamsOperationsTest {
             baseUrl = baseUrl,
             credentials = StoredCredentials("testuser", "pass"),
             sessionCookie = "cookie",
-            teamId = "team1",
-            teamPlanetCode = "planet1",
-            userId = "user1",
-            userPlanetCode = "planet2"
+            request = AddTeamMemberRequest(
+                teamId = "team1",
+                teamPlanetCode = "planet1",
+                userId = "user1",
+                userPlanetCode = "planet2"
+            )
         )
 
         val request = mockWebServer.takeRequest()
@@ -76,10 +79,12 @@ class DashboardTeamsOperationsTest {
                 baseUrl = "",
                 credentials = StoredCredentials("testuser", "pass"),
                 sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "planet1",
-                userId = "user1",
-                userPlanetCode = "planet2"
+                request = AddTeamMemberRequest(
+                    teamId = "team1",
+                    teamPlanetCode = "planet1",
+                    userId = "user1",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertEquals("Missing server base URL", exception.message)
@@ -92,10 +97,12 @@ class DashboardTeamsOperationsTest {
                 baseUrl = mockWebServer.url("/").toString(),
                 credentials = StoredCredentials("testuser", "pass"),
                 sessionCookie = "cookie",
-                teamId = "",
-                teamPlanetCode = "planet1",
-                userId = "user1",
-                userPlanetCode = "planet2"
+                request = AddTeamMemberRequest(
+                    teamId = "",
+                    teamPlanetCode = "planet1",
+                    userId = "user1",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertEquals("Missing team id", exception.message)
@@ -108,10 +115,12 @@ class DashboardTeamsOperationsTest {
                 baseUrl = mockWebServer.url("/").toString(),
                 credentials = StoredCredentials("testuser", "pass"),
                 sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "",
-                userId = "user1",
-                userPlanetCode = "planet2"
+                request = AddTeamMemberRequest(
+                    teamId = "team1",
+                    teamPlanetCode = "",
+                    userId = "user1",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertEquals("Missing team planet code", exception.message)
@@ -124,10 +133,12 @@ class DashboardTeamsOperationsTest {
                 baseUrl = mockWebServer.url("/").toString(),
                 credentials = StoredCredentials("testuser", "pass"),
                 sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "planet1",
-                userId = "",
-                userPlanetCode = "planet2"
+                request = AddTeamMemberRequest(
+                    teamId = "team1",
+                    teamPlanetCode = "planet1",
+                    userId = "",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertEquals("Missing user id", exception.message)
@@ -140,10 +151,12 @@ class DashboardTeamsOperationsTest {
                 baseUrl = mockWebServer.url("/").toString(),
                 credentials = StoredCredentials("testuser", "pass"),
                 sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "planet1",
-                userId = "user1",
-                userPlanetCode = ""
+                request = AddTeamMemberRequest(
+                    teamId = "team1",
+                    teamPlanetCode = "planet1",
+                    userId = "user1",
+                    userPlanetCode = ""
+                )
             )
         }
         assertEquals("Missing user planet code", exception.message)
@@ -158,10 +171,12 @@ class DashboardTeamsOperationsTest {
                 baseUrl = mockWebServer.url("/").toString(),
                 credentials = StoredCredentials("testuser", "pass"),
                 sessionCookie = "cookie",
-                teamId = "team1",
-                teamPlanetCode = "planet1",
-                userId = "user1",
-                userPlanetCode = "planet2"
+                request = AddTeamMemberRequest(
+                    teamId = "team1",
+                    teamPlanetCode = "planet1",
+                    userId = "user1",
+                    userPlanetCode = "planet2"
+                )
             )
         }
         assertTrue(exception.message?.startsWith("Unexpected response") == true)

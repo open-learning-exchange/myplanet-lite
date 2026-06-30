@@ -148,4 +148,72 @@ class VoicesComposerRepositoryTest {
             assertEquals("Invalid response body", e.message)
         }
     }
+    @Test
+    fun `createVoice returns successful response on valid input`() = runTest {
+        val validJsonResponse = """
+            {
+                "ok": true,
+                "id": "voice_123",
+                "rev": "rev_abc"
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(validJsonResponse))
+
+        val credentials = StoredCredentials("testUser", "testPass")
+        val baseUrl = mockWebServer.url("/").toString()
+        val params = VoicesComposerRepository.CreateVoiceParams(
+            baseUrl = baseUrl,
+            credentials = credentials,
+            sessionCookie = "cookie",
+            message = "Test message",
+            createdOn = "planet_code",
+            parentCode = "parent_code",
+            replyTo = null,
+            images = emptyList(),
+            labels = emptyList(),
+            userPayload = null,
+            teamId = "team_1",
+            teamName = "Team 1"
+        )
+
+        val result = repository.createVoice(params)
+
+        assertTrue(result.isSuccess)
+        val response = result.getOrNull()
+        assertNotNull(response)
+        assertEquals(true, response?.ok)
+        assertEquals("voice_123", response?.id)
+        assertEquals("rev_abc", response?.revision)
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/db/news", request.path)
+        assertNotNull(request.getHeader("Authorization"))
+        assertEquals("cookie", request.getHeader("Cookie"))
+    }
+
+    @Test
+    fun `createVoice throws exception on missing base URL`() = runTest {
+        val params = VoicesComposerRepository.CreateVoiceParams(
+            baseUrl = "",
+            credentials = null,
+            sessionCookie = null,
+            message = "Test message",
+            createdOn = "planet_code",
+            parentCode = "parent_code",
+            replyTo = null,
+            images = emptyList(),
+            labels = emptyList(),
+            userPayload = null,
+            teamId = "team_1",
+            teamName = "Team 1"
+        )
+
+        val result = repository.createVoice(params)
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IOException)
+        assertEquals("Missing server base URL", result.exceptionOrNull()?.message)
+    }
+
 }
