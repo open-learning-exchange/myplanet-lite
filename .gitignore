@@ -167,3 +167,7 @@ test_plan.sh
 test_script.sh
 test_intent_utils.sh
 .kotlin/sessions/
+
+.idea/codeStyles/Project.xml
+
+.idea/codeStyles/codeStyleConfig.xml
