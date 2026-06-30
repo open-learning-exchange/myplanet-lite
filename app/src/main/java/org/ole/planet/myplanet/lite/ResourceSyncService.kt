@@ -73,16 +73,18 @@ internal class ResourceSyncService(
         downloadedResources: List<ResourceUi>
     ): List<ResourceUi> {
         val result = repository.fetchTeamResources(
-            baseUrl = baseUrl,
-            sessionCookie = sessionCookie,
-            username = username,
-            password = password,
-            teamId = teamId,
-            searchQuery = searchQuery,
-            mediaTypeFilter = mediaTypeFilter,
-            sortBy = "title",
-            sortDescending = isSortDescending,
-            limit = limit
+            DashboardResourcesRepository.TeamResourcesRequest(
+                baseUrl = baseUrl,
+                sessionCookie = sessionCookie,
+                username = username,
+                password = password,
+                teamId = teamId,
+                searchQuery = searchQuery,
+                mediaTypeFilter = mediaTypeFilter,
+                sortBy = "title",
+                sortDescending = isSortDescending,
+                limit = limit
+            )
         )
         val page = result.getOrDefault(emptyList())
         val allRemoteItems = page.map { resource ->

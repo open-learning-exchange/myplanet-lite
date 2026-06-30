@@ -612,18 +612,20 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             val prepared = prepareReplyImagesForPosting(base, credentials, message)
             val userPayload = buildUserPayload(credentials)
             val result = composerRepository.createVoice(
-                baseUrl = base,
-                credentials = credentials,
-                sessionCookie = cookie,
-                message = prepared.message,
-                createdOn = doc.createdOn ?: serverCode,
-                parentCode = doc.parentCode,
-                replyTo = postId,
-                images = prepared.images,
-                labels = emptyList(),
-                userPayload = userPayload,
-                teamId = selectedTeamId,
-                teamName = selectedTeamName
+                VoicesComposerRepository.CreateVoiceParams(
+                    baseUrl = base,
+                    credentials = credentials,
+                    sessionCookie = cookie,
+                    message = prepared.message,
+                    createdOn = doc.createdOn ?: serverCode,
+                    parentCode = doc.parentCode,
+                    replyTo = postId,
+                    images = prepared.images,
+                    labels = emptyList(),
+                    userPayload = userPayload,
+                    teamId = selectedTeamId,
+                    teamName = selectedTeamName
+                )
             )
             result.onSuccess {
                 Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_reply_success, Toast.LENGTH_SHORT).show()

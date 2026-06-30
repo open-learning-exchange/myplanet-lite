@@ -423,18 +423,20 @@ class CreateVoiceActivity : BaseActivity() {
             }
             val userPayload = buildUserPayload(profile, credentials, codes)
             val result = repository.createVoice(
-                base,
-                credentials,
-                sessionCookie,
-                preparedContent.message,
-                codes?.planetCode ?: serverCode,
-                codes?.parentCode,
-                replyTo = null,
-                preparedContent.images,
-                emptyList(),
-                userPayload,
-                teamId = targetTeamId,
-                teamName = targetTeamName
+                VoicesComposerRepository.CreateVoiceParams(
+                    baseUrl = base,
+                    credentials = credentials,
+                    sessionCookie = sessionCookie,
+                    message = preparedContent.message,
+                    createdOn = codes?.planetCode ?: serverCode,
+                    parentCode = codes?.parentCode,
+                    replyTo = null,
+                    images = preparedContent.images,
+                    labels = emptyList(),
+                    userPayload = userPayload,
+                    teamId = targetTeamId,
+                    teamName = targetTeamName
+                )
             )
             result.onSuccess {
                 Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_post_success, Toast.LENGTH_SHORT).show()
