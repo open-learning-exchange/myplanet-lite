@@ -304,3 +304,11 @@ data class UserIdSelector(@param:Json(name = "_id") val ids: IdsInClause)
 
 @JsonClass(generateAdapter = true)
 data class UsersFindResponse(val docs: List<UserDocument>?)
+
+data class AddTeamMemberRequest(
+    val teamId: String,
+    val teamPlanetCode: String,
+    val teamType: String = "local",
+    val userId: String,
+    val userPlanetCode: String,
+)
