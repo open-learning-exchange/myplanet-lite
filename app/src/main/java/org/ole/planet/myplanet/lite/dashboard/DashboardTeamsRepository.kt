@@ -30,13 +30,9 @@ class DashboardTeamsRepository(
         baseUrl: String,
         credentials: StoredCredentials?,
         sessionCookie: String?,
-        teamId: String,
-        teamPlanetCode: String,
-        teamType: String = "local",
-        userId: String,
-        userPlanetCode: String,
+        request: AddTeamMemberRequest,
     ): Result<Unit> = runInDispatcher {
-        operations.addTeamMember(baseUrl, credentials, sessionCookie, teamId, teamPlanetCode, teamType, userId, userPlanetCode)
+        operations.addTeamMember(baseUrl, credentials, sessionCookie, request)
     }
 
     suspend fun fetchMemberships(
