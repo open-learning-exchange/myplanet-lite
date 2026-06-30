@@ -1238,16 +1238,19 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
-        val escapedName = Regex.escape(fileName)
-        val pattern = Regex("!\\[([^\\]]*)\\]\\($escapedName\\)")
         var matched = false
-        val updated = pattern.replace(source) { matchResult ->
-            matched = true
+        val updated = IMAGE_MARKDOWN_REGEX.replace(source) { matchResult ->
             val altText = matchResult.groupValues.getOrNull(1).orEmpty()
-            if (altText.isBlank()) {
-                replacement
+            val url = matchResult.groupValues.getOrNull(2).orEmpty()
+            if (url == fileName) {
+                matched = true
+                if (altText.isBlank()) {
+                    replacement
+                } else {
+                    MarkdownUtils.applyAltText(replacement, altText)
+                }
             } else {
-                MarkdownUtils.applyAltText(replacement, altText)
+                matchResult.value
             }
         }
         if (matched) {
@@ -1453,7 +1456,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         }
         return IMAGE_MARKDOWN_REGEX.findAll(markdown)
             .mapNotNull { match ->
-                match.groupValues.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+                match.groupValues.getOrNull(2)?.trim()?.takeIf { it.isNotEmpty() }
             }
             .toList()
     }
@@ -1492,7 +1495,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             return null
         }
         val match = IMAGE_MARKDOWN_REGEX.find(markdown)
-        return match?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+        return match?.groupValues?.getOrNull(2)?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     private fun buildResourcePath(resourceId: String?, filename: String?): String? {
@@ -1566,7 +1569,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         private const val MAX_HEADING_LEVEL = 6
 
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
-        private val IMAGE_MARKDOWN_REGEX = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
+        private val IMAGE_MARKDOWN_REGEX = Regex("!\\[([^\\]]*)\\]\\(([^)]+)\\)")
         private val RESOURCES_MARKDOWN_REGEX = Regex("!\\[[^\\]]*\\]\\((resources/[^)]+)\\)")
         private val RESOURCES_PATH_REGEX = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
     }
