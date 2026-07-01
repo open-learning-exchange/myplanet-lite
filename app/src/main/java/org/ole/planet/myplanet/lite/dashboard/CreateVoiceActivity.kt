@@ -52,6 +52,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -227,12 +228,19 @@ class CreateVoiceActivity : BaseActivity() {
 
     override fun onDestroy() {
         previewJob?.cancel()
-        pendingImages.values.forEach { pending ->
-            if (pending.file.exists()) {
-                pending.file.delete()
+
+        val filesToDelete = pendingImages.values.map { it.file }.toList()
+        pendingImages.clear()
+
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
+            filesToDelete.forEach { file ->
+                if (file.exists()) {
+                    file.delete()
+                }
             }
         }
-        pendingImages.clear()
+
         decodedBitmaps.values.forEach { bitmap ->
             if (!bitmap.isRecycled) {
                 bitmap.recycle()
@@ -415,18 +423,20 @@ class CreateVoiceActivity : BaseActivity() {
             }
             val userPayload = buildUserPayload(profile, credentials, codes)
             val result = repository.createVoice(
-                base,
-                credentials,
-                sessionCookie,
-                preparedContent.message,
-                codes?.planetCode ?: serverCode,
-                codes?.parentCode,
-                replyTo = null,
-                preparedContent.images,
-                emptyList(),
-                userPayload,
-                teamId = targetTeamId,
-                teamName = targetTeamName
+                VoicesComposerRepository.CreateVoiceParams(
+                    baseUrl = base,
+                    credentials = credentials,
+                    sessionCookie = sessionCookie,
+                    message = preparedContent.message,
+                    createdOn = codes?.planetCode ?: serverCode,
+                    parentCode = codes?.parentCode,
+                    replyTo = null,
+                    images = preparedContent.images,
+                    labels = emptyList(),
+                    userPayload = userPayload,
+                    teamId = targetTeamId,
+                    teamName = targetTeamName
+                )
             )
             result.onSuccess {
                 Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_post_success, Toast.LENGTH_SHORT).show()

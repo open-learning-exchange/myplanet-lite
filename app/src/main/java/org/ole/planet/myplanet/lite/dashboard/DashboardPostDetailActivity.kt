@@ -53,6 +53,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.R
@@ -611,18 +612,20 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             val prepared = prepareReplyImagesForPosting(base, credentials, message)
             val userPayload = buildUserPayload(credentials)
             val result = composerRepository.createVoice(
-                baseUrl = base,
-                credentials = credentials,
-                sessionCookie = cookie,
-                message = prepared.message,
-                createdOn = doc.createdOn ?: serverCode,
-                parentCode = doc.parentCode,
-                replyTo = postId,
-                images = prepared.images,
-                labels = emptyList(),
-                userPayload = userPayload,
-                teamId = selectedTeamId,
-                teamName = selectedTeamName
+                VoicesComposerRepository.CreateVoiceParams(
+                    baseUrl = base,
+                    credentials = credentials,
+                    sessionCookie = cookie,
+                    message = prepared.message,
+                    createdOn = doc.createdOn ?: serverCode,
+                    parentCode = doc.parentCode,
+                    replyTo = postId,
+                    images = prepared.images,
+                    labels = emptyList(),
+                    userPayload = userPayload,
+                    teamId = selectedTeamId,
+                    teamName = selectedTeamName
+                )
             )
             result.onSuccess {
                 Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_reply_success, Toast.LENGTH_SHORT).show()
@@ -770,12 +773,17 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun clearPendingReplyImages() {
-        pendingReplyImages.values.forEach { pending ->
-            if (pending.file.exists()) {
-                pending.file.delete()
+        val filesToDelete = pendingReplyImages.values.map { it.file }.toList()
+        pendingReplyImages.clear()
+
+        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.IO) {
+            filesToDelete.forEach { file ->
+                if (file.exists()) {
+                    file.delete()
+                }
             }
         }
-        pendingReplyImages.clear()
         updateReplyPreviewImages()
     }
 
@@ -1237,16 +1245,19 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
-        val escapedName = Regex.escape(fileName)
-        val pattern = Regex("!\\[([^\\]]*)\\]\\($escapedName\\)")
         var matched = false
-        val updated = pattern.replace(source) { matchResult ->
-            matched = true
+        val updated = IMAGE_MARKDOWN_REGEX.replace(source) { matchResult ->
             val altText = matchResult.groupValues.getOrNull(1).orEmpty()
-            if (altText.isBlank()) {
-                replacement
+            val url = matchResult.groupValues.getOrNull(2).orEmpty()
+            if (url == fileName) {
+                matched = true
+                if (altText.isBlank()) {
+                    replacement
+                } else {
+                    MarkdownUtils.applyAltText(replacement, altText)
+                }
             } else {
-                MarkdownUtils.applyAltText(replacement, altText)
+                matchResult.value
             }
         }
         if (matched) {
@@ -1452,7 +1463,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         }
         return IMAGE_MARKDOWN_REGEX.findAll(markdown)
             .mapNotNull { match ->
-                match.groupValues.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+                match.groupValues.getOrNull(2)?.trim()?.takeIf { it.isNotEmpty() }
             }
             .toList()
     }
@@ -1491,7 +1502,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             return null
         }
         val match = IMAGE_MARKDOWN_REGEX.find(markdown)
-        return match?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+        return match?.groupValues?.getOrNull(2)?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     private fun buildResourcePath(resourceId: String?, filename: String?): String? {
@@ -1565,7 +1576,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         private const val MAX_HEADING_LEVEL = 6
 
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
-        private val IMAGE_MARKDOWN_REGEX = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
+        private val IMAGE_MARKDOWN_REGEX = Regex("!\\[([^\\]]*)\\]\\(([^)]+)\\)")
         private val RESOURCES_MARKDOWN_REGEX = Regex("!\\[[^\\]]*\\]\\((resources/[^)]+)\\)")
         private val RESOURCES_PATH_REGEX = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
     }
