@@ -4,11 +4,11 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-val mockitoAgent by configurations.creating {
+val mockitoAgent = configurations.create("mockitoAgent") {
     isTransitive = false
 }
-val mockkAgent: Configuration by configurations.creating
-val sharedTestImplementation: Configuration by configurations.creating {
+val mockkAgent = configurations.create("mockkAgent")
+val sharedTestImplementation = configurations.create("sharedTestImplementation") {
     isCanBeConsumed = false
     isCanBeResolved = false
 }
@@ -32,8 +32,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 443
-        versionName = "0.4.43"
+        versionCode = 457
+        versionName = "0.4.57"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
