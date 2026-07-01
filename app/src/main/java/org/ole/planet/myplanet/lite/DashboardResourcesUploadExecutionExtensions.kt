@@ -6,6 +6,7 @@ import androidx.lifecycle.lifecycleScope
 import java.util.Locale
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 
@@ -81,15 +82,17 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
             }
             val updateRevision = updateResponse.optString("rev").orEmpty().ifBlank { creationRevision }
             val uploadResult = repository.uploadResourceAttachment(
-                baseUrl = resolvedBaseUrl,
-                sessionCookie = sessionCookie,
-                username = credentials?.username,
-                password = credentials?.password,
-                resourceId = resourceId,
-                filename = renamedFileName,
-                revision = updateRevision,
-                mimeType = mimeType,
-                bytes = bytes
+                DashboardResourcesRepository.UploadAttachmentRequest(
+                    baseUrl = resolvedBaseUrl,
+                    sessionCookie = sessionCookie,
+                    username = credentials?.username,
+                    password = credentials?.password,
+                    resourceId = resourceId,
+                    filename = renamedFileName,
+                    revision = updateRevision,
+                    mimeType = mimeType,
+                    bytes = bytes
+                )
             )
             uploadResult.onSuccess {
                 if (isTeamResourcesTab) {
