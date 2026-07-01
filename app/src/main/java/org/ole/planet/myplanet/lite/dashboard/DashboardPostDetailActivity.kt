@@ -1161,12 +1161,19 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             }
         }
 
-        pendingReplyImages.values.forEach { pending ->
-            val pattern = Regex("(!\\[[^\\]]*\\]\\()${Regex.escape(pending.fileName)}(\\))")
-            processed = pattern.replace(processed) { matchResult ->
-                val prefix = matchResult.groupValues.getOrNull(1).orEmpty()
-                val suffix = matchResult.groupValues.getOrNull(2).orEmpty()
-                "$prefix${pending.file.toURI()}$suffix"
+        val pendingByFileName = pendingReplyImages.values.associateBy { it.fileName }
+        if (pendingByFileName.isNotEmpty()) {
+            val globalPattern = Regex("(!\\[[^\\]]*\\]\\()(.*?)(\\))")
+            processed = globalPattern.replace(processed) { matchResult ->
+                val path = matchResult.groupValues.getOrNull(2).orEmpty()
+                val pending = pendingByFileName[path]
+                if (pending != null) {
+                    val prefix = matchResult.groupValues.getOrNull(1).orEmpty()
+                    val suffix = matchResult.groupValues.getOrNull(3).orEmpty()
+                    "$prefix${pending.file.toURI()}$suffix"
+                } else {
+                    matchResult.value
+                }
             }
         }
         return processed
