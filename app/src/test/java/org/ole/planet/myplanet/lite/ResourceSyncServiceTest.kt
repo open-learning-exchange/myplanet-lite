@@ -132,16 +132,7 @@ class ResourceSyncServiceTest {
         val doc2 = ResourceDocument("id2", "Title 2", "file2.pdf", null, null, null, null)
 
         whenever(repository.fetchTeamResources(
-            baseUrl = any(),
-            sessionCookie = anyOrNull(),
-            username = anyOrNull(),
-            password = anyOrNull(),
-            teamId = any(),
-            searchQuery = any(),
-            mediaTypeFilter = anyOrNull(),
-            sortBy = eq("title"),
-            sortDescending = eq(false),
-            limit = eq(100)
+            any()
         )).doReturn(Result.success(listOf(doc1, doc2)))
 
         val downloadedResource = ResourceUi(
