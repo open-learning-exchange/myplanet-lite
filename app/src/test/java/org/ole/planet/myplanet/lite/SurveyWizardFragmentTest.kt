@@ -247,38 +247,40 @@ class SurveyWizardFragmentTest {
         assertEquals(null, fragment.parseBirthDateIso(null))
         assertEquals(null, fragment.parseBirthDateIso(""))
         assertEquals(null, fragment.parseBirthDateIso("   "))
-        fun testNormalizeCorrectChoice_withString() {
-            val fragment = SurveyWizardFragment()
-            val result = fragment.normalizeCorrectChoice("correct")
-            assertEquals(listOf("correct"), result)
-        }
+    }
 
-        @Test
-        fun testNormalizeCorrectChoice_withList() {
-            val fragment = SurveyWizardFragment()
-            val list = listOf(
-                mapOf("id" to "1"),
-                mapOf("_id" to "2"),
-                mapOf("text" to "3"),
-                mapOf("other" to "4"),
-                "plain_string"
-            )
-            val result = fragment.normalizeCorrectChoice(list)
-            assertEquals(listOf("1", "2", "3", "plain_string"), result)
-        }
+    @Test
+    fun testNormalizeCorrectChoice_withString() {
+        val fragment = SurveyWizardFragment()
+        val result = fragment.normalizeCorrectChoice("correct")
+        assertEquals(listOf("correct"), result)
+    }
 
-        @Test
-        fun testNormalizeCorrectChoice_withNull() {
-            val fragment = SurveyWizardFragment()
-            val result = fragment.normalizeCorrectChoice(null)
-            assertEquals(emptyList<String>(), result)
-        }
+    @Test
+    fun testNormalizeCorrectChoice_withList() {
+        val fragment = SurveyWizardFragment()
+        val list = listOf(
+            mapOf("id" to "1"),
+            mapOf("_id" to "2"),
+            mapOf("text" to "3"),
+            mapOf("other" to "4"),
+            "plain_string"
+        )
+        val result = fragment.normalizeCorrectChoice(list)
+        assertEquals(listOf("1", "2", "3", "plain_string"), result)
+    }
 
-        @Test
-        fun testNormalizeCorrectChoice_withOtherType() {
-            val fragment = SurveyWizardFragment()
-            val result = fragment.normalizeCorrectChoice(12345)
-            assertEquals(listOf("12345"), result)
-        }
+    @Test
+    fun testNormalizeCorrectChoice_withNull() {
+        val fragment = SurveyWizardFragment()
+        val result = fragment.normalizeCorrectChoice(null)
+        assertEquals(emptyList<String>(), result)
+    }
+
+    @Test
+    fun testNormalizeCorrectChoice_withOtherType() {
+        val fragment = SurveyWizardFragment()
+        val result = fragment.normalizeCorrectChoice(12345)
+        assertEquals(listOf("12345"), result)
     }
 }
