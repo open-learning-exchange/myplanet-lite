@@ -132,7 +132,8 @@ class SurveyWizardFragmentTest {
         activity.supportFragmentManager.executePendingTransactions()
 
         val titleView = fragment.view?.findViewById<android.widget.TextView>(R.id.surveyWizardTitle)
-        val descriptionView = fragment.view?.findViewById<android.widget.TextView>(R.id.surveyWizardDescription)
+        val descriptionView =
+            fragment.view?.findViewById<android.widget.TextView>(R.id.surveyWizardDescription)
 
         assertNotNull("Title view should be present", titleView)
         assertEquals("Test Survey Title", titleView?.text)
@@ -194,10 +195,11 @@ class SurveyWizardFragmentTest {
             isAccessible = true
             setInt(fragment, 1)
         }
-        SurveyWizardFragment::class.java.getDeclaredMethod("showStep", Int::class.javaPrimitiveType).apply {
-            isAccessible = true
-            invoke(fragment, 1)
-        }
+        SurveyWizardFragment::class.java.getDeclaredMethod("showStep", Int::class.javaPrimitiveType)
+            .apply {
+                isAccessible = true
+                invoke(fragment, 1)
+            }
 
         val ratingButtons = fragment.view
             ?.let { findViewsOfType(it, MaterialButton::class.java) }
@@ -222,6 +224,29 @@ class SurveyWizardFragmentTest {
             }
         }
         return matches
+    }
+
+    @Test
+    fun testParseBirthDateIso() {
+        val fragment = SurveyWizardFragment()
+
+        val formatter =
+            java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).apply {
+                timeZone = java.util.TimeZone.getTimeZone("UTC")
+            }
+
+        // Valid dates
+        assertEquals(formatter.parse("2000-01-01")?.time, fragment.parseBirthDateIso("2000-01-01"))
+        assertEquals(formatter.parse("2023-01-01")?.time, fragment.parseBirthDateIso("2023-01-01"))
+
+        // Invalid strings
+        assertEquals(null, fragment.parseBirthDateIso("invalid"))
+        assertEquals(null, fragment.parseBirthDateIso("2000/01/01"))
+
+        // Null and blank strings
+        assertEquals(null, fragment.parseBirthDateIso(null))
+        assertEquals(null, fragment.parseBirthDateIso(""))
+        assertEquals(null, fragment.parseBirthDateIso("   "))
     }
 
     @Test
