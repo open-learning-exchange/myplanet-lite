@@ -63,6 +63,7 @@ import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
+import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
@@ -1276,7 +1277,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private suspend fun loadCachedProfile(): UserProfile? {
-        return cachedProfile
+        return cachedProfile ?: withContext(Dispatchers.IO) { UserProfileDatabase.getInstance(applicationContext).getProfile() }.also { cachedProfile = it }
     }
 
 
@@ -1303,7 +1304,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private suspend fun buildUserPayload(credentials: StoredCredentials): VoicesComposerRepository.UserPayload {
-        val profile = cachedProfile
+        val profile = loadCachedProfile()
         val planetCode = serverCode?.takeIf { it.isNotBlank() } ?: document?.createdOn
         return VoicesComposerRepository.UserPayload(
             id = "org.couchdb.user:${credentials.username}",
