@@ -44,7 +44,7 @@ class DashboardPostImageLoader(
         scope.launch {
             val deferred = synchronized(inFlightRequests) {
                 inFlightRequests.getOrPut(cacheKey) {
-                    inFlightScope.async {
+                    scope.async(Dispatchers.IO) {
                         runCatching { fetchImageBitmap(imagePath) }.getOrNull()
                     }
                 }
@@ -125,7 +125,6 @@ class DashboardPostImageLoader(
 
     private companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
-        private val inFlightScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
         private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
         private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
             override fun sizeOf(key: String, value: Bitmap): Int {
