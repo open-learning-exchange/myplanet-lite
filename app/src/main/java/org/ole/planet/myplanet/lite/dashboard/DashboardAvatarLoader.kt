@@ -71,7 +71,7 @@ class DashboardAvatarLoader(
         scope.launch {
             val deferred = synchronized(inFlightRequests) {
                 inFlightRequests.getOrPut(cacheKey) {
-                    inFlightScope.async {
+                    async(Dispatchers.IO) {
                         runCatching { fetchAvatarBitmap(username) }.getOrNull()
                     }
                 }
@@ -131,7 +131,6 @@ class DashboardAvatarLoader(
     companion object {
         private const val CACHE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB cache for avatars
         private val missingAvatars = mutableSetOf<String>()
-        private val inFlightScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
         private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
         private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
             override fun sizeOf(key: String, value: Bitmap): Int {
@@ -143,7 +142,7 @@ class DashboardAvatarLoader(
         fun resetForTesting() {
             synchronized(missingAvatars) { missingAvatars.clear() }
             synchronized(inFlightRequests) {
-                inFlightScope.coroutineContext[Job]?.cancelChildren()
+                inFlightRequests.values.forEach { it.cancel() }
                 inFlightRequests.clear()
             }
             sharedCache.evictAll()
