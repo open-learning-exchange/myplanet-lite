@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamMemberProfileActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
@@ -42,7 +43,7 @@ class DashboardTeamMembersFragment : Fragment() {
     private var _binding: FragmentDashboardTeamMembersBinding? = null
     private val binding get() = _binding ?: error("Binding is only valid between onCreateView and onDestroyView")
 
-    private val repository = DashboardTeamsRepository()
+    private val repository = DashboardTeamsDependencies.provideRepository()
     private var avatarLoader: DashboardAvatarLoader? = null
 
     private val adapter = TeamMembersAdapter(

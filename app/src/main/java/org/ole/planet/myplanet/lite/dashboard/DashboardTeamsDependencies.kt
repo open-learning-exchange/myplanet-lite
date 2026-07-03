@@ -4,8 +4,12 @@ object DashboardTeamsDependencies {
     @Volatile
     private var repositoryOverride: DashboardTeamsRepository? = null
 
+    private var cachedRepository: DashboardTeamsRepository? = null
+
     fun provideRepository(): DashboardTeamsRepository {
-        return repositoryOverride ?: DashboardTeamsRepository()
+        return repositoryOverride ?: synchronized(this) {
+            cachedRepository ?: DashboardTeamsRepository().also { cachedRepository = it }
+        }
     }
 
     @androidx.annotation.VisibleForTesting
@@ -16,5 +20,6 @@ object DashboardTeamsDependencies {
     @androidx.annotation.VisibleForTesting
     fun resetForTesting() {
         repositoryOverride = null
+        cachedRepository = null
     }
 }
