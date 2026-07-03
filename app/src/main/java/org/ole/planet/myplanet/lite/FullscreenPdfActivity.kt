@@ -23,6 +23,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.lifecycle.lifecycleScope
+import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.github.chrisbanes.photoview.PhotoView
@@ -36,6 +37,7 @@ import okhttp3.Request
 import okhttp3.Response
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.util.DiffUtils
 
 class FullscreenPdfActivity : AppCompatActivity() {
 
@@ -94,7 +96,9 @@ class FullscreenPdfActivity : AppCompatActivity() {
                 return@launch
             }
             val pageCount = renderer.pageCount
-            pager.adapter = PdfPageAdapter(renderer)
+            pager.adapter = PdfPageAdapter(renderer).apply {
+                submitList((0 until pageCount).toList())
+            }
             pageIndicator.text = getString(
                 R.string.course_wizard_pdf_page_counter,
                 1,
@@ -183,7 +187,11 @@ class FullscreenPdfActivity : AppCompatActivity() {
 
     private class PdfPageAdapter(
         private val renderer: PdfRenderer
-    ) : RecyclerView.Adapter<PdfPageAdapter.PdfPageViewHolder>() {
+    ) : ListAdapter<Int, PdfPageAdapter.PdfPageViewHolder>(
+        DiffUtils.itemCallback(
+            areItemsTheSame = { oldItem, newItem -> oldItem == newItem }
+        )
+    ) {
 
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): PdfPageViewHolder {
             val imageView = PhotoView(parent.context).apply {
@@ -198,10 +206,9 @@ class FullscreenPdfActivity : AppCompatActivity() {
             return PdfPageViewHolder(imageView)
         }
 
-        override fun getItemCount(): Int = renderer.pageCount
-
         override fun onBindViewHolder(holder: PdfPageViewHolder, position: Int) {
-            val page = renderer.openPage(position)
+            val pageIndex = getItem(position)
+            val page = renderer.openPage(pageIndex)
             val bitmap = createBitmap(page.width, page.height)
             page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
             page.close()
