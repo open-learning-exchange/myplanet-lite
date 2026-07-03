@@ -54,7 +54,7 @@ class SurveyWizardActivity : AppCompatActivity() {
                         intent.getBooleanExtra(EXTRA_INCLUDE_USER_CONTEXT, true),
                     ),
                 )
-                .commit()
+                .commitAllowingStateLoss()
         }
     }
 
