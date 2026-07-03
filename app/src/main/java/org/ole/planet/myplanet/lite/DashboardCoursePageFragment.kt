@@ -1207,7 +1207,6 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 holder.onCategorySelected = onCategorySelected
                 holder.bind(selectedCategory, categoriesProvider(), searchQuery, { index ->
                     selectedCategory = index
-                    notifyItemChanged(0)
                 }) { query ->
                     updateSearchQuery(query)
                 }
@@ -1222,7 +1221,6 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             if (selectedCategory >= categoriesProvider().size) {
                 selectedCategory = 0
             }
-            notifyItemChanged(0)
         }
 
         fun updateTagFilter(courseIds: Set<String>?) {
@@ -1377,45 +1375,27 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             private val chipGroup: ChipGroup = itemView.findViewById(R.id.dashboardCoursesCategories)
             private val searchInput: com.google.android.material.textfield.TextInputEditText =
                 itemView.findViewById(R.id.dashboardCoursesSearch)
-            private var watcher: android.text.TextWatcher? = null
-            private var chipListener: ChipGroup.OnCheckedStateChangeListener? = null
             var onCategorySelected: ((String?) -> Unit)? = null
 
-            fun bind(
-                selectedIndex: Int,
-                categories: List<CourseCategory>,
-                searchText: String,
-                onSelectionChanged: (Int) -> Unit,
-                onSearchChanged: (String) -> Unit
-            ) {
-                chipGroup.setOnCheckedStateChangeListener(null)
-                chipGroup.removeAllViews()
-                val chipIds = categories.mapIndexed { index, category ->
-                    val chip = Chip(itemView.context).apply {
-                        id = View.generateViewId()
-                        text = category.name
-                        isCheckable = true
-                        isChecked = index == selectedIndex
-                        setEnsureMinTouchTargetSize(false)
-                        layoutParams = ChipGroup.LayoutParams(
-                            ChipGroup.LayoutParams.WRAP_CONTENT,
-                            ChipGroup.LayoutParams.WRAP_CONTENT
-                        ).apply {
-                            marginEnd = itemView.resources.getDimensionPixelSize(R.dimen.dashboard_courses_chip_spacing)
-                        }
-                    }
-                    chipGroup.addView(chip)
-                    chip.id
-                }
+            private var currentCategories: List<CourseCategory>? = null
+            private var currentSelectedIndex = -1
+            private var currentSearchText: String? = null
 
-                watcher?.let { searchInput.removeTextChangedListener(it) }
-                searchInput.setText(searchText)
-                searchInput.setSelection(searchInput.text?.length ?: 0)
+            private var onSelectionChangedCallback: ((Int) -> Unit)? = null
+            private var onSearchChangedCallback: ((String) -> Unit)? = null
+            private val watcher: android.text.TextWatcher
+            private val chipListener: ChipGroup.OnCheckedStateChangeListener
+
+            init {
                 watcher = object : android.text.TextWatcher {
                     override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
                     override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
                     override fun afterTextChanged(s: android.text.Editable?) {
-                        onSearchChanged(s?.toString().orEmpty())
+                        val newText = s?.toString().orEmpty()
+                        if (currentSearchText != newText) {
+                            currentSearchText = newText
+                            onSearchChangedCallback?.invoke(newText)
+                        }
                     }
                 }
                 searchInput.addTextChangedListener(watcher)
@@ -1424,7 +1404,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                     val isEnterKey = event?.keyCode == android.view.KeyEvent.KEYCODE_ENTER &&
                         event.action == android.view.KeyEvent.ACTION_UP
                     if (actionId == android.view.inputmethod.EditorInfo.IME_ACTION_SEARCH || isEnterKey) {
-                        onSearchChanged(searchInput.text?.toString().orEmpty())
+                        onSearchChangedCallback?.invoke(searchInput.text?.toString().orEmpty())
                         hideKeyboard()
                         true
                     } else {
@@ -1432,15 +1412,68 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                     }
                 }
 
-                chipListener = ChipGroup.OnCheckedStateChangeListener { _, checkedIds ->
+                chipListener = ChipGroup.OnCheckedStateChangeListener { group, checkedIds ->
                     val checkedId = checkedIds.firstOrNull() ?: return@OnCheckedStateChangeListener
-                    val newIndex = chipIds.indexOf(checkedId)
-                    if (newIndex >= 0 && newIndex != selectedIndex) {
-                        onSelectionChanged(newIndex)
-                        onCategorySelected?.invoke(categories.getOrNull(newIndex)?.id)
+                    val child = group.findViewById<View>(checkedId)
+                    val newIndex = group.indexOfChild(child)
+                    if (newIndex >= 0 && newIndex != currentSelectedIndex) {
+                        currentSelectedIndex = newIndex
+                        onSelectionChangedCallback?.invoke(newIndex)
+                        onCategorySelected?.invoke(currentCategories?.getOrNull(newIndex)?.id)
                     }
                 }
                 chipGroup.setOnCheckedStateChangeListener(chipListener)
+            }
+
+            fun bind(
+                selectedIndex: Int,
+                categories: List<CourseCategory>,
+                searchText: String,
+                onSelectionChanged: (Int) -> Unit,
+                onSearchChanged: (String) -> Unit
+            ) {
+                onSelectionChangedCallback = onSelectionChanged
+                onSearchChangedCallback = onSearchChanged
+
+                if (currentCategories != categories) {
+                    currentCategories = categories
+                    chipGroup.setOnCheckedStateChangeListener(null)
+                    chipGroup.removeAllViews()
+                    categories.forEachIndexed { index, category ->
+                        val chip = Chip(itemView.context).apply {
+                            id = View.generateViewId()
+                            text = category.name
+                            isCheckable = true
+                            isChecked = index == selectedIndex
+                            setEnsureMinTouchTargetSize(false)
+                            layoutParams = ChipGroup.LayoutParams(
+                                ChipGroup.LayoutParams.WRAP_CONTENT,
+                                ChipGroup.LayoutParams.WRAP_CONTENT
+                            ).apply {
+                                marginEnd = itemView.resources.getDimensionPixelSize(R.dimen.dashboard_courses_chip_spacing)
+                            }
+                        }
+                        chipGroup.addView(chip)
+                    }
+                    chipGroup.setOnCheckedStateChangeListener(chipListener)
+                    currentSelectedIndex = selectedIndex
+                } else if (currentSelectedIndex != selectedIndex) {
+                    chipGroup.setOnCheckedStateChangeListener(null)
+                    val chip = chipGroup.getChildAt(selectedIndex) as? Chip
+                    chip?.isChecked = true
+                    chipGroup.setOnCheckedStateChangeListener(chipListener)
+                    currentSelectedIndex = selectedIndex
+                }
+
+                if (currentSearchText != searchText) {
+                    currentSearchText = searchText
+                    if (searchInput.text?.toString() != searchText) {
+                        searchInput.removeTextChangedListener(watcher)
+                        searchInput.setText(searchText)
+                        searchInput.setSelection(searchInput.text?.length ?: 0)
+                        searchInput.addTextChangedListener(watcher)
+                    }
+                }
             }
 
             private fun hideKeyboard() {
