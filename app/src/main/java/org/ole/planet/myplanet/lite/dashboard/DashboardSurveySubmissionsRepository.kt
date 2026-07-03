@@ -170,6 +170,54 @@ class DashboardSurveySubmissionsRepository(
         }
     }
 
+    suspend fun fetchSurveyRevision(
+        baseUrl: String,
+        surveyId: String,
+        teamId: String?,
+        sessionCookie: String?,
+        credentials: StoredCredentials?,
+    ): String? {
+        return withContext(dispatcher) {
+            runCatching {
+                val normalizedBase = baseUrl.trim().trimEnd('/')
+                if (normalizedBase.isEmpty()) {
+                    return@runCatching null
+                }
+
+                val selector = org.json.JSONObject().apply {
+                    put("_id", surveyId)
+                    put("type", "surveys")
+                    teamId?.takeIf { it.isNotBlank() }?.let { put("teamId", it) }
+                }
+                val payload = org.json.JSONObject().apply {
+                    put("selector", selector)
+                    put("limit", 1)
+                    put("fields", org.json.JSONArray().apply { put("_rev") })
+                }.toString()
+
+                val endpoint = "$normalizedBase/db/exams/_find"
+                val requestBuilder = Request.Builder()
+                    .url(endpoint)
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+
+                if (!sessionCookie.isNullOrBlank()) {
+                    requestBuilder.addHeader("Cookie", sessionCookie)
+                } else if (credentials != null) {
+                    requestBuilder.addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
+                }
+
+                client.newCall(requestBuilder.build()).execute().use { response ->
+                    if (!response.isSuccessful) return@runCatching null
+                    val body = response.body.string()
+                    if (body.isBlank()) return@runCatching null
+                    val docs = org.json.JSONObject(body).optJSONArray("docs")
+                    val first = docs?.optJSONObject(0)
+                    first?.optString("_rev")?.takeIf { it.isNotBlank() }
+                }
+            }.getOrNull()
+        }
+    }
+
     @JsonClass(generateAdapter = true)
     data class SurveySubmission(
         @param:Json(name = "_id") val id: String? = null,

@@ -82,6 +82,75 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
         }
     }
 
+
+    enum class SubmissionResult {
+        SUBMITTED_ONLINE,
+        QUEUED_OFFLINE,
+        FAILED_OFFLINE,
+        FAILED_REVISION_CHECK,
+        REVISION_MISMATCH,
+        FAILED
+    }
+
+    suspend fun submitOrQueue(
+        base: String,
+        credentials: org.ole.planet.myplanet.lite.profile.StoredCredentials?,
+        sessionCookie: String?,
+        submission: SurveySubmission,
+        surveyId: String?,
+        surveyName: String?,
+        teamId: String?,
+        teamName: String?,
+        allowQueueing: Boolean
+    ): SubmissionResult {
+        val isOnline = isDeviceOnline()
+        if (!isOnline) {
+            if (!allowQueueing) return SubmissionResult.FAILED_OFFLINE
+            val saved = saveSubmission(submission, surveyId, surveyName, teamId, teamName)
+            return if (saved) SubmissionResult.QUEUED_OFFLINE else SubmissionResult.FAILED
+        }
+
+        val result = submissionsRepo.submitSurvey(base, credentials, sessionCookie, submission)
+        if (result.isSuccess) {
+            return SubmissionResult.SUBMITTED_ONLINE
+        }
+
+        if (!allowQueueing) return SubmissionResult.FAILED
+        val saved = saveSubmission(submission, surveyId, surveyName, teamId, teamName)
+        return if (saved) SubmissionResult.QUEUED_OFFLINE else SubmissionResult.FAILED
+    }
+
+    suspend fun resendOutboxEntry(
+        base: String,
+        credentials: org.ole.planet.myplanet.lite.profile.StoredCredentials?,
+        sessionCookie: String?,
+        entry: OutboxEntry
+    ): SubmissionResult {
+        if (!isDeviceOnline()) {
+            return SubmissionResult.FAILED_OFFLINE
+        }
+        val serverRev = submissionsRepo.fetchSurveyRevision(
+            baseUrl = base,
+            surveyId = entry.submission.parent.id ?: "",
+            teamId = entry.teamId,
+            sessionCookie = sessionCookie,
+            credentials = credentials
+        )
+        if (serverRev == null) {
+            return SubmissionResult.FAILED_REVISION_CHECK
+        }
+        val localRev = entry.submission.parent.rev
+        if (localRev != null && localRev != serverRev) {
+            return SubmissionResult.REVISION_MISMATCH
+        }
+        val result = submissionsRepo.submitSurvey(base, credentials, sessionCookie, entry.submission)
+        if (result.isSuccess) {
+            deleteEntry(entry.id)
+            return SubmissionResult.SUBMITTED_ONLINE
+        }
+        return SubmissionResult.FAILED
+    }
+
     private fun isDeviceOnline(): Boolean {
         val manager = context.getSystemService(ConnectivityManager::class.java) ?: return false
         val network = manager.activeNetwork ?: return false

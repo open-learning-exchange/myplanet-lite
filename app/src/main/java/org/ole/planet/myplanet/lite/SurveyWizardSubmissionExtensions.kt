@@ -338,62 +338,49 @@ internal suspend fun SurveyWizardFragment.processSubmission(
     survey: SurveyDocument,
     username: String?
 ) {
-    val isOnline = NetworkUtils.isDeviceOnline(requireContext())
-    if (!isOnline) {
-        setSubmitting(false)
-        if (baseUrlOverride != null) {
-            showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
-            return
-        }
-        queueSubmissionForOutbox(submission, survey)
-        return
-    }
+    val allowQueueing = baseUrlOverride == null
+    val result = localSurveyRepository.submitOrQueue(
+        base = base,
+        credentials = credentials,
+        sessionCookie = sessionCookie,
+        submission = submission,
+        surveyId = survey.id,
+        surveyName = survey.name,
+        teamId = teamId,
+        teamName = teamName,
+        allowQueueing = allowQueueing
+    )
 
-    val result = submissionRepository.submitSurvey(base, credentials, sessionCookie, submission)
     setSubmitting(false)
-    if (result.isSuccess) {
-        DashboardSurveyStatusStore(
-            requireContext().applicationContext,
-            username,
-        ).markCompleted(survey.id)
-        Toast.makeText(
-            requireContext(),
-            getString(
-                if (isExam) {
-                    R.string.dashboard_exam_completed
-                } else {
-                    R.string.dashboard_survey_wizard_completed
-                }
-            ),
-            Toast.LENGTH_SHORT
-        ).show()
-        finishWithResult()
-    } else {
-        if (baseUrlOverride != null) {
-            showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
-            return
-        }
-        queueSubmissionForOutbox(submission, survey)
-    }
-}
 
-internal fun SurveyWizardFragment.queueSubmissionForOutbox(submission: SurveySubmission, survey: SurveyDocument) {
-    viewLifecycleOwner.lifecycleScope.launch {
-        val saved = localSurveyRepository.saveSubmission(
-            submission = submission,
-            surveyId = survey.id,
-            surveyName = survey.name,
-            teamId = teamId,
-            teamName = teamName,
-        )
-        if (saved) {
+    when (result) {
+        org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult.SUBMITTED_ONLINE -> {
+            DashboardSurveyStatusStore(
+                requireContext().applicationContext,
+                username,
+            ).markCompleted(survey.id)
+            Toast.makeText(
+                requireContext(),
+                getString(
+                    if (isExam) {
+                        R.string.dashboard_exam_completed
+                    } else {
+                        R.string.dashboard_survey_wizard_completed
+                    }
+                ),
+                Toast.LENGTH_SHORT
+            ).show()
+            finishWithResult()
+        }
+        org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult.QUEUED_OFFLINE -> {
             Toast.makeText(
                 requireContext(),
                 getString(R.string.dashboard_survey_submission_saved_offline),
                 Toast.LENGTH_SHORT,
             ).show()
             finishWithResult()
-        } else {
+        }
+        else -> {
             showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
         }
     }
