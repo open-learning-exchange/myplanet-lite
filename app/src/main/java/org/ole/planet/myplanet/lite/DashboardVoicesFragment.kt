@@ -92,8 +92,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     }
 
     private val repository = DashboardNewsRepository(
-        client = OkHttpClient.Builder().build(),
-        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+        client = org.ole.planet.myplanet.lite.dashboard.SharedBitmapDependencies.client,
+        moshi = sharedMoshi
     )
     private val actionsRepository = DashboardNewsActionsRepository()
     @androidx.annotation.VisibleForTesting
@@ -853,6 +853,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     }
 
         companion object {
+            private val sharedMoshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
             private const val ARG_TEAM_ID = "arg_team_id"
             private const val ARG_TEAM_NAME = "arg_team_name"
             private const val LOAD_MORE_THRESHOLD = 3
