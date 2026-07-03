@@ -91,5 +91,25 @@ class DiffUtilsTest {
         )
 
         val result = DiffUtils.calculateDiff(oldList, newList, callback)
+
+        // Let's assert on the results of the diff by dispatching updates
+        var insertedCount = 0
+        var changedCount = 0
+
+        result.dispatchUpdatesTo(object : androidx.recyclerview.widget.ListUpdateCallback {
+            override fun onInserted(position: Int, count: Int) {
+                insertedCount += count
+            }
+            override fun onRemoved(position: Int, count: Int) {}
+            override fun onMoved(fromPosition: Int, toPosition: Int) {}
+            override fun onChanged(position: Int, count: Int, payload: Any?) {
+                changedCount += count
+                assertEquals("Changed", payload)
+            }
+        })
+
+        // Item 1 is the same. Item 2 changed content ("B" -> "C"). Item 3 is inserted.
+        assertEquals(1, insertedCount)
+        assertEquals(1, changedCount)
     }
 }
