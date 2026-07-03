@@ -81,7 +81,7 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
                 childFragmentManager.findFragmentById(R.id.teamContentContainer)?.let { fragment ->
                     childFragmentManager.beginTransaction()
                         .remove(fragment)
-                        .commit()
+                        .commitAllowingStateLoss()
                 }
             }
         }
@@ -96,7 +96,7 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
         val fragment = DashboardVoicesFragment.newInstanceForTeam(teamId, teamName)
         childFragmentManager.beginTransaction()
             .replace(R.id.teamContentContainer, fragment)
-            .commit()
+            .commitAllowingStateLoss()
     }
 
     private fun loadTeamSurveys(teamId: String, teamName: String) {
@@ -108,7 +108,7 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
         val fragment = DashboardTeamSurveysFragment.newInstanceForTeam(teamId, teamName)
         childFragmentManager.beginTransaction()
             .replace(R.id.teamContentContainer, fragment)
-            .commit()
+            .commitAllowingStateLoss()
     }
 
     private fun switchSection(section: TeamSection) {
