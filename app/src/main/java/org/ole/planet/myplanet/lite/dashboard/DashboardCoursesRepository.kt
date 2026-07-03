@@ -20,11 +20,12 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
-import androidx.core.net.toUri
 import java.io.File
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
+import org.ole.planet.myplanet.lite.dashboard.await
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
@@ -82,7 +83,7 @@ class DashboardCoursesRepository(
                     .post(payload.toRequestBody(mediaType))
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         response.body.string()
                         throw IOException("Unexpected response ${response.code}")
@@ -117,7 +118,7 @@ class DashboardCoursesRepository(
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
 
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         val responseBody = response.body.string()
                         if (response.code == 404) {
@@ -183,7 +184,7 @@ class DashboardCoursesRepository(
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
 
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         val responseBody = response.body.string()
                         if (response.isSuccessful) {
                             val updatedRev = runCatching {
@@ -249,7 +250,7 @@ class DashboardCoursesRepository(
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
 
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         val responseBody = response.body.string()
                         if (response.isSuccessful) {
                             val updatedRev = runCatching {
@@ -305,7 +306,7 @@ class DashboardCoursesRepository(
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
 
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
                             throw IOException("Unexpected response ${response.code}")
@@ -362,7 +363,7 @@ class DashboardCoursesRepository(
                     .build()
 
                 val docs = withContext(Dispatchers.IO) {
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
                             throw IOException("Unexpected response ${response.code}")
@@ -421,7 +422,7 @@ class DashboardCoursesRepository(
                     .build()
 
                 val docs = withContext(Dispatchers.IO) {
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
                             throw IOException("Unexpected response ${response.code}")
@@ -466,7 +467,7 @@ class DashboardCoursesRepository(
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
 
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     val responseBody = response.body.string()
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
@@ -510,7 +511,7 @@ class DashboardCoursesRepository(
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
 
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -561,7 +562,7 @@ class DashboardCoursesRepository(
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
 
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -604,7 +605,7 @@ class DashboardCoursesRepository(
                         }
                     }
                     .build()
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -648,7 +649,7 @@ class DashboardCoursesRepository(
                         }
                     }
                     .build()
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -861,16 +862,12 @@ class DashboardCoursesRepository(
 
     private fun buildServerResourceUrl(base: String, resourceId: String, filename: String): String? {
         val normalizedBase = base.trim().trimEnd('/').takeIf { it.isNotEmpty() } ?: return null
-        val parsed = normalizedBase.toUri()
-        val scheme = parsed.scheme ?: return null
-        val authority = parsed.encodedAuthority ?: return null
-        return parsed.buildUpon()
-            .scheme(scheme)
-            .encodedAuthority(authority)
-            .appendPath("db")
-            .appendPath("resources")
-            .appendPath(resourceId)
-            .appendPath(filename)
+        val parsed = normalizedBase.toHttpUrlOrNull() ?: return null
+        return parsed.newBuilder()
+            .addPathSegment("db")
+            .addPathSegment("resources")
+            .addPathSegment(resourceId)
+            .addPathSegment(filename)
             .build()
             .toString()
     }
@@ -892,7 +889,7 @@ class DashboardCoursesRepository(
                     }
                     val request = requestBuilder.build()
                     runCatching {
-                        client.newCall(request).execute().use { response ->
+                        client.newCall(request).await().use { response ->
                             response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
                         }
                     }.getOrDefault(0L)
@@ -919,7 +916,7 @@ class DashboardCoursesRepository(
                     }
                     val request = requestBuilder.build()
                     runCatching {
-                        client.newCall(request).execute().use { response ->
+                        client.newCall(request).await().use { response ->
                             response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
                         }
                     }.getOrDefault(0L)
@@ -959,7 +956,7 @@ class DashboardCoursesRepository(
                     }
                     val request = requestBuilder.build()
                     val success = runCatching {
-                        client.newCall(request).execute().use { response ->
+                        client.newCall(request).await().use { response ->
                             if (!response.isSuccessful) return@use false
                             val body = response.body
                             body.byteStream().use { input ->
@@ -991,7 +988,7 @@ class DashboardCoursesRepository(
                     }
                     val request = requestBuilder.build()
                     runCatching {
-                        client.newCall(request).execute().use { response ->
+                        client.newCall(request).await().use { response ->
                             if (!response.isSuccessful) return@use false
                             response.body.byteStream().use { input ->
                                 target.outputStream().use { output ->
