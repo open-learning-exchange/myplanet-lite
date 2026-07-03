@@ -179,6 +179,7 @@ class ServerConnectivityRepositoryTest {
         assertEquals("mCode", result.code)
     }
 
+
     @Test
     fun recordLoginActivity_postsPayloadWithCookie() = runBlocking {
         mockWebServer.enqueue(MockResponse().setResponseCode(200))
@@ -193,5 +194,19 @@ class ServerConnectivityRepositoryTest {
         assertEquals("test-cookie", request.headers["Cookie"])
         val body = request.body.readUtf8()
         assertEquals("{\"testKey\":\"testValue\"}", body)
+    }
+
+    @Test
+    fun recordLoginActivity_ignoresServerError_doesNotThrow() = runBlocking {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+        val baseUrl = mockWebServer.url("/login_activities").toString()
+        val payload = JSONObject().apply { put("testKey", "testValue") }
+
+        // This should not throw an exception, fulfilling the "Intentionally ignoring response" contract
+        repository.recordLoginActivity(baseUrl, payload, "test-cookie")
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/login_activities", request.path)
     }
 }

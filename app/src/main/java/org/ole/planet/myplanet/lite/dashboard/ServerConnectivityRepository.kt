@@ -4,14 +4,14 @@ import com.squareup.moshi.Moshi
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import org.ole.planet.myplanet.lite.model.ServerConnectivityResult
-import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
-import kotlinx.coroutines.CoroutineDispatcher
+import org.ole.planet.myplanet.lite.model.ServerConnectivityResult
+import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
 class ServerConnectivityRepository(
     private val client: OkHttpClient,
