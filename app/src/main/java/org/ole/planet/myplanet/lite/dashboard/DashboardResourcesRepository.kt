@@ -21,8 +21,8 @@ import org.ole.planet.myplanet.lite.util.BirthDateString
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
 class DashboardResourcesRepository(
-    private val client: OkHttpClient = SharedDashboardDependencies.client,
-    private val moshi: Moshi = SharedDashboardDependencies.moshi,
+    private val client: OkHttpClient = SharedBitmapDependencies.client,
+    private val moshi: Moshi = SharedBitmapDependencies.moshi,
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
     private val responseAdapter = moshi.adapter(ResourcesFindResponse::class.java)

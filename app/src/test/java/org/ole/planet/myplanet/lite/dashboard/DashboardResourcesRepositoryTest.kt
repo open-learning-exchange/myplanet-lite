@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.lite.dashboard
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.json.JSONObject
@@ -9,6 +11,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardResourcesRepositoryTest {
     private lateinit var server: MockWebServer
     private lateinit var repository: DashboardResourcesRepository
@@ -17,7 +20,7 @@ class DashboardResourcesRepositoryTest {
     fun setup() {
         server = MockWebServer()
         server.start()
-        repository = DashboardResourcesRepository()
+        repository = DashboardResourcesRepository(dispatcher = UnconfinedTestDispatcher())
     }
 
     @After
@@ -26,7 +29,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun fetchCommunityResources_sendsCorrectSort() = runBlocking {
+    fun fetchCommunityResources_sendsCorrectSort() = runTest {
         server.enqueue(MockResponse().setBody("{\"docs\": []}"))
 
         repository.fetchCommunityResources(
@@ -50,7 +53,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun downloadResourceBytes_reportsProgress() = runBlocking {
+    fun downloadResourceBytes_reportsProgress() = runTest {
         server.enqueue(
             MockResponse()
                 .setBody("abcd")
