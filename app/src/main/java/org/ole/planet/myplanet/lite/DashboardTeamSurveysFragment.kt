@@ -165,6 +165,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         }
     }
 
+
     private fun loadSurveys(isSwipeRefresh: Boolean = false) {
         val base = baseUrl
         val team = teamId
@@ -195,65 +196,46 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val documents = if (offlineMode) {
-                    localSurveyRepository.getSavedSurveysForTeam(team)
-                } else {
-                    val result = repository.fetchTeamSurveys(base, creds, sessionCookie, team)
-                    result.getOrElse {
-                        val cached = localSurveyRepository.getSavedSurveysForTeam(team)
-                        if (cached.isEmpty()) {
-                            showError(getString(R.string.dashboard_surveys_error_loading))
-                            swipeRefresh.isRefreshing = false
-                            return@launch
-                        }
-                        cached
-                    }
-                }
-                statusStore.ensureNewDefaults(documents.map { it.id })
-                adoptedSurveys = documents.filter { !it.sourceSurveyId.isNullOrBlank() }
-                teamSurveys = documents.filter { it.sourceSurveyId.isNullOrBlank() }
-                if (offlineMode) {
-                    completionCounts.clear()
-                    documents.mapNotNull { it.id }.forEach { id -> completionCounts[id] = 0 }
-                } else {
-                    fetchCompletionCounts(base, team, documents)
-                }
-                savedSurveyIds = localSurveyRepository.getSavedSurveyIds()
-                savedSurveyRevisions = localSurveyRepository.getSavedSurveyRevisions()
-                outboxEntries = localSurveyRepository.getPendingForTeam(team)
-                pagerAdapter.submit(
-                    teamSurveys,
-                    adoptedSurveys,
-                    completionCounts,
-                    savedSurveyIds,
-                    savedSurveyRevisions,
-                    outboxEntries,
+                val stateResult = repository.loadSurveysState(
+                    baseUrl = base,
+                    credentials = creds,
+                    sessionCookie = sessionCookie,
+                    teamId = team,
+                    offlineMode = offlineMode,
+                    localRepository = localSurveyRepository
                 )
-                updateTabBadges()
-                showLoading(false)
+
+                stateResult.onSuccess { state ->
+                    val documents = state.teamSurveys + state.adoptedSurveys
+                    statusStore.ensureNewDefaults(documents.map { it.id })
+
+                    adoptedSurveys = state.adoptedSurveys
+                    teamSurveys = state.teamSurveys
+                    completionCounts.clear()
+                    completionCounts.putAll(state.completionCounts)
+                    savedSurveyIds = state.savedSurveyIds
+                    savedSurveyRevisions = state.savedSurveyRevisions
+                    outboxEntries = state.outboxEntries
+
+                    pagerAdapter.submit(
+                        teamSurveys,
+                        adoptedSurveys,
+                        completionCounts,
+                        savedSurveyIds,
+                        savedSurveyRevisions,
+                        outboxEntries,
+                    )
+                    updateTabBadges()
+                    showLoading(false)
+                }.onFailure {
+                    showError(getString(R.string.dashboard_surveys_error_loading))
+                }
                 swipeRefresh.isRefreshing = false
             } finally {
                 hasLoadedOnce = true
             }
         }
     }
-
-    private suspend fun fetchCompletionCounts(
-        base: String,
-        team: String,
-        documents: List<SurveyDocument>,
-    ) {
-        withContext(Dispatchers.IO) {
-            completionCounts.clear()
-            val ids = documents.mapNotNull { it.id }
-            completionCounts.putAll(ids.associateWith { 0 })
-            if (ids.isNotEmpty()) {
-                val result = repository.fetchSurveyCompletionCountsBatched(base, credentials, sessionCookie, team, ids)
-                completionCounts.putAll(result.getOrDefault(emptyMap()))
-            }
-        }
-    }
-
     private fun showLoading(loading: Boolean) {
         loadingView.isVisible = loading
         viewPager.isVisible = !loading

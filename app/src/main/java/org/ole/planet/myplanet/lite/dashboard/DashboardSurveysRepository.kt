@@ -33,6 +33,8 @@ import okhttp3.Response
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry
 
 class DashboardSurveysRepository(
     private val client: OkHttpClient = OkHttpClient.Builder().build(),
@@ -48,6 +50,65 @@ class DashboardSurveysRepository(
     private val completionsResponseAdapter = moshi.adapter(SurveyCompletionsResponse::class.java)
     private val surveyDocumentAdapter = moshi.adapter(SurveyDocument::class.java)
     private val publicSurveyResponseAdapter = moshi.adapter(PublicSurveyResponse::class.java)
+
+
+    suspend fun loadSurveysState(
+        baseUrl: String?,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamId: String?,
+        offlineMode: Boolean,
+        localRepository: DashboardLocalSurveyRepository
+    ): Result<SurveysLoadState> {
+        return withContext(dispatcher) {
+            runCatching {
+                if (baseUrl.isNullOrBlank()) throw IOException("Missing server base URL")
+                if (teamId.isNullOrBlank()) throw IOException("Missing team id")
+                if (credentials == null) throw IOException("Missing credentials")
+
+                val documents = if (offlineMode) {
+                    localRepository.getSavedSurveysForTeam(teamId)
+                } else {
+                    val fetchResult = fetchTeamSurveys(baseUrl, credentials, sessionCookie, teamId)
+                    fetchResult.getOrElse {
+                        val cached = localRepository.getSavedSurveysForTeam(teamId)
+                        if (cached.isEmpty()) {
+                            throw IOException("Error loading surveys and no cached versions available", it)
+                        }
+                        cached
+                    }
+                }
+
+                val adoptedSurveys = documents.filter { !it.sourceSurveyId.isNullOrBlank() }
+                val teamSurveys = documents.filter { it.sourceSurveyId.isNullOrBlank() }
+                val completionCounts = mutableMapOf<String, Int>()
+
+                if (offlineMode) {
+                    documents.mapNotNull { it.id }.forEach { id -> completionCounts[id] = 0 }
+                } else {
+                    val ids = documents.mapNotNull { it.id }
+                    if (ids.isNotEmpty()) {
+                        completionCounts.putAll(ids.associateWith { 0 })
+                        val countsResult = fetchSurveyCompletionCountsBatched(baseUrl, credentials, sessionCookie, teamId, ids)
+                        completionCounts.putAll(countsResult.getOrDefault(emptyMap()))
+                    }
+                }
+
+                val savedSurveyIds = localRepository.getSavedSurveyIds()
+                val savedSurveyRevisions = localRepository.getSavedSurveyRevisions()
+                val outboxEntries = localRepository.getPendingForTeam(teamId)
+
+                SurveysLoadState(
+                    teamSurveys = teamSurveys,
+                    adoptedSurveys = adoptedSurveys,
+                    completionCounts = completionCounts,
+                    savedSurveyIds = savedSurveyIds,
+                    savedSurveyRevisions = savedSurveyRevisions,
+                    outboxEntries = outboxEntries
+                )
+            }
+        }
+    }
 
     suspend fun fetchTeamSurveys(
         baseUrl: String,
@@ -324,6 +385,16 @@ class DashboardSurveysRepository(
     @JsonClass(generateAdapter = true)
     data class SurveyCompletionsResponse(
         @param:Json(name = "docs") val docs: List<Map<String, Any?>> = emptyList(),
+    )
+
+
+    data class SurveysLoadState(
+        val teamSurveys: List<SurveyDocument>,
+        val adoptedSurveys: List<SurveyDocument>,
+        val completionCounts: Map<String, Int>,
+        val savedSurveyIds: Set<String>,
+        val savedSurveyRevisions: Map<String, String?>,
+        val outboxEntries: List<OutboxEntry>
     )
 
     companion object {
