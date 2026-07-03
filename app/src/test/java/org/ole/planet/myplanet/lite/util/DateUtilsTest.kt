@@ -92,4 +92,107 @@ class DateUtilsTest {
         assertEquals("-", DateUtils.toDisplayDate(0L))
         assertEquals("-", DateUtils.toDisplayDate(-1L))
     }
+
+    @Test
+    fun `parseBirthDateToMillis returns null for null or blank input`() {
+        assertEquals(null, DateUtils.parseBirthDateToMillis(null))
+        assertEquals(null, DateUtils.parseBirthDateToMillis(""))
+        assertEquals(null, DateUtils.parseBirthDateToMillis("   "))
+    }
+
+    @Test
+    fun `parseBirthDateToMillis parses valid ISO8601 with millis (Pre-O)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.N
+        val input = "1990-05-15T14:30:00.000Z"
+        val expected = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }.parse(input)?.time
+        assertEquals(expected, DateUtils.parseBirthDateToMillis(input))
+    }
+
+    @Test
+    fun `parseBirthDateToMillis parses valid ISO8601 with millis (O and above)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.O
+        val input = "1990-05-15T14:30:00.000Z"
+        val expected = java.time.Instant.parse(input).toEpochMilli()
+        assertEquals(expected, DateUtils.parseBirthDateToMillis(input))
+    }
+
+    @Test
+    fun `parseBirthDateToMillis parses valid short date (Pre-O)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.N
+        val input = "2000-01-01"
+        val expected = SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }.parse(input)?.time
+        assertEquals(expected, DateUtils.parseBirthDateToMillis(input))
+    }
+
+    @Test
+    fun `parseBirthDateToMillis parses valid short date (O and above)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.O
+        val input = "2000-01-01"
+        val expected = java.time.LocalDate.parse(input).atStartOfDay(java.time.ZoneOffset.UTC).toInstant().toEpochMilli()
+        assertEquals(expected, DateUtils.parseBirthDateToMillis(input))
+    }
+
+    @Test
+    fun `extractBirthYearFromIso returns null for null or blank input`() {
+        assertEquals(null, DateUtils.extractBirthYearFromIso(null))
+        assertEquals(null, DateUtils.extractBirthYearFromIso(""))
+        assertEquals(null, DateUtils.extractBirthYearFromIso("   "))
+    }
+
+    @Test
+    fun `extractBirthYearFromIso extracts year from valid ISO8601 (Pre-O)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.N
+        val input = "1990-05-15T14:30:00.000Z"
+        assertEquals("1990", DateUtils.extractBirthYearFromIso(input))
+    }
+
+    @Test
+    fun `extractBirthYearFromIso extracts year from valid ISO8601 (O and above)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.O
+        val input = "1990-05-15T14:30:00.000Z"
+        assertEquals("1990", DateUtils.extractBirthYearFromIso(input))
+    }
+
+    @Test
+    fun `calculateAgeFromIso returns null for null or blank input`() {
+        assertEquals(null, DateUtils.calculateAgeFromIso(null))
+        assertEquals(null, DateUtils.calculateAgeFromIso(""))
+        assertEquals(null, DateUtils.calculateAgeFromIso("   "))
+    }
+
+    @Test
+    fun `calculateAgeFromIso calculates correct age from valid ISO8601 (Pre-O)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.N
+        val input = "1990-05-15T14:30:00.000Z"
+
+        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.US).apply {
+            timeZone = java.util.TimeZone.getTimeZone("UTC")
+        }
+        val date = format.parse(input)
+        val birthCalendar = java.util.Calendar.getInstance().apply { time = date }
+        val today = java.util.Calendar.getInstance()
+        var expectedAge = today.get(java.util.Calendar.YEAR) - birthCalendar.get(java.util.Calendar.YEAR)
+        if (today.get(java.util.Calendar.DAY_OF_YEAR) < birthCalendar.get(java.util.Calendar.DAY_OF_YEAR)) {
+            expectedAge -= 1
+        }
+
+        assertEquals(expectedAge.toString(), DateUtils.calculateAgeFromIso(input))
+    }
+
+    @Test
+    fun `calculateAgeFromIso calculates correct age from valid ISO8601 (O and above)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.O
+        val input = "1990-05-15T14:30:00.000Z"
+
+        val birthDate = java.time.Instant.parse(input).atZone(java.time.ZoneOffset.UTC).toLocalDate()
+        val now = java.time.Instant.now().atZone(java.time.ZoneOffset.UTC).toLocalDate()
+        val expectedAge = java.time.Period.between(birthDate, now).years
+
+        assertEquals(expectedAge.toString(), DateUtils.calculateAgeFromIso(input))
+    }
+
 }
