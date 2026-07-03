@@ -254,9 +254,9 @@ class DashboardTeamMembersFragment : Fragment() {
 
         val teamPlanetCodeForRequests = currentTeamPlanetCode ?: serverPlanetCode
         val joinRequests = if (teamPlanetCodeForRequests.isNullOrBlank()) {
-            emptyList<JoinRequestDocument>()
+            emptyList<TeamJoinRequestUiModel>()
         } else {
-            repository.fetchTeamJoinRequests(
+            repository.fetchEnrichedTeamJoinRequests(
                 baseUrl = base,
                 credentials = creds,
                 sessionCookie = sessionCookie,
@@ -268,7 +268,7 @@ class DashboardTeamMembersFragment : Fragment() {
             }
         }
         if (joinRequests != null) {
-            loadJoinRequestsData(base, creds, joinRequests)
+            loadJoinRequestsData(joinRequests)
         } else {
             hideJoinRequestsSection()
         }
@@ -309,11 +309,7 @@ class DashboardTeamMembersFragment : Fragment() {
         }
     }
 
-    private suspend fun loadJoinRequestsData(
-        base: String,
-        creds: StoredCredentials,
-        joinRequests: List<JoinRequestDocument>
-    ) {
+    private fun loadJoinRequestsData(joinRequests: List<TeamJoinRequestUiModel>) {
         if (joinRequests.isEmpty()) {
             currentJoinRequests = emptyList()
             updateJoinRequestsAdapterList(emptyList())
@@ -321,30 +317,8 @@ class DashboardTeamMembersFragment : Fragment() {
             return
         }
 
-        val userIds = joinRequests.mapNotNull { it.userId?.takeIf(String::isNotBlank) }.distinct()
-        val profilesById = repository.fetchUserProfiles(base, creds, sessionCookie, userIds)
-            .getOrDefault(emptyList())
-            .associateBy { it._id }
-        val requests = joinRequests.map { request ->
-            val userId = request.userId.orEmpty()
-            val profile = profilesById[userId]
-            val username = userId.substringAfter("org.couchdb.user:", userId)
-            val fullName = listOfNotNull(
-                profile?.firstName,
-                profile?.middleName,
-                profile?.lastName
-            ).filter { it.isNotBlank() }.joinToString(" ").ifBlank { username }
-            TeamJoinRequestUiModel(
-                id = request.id ?: userId,
-                username = username,
-                fullName = fullName,
-                hasAvatar = profile?.attachments?.image != null,
-                request = request,
-            )
-        }.sortedBy { it.fullName.lowercase() }
-
-        currentJoinRequests = requests
-        updateJoinRequestsAdapterList(requests)
+        currentJoinRequests = joinRequests
+        updateJoinRequestsAdapterList(joinRequests)
     }
 
     private fun showLoading(loading: Boolean) {

@@ -13,6 +13,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.TeamJoinRequestUiModel
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
 class DashboardTeamsRepository(
@@ -178,6 +179,39 @@ class DashboardTeamsRepository(
 
     suspend fun fetchAllUsers(request: FetchUsersRequest): Result<List<UserDocument>> = runInDispatcher {
         operations.fetchAllUsers(request)
+    }
+
+
+    internal suspend fun fetchEnrichedTeamJoinRequests(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamId: String,
+        teamPlanetCode: String,
+    ): Result<List<TeamJoinRequestUiModel>> = runInDispatcher {
+        val joinRequests = operations.fetchTeamJoinRequests(baseUrl, credentials, sessionCookie, teamId, teamPlanetCode)
+        if (joinRequests.isEmpty()) return@runInDispatcher emptyList()
+
+        val userIds = joinRequests.mapNotNull { it.userId?.takeIf(String::isNotBlank) }.distinct()
+        val profilesById = operations.fetchUserProfiles(baseUrl, credentials, sessionCookie, userIds).associateBy { it._id }
+
+        joinRequests.map { request ->
+            val userId = request.userId.orEmpty()
+            val profile = profilesById[userId]
+            val username = userId.substringAfter("org.couchdb.user:", userId)
+            val fullName = listOfNotNull(
+                profile?.firstName,
+                profile?.middleName,
+                profile?.lastName
+            ).filter { it.isNotBlank() }.joinToString(" ").ifBlank { username }
+            TeamJoinRequestUiModel(
+                id = request.id ?: userId,
+                username = username,
+                fullName = fullName,
+                hasAvatar = profile?.attachments?.image != null,
+                request = request,
+            )
+        }.sortedBy { it.fullName.lowercase() }
     }
 
     private suspend fun <T> runInDispatcher(block: () -> T): Result<T> {
