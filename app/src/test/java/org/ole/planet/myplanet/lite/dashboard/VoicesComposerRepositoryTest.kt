@@ -216,4 +216,109 @@ class VoicesComposerRepositoryTest {
         assertEquals("Missing server base URL", result.exceptionOrNull()?.message)
     }
 
+
+
+    @Test
+    fun `uploadReplyImageResource creates document and uploads binary if no existing resource`() = runTest {
+        val creationJsonResponse = """
+            {
+                "ok": true,
+                "id": "res_123",
+                "rev": "rev_1"
+            }
+        """.trimIndent()
+
+        val uploadJsonResponse = """
+            {
+                "ok": true,
+                "id": "res_123"
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(creationJsonResponse))
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(uploadJsonResponse))
+
+        val credentials = StoredCredentials("testUser", "testPass")
+        val baseUrl = mockWebServer.url("/").toString()
+        val context = VoiceImageResourceContext(
+            username = "testUser",
+            resideOn = "server",
+            sourcePlanet = "planet",
+            androidId = "id",
+            deviceName = "device",
+            customDeviceName = "custom"
+        )
+        val fileName = "image.jpg"
+        val bytes = byteArrayOf(1, 2, 3)
+
+        val result = repository.uploadReplyImageResource(
+            baseUrl = baseUrl,
+            credentials = credentials,
+            context = context,
+            fileName = fileName,
+            jpegBytes = bytes,
+            existingResourceId = null,
+            existingRevision = null
+        )
+
+        assertNotNull(result)
+        assertEquals("res_123", result.resourceId)
+        assertEquals("rev_1", result.revision)
+        assertEquals("![](resources/res_123/image.jpg)", result.markdown)
+
+        val createRequest = mockWebServer.takeRequest()
+        assertEquals("POST", createRequest.method)
+        assertEquals("/db/resources", createRequest.path)
+
+        val uploadRequest = mockWebServer.takeRequest()
+        assertEquals("PUT", uploadRequest.method)
+        assertEquals("/db/resources/res_123/image.jpg", uploadRequest.path)
+    }
+
+    @Test
+    fun `uploadReplyImageResource skips document creation if existing resource provided`() = runTest {
+        val uploadJsonResponse = """
+            {
+                "ok": true,
+                "id": "res_existing",
+                "rev": "rev_2",
+                "filename": "existing.jpg",
+                "markdown": "![custom](link)"
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(uploadJsonResponse))
+
+        val credentials = StoredCredentials("testUser", "testPass")
+        val baseUrl = mockWebServer.url("/").toString()
+        val context = VoiceImageResourceContext(
+            username = "testUser",
+            resideOn = "server",
+            sourcePlanet = "planet",
+            androidId = "id",
+            deviceName = "device",
+            customDeviceName = "custom"
+        )
+        val fileName = "existing.jpg"
+        val bytes = byteArrayOf(1, 2, 3)
+
+        val result = repository.uploadReplyImageResource(
+            baseUrl = baseUrl,
+            credentials = credentials,
+            context = context,
+            fileName = fileName,
+            jpegBytes = bytes,
+            existingResourceId = "res_existing",
+            existingRevision = "rev_1"
+        )
+
+        assertNotNull(result)
+        assertEquals("res_existing", result.resourceId)
+        assertEquals("rev_2", result.revision)
+        assertEquals("![custom](link)", result.markdown)
+
+        val uploadRequest = mockWebServer.takeRequest()
+        assertEquals("PUT", uploadRequest.method)
+        assertEquals("/db/resources/res_existing/existing.jpg", uploadRequest.path)
+    }
 }

@@ -1127,19 +1127,23 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             return markdown
         }
 
-        val uploadResponse = composerRepository.uploadReplyImageResource(
+        val uploadResult = composerRepository.uploadReplyImageResource(
             baseUrl,
             credentials,
             context,
             pending.fileName,
-            pending.jpegBytes
-        )
-        val relativeMarkdown = uploadResponse.markdown!!
+            pending.jpegBytes,
+            pending.resourceId,
+            pending.resourceRevision
+        ) { createdId, createdRev ->
+            pending.resourceId = createdId
+            pending.resourceRevision = createdRev
+        }
 
-        pending.resourceId = uploadResponse.resourceId
-        pending.resourceRevision = uploadResponse.revision
-        pending.uploadedMarkdown = relativeMarkdown
-        return relativeMarkdown
+        pending.resourceId = uploadResult.resourceId
+        pending.resourceRevision = uploadResult.revision
+        pending.uploadedMarkdown = uploadResult.markdown
+        return uploadResult.markdown
     }
 
     private fun transformReplyMarkdownForPreview(markdown: String): String {

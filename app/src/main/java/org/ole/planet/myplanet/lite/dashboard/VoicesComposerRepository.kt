@@ -163,35 +163,51 @@ class VoicesComposerRepository(
         credentials: StoredCredentials,
         context: VoiceImageResourceContext,
         fileName: String,
-        jpegBytes: ByteArray
-    ): ResourceUploadResponse {
-        val metadata = ResourceMetadataRequest.fromContext(context, fileName)
-        val creationResponse = createResourceDocument(baseUrl, credentials, metadata)
+        jpegBytes: ByteArray,
+        existingResourceId: String?,
+        existingRevision: String?,
+        onDocumentCreated: ((String, String) -> Unit)? = null
+    ): ReplyImageUploadResult {
+        val resourceId: String
+        val revision: String
+        if (existingResourceId == null || existingRevision == null) {
+            val metadata = ResourceMetadataRequest.fromContext(context, fileName)
+            val creationResponse = createResourceDocument(baseUrl, credentials, metadata)
+            resourceId = creationResponse.id
+            revision = creationResponse.revision
+            onDocumentCreated?.invoke(resourceId, revision)
+        } else {
+            resourceId = existingResourceId
+            revision = existingRevision
+        }
 
         val uploadResponse = uploadResourceBinary(
             baseUrl,
             credentials,
-            creationResponse.id,
+            resourceId,
             fileName,
-            creationResponse.revision,
+            revision,
             jpegBytes
         )
 
-        val resolvedResourceId = uploadResponse.resourceId ?: creationResponse.id
+        val resolvedResourceId = uploadResponse.resourceId ?: resourceId
         val resolvedFileName = uploadResponse.filename ?: fileName
-        val resolvedRevision = uploadResponse.revision ?: creationResponse.revision
+        val resolvedRevision = uploadResponse.revision ?: revision
         val resolvedMarkdown = uploadResponse.markdown
             ?: "![](resources/${resolvedResourceId.trim()}/${resolvedFileName.trim()})"
 
-        return ResourceUploadResponse(
-            ok = uploadResponse.ok ?: true,
-            id = creationResponse.id,
+        return ReplyImageUploadResult(
             resourceId = resolvedResourceId,
-            filename = resolvedFileName,
-            markdown = resolvedMarkdown,
-            revision = resolvedRevision
+            revision = resolvedRevision,
+            markdown = resolvedMarkdown
         )
     }
+
+    data class ReplyImageUploadResult(
+        val resourceId: String,
+        val revision: String,
+        val markdown: String
+    )
 
     @JsonClass(generateAdapter = true)
     data class CreateVoiceRequest(
