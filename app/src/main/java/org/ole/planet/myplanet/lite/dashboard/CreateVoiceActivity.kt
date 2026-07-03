@@ -69,6 +69,9 @@ import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.SupervisorJob
+import java.io.File
 
 class CreateVoiceActivity : BaseActivity() {
 
@@ -644,6 +647,8 @@ class CreateVoiceActivity : BaseActivity() {
             .filter { derivePendingNormalizedKey(it) == normalizedKey }
             .map { it.id }
 
+        val filesToDelete = mutableListOf<File>()
+
         idsToRemove.forEach { id ->
             val removed = pendingImages.remove(id) ?: return@forEach
             decodedBitmaps.remove(id)?.let { bitmap ->
@@ -652,8 +657,16 @@ class CreateVoiceActivity : BaseActivity() {
                 }
             }
             removeImageMarkdownReferences(removed)
-            if (removed.file.exists()) {
-                removed.file.delete()
+            filesToDelete.add(removed.file)
+        }
+
+        if (filesToDelete.isNotEmpty()) {
+            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+                filesToDelete.forEach {
+                    if (it.exists()) {
+                        it.delete()
+                    }
+                }
             }
         }
 
