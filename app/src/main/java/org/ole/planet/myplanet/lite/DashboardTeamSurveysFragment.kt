@@ -376,9 +376,11 @@ private class SurveysPagerAdapter(
     private val onSurveyDownloadRequested: (SurveyDocument) -> Unit,
     private val onOutboxSelected: (OutboxEntry) -> Unit,
     private val onStatusChanged: () -> Unit,
-) : RecyclerView.Adapter<SurveysPagerAdapter.PageViewHolder>() {
+) : androidx.recyclerview.widget.ListAdapter<SurveysPagerAdapter.Page, SurveysPagerAdapter.PageViewHolder>(PageDiffCallback()) {
 
-    private val pages = listOf(Page.TEAM, Page.ADOPTED, Page.OUTBOX)
+    init {
+        submitList(listOf(Page.TEAM, Page.ADOPTED, Page.OUTBOX))
+    }
     private var teamItems: List<SurveyItemUiModel> = emptyList()
     private var adoptedItems: List<SurveyItemUiModel> = emptyList()
     private var outboxItems: List<OutboxEntry> = emptyList()
@@ -389,10 +391,8 @@ private class SurveysPagerAdapter(
         return PageViewHolder(view)
     }
 
-    override fun getItemCount(): Int = pages.size
-
     override fun onBindViewHolder(holder: PageViewHolder, position: Int) {
-        val page = pages[position]
+        val page = getItem(position)
         when (page) {
             Page.TEAM -> holder.bindTeam(
                 items = teamItems,
@@ -455,7 +455,13 @@ private class SurveysPagerAdapter(
         )
     }
 
-    private enum class Page { TEAM, ADOPTED, OUTBOX }
+    enum class Page { TEAM, ADOPTED, OUTBOX }
+
+    private class PageDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<Page>() {
+        override fun areItemsTheSame(oldItem: Page, newItem: Page): Boolean = oldItem == newItem
+        override fun areContentsTheSame(oldItem: Page, newItem: Page): Boolean = oldItem == newItem
+    }
+
 
     class PageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val emptyView: TextView = itemView.findViewById(R.id.dashboardSurveysListEmpty)
