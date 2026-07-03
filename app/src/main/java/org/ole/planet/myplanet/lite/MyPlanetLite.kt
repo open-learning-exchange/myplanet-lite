@@ -182,9 +182,7 @@ class MyPlanetLite : BaseActivity() {
         ProfileCredentialsStore.setSessionCredentials(null)
         clearStoredSessionIfNotRemembered()
         autoLoginEnabled = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
-        deepLinkPostId = intent?.getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
-            ?.takeIf { it.isNotBlank() }
-            ?: IntentUtils.extractDeepLinkPostId(intent)
+        deepLinkPostId = AppNavigator.extractForwardedPostId(intent)
 
         if (savedInstanceState != null) {
             val contentRoot: View? = findViewById(android.R.id.content)
@@ -304,9 +302,7 @@ class MyPlanetLite : BaseActivity() {
 
     private fun launchDashboard() {
         val dashboardIntent = Intent(this, DashboardActivity::class.java)
-        deepLinkPostId?.let { postId ->
-            dashboardIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
-        }
+        AppNavigator.applyForwardedPostId(dashboardIntent, deepLinkPostId)
         startActivity(dashboardIntent)
         deepLinkPostId = null
         finish()

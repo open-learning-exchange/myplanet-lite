@@ -132,22 +132,7 @@ class SplashScreen : BaseActivity() {
             }
         }
 
-        val forwardedPostId = intent.getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
-            ?.takeIf { it.isNotBlank() }
-
-        if (forwardedPostId != null) {
-            nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, forwardedPostId)
-        } else if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
-            if (launchMode == DashboardLaunchMode.NONE) {
-                nextIntent.action = intent.action
-                nextIntent.data = intent.data
-            } else {
-                val postId = IntentUtils.extractDeepLinkPostId(intent)
-                if (postId != null) {
-                    nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
-                }
-            }
-        }
+        AppNavigator.forwardDeepLinkIntent(intent, nextIntent, launchMode == DashboardLaunchMode.NONE)
 
         startActivity(nextIntent)
         finish()
