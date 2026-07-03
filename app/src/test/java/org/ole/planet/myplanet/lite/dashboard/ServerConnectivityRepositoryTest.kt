@@ -13,6 +13,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
 
 class ServerConnectivityRepositoryTest {
 
@@ -175,5 +177,21 @@ class ServerConnectivityRepositoryTest {
         assertTrue(result.reachable)
         assertNull(result.parentCode)
         assertEquals("mCode", result.code)
+    }
+
+    @Test
+    fun recordLoginActivity_postsPayloadWithCookie() = runBlocking {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200))
+        val baseUrl = mockWebServer.url("/login_activities").toString()
+        val payload = JSONObject().apply { put("testKey", "testValue") }
+
+        repository.recordLoginActivity(baseUrl, payload, "test-cookie")
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/login_activities", request.path)
+        assertEquals("test-cookie", request.headers["Cookie"])
+        val body = request.body.readUtf8()
+        assertEquals("{\"testKey\":\"testValue\"}", body)
     }
 }

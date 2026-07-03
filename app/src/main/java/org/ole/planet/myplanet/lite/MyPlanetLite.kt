@@ -96,7 +96,6 @@ class MyPlanetLite : BaseActivity() {
     private lateinit var signupPromptView: TextView
     private lateinit var signupButtonView: Button
     private lateinit var privacyPolicyPromptView: TextView
-    private val connectivityClient: OkHttpClient by lazy { OkHttpClient.Builder().build() }
     private var serverStatusJob: Job? = null
     private var currentServerBaseUrl: String = ""
     private var isServerReachable = false
@@ -111,7 +110,7 @@ class MyPlanetLite : BaseActivity() {
         UserProfileDatabase.getInstance(applicationContext)
     }
     private val userProfileSync: UserProfileSync by lazy {
-        UserProfileSync(connectivityClient, userProfileDatabase)
+        UserProfileSync(OkHttpClient.Builder().build(), userProfileDatabase)
     }
     private val serverPreferences: SharedPreferences by lazy {
         SecurePreferencesProvider.getServerPreferences(applicationContext)
@@ -126,7 +125,7 @@ class MyPlanetLite : BaseActivity() {
         moshi.adapter(type)
     }
     private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
-        ServerConnectivityRepository(connectivityClient, moshi)
+        ServerConnectivityRepository(OkHttpClient.Builder().build(), moshi)
     }
 
     private val signupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -1033,21 +1032,7 @@ class MyPlanetLite : BaseActivity() {
         val payload = buildLoginActivityPayload(username) ?: return
 
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    val mediaType = "application/json; charset=utf-8".toMediaType()
-                    val body = payload.toString().toRequestBody(mediaType)
-                    val requestBuilder = Request.Builder()
-                        .url(requestUrl)
-                        .post(body)
-                    sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                        requestBuilder.addHeader("Cookie", cookie)
-                    }
-                    connectivityClient.newCall(requestBuilder.build()).execute().use { _ ->
-                        // Intentionally ignoring response
-                    }
-                }
-            }
+            serverConnectivityRepository.recordLoginActivity(requestUrl, payload, sessionCookie)
         }
     }
 

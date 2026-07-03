@@ -6,10 +6,17 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.ole.planet.myplanet.lite.model.ServerConnectivityResult
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONObject
+import kotlinx.coroutines.CoroutineDispatcher
 
 class ServerConnectivityRepository(
     private val client: OkHttpClient,
-    private val moshi: Moshi
+    private val moshi: Moshi,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
 ) {
 
     fun checkServerConnectivity(baseUrl: String): ServerConnectivityResult {
@@ -39,5 +46,23 @@ class ServerConnectivityRepository(
             ?.addQueryParameter("include_docs", "true")
             ?.build()
             ?.toString()
+    }
+
+    suspend fun recordLoginActivity(requestUrl: String, payload: JSONObject, sessionCookie: String?) {
+        withContext(ioDispatcher) {
+            runCatching {
+                val mediaType = "application/json; charset=utf-8".toMediaType()
+                val body = payload.toString().toRequestBody(mediaType)
+                val requestBuilder = Request.Builder()
+                    .url(requestUrl)
+                    .post(body)
+                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                    requestBuilder.addHeader("Cookie", cookie)
+                }
+                client.newCall(requestBuilder.build()).execute().use { _ ->
+                    // Intentionally ignoring response
+                }
+            }
+        }
     }
 }
