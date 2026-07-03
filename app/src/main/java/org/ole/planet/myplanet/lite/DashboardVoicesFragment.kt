@@ -30,6 +30,7 @@ import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
+import org.ole.planet.myplanet.lite.dashboard.SharedBitmapDependencies
 import java.util.ArrayList
 import java.util.Locale
 import kotlin.math.max
@@ -92,7 +93,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     }
 
     private val repository = DashboardNewsRepository(
-        client = org.ole.planet.myplanet.lite.dashboard.SharedBitmapDependencies.client,
+        client = SharedBitmapDependencies.client,
         moshi = sharedMoshi
     )
     private val actionsRepository = DashboardNewsActionsRepository()
