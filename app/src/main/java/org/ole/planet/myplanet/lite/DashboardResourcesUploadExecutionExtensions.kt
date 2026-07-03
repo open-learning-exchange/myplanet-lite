@@ -20,23 +20,14 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
 ) {
     val context = requireContext()
     val planetCode = DashboardServerPreferences.getServerCode(context).orEmpty()
-    if (isTeamResourcesTab) {
-        val teamId = DashboardTeamSelectionPreferences.getSelectedTeamId(context)
-        if (!teamId.isNullOrBlank()) {
-            payload.put("private", true)
-            payload.put("privateFor", JSONObject().put("teams", teamId))
-        }
-    }
-    DashboardResourcesMediaUtils.applyWebCompatibleResourceDefaults(payload)
-    payload.put("mediaType", DashboardResourcesMediaUtils.normalizeResourceMediaType(mimeType))
-    val now = System.currentTimeMillis()
-    payload.put("createdDate", now)
-    payload.put("updatedDate", now)
+    val teamId = if (isTeamResourcesTab) DashboardTeamSelectionPreferences.getSelectedTeamId(context) else null
     val resolvedBaseUrl = DashboardServerPreferences.getServerBaseUrl(context)
+
     if (resolvedBaseUrl.isNullOrBlank()) {
         Toast.makeText(context, getString(R.string.dashboard_voices_no_server), Toast.LENGTH_SHORT).show()
         return
     }
+
     setUploadLoadingVisible(true)
     lifecycleScope.launch {
         val bytes = bytesProvider()
@@ -45,84 +36,26 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
             Toast.makeText(context, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT).show()
             return@launch
         }
-        val result = repository.createResourceDocument(
+
+        val request = DashboardResourcesRepository.UploadResourceRequest(
             baseUrl = resolvedBaseUrl,
             sessionCookie = sessionCookie,
             username = credentials?.username,
             password = credentials?.password,
-            payload = payload
+            payload = payload,
+            fileExtension = fileExtension,
+            mimeType = mimeType,
+            bytes = bytes,
+            teamId = teamId,
+            planetCode = planetCode
         )
-        result.onSuccess { creationResponse ->
-            val resourceId = creationResponse.optString("id").orEmpty()
-            val creationRevision = creationResponse.optString("rev").orEmpty()
-            if (resourceId.isBlank() || creationRevision.isBlank()) {
-                setUploadLoadingVisible(false)
-                Toast.makeText(context, getString(R.string.dashboard_resources_error_invalid_server_response), Toast.LENGTH_SHORT).show()
-                return@onSuccess
-            }
-            val renamedFileName = "${resourceId}.${fileExtension.lowercase(Locale.ROOT)}"
-            val normalizedMediaType = DashboardResourcesMediaUtils.normalizeResourceMediaType(mimeType)
-            val updatePayload = JSONObject(payload.toString())
-                .put("_id", resourceId)
-                .put("_rev", creationRevision)
-                .put("filename", renamedFileName)
-                .put("mediaType", normalizedMediaType)
-            val updateResult = repository.updateResourceDocument(
-                baseUrl = resolvedBaseUrl,
-                sessionCookie = sessionCookie,
-                username = credentials?.username,
-                password = credentials?.password,
-                resourceId = resourceId,
-                payload = updatePayload
-            )
-            val updateResponse = updateResult.getOrElse { error ->
-                setUploadLoadingVisible(false)
-                Toast.makeText(context, error.message ?: getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT).show()
-                return@onSuccess
-            }
-            val updateRevision = updateResponse.optString("rev").orEmpty().ifBlank { creationRevision }
-            val uploadResult = repository.uploadResourceAttachment(
-                DashboardResourcesRepository.UploadAttachmentRequest(
-                    baseUrl = resolvedBaseUrl,
-                    sessionCookie = sessionCookie,
-                    username = credentials?.username,
-                    password = credentials?.password,
-                    resourceId = resourceId,
-                    filename = renamedFileName,
-                    revision = updateRevision,
-                    mimeType = mimeType,
-                    bytes = bytes
-                )
-            )
-            uploadResult.onSuccess {
-                if (isTeamResourcesTab) {
-                    val teamId = DashboardTeamSelectionPreferences.getSelectedTeamId(context)
-                    if (!teamId.isNullOrBlank()) {
-                        val linkPayload = JSONObject()
-                        linkPayload.put("resourceId", resourceId)
-                        linkPayload.put("sourcePlanet", planetCode)
-                        linkPayload.put("title", payload.optString("title"))
-                        linkPayload.put("teamId", teamId)
-                        linkPayload.put("teamPlanetCode", planetCode)
-                        linkPayload.put("teamType", "local")
-                        linkPayload.put("docType", "resourceLink")
-                        repository.createTeamDocument(
-                            baseUrl = resolvedBaseUrl,
-                            sessionCookie = sessionCookie,
-                            username = credentials?.username,
-                            password = credentials?.password,
-                            payload = linkPayload
-                        )
-                    }
-                }
-                setUploadLoadingVisible(false)
-                onSuccess()
-            }.onFailure { error ->
-                setUploadLoadingVisible(false)
-                Toast.makeText(context, error.message ?: getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT).show()
-            }
+
+        val result = repository.uploadNewResource(request)
+
+        setUploadLoadingVisible(false)
+        result.onSuccess {
+            onSuccess()
         }.onFailure { error ->
-            setUploadLoadingVisible(false)
             Toast.makeText(context, error.message ?: getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT).show()
         }
     }
