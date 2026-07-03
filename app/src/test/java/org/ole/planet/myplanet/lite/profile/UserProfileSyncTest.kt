@@ -299,4 +299,68 @@ class UserProfileSyncTest {
         userProfileSync.clearProfile()
         verify(mockDatabase).clearProfile()
     }
+
+    @Test
+    fun `refreshProfile with server disconnect returns false`() = runTest {
+        mockWebServer.enqueue(MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AT_START))
+        val baseUrl = mockWebServer.url("/").toString()
+        val result = userProfileSync.refreshProfile(baseUrl, "testuser", null)
+        assertFalse(result)
+    }
+
+    @Test
+    fun `refreshProfile with avatar server disconnect returns profile without avatar`() = runTest {
+        val jsonResponse = """
+            {
+                "name": "avataruser_disconnect",
+                "_attachments": {
+                    "img": {
+                        "content_type": "image/jpeg",
+                        "length": 100
+                    }
+                }
+            }
+        """.trimIndent()
+
+        val dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                return when (request.path) {
+                    "/db/_users/org.couchdb.user:avataruser_disconnect" -> {
+                        MockResponse().setResponseCode(200).setBody(jsonResponse)
+                    }
+                    "/db/_users/org.couchdb.user:avataruser_disconnect/img" -> {
+                        MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AT_START)
+                    }
+                    else -> MockResponse().setResponseCode(404)
+                }
+            }
+        }
+        mockWebServer.dispatcher = dispatcher
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = userProfileSync.refreshProfile(baseUrl, "avataruser_disconnect", null)
+
+        assertTrue(result)
+
+        val captor = argumentCaptor<UserProfile>()
+        verify(mockDatabase).saveProfile(captor.capture())
+
+        val bytes = captor.firstValue.avatarImage
+        if (bytes != null) {
+            assertEquals(0, bytes.size)
+        } else {
+            assertNull(bytes)
+        }
+    }
+
+    @Test
+    fun `refreshProfile with blank cookie does not add cookie header`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        userProfileSync.refreshProfile(baseUrl, "testuser", "   ")
+
+        val request = mockWebServer.takeRequest()
+        assertNull(request.getHeader("Cookie"))
+    }
 }
