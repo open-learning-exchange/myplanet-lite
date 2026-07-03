@@ -71,4 +71,33 @@ class DashboardResourcesRepositoryTest {
         assertEquals(0, progressValues.first())
         assertEquals(100, progressValues.last())
     }
+
+    @Test
+    fun buildResourcePayload_createsCorrectJson() {
+        val request = DashboardResourcesRepository.ResourceMetadataRequest(
+            title = "Test Title",
+            description = "Test Description",
+            language = "English",
+            username = "tester",
+            planetCode = "planetX",
+            isDownloadable = true
+        )
+
+        val payload = repository.buildResourcePayload(
+            request = request,
+            subject = "Science",
+            level = "Beginner"
+        )
+
+        assertEquals("Test Title", payload.getString("title"))
+        assertEquals("Test Description", payload.getString("description"))
+        assertEquals("Science", payload.getJSONArray("subject").getString(0))
+        assertEquals("Beginner", payload.getJSONArray("level").getString(0))
+        assertEquals("English", payload.getString("language"))
+        assertEquals("tester", payload.getString("addedBy"))
+        assertEquals("planetX", payload.getString("sourcePlanet"))
+        assertEquals("planetX", payload.getString("resideOn"))
+        assertEquals(true, payload.getBoolean("isDownloadable"))
+        assertEquals(false, payload.getBoolean("private"))
+    }
 }

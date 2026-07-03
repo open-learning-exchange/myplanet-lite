@@ -22,9 +22,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
-import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
 
 
 internal data class FormViews(
@@ -119,8 +119,8 @@ internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
                     )
                     val payload = repository.buildResourcePayload(
                         request = request,
-                        defaultSubject = getString(R.string.server_planet_learning),
-                        defaultLevel = getString(R.string.server_planet_early_education)
+                        subject = getString(R.string.server_planet_learning),
+                        level = getString(R.string.server_planet_early_education)
                     )
                     val bytesProvider: suspend () -> ByteArray? = {
                         DashboardResourcesMediaUtils.readBytesFromUri(requireContext(), uri)
@@ -265,8 +265,8 @@ internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
                     )
                     val payload = repository.buildResourcePayload(
                         request = request,
-                        defaultSubject = getString(R.string.server_planet_learning),
-                        defaultLevel = getString(R.string.server_planet_early_education)
+                        subject = getString(R.string.server_planet_learning),
+                        level = getString(R.string.server_planet_early_education)
                     )
                     val bytesProvider: suspend () -> ByteArray? = {
                         DashboardResourcesMediaUtils.buildResizedImageBytes(requireContext(), uri, resolutionSlider.value, mimeType)

@@ -111,14 +111,14 @@ class DashboardResourcesRepository {
 
     fun buildResourcePayload(
         request: ResourceMetadataRequest,
-        defaultSubject: String,
-        defaultLevel: String
+        subject: String,
+        level: String
     ): JSONObject {
         return JSONObject()
             .put("title", request.title)
             .put("description", request.description)
-            .put("subject", JSONArray().put(defaultSubject))
-            .put("level", JSONArray().put(defaultLevel))
+            .put("subject", JSONArray().put(subject))
+            .put("level", JSONArray().put(level))
             .put("language", request.language)
             .put("addedBy", request.username)
             .put("sourcePlanet", request.planetCode)
