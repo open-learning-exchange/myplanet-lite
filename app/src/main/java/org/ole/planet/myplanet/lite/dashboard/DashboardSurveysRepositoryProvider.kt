@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.lite.dashboard
 
-object DashboardSurveysRepositoryFactory {
+import androidx.annotation.VisibleForTesting
+
+object DashboardSurveysRepositoryProvider {
     @Volatile
     private var instance: DashboardSurveysRepository? = null
 
@@ -10,10 +12,12 @@ object DashboardSurveysRepositoryFactory {
         }
     }
 
+    @VisibleForTesting
     fun setRepository(repository: DashboardSurveysRepository) {
         instance = repository
     }
 
+    @VisibleForTesting
     fun reset() {
         instance = null
     }
