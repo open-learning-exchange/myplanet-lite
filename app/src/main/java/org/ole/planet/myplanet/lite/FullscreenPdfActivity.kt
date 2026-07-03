@@ -30,6 +30,8 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -94,7 +96,7 @@ class FullscreenPdfActivity : AppCompatActivity() {
                 return@launch
             }
             val pageCount = renderer.pageCount
-            pager.adapter = PdfPageAdapter(renderer)
+            pager.adapter = PdfPageAdapter(renderer, lifecycleScope)
             pageIndicator.text = getString(
                 R.string.course_wizard_pdf_page_counter,
                 1,
@@ -173,6 +175,8 @@ class FullscreenPdfActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        val pager = findViewById<ViewPager2?>(R.id.fullscreenPdfPager)
+        (pager?.adapter as? PdfPageAdapter)?.clearCache()
         pdfRenderer?.close()
         fileDescriptor?.close()
         pdfRenderer = null
@@ -182,8 +186,18 @@ class FullscreenPdfActivity : AppCompatActivity() {
     }
 
     private class PdfPageAdapter(
-        private val renderer: PdfRenderer
+        private val renderer: PdfRenderer,
+        private val coroutineScope: kotlinx.coroutines.CoroutineScope
     ) : RecyclerView.Adapter<PdfPageAdapter.PdfPageViewHolder>() {
+
+        private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
+        private val cacheSize = maxMemory / 8
+        private val bitmapCache = object : android.util.LruCache<Int, Bitmap>(cacheSize) {
+            override fun sizeOf(key: Int, bitmap: Bitmap): Int {
+                return bitmap.byteCount / 1024
+            }
+        }
+        private val renderMutex = kotlinx.coroutines.sync.Mutex()
 
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): PdfPageViewHolder {
             val imageView = PhotoView(parent.context).apply {
@@ -201,18 +215,54 @@ class FullscreenPdfActivity : AppCompatActivity() {
         override fun getItemCount(): Int = renderer.pageCount
 
         override fun onBindViewHolder(holder: PdfPageViewHolder, position: Int) {
-            val page = renderer.openPage(position)
-            val bitmap = createBitmap(page.width, page.height)
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            page.close()
-            holder.bind(bitmap)
+            holder.renderJob?.cancel()
+            val cachedBitmap = bitmapCache.get(position)
+            if (cachedBitmap != null) {
+                holder.bind(cachedBitmap)
+                return
+            }
+            holder.clear()
+            holder.renderJob = coroutineScope.launch(Dispatchers.IO) {
+                val bitmap = renderMutex.withLock {
+                    bitmapCache.get(position) ?: run {
+                        try {
+                            val page = renderer.openPage(position)
+                            val newBitmap = try {
+                                val bitmap = createBitmap(page.width, page.height)
+                                page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                bitmapCache.put(position, bitmap)
+                                bitmap
+                            } finally {
+                                page.close()
+                            }
+                            newBitmap
+                        } catch (e: Exception) {
+                            null
+                        }
+                    }
+                }
+                if (bitmap != null) {
+                    withContext(Dispatchers.Main) {
+                        if (holder.bindingAdapterPosition == position) {
+                            holder.bind(bitmap)
+                        }
+                    }
+                }
+            }
         }
 
         override fun onViewRecycled(holder: PdfPageViewHolder) {
+            holder.renderJob?.cancel()
             holder.clear()
         }
 
+        fun clearCache() {
+            bitmapCache.evictAll()
+        }
+
         class PdfPageViewHolder(private val imageView: PhotoView) : RecyclerView.ViewHolder(imageView) {
+            var renderJob: kotlinx.coroutines.Job? = null
+
             fun bind(bitmap: Bitmap) {
                 imageView.setImageBitmap(bitmap)
             }
