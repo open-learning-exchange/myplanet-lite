@@ -1074,4 +1074,86 @@ class DashboardResourcesMediaUtilsTest {
         SecurePreferencesProvider.injectedPreferences = null
     }
 
+    @Test
+    fun testReadBytesIfUnderSize_oversizedThrowsException() {
+        val tempFile = File.createTempFile("test_oversized", ".tmp")
+        tempFile.writeBytes(ByteArray(100))
+        tempFile.deleteOnExit()
+
+        assertThrows(IllegalStateException::class.java) {
+            DashboardResourcesMediaUtils.readBytesIfUnderSize(tempFile, 50L)
+        }
+    }
+
+    @Test
+    fun testReadBytesIfUnderSize_underSizeReturnsBytes() {
+        val tempFile = File.createTempFile("test_undersized", ".tmp")
+        val content = ByteArray(50)
+        tempFile.writeBytes(content)
+        tempFile.deleteOnExit()
+
+        val result = DashboardResourcesMediaUtils.readBytesIfUnderSize(tempFile, 100L)
+        assertArrayEquals(content, result)
+    }
+
+    @Test
+    fun transcodeAudio_cleansUpTempFiles_onFailure() { runBlocking {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        val customCacheDir = File(System.getProperty("java.io.tmpdir"), "test_audio_cache")
+        customCacheDir.mkdirs()
+
+        `when`(context.cacheDir).thenReturn(customCacheDir)
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(ByteArrayInputStream(ByteArray(10)))
+
+        val result = DashboardResourcesMediaUtils.transcodeAudio(
+            context = context,
+            readFileErrorMessage = "error",
+            uri = uri,
+            bitrateKbps = 128,
+            startMs = 0L,
+            endMs = 1000L,
+            sourceDurationMs = 2000L
+        )
+
+        assertNull(result)
+        assertEquals(0, customCacheDir.listFiles()?.size ?: 0)
+
+        customCacheDir.delete()
+    } }
+
+    @Test
+    fun transcodeVideoToMp4_cleansUpTempFiles_onFailure() { runBlocking {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        val customCacheDir = File(System.getProperty("java.io.tmpdir"), "test_video_cache")
+        customCacheDir.mkdirs()
+
+        `when`(context.cacheDir).thenReturn(customCacheDir)
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenReturn(ByteArrayInputStream(ByteArray(10)))
+
+        val result = DashboardResourcesMediaUtils.transcodeVideoToMp4(
+            context = context,
+            readFileErrorMessage = "error",
+            uri = uri,
+            selectedHeight = 720,
+            sourceWidth = 1280,
+            sourceHeight = 720,
+            startMs = 0L,
+            endMs = 1000L,
+            sourceDurationMs = 2000L,
+            rotationDegrees = 0f
+        )
+
+        assertNull(result)
+        assertEquals(0, customCacheDir.listFiles()?.size ?: 0)
+
+        customCacheDir.delete()
+    } }
 }

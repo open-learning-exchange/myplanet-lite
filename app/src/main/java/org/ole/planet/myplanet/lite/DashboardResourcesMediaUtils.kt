@@ -48,6 +48,8 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object DashboardResourcesMediaUtils {
+    const val MAX_IN_MEMORY_SIZE_BYTES = 50L * 1024 * 1024
+
     data class ResourceUploadMetadata(
         val fileName: String,
         val defaultTitle: String,
@@ -400,7 +402,7 @@ object DashboardResourcesMediaUtils {
                 continuation.invokeOnCancellation { transformer.cancel() }
                 transformer.start(editedMediaItem, outputFile.absolutePath)
             }
-            if (!exportSucceeded) null else withContext(Dispatchers.IO) { outputFile.readBytes() }
+            if (!exportSucceeded) null else withContext(Dispatchers.IO) { readBytesIfUnderSize(outputFile) }
         } catch (_: Throwable) {
             null
         } finally {
@@ -460,12 +462,19 @@ object DashboardResourcesMediaUtils {
                 continuation.invokeOnCancellation { transformer.cancel() }
                 transformer.start(editedMediaItem, outputFile.absolutePath)
             }
-            if (!exportSucceeded) null else withContext(Dispatchers.IO) { outputFile.readBytes() }
+            if (!exportSucceeded) null else withContext(Dispatchers.IO) { readBytesIfUnderSize(outputFile) }
         } catch (_: Throwable) {
             null
         } finally {
             withContext(Dispatchers.IO) { inputFile.delete(); outputFile.delete() }
         }
+    }
+
+    fun readBytesIfUnderSize(file: File, maxBytes: Long = MAX_IN_MEMORY_SIZE_BYTES): ByteArray {
+        if (file.length() > maxBytes) {
+            throw IllegalStateException("Transformed file too large to process in memory")
+        }
+        return file.readBytes()
     }
 
     fun copyUriToTempFile(context: Context, readFileErrorMessage: String, uri: Uri): File {
