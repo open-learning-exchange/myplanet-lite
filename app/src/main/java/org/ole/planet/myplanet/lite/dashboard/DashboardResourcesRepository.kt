@@ -100,6 +100,33 @@ class DashboardResourcesRepository {
         return createDatabaseDocument(baseUrl, "teams", sessionCookie, username, password, payload)
     }
 
+    data class ResourceMetadataRequest(
+        val title: String,
+        val description: String,
+        val language: String,
+        val username: String,
+        val planetCode: String,
+        val isDownloadable: Boolean
+    )
+
+    fun buildResourcePayload(
+        request: ResourceMetadataRequest,
+        defaultSubject: String,
+        defaultLevel: String
+    ): JSONObject {
+        return JSONObject()
+            .put("title", request.title)
+            .put("description", request.description)
+            .put("subject", JSONArray().put(defaultSubject))
+            .put("level", JSONArray().put(defaultLevel))
+            .put("language", request.language)
+            .put("addedBy", request.username)
+            .put("sourcePlanet", request.planetCode)
+            .put("resideOn", request.planetCode)
+            .put("isDownloadable", request.isDownloadable)
+            .put("private", false)
+    }
+
     suspend fun createResourceDocument(
         baseUrl: String,
         sessionCookie: String?,

@@ -24,6 +24,7 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
 
 
 internal data class FormViews(
@@ -70,27 +71,6 @@ internal fun DashboardResourcesPageFragment.addFormViewsToLayout(content: Linear
     content.addView(formViews.isDownloadableCheck)
 }
 
-internal fun DashboardResourcesPageFragment.createResourcePayload(
-    title: String,
-    description: String,
-    language: String,
-    username: String,
-    planetCode: String,
-    isDownloadable: Boolean
-): JSONObject {
-    return JSONObject()
-        .put("title", title)
-        .put("description", description)
-        .put("subject", JSONArray().put(getString(R.string.server_planet_learning)))
-        .put("level", JSONArray().put(getString(R.string.server_planet_early_education)))
-        .put("language", language)
-        .put("addedBy", username)
-        .put("sourcePlanet", planetCode)
-        .put("resideOn", planetCode)
-        .put("isDownloadable", isDownloadable)
-        .put("private", false)
-}
-
 internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
     val context = requireContext()
     val metadata = DashboardResourcesMediaUtils.extractResourceMetadata(this, uri, "document.pdf", isPdf = true)
@@ -129,13 +109,18 @@ internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
                         formViews.descriptionInput.error = getString(R.string.dashboard_resources_pdf_field_required)
                         return@setOnClickListener
                     }
-                    val payload = createResourcePayload(
-                        title,
-                        description,
-                        formViews.languageSpinner.selectedItem?.toString().orEmpty(),
-                        metadata.username,
-                        metadata.planetCode,
-                        formViews.isDownloadableCheck.isChecked
+                    val request = DashboardResourcesRepository.ResourceMetadataRequest(
+                        title = title,
+                        description = description,
+                        language = formViews.languageSpinner.selectedItem?.toString().orEmpty(),
+                        username = metadata.username,
+                        planetCode = metadata.planetCode,
+                        isDownloadable = formViews.isDownloadableCheck.isChecked
+                    )
+                    val payload = repository.buildResourcePayload(
+                        request = request,
+                        defaultSubject = getString(R.string.server_planet_learning),
+                        defaultLevel = getString(R.string.server_planet_early_education)
                     )
                     val bytesProvider: suspend () -> ByteArray? = {
                         DashboardResourcesMediaUtils.readBytesFromUri(requireContext(), uri)
@@ -270,13 +255,18 @@ internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
                         formViews.descriptionInput.error = getString(R.string.dashboard_resources_pdf_field_required)
                         return@setOnClickListener
                     }
-                    val payload = createResourcePayload(
-                        title,
-                        description,
-                        formViews.languageSpinner.selectedItem?.toString().orEmpty(),
-                        metadata.username,
-                        metadata.planetCode,
-                        formViews.isDownloadableCheck.isChecked
+                    val request = DashboardResourcesRepository.ResourceMetadataRequest(
+                        title = title,
+                        description = description,
+                        language = formViews.languageSpinner.selectedItem?.toString().orEmpty(),
+                        username = metadata.username,
+                        planetCode = metadata.planetCode,
+                        isDownloadable = formViews.isDownloadableCheck.isChecked
+                    )
+                    val payload = repository.buildResourcePayload(
+                        request = request,
+                        defaultSubject = getString(R.string.server_planet_learning),
+                        defaultLevel = getString(R.string.server_planet_early_education)
                     )
                     val bytesProvider: suspend () -> ByteArray? = {
                         DashboardResourcesMediaUtils.buildResizedImageBytes(requireContext(), uri, resolutionSlider.value, mimeType)
