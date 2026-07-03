@@ -79,4 +79,17 @@ class DiffUtilsTest {
         assertEquals("ContentChanged", callback.getChangePayload(item1, item2))
         assertNull(callback.getChangePayload(item1, item3))
     }
+    @Test
+    fun `calculateDiff delegates to itemCallback correctly`() {
+        val oldList = listOf(TestItem(1, "A"), TestItem(2, "B"))
+        val newList = listOf(TestItem(1, "A"), TestItem(2, "C"), TestItem(3, "D"))
+
+        val callback = DiffUtils.itemCallback<TestItem>(
+            areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id },
+            areContentsTheSame = { oldItem, newItem -> oldItem.content == newItem.content },
+            getChangePayload = { oldItem, newItem -> if (oldItem.content != newItem.content) "Changed" else null }
+        )
+
+        val result = DiffUtils.calculateDiff(oldList, newList, callback)
+    }
 }
