@@ -65,10 +65,12 @@ import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.ole.planet.myplanet.lite.util.ApplicationScope
 
 internal fun transformCommentMarkdownForDisplay(markdown: String): String {
     return markdown.replace("\n", "  \n")
 }
+
 
 class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() {
 
@@ -775,7 +777,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val filesToDelete = pendingReplyImages.values.map { it.file }.toList()
         pendingReplyImages.clear()
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        ApplicationScope.scope.launch(Dispatchers.IO) {
             filesToDelete.forEach { file ->
                 if (file.exists()) {
                     file.delete()
