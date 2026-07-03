@@ -261,9 +261,9 @@ internal class DashboardTeamMembersInviteDialogController(
         dialogBinding.inviteMembersSearchInput.addTextChangedListener { editable ->
             val newQuery = editable?.toString()?.trim().orEmpty()
             if (newQuery != currentSearchTerm) {
+                currentSearchTerm = newQuery
                 searchJob?.cancel()
                 searchJob = lifecycleScope.launch {
-                    currentSearchTerm = newQuery
                     delay(300)
                     loadInvitePage(reset = true)
                 }
