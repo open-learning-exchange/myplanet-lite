@@ -231,7 +231,7 @@ class CreateVoiceActivity : BaseActivity() {
         val filesToDelete = pendingImages.values.map { it.file }.toList()
         pendingImages.clear()
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        org.ole.planet.myplanet.lite.util.ApplicationScope.io.launch {
             filesToDelete.forEach { file ->
                 if (file.exists()) {
                     file.delete()
