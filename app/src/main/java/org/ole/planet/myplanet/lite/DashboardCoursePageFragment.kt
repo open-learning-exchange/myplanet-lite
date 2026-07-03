@@ -1173,6 +1173,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         private val categoriesProvider: () -> List<CourseCategory>
     ) : androidx.recyclerview.widget.ListAdapter<CourseAdapter.CourseListItem, RecyclerView.ViewHolder>(CourseDiffCallback()) {
 
+        init {
+            submitList(listOf(CourseListItem.Header))
+        }
+
         sealed class CourseListItem {
             data object Header : CourseListItem()
             data class CourseItemWrapper(
@@ -1264,7 +1268,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             if (selectedCategory >= categoriesProvider().size) {
                 selectedCategory = 0
             }
-            notifyItemChanged(0)
+            applyFilter()
         }
 
         fun updateTagFilter(courseIds: Set<String>?) {
