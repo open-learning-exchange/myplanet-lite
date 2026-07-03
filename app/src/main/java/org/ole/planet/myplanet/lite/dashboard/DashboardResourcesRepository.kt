@@ -13,6 +13,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.RequestBody.Companion.asRequestBody
 import okio.Buffer
 import org.json.JSONArray
 import org.json.JSONObject
@@ -204,7 +205,8 @@ class DashboardResourcesRepository {
         val filename: String,
         val revision: String,
         val mimeType: String,
-        val bytes: ByteArray
+        val file: java.io.File? = null,
+        val bytes: ByteArray? = null
     )
 
     suspend fun uploadResourceAttachment(
@@ -220,7 +222,9 @@ class DashboardResourcesRepository {
                 val requestUrl = "$normalizedBase/db/resources/${request.resourceId.trim()}/${request.filename.trim()}?rev=$encodedRev"
                 val requestBuilder = Request.Builder()
                     .url(requestUrl)
-                    .put(request.bytes.toRequestBody(request.mimeType.toMediaType()))
+                    .put(request.file?.let {
+                        it.asRequestBody(request.mimeType.toMediaType())
+                    } ?: request.bytes?.toRequestBody(request.mimeType.toMediaType()) ?: throw java.io.IOException("No media provided"))
 
                 if (!request.username.isNullOrBlank() && !request.password.isNullOrBlank()) {
                     requestBuilder.addHeader("Authorization", Credentials.basic(request.username, request.password))

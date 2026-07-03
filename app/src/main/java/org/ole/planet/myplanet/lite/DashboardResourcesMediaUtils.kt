@@ -48,8 +48,6 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object DashboardResourcesMediaUtils {
-    const val MAX_IN_MEMORY_SIZE_BYTES = 50L * 1024 * 1024
-
     data class ResourceUploadMetadata(
         val fileName: String,
         val defaultTitle: String,
@@ -377,11 +375,12 @@ object DashboardResourcesMediaUtils {
         startMs: Long,
         endMs: Long,
         sourceDurationMs: Long
-    ): ByteArray? {
+    ): File? {
         val inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
         val outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_audio", ".mp3", context.cacheDir) }
+        var exportSucceeded = false
         return try {
-            val exportSucceeded = suspendCancellableCoroutine { continuation ->
+            exportSucceeded = suspendCancellableCoroutine { continuation ->
                 val clippingBuilder = MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs.coerceAtLeast(0L))
                 if (endMs in 1 until sourceDurationMs) clippingBuilder.setEndPositionMs(endMs)
                 val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile)).setClippingConfiguration(clippingBuilder.build()).build()
@@ -402,11 +401,14 @@ object DashboardResourcesMediaUtils {
                 continuation.invokeOnCancellation { transformer.cancel() }
                 transformer.start(editedMediaItem, outputFile.absolutePath)
             }
-            if (!exportSucceeded) null else withContext(Dispatchers.IO) { readBytesIfUnderSize(outputFile) }
+            if (!exportSucceeded) null else outputFile
         } catch (_: Throwable) {
             null
         } finally {
-            withContext(Dispatchers.IO) { inputFile.delete(); outputFile.delete() }
+            withContext(Dispatchers.IO) {
+                inputFile.delete()
+                if (!exportSucceeded) outputFile.delete()
+            }
         }
     }
 
@@ -422,12 +424,13 @@ object DashboardResourcesMediaUtils {
         endMs: Long,
         sourceDurationMs: Long,
         rotationDegrees: Float
-    ): ByteArray? {
+    ): File? {
         val inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
         val outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_video", ".mp4", context.cacheDir) }
         val shouldScale = selectedHeight < sourceHeight
+        var exportSucceeded = false
         return try {
-            val exportSucceeded = suspendCancellableCoroutine { continuation ->
+            exportSucceeded = suspendCancellableCoroutine { continuation ->
                 val clippingBuilder = MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs.coerceAtLeast(0L))
                 if (endMs in 1 until sourceDurationMs) clippingBuilder.setEndPositionMs(endMs)
                 val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile)).setClippingConfiguration(clippingBuilder.build()).build()
@@ -462,19 +465,15 @@ object DashboardResourcesMediaUtils {
                 continuation.invokeOnCancellation { transformer.cancel() }
                 transformer.start(editedMediaItem, outputFile.absolutePath)
             }
-            if (!exportSucceeded) null else withContext(Dispatchers.IO) { readBytesIfUnderSize(outputFile) }
+            if (!exportSucceeded) null else outputFile
         } catch (_: Throwable) {
             null
         } finally {
-            withContext(Dispatchers.IO) { inputFile.delete(); outputFile.delete() }
+            withContext(Dispatchers.IO) {
+                inputFile.delete()
+                if (!exportSucceeded) outputFile.delete()
+            }
         }
-    }
-
-    fun readBytesIfUnderSize(file: File, maxBytes: Long = MAX_IN_MEMORY_SIZE_BYTES): ByteArray {
-        if (file.length() > maxBytes) {
-            throw IllegalStateException("Transformed file too large to process in memory")
-        }
-        return file.readBytes()
     }
 
     fun copyUriToTempFile(context: Context, readFileErrorMessage: String, uri: Uri): File {

@@ -137,15 +137,15 @@ internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
                         metadata.planetCode,
                         formViews.isDownloadableCheck.isChecked
                     )
-                    val bytesProvider: suspend () -> ByteArray? = {
-                        DashboardResourcesMediaUtils.readBytesFromUri(requireContext(), uri)
+                    val mediaProvider: suspend () -> UploadMedia? = {
+                        DashboardResourcesMediaUtils.readBytesFromUri(requireContext(), uri)?.let { UploadMedia.Bytes(it) }
                     }
                     performResourceCreateAndUpload(
                         payload = payload,
                         fileExtension = "pdf",
                         mimeType = context.contentResolver.getType(uri).orEmpty().ifBlank { "application/pdf" },
                         credentials = metadata.credentials,
-                        bytesProvider = bytesProvider,
+                        mediaProvider = mediaProvider,
                         onSuccess = {
                             Toast.makeText(context, getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()
                             dialog.dismiss()
@@ -278,15 +278,15 @@ internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
                         metadata.planetCode,
                         formViews.isDownloadableCheck.isChecked
                     )
-                    val bytesProvider: suspend () -> ByteArray? = {
-                        DashboardResourcesMediaUtils.buildResizedImageBytes(requireContext(), uri, resolutionSlider.value, mimeType)
+                    val mediaProvider: suspend () -> UploadMedia? = {
+                        DashboardResourcesMediaUtils.buildResizedImageBytes(requireContext(), uri, resolutionSlider.value, mimeType)?.let { UploadMedia.Bytes(it) }
                     }
                     performResourceCreateAndUpload(
                         payload = payload,
                         fileExtension = DashboardResourcesMediaUtils.extensionForImageMimeType(mimeType),
                         mimeType = mimeType,
                         credentials = metadata.credentials,
-                        bytesProvider = bytesProvider,
+                        mediaProvider = mediaProvider,
                         onSuccess = {
                             isUploaded = true
                             Toast.makeText(context, getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()

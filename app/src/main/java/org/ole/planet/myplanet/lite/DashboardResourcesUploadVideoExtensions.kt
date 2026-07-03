@@ -393,8 +393,8 @@ internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
                             .put("resideOn", planetCode)
                             .put("isDownloadable", isDownloadableCheck.isChecked)
                             .put("private", false)
-                        val bytesProvider: suspend () -> ByteArray? = {
-                            DashboardResourcesMediaUtils.transcodeVideoToMp4(requireContext(), getString(R.string.dashboard_resources_error_read_file), 
+                        val mediaProvider: suspend () -> UploadMedia? = {
+                            val file = DashboardResourcesMediaUtils.transcodeVideoToMp4(requireContext(), getString(R.string.dashboard_resources_error_read_file),
                                 uri = uri,
                                 selectedHeight = selectedHeight,
                                 sourceWidth = sourceWidth,
@@ -404,13 +404,14 @@ internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
                                 sourceDurationMs = sourceDurationMs,
                                 rotationDegrees = selectedRotationDegrees
                             )
+                            file?.let { UploadMedia.FileMedia(it) }
                         }
                         performResourceCreateAndUpload(
                             payload = payload,
                             fileExtension = "mp4",
                             mimeType = "video/mp4",
                             credentials = credentials,
-                            bytesProvider = bytesProvider,
+                            mediaProvider = mediaProvider,
                             onSuccess = {
                                 isUploaded = true
                                 Toast.makeText(context, getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()

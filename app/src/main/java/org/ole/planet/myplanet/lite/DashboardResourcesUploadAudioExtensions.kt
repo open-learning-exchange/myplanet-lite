@@ -349,14 +349,15 @@ internal fun DashboardResourcesPageFragment.handleAudioUploadSave(
         .put("isDownloadable", viewWrapper.isDownloadableCheck.isChecked)
         .put("private", false)
 
-    val bytesProvider: suspend () -> ByteArray? = {
-        DashboardResourcesMediaUtils.transcodeAudio(requireContext(), getString(R.string.dashboard_resources_error_read_file),
+    val mediaProvider: suspend () -> UploadMedia? = {
+        val file = DashboardResourcesMediaUtils.transcodeAudio(requireContext(), getString(R.string.dashboard_resources_error_read_file),
             uri = state.uri,
             bitrateKbps = state.selectedBitrate,
             startMs = state.selectedStartMs,
             endMs = state.selectedEndMs,
             sourceDurationMs = state.sourceDurationMs
         )
+        file?.let { UploadMedia.FileMedia(it) }
     }
 
     performResourceCreateAndUpload(
@@ -364,7 +365,7 @@ internal fun DashboardResourcesPageFragment.handleAudioUploadSave(
         fileExtension = "mp3",
         mimeType = "audio/mpeg",
         credentials = state.metadata.credentials,
-        bytesProvider = bytesProvider,
+        mediaProvider = mediaProvider,
         onSuccess = {
             Toast.makeText(requireContext(), getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()
             dialog.dismiss()

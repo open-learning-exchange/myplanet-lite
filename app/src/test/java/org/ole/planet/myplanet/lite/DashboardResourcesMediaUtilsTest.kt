@@ -1075,28 +1075,6 @@ class DashboardResourcesMediaUtilsTest {
     }
 
     @Test
-    fun testReadBytesIfUnderSize_oversizedThrowsException() {
-        val tempFile = File.createTempFile("test_oversized", ".tmp")
-        tempFile.writeBytes(ByteArray(100))
-        tempFile.deleteOnExit()
-
-        assertThrows(IllegalStateException::class.java) {
-            DashboardResourcesMediaUtils.readBytesIfUnderSize(tempFile, 50L)
-        }
-    }
-
-    @Test
-    fun testReadBytesIfUnderSize_underSizeReturnsBytes() {
-        val tempFile = File.createTempFile("test_undersized", ".tmp")
-        val content = ByteArray(50)
-        tempFile.writeBytes(content)
-        tempFile.deleteOnExit()
-
-        val result = DashboardResourcesMediaUtils.readBytesIfUnderSize(tempFile, 100L)
-        assertArrayEquals(content, result)
-    }
-
-    @Test
     fun transcodeAudio_cleansUpTempFiles_onFailure() { runBlocking {
         val context = mock(Context::class.java)
         val contentResolver = mock(ContentResolver::class.java)
@@ -1107,7 +1085,7 @@ class DashboardResourcesMediaUtilsTest {
 
         `when`(context.cacheDir).thenReturn(customCacheDir)
         `when`(context.contentResolver).thenReturn(contentResolver)
-        `when`(contentResolver.openInputStream(uri)).thenReturn(ByteArrayInputStream(ByteArray(10)))
+        `when`(contentResolver.openInputStream(uri)).thenReturn(java.io.ByteArrayInputStream(ByteArray(10)))
 
         val result = DashboardResourcesMediaUtils.transcodeAudio(
             context = context,
@@ -1136,7 +1114,7 @@ class DashboardResourcesMediaUtilsTest {
 
         `when`(context.cacheDir).thenReturn(customCacheDir)
         `when`(context.contentResolver).thenReturn(contentResolver)
-        `when`(contentResolver.openInputStream(uri)).thenReturn(ByteArrayInputStream(ByteArray(10)))
+        `when`(contentResolver.openInputStream(uri)).thenReturn(java.io.ByteArrayInputStream(ByteArray(10)))
 
         val result = DashboardResourcesMediaUtils.transcodeVideoToMp4(
             context = context,

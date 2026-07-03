@@ -10,12 +10,17 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 
+internal sealed class UploadMedia {
+    class Bytes(val data: ByteArray) : UploadMedia()
+    class FileMedia(val file: java.io.File) : UploadMedia()
+}
+
 internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
     payload: JSONObject,
     fileExtension: String,
     mimeType: String,
     credentials: org.ole.planet.myplanet.lite.profile.StoredCredentials?,
-    bytesProvider: suspend () -> ByteArray?,
+    mediaProvider: suspend () -> UploadMedia?,
     onSuccess: () -> Unit
 ) {
     val context = requireContext()
@@ -39,12 +44,13 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
     }
     setUploadLoadingVisible(true)
     lifecycleScope.launch {
-        val bytes = bytesProvider()
-        if (bytes == null) {
+        val media = mediaProvider()
+        if (media == null) {
             setUploadLoadingVisible(false)
             Toast.makeText(context, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT).show()
             return@launch
         }
+        try {
         val result = repository.createResourceDocument(
             baseUrl = resolvedBaseUrl,
             sessionCookie = sessionCookie,
@@ -91,7 +97,8 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
                     filename = renamedFileName,
                     revision = updateRevision,
                     mimeType = mimeType,
-                    bytes = bytes
+                    file = (media as? UploadMedia.FileMedia)?.file,
+                    bytes = (media as? UploadMedia.Bytes)?.data
                 )
             )
             uploadResult.onSuccess {
@@ -124,6 +131,11 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
         }.onFailure { error ->
             setUploadLoadingVisible(false)
             Toast.makeText(context, error.message ?: getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT).show()
+        }
+        } finally {
+            if (media is UploadMedia.FileMedia) {
+                media.file.delete()
+            }
         }
     }
 }
