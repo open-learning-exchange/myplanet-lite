@@ -1,4 +1,7 @@
-package org.ole.planet.myplanet.lite
+package org.ole.planet.myplanet.lite.signup
+
+import org.ole.planet.myplanet.lite.UsernameAvailability
+import org.ole.planet.myplanet.lite.SignupSubmissionResult
 
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers

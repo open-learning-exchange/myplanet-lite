@@ -1,4 +1,8 @@
-package org.ole.planet.myplanet.lite
+package org.ole.planet.myplanet.lite.signup
+
+import org.ole.planet.myplanet.lite.SignupActivity
+import org.ole.planet.myplanet.lite.UsernameAvailability
+import org.ole.planet.myplanet.lite.SignupSubmissionResult
 
 import android.content.SharedPreferences
 import android.os.Looper
