@@ -236,6 +236,19 @@ class DashboardSurveysRepository(
     ) : java.io.Serializable
 
 
+    suspend fun getCompletionCountsWithDefaults(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamId: String,
+        surveyIds: List<String>,
+    ): Map<String, Int> {
+        val defaults = surveyIds.associateWith { 0 }
+        if (surveyIds.isEmpty()) return defaults
+        val result = fetchSurveyCompletionCountsBatched(baseUrl, credentials, sessionCookie, teamId, surveyIds)
+        return defaults + result.getOrDefault(emptyMap())
+    }
+
     suspend fun fetchSurveyCompletionCountsBatched(
         baseUrl: String,
         credentials: StoredCredentials?,

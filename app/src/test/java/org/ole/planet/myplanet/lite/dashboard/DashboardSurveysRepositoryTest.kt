@@ -82,6 +82,59 @@ class DashboardSurveysRepositoryTest {
     }
 
     @Test
+    fun getCompletionCountsWithDefaults_returnsMapWithZeros() = runTest {
+        val jsonResponse = """
+            {
+              "docs": [
+                {
+                  "parentId": "survey1@team1"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(MockResponse().setBody(jsonResponse).setResponseCode(200))
+
+        val result = repository.getCompletionCountsWithDefaults(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = null,
+            sessionCookie = null,
+            teamId = "team1",
+            surveyIds = listOf("survey1", "survey2")
+        )
+
+        assertEquals(1, result["survey1"])
+        assertEquals(0, result["survey2"])
+    }
+
+    @Test
+    fun getCompletionCountsWithDefaults_emptyIdsReturnsEmptyMap() = runTest {
+        val result = repository.getCompletionCountsWithDefaults(
+            baseUrl = "http://localhost",
+            credentials = null,
+            sessionCookie = null,
+            teamId = "team1",
+            surveyIds = emptyList()
+        )
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun getCompletionCountsWithDefaults_returnsDefaultsOnFailure() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        val result = repository.getCompletionCountsWithDefaults(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = null,
+            sessionCookie = null,
+            teamId = "team1",
+            surveyIds = listOf("survey1")
+        )
+
+        assertEquals(0, result["survey1"])
+    }
+
+    @Test
     fun fetchPublicSurvey_success() = runTest {
         mockWebServer.enqueue(
             MockResponse().setResponseCode(200).setBody(
