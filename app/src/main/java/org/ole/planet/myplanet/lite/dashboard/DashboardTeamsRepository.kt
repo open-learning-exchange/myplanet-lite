@@ -13,7 +13,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import org.ole.planet.myplanet.lite.TeamJoinRequestUiModel
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
 class DashboardTeamsRepository(
@@ -188,12 +187,12 @@ class DashboardTeamsRepository(
         sessionCookie: String?,
         teamId: String,
         teamPlanetCode: String,
-    ): Result<List<TeamJoinRequestUiModel>> = runInDispatcher {
+    ): Result<List<EnrichedJoinRequest>> = runInDispatcher {
         val joinRequests = operations.fetchTeamJoinRequests(baseUrl, credentials, sessionCookie, teamId, teamPlanetCode)
         if (joinRequests.isEmpty()) return@runInDispatcher emptyList()
 
         val userIds = joinRequests.mapNotNull { it.userId?.takeIf(String::isNotBlank) }.distinct()
-        val profilesById = operations.fetchUserProfiles(baseUrl, credentials, sessionCookie, userIds).associateBy { it._id }
+        val profilesById = runCatching { operations.fetchUserProfiles(baseUrl, credentials, sessionCookie, userIds) }.getOrDefault(emptyList()).associateBy { it._id }
 
         joinRequests.map { request ->
             val userId = request.userId.orEmpty()
@@ -204,7 +203,7 @@ class DashboardTeamsRepository(
                 profile?.middleName,
                 profile?.lastName
             ).filter { it.isNotBlank() }.joinToString(" ").ifBlank { username }
-            TeamJoinRequestUiModel(
+            EnrichedJoinRequest(
                 id = request.id ?: userId,
                 username = username,
                 fullName = fullName,

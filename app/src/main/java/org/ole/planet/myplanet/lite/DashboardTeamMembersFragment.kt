@@ -254,7 +254,7 @@ class DashboardTeamMembersFragment : Fragment() {
 
         val teamPlanetCodeForRequests = currentTeamPlanetCode ?: serverPlanetCode
         val joinRequests = if (teamPlanetCodeForRequests.isNullOrBlank()) {
-            emptyList<TeamJoinRequestUiModel>()
+            emptyList<org.ole.planet.myplanet.lite.dashboard.EnrichedJoinRequest>()
         } else {
             repository.fetchEnrichedTeamJoinRequests(
                 baseUrl = base,
@@ -309,7 +309,7 @@ class DashboardTeamMembersFragment : Fragment() {
         }
     }
 
-    private fun loadJoinRequestsData(joinRequests: List<TeamJoinRequestUiModel>) {
+    private fun loadJoinRequestsData(joinRequests: List<org.ole.planet.myplanet.lite.dashboard.EnrichedJoinRequest>) {
         if (joinRequests.isEmpty()) {
             currentJoinRequests = emptyList()
             updateJoinRequestsAdapterList(emptyList())
@@ -317,8 +317,17 @@ class DashboardTeamMembersFragment : Fragment() {
             return
         }
 
-        currentJoinRequests = joinRequests
-        updateJoinRequestsAdapterList(joinRequests)
+        val mappedRequests = joinRequests.map {
+            TeamJoinRequestUiModel(
+                id = it.id,
+                username = it.username,
+                fullName = it.fullName,
+                hasAvatar = it.hasAvatar,
+                request = it.request
+            )
+        }
+        currentJoinRequests = mappedRequests
+        updateJoinRequestsAdapterList(mappedRequests)
     }
 
     private fun showLoading(loading: Boolean) {

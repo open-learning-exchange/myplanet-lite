@@ -186,4 +186,39 @@ class DashboardTeamsRepositoryTest {
         assertTrue(request.path?.startsWith("/db/teams") == true)
         assertEquals("POST", request.method)
     }
+
+    @Test
+    fun `test fetchEnrichedTeamJoinRequests returns mapped list with graceful fallback`() = runTest {
+        val joinRequestsResponse = """
+            {
+                "docs": [
+                    {
+                        "_id": "req1",
+                        "teamId": "team123",
+                        "userId": "org.couchdb.user:testuser"
+                    }
+                ]
+            }
+        """.trimIndent()
+
+        // Missing profiles response or error -> graceful fallback
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(joinRequestsResponse))
+        mockWebServer.enqueue(MockResponse().setResponseCode(500).setBody("Server Error"))
+
+        val result = repository.fetchEnrichedTeamJoinRequests(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = null,
+            sessionCookie = null,
+            teamId = "team123",
+            teamPlanetCode = "planetA"
+        )
+
+        val requests = result.getOrThrow()
+        assertEquals(1, requests.size)
+        assertEquals("req1", requests[0].id)
+        assertEquals("testuser", requests[0].username)
+        assertEquals("testuser", requests[0].fullName) // Falls back to username since profile fetch fails
+        assertEquals(false, requests[0].hasAvatar)
+    }
+
 }
