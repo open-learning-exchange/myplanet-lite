@@ -648,14 +648,9 @@ private val SurveyStatus.iconRes: Int
         SurveyStatus.COMPLETED -> R.drawable.ic_survey_completed_24
     }
 
-private class OutboxEntryDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<OutboxEntry>() {
-    override fun areItemsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean = oldItem.id == newItem.id
-    override fun areContentsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean = oldItem == newItem
-}
-
 private class SurveyOutboxAdapter(
     private val onOutboxSelected: (OutboxEntry) -> Unit,
-) : androidx.recyclerview.widget.ListAdapter<OutboxEntry, SurveyOutboxAdapter.OutboxViewHolder>(OutboxEntryDiffCallback()) {
+) : androidx.recyclerview.widget.ListAdapter<OutboxEntry, SurveyOutboxAdapter.OutboxViewHolder>(org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback({ oldItem, newItem -> oldItem.id == newItem.id })) {
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): OutboxViewHolder {
         val view = android.view.LayoutInflater.from(parent.context)
