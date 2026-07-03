@@ -58,7 +58,7 @@ class DashboardSurveysFragment : Fragment(R.layout.fragment_dashboard_surveys) {
             childFragmentManager.findFragmentById(R.id.dashboardSurveysContentContainer)?.let { fragment ->
                 childFragmentManager.beginTransaction()
                     .remove(fragment)
-                    .commit()
+                    .commitAllowingStateLoss()
             }
         }
     }
@@ -71,6 +71,6 @@ class DashboardSurveysFragment : Fragment(R.layout.fragment_dashboard_surveys) {
         val fragment = DashboardTeamSurveysFragment.newInstanceForTeam(teamId, teamName)
         childFragmentManager.beginTransaction()
             .replace(R.id.dashboardSurveysContentContainer, fragment)
-            .commit()
+            .commitAllowingStateLoss()
     }
 }
