@@ -1127,24 +1127,17 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             return markdown
         }
 
-        val metadata = VoicesComposerRepository.ResourceMetadataRequest.fromContext(context, pending.fileName)
-        val creationResponse = composerRepository.createResourceDocument(baseUrl, credentials, metadata)
-        pending.resourceId = creationResponse.id
-        pending.resourceRevision = creationResponse.revision
-        val uploadResponse = composerRepository.uploadResourceBinary(
+        val uploadResponse = composerRepository.uploadReplyImageResource(
             baseUrl,
             credentials,
-            creationResponse.id,
+            context,
             pending.fileName,
-            creationResponse.revision,
             pending.jpegBytes
         )
-        val resolvedResourceId = uploadResponse.resourceId ?: creationResponse.id
-        val resolvedFileName = uploadResponse.filename ?: pending.fileName
-        pending.resourceId = resolvedResourceId
-        pending.resourceRevision = uploadResponse.revision ?: creationResponse.revision
-        val relativeMarkdown = uploadResponse.markdown
-            ?: "![](resources/${resolvedResourceId.trim()}/${resolvedFileName.trim()})"
+        val relativeMarkdown = uploadResponse.markdown!!
+
+        pending.resourceId = uploadResponse.resourceId
+        pending.resourceRevision = uploadResponse.revision
         pending.uploadedMarkdown = relativeMarkdown
         return relativeMarkdown
     }

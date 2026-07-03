@@ -158,6 +158,41 @@ class VoicesComposerRepository(
         }
     }
 
+    suspend fun uploadReplyImageResource(
+        baseUrl: String,
+        credentials: StoredCredentials,
+        context: VoiceImageResourceContext,
+        fileName: String,
+        jpegBytes: ByteArray
+    ): ResourceUploadResponse {
+        val metadata = ResourceMetadataRequest.fromContext(context, fileName)
+        val creationResponse = createResourceDocument(baseUrl, credentials, metadata)
+
+        val uploadResponse = uploadResourceBinary(
+            baseUrl,
+            credentials,
+            creationResponse.id,
+            fileName,
+            creationResponse.revision,
+            jpegBytes
+        )
+
+        val resolvedResourceId = uploadResponse.resourceId ?: creationResponse.id
+        val resolvedFileName = uploadResponse.filename ?: fileName
+        val resolvedRevision = uploadResponse.revision ?: creationResponse.revision
+        val resolvedMarkdown = uploadResponse.markdown
+            ?: "![](resources/${resolvedResourceId.trim()}/${resolvedFileName.trim()})"
+
+        return ResourceUploadResponse(
+            ok = uploadResponse.ok ?: true,
+            id = creationResponse.id,
+            resourceId = resolvedResourceId,
+            filename = resolvedFileName,
+            markdown = resolvedMarkdown,
+            revision = resolvedRevision
+        )
+    }
+
     @JsonClass(generateAdapter = true)
     data class CreateVoiceRequest(
         val chat: Boolean,
