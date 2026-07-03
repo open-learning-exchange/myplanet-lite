@@ -279,7 +279,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
             courseImageLoader = DashboardPostImageLoader(base, sessionCookie, viewLifecycleOwner.lifecycleScope)
             isCourseImageLoaderLoading = false
-            adapter.notifyDataSetChanged()
+            adapter.notifyItemRangeChanged(1, adapter.itemCount - 1)
         }
     }
 
@@ -1172,10 +1172,26 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         private val ensureImageLoader: () -> Unit,
         private val categoriesProvider: () -> List<CourseCategory>
     ) :
-        RecyclerView.Adapter<RecyclerView.ViewHolder>() {
+        androidx.recyclerview.widget.ListAdapter<Any, RecyclerView.ViewHolder>(
+            org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback<Any>(
+                areItemsTheSame = { oldItem, newItem ->
+                    if (oldItem === HEADER_ITEM && newItem === HEADER_ITEM) true
+                    else if (oldItem is CourseItem && newItem is CourseItem) oldItem.id == newItem.id
+                    else false
+                },
+                areContentsTheSame = { oldItem, newItem ->
+                    oldItem == newItem
+                }
+            )
+        ) {
+
+        companion object {
+            private val HEADER_ITEM = Any()
+            private const val VIEW_TYPE_HEADER = 0
+            private const val VIEW_TYPE_ITEM = 1
+        }
 
         private val items = mutableListOf<CourseItem>()
-        private val displayedItems = mutableListOf<CourseItem>()
         private val downloadedCourseIds = mutableSetOf<String>()
         private data class DownloadProgress(val completed: Int, val total: Int)
         private val downloadProgressByCourse = mutableMapOf<String, DownloadProgress>()
@@ -1188,7 +1204,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         var onCategorySelected: ((String?) -> Unit)? = null
 
         override fun getItemViewType(position: Int): Int {
-            return if (position == 0) VIEW_TYPE_HEADER else VIEW_TYPE_ITEM
+            return if (getItem(position) === HEADER_ITEM) VIEW_TYPE_HEADER else VIEW_TYPE_ITEM
         }
 
         override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -1212,11 +1228,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                     updateSearchQuery(query)
                 }
             } else if (holder is CourseViewHolder) {
-                holder.bind(displayedItems[position - 1])
+                holder.bind(getItem(position) as CourseItem)
             }
         }
-
-        override fun getItemCount(): Int = displayedItems.size + 1
 
         fun updateCategories() {
             if (selectedCategory >= categoriesProvider().size) {
@@ -1233,7 +1247,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         fun updateDownloadedCourses(courseIds: Set<String>) {
             downloadedCourseIds.clear()
             downloadedCourseIds.addAll(courseIds)
-            notifyItemRangeChanged(1, displayedItems.size)
+            notifyItemRangeChanged(1, itemCount - 1)
         }
 
         fun updateDownloadProgress(courseId: String, completed: Int?, total: Int?) {
@@ -1245,9 +1259,9 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                     total = total.coerceAtLeast(1)
                 )
             }
-            val position = displayedItems.indexOfFirst { it.id == courseId }
+            val position = currentList.indexOfFirst { (it as? CourseItem)?.id == courseId }
             if (position >= 0) {
-                notifyItemChanged(position + 1)
+                notifyItemChanged(position)
             }
         }
 
@@ -1266,53 +1280,21 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             if (itemIndex >= 0) {
                 items[itemIndex] = update(items[itemIndex])
             }
-            val displayedIndex = displayedItems.indexOfFirst { it.id == courseId }
-            if (displayedIndex >= 0) {
-                displayedItems[displayedIndex] = update(displayedItems[displayedIndex])
-                notifyItemChanged(displayedIndex + 1)
+            val listIndex = currentList.indexOfFirst { (it as? CourseItem)?.id == courseId }
+            if (listIndex >= 0) {
+                val newList = currentList.toMutableList()
+                newList[listIndex] = update(newList[listIndex] as CourseItem)
+                submitList(newList)
             }
         }
 
         fun submitCourses(newItems: List<CourseItem>) {
-            val oldDisplayed = displayedItems.toList()
-
             items.clear()
             items.addAll(newItems.distinctBy { it.id })
-            displayedItems.clear()
-            displayedItems.addAll(items)
 
-            val newDisplayed = displayedItems.toList()
-
-            val diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(object : androidx.recyclerview.widget.DiffUtil.Callback() {
-                override fun getOldListSize() = oldDisplayed.size
-                override fun getNewListSize() = newDisplayed.size
-
-                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    return oldDisplayed[oldItemPosition].id == newDisplayed[newItemPosition].id
-                }
-
-                override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    return oldDisplayed[oldItemPosition] == newDisplayed[newItemPosition]
-                }
-            })
-
-            diffResult.dispatchUpdatesTo(object : androidx.recyclerview.widget.ListUpdateCallback {
-                override fun onInserted(position: Int, count: Int) {
-                    notifyItemRangeInserted(position + 1, count)
-                }
-
-                override fun onRemoved(position: Int, count: Int) {
-                    notifyItemRangeRemoved(position + 1, count)
-                }
-
-                override fun onMoved(fromPosition: Int, toPosition: Int) {
-                    notifyItemMoved(fromPosition + 1, toPosition + 1)
-                }
-
-                override fun onChanged(position: Int, count: Int, payload: Any?) {
-                    notifyItemRangeChanged(position + 1, count, payload)
-                }
-            })
+            val newDisplayed = mutableListOf<Any>(HEADER_ITEM)
+            newDisplayed.addAll(items)
+            submitList(newDisplayed)
         }
 
         fun appendCourses(newItems: List<CourseItem>) {
@@ -1322,11 +1304,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             if (unique.isEmpty()) return
             items.addAll(unique)
             if (searchQuery.isBlank()) {
-                val start = displayedItems.size
-                displayedItems.addAll(unique)
-                if (unique.isNotEmpty()) {
-                    notifyItemRangeInserted(start + 1, unique.size)
-                }
+                val newDisplayed = mutableListOf<Any>(HEADER_ITEM)
+                newDisplayed.addAll(currentList.filterIsInstance<CourseItem>())
+                newDisplayed.addAll(unique)
+                submitList(newDisplayed)
             } else {
                 applyFilter()
             }
@@ -1352,25 +1333,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val tagFiltered = activeTagCourseIds?.let { ids ->
                 filtered.filter { ids.contains(it.id) }
             } ?: filtered
-            val oldSize = displayedItems.size
-            displayedItems.clear()
-            displayedItems.addAll(tagFiltered)
-            val newSize = displayedItems.size
-            when {
-                oldSize == newSize -> {
-                    if (newSize > 0) {
-                        notifyItemRangeChanged(1, newSize)
-                    }
-                }
-                else -> {
-                    if (oldSize > 0) {
-                        notifyItemRangeRemoved(1, oldSize)
-                    }
-                    if (newSize > 0) {
-                        notifyItemRangeInserted(1, newSize)
-                    }
-                }
-            }
+
+            val newDisplayed = mutableListOf<Any>(HEADER_ITEM)
+            newDisplayed.addAll(tagFiltered)
+            submitList(newDisplayed)
         }
 
         class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -1578,10 +1544,6 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             }
         }
 
-        companion object {
-            private const val VIEW_TYPE_HEADER = 0
-            private const val VIEW_TYPE_ITEM = 1
-        }
     }
 
     companion object {
