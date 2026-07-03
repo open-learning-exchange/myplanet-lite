@@ -22,6 +22,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
+import androidx.recyclerview.widget.ListAdapter
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
@@ -216,13 +217,14 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
     }
 
     internal class ResourceExplorerAdapter(
-        initialResources: List<ResourceUi>,
         private val downloadProgressByKey: Map<String, Int?>,
         private val onViewResource: (ResourceUi) -> Unit,
         private val onSecondaryAction: (ResourceUi) -> Unit
-    ) : RecyclerView.Adapter<ResourceExplorerAdapter.ResourceViewHolder>() {
-
-        private val resources = initialResources.toMutableList()
+    ) : ListAdapter<ResourceUi, ResourceExplorerAdapter.ResourceViewHolder>(
+        org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback(
+            areItemsTheSame = { oldItem, newItem -> oldItem.uniqueKey() == newItem.uniqueKey() }
+        )
+    ) {
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ResourceViewHolder {
             val inflater = LayoutInflater.from(parent.context)
@@ -231,36 +233,15 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         }
 
         override fun onBindViewHolder(holder: ResourceViewHolder, position: Int) {
-            val item = resources[position]
+            val item = getItem(position)
             val key = item.uniqueKey()
             holder.bind(item, downloadProgressByKey[key], downloadProgressByKey.containsKey(key), onViewResource, onSecondaryAction)
         }
 
-        override fun getItemCount(): Int = resources.size
 
-        fun replaceResources(newResources: List<ResourceUi>) {
-            val oldSize = resources.size
-            resources.clear()
-            resources.addAll(newResources)
-            when {
-                oldSize == 0 && newResources.isNotEmpty() -> notifyItemRangeInserted(0, newResources.size)
-                newResources.isEmpty() && oldSize > 0 -> notifyItemRangeRemoved(0, oldSize)
-                else -> {
-                    val commonCount = minOf(oldSize, newResources.size)
-                    if (commonCount > 0) {
-                        notifyItemRangeChanged(0, commonCount)
-                    }
-                    if (oldSize > newResources.size) {
-                        notifyItemRangeRemoved(newResources.size, oldSize - newResources.size)
-                    } else if (newResources.size > oldSize) {
-                        notifyItemRangeInserted(oldSize, newResources.size - oldSize)
-                    }
-                }
-            }
-        }
 
         fun notifyResourceChanged(item: ResourceUi) {
-            val index = resources.indexOfFirst { it.uniqueKey() == item.uniqueKey() }
+            val index = currentList.indexOfFirst { it.uniqueKey() == item.uniqueKey() }
             if (index >= 0) {
                 notifyItemChanged(index)
             }
@@ -403,9 +384,9 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         val adapter = list.adapter as? ResourceExplorerAdapter
         val source = if (isTeamResourcesTab) teamResourcesItems else mainResourcesItems
         if (adapter == null) {
-            list.adapter = ResourceExplorerAdapter(source.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
+            list.adapter = ResourceExplorerAdapter(resourceDownloadProgress, ::openResource, ::onSecondaryAction).apply { submitList(source.toList()) }
         } else {
-            adapter.replaceResources(source)
+            adapter.submitList(source.toList())
         }
     }
 
