@@ -48,6 +48,7 @@ class TeamsFragmentTest {
 
     @Before
     fun setUp() {
+        org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies.resetForTesting()
         Dispatchers.setMain(testDispatcher)
         mockPrefs = FakeSharedPreferences()
         SecurePreferencesProvider.injectedPreferences = mockPrefs
@@ -62,6 +63,7 @@ class TeamsFragmentTest {
 
     @After
     fun tearDown() {
+        org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies.resetForTesting()
         SecurePreferencesProvider.injectedPreferences = null
         ProfileCredentialsStore.setSessionCredentials(null)
         AuthDependencies.resetForTesting()
@@ -124,9 +126,7 @@ class TeamsFragmentTest {
                     )).thenReturn(result)
                 }
 
-                val repoField = TeamsFragment::class.java.getDeclaredField("repository")
-                repoField.isAccessible = true
-                repoField.set(fragment, mockRepository)
+                org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies.overrideRepository(mockRepository)
 
                 // Set baseUrl properly in the preferences (it might be failing because we used KEY_SERVER_URL directly instead of what getServerBaseUrl uses)
                 val baseField = TeamsFragment::class.java.getDeclaredField("baseUrl")
