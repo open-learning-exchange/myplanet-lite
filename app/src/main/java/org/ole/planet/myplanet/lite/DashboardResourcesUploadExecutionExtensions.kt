@@ -46,6 +46,7 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
             return@launch
         }
         val teamId = if (isTeamResourcesTab) DashboardTeamSelectionPreferences.getSelectedTeamId(context) else null
+        val normalizedMediaType = DashboardResourcesMediaUtils.normalizeResourceMediaType(mimeType)
         val result = repository.createAndUploadResourceSequence(
             DashboardResourcesRepository.CreateAndUploadResourceRequest(
                 baseUrl = resolvedBaseUrl,
@@ -53,7 +54,7 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
                 credentials = credentials,
                 payload = payload,
                 fileExtension = fileExtension,
-                mimeType = mimeType,
+                mimeType = normalizedMediaType,
                 bytes = bytes,
                 teamId = teamId,
                 planetCode = planetCode

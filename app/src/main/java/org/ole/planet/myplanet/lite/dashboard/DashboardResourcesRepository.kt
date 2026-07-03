@@ -5,9 +5,8 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
-import java.util.Locale
-import org.ole.planet.myplanet.lite.DashboardResourcesMediaUtils
 import java.net.URLEncoder
+import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
@@ -201,7 +200,7 @@ class DashboardResourcesRepository {
 
     class InvalidServerResponseException(message: String) : IOException(message)
 
-    data class CreateAndUploadResourceRequest(
+    class CreateAndUploadResourceRequest(
         val baseUrl: String,
         val sessionCookie: String?,
         val credentials: StoredCredentials?,
@@ -233,12 +232,11 @@ class DashboardResourcesRepository {
                 }
 
                 val renamedFileName = "${resourceId}.${request.fileExtension.lowercase(Locale.ROOT)}"
-                val normalizedMediaType = DashboardResourcesMediaUtils.normalizeResourceMediaType(request.mimeType)
                 val updatePayload = JSONObject(request.payload.toString())
                     .put("_id", resourceId)
                     .put("_rev", creationRevision)
                     .put("filename", renamedFileName)
-                    .put("mediaType", normalizedMediaType)
+                    .put("mediaType", request.mimeType)
 
                 val updateResponse = updateResourceDocument(
                     baseUrl = request.baseUrl,
@@ -281,7 +279,7 @@ class DashboardResourcesRepository {
                         username = request.credentials?.username,
                         password = request.credentials?.password,
                         payload = linkPayload
-                    ).getOrThrow()
+                    ).getOrNull()
                 }
             }
         }
