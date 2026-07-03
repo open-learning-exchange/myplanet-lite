@@ -52,12 +52,12 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.json.JSONObject
+import org.ole.planet.myplanet.lite.ApplicationScope
 import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -83,11 +83,11 @@ class CreateVoiceActivity : BaseActivity() {
     private lateinit var markdownToolbar: LinearLayout
 
     private val repository = VoicesComposerRepository(
-        client = OkHttpClient.Builder().build(),
-        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+        client = SharedBitmapDependencies.client,
+        moshi = SharedBitmapDependencies.moshi
     )
     private val newsActionsRepository = DashboardNewsActionsRepository()
-    private val httpClient = OkHttpClient.Builder().build()
+    private val httpClient = SharedBitmapDependencies.client
     private val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
     private val decodedBitmaps = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
     private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
@@ -232,8 +232,7 @@ class CreateVoiceActivity : BaseActivity() {
         val filesToDelete = pendingImages.values.map { it.file }.toList()
         pendingImages.clear()
 
-        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
+        ApplicationScope.io.launch {
             filesToDelete.forEach { file ->
                 if (file.exists()) {
                     file.delete()
@@ -519,7 +518,7 @@ class CreateVoiceActivity : BaseActivity() {
         if (pendingImages.isNotEmpty()) {
             val pendingByFileName = pendingImages.values.associateBy { it.fileName }
             if (pendingByFileName.isNotEmpty()) {
-                val globalPattern = Regex("(!\\[[^\\]]*\\]\\()(.*?)(\\))")
+                val globalPattern = GLOBAL_PATTERN_REGEX
                 processed = globalPattern.replace(processed) { matchResult ->
                     val path = matchResult.groupValues.getOrNull(2).orEmpty()
                     val pending = pendingByFileName[path]
@@ -537,7 +536,7 @@ class CreateVoiceActivity : BaseActivity() {
         if (base.isNullOrEmpty()) {
             return processed
         }
-        val resourcesPattern = Regex("!\\[[^\\]]*\\]\\((?:/?db/)?/?resources/([^)]+)\\)")
+        val resourcesPattern = RESOURCES_PATTERN_REGEX
         return resourcesPattern.replace(processed) { matchResult ->
             val path = matchResult.groupValues.getOrNull(1).orEmpty()
             "![]($base/db/resources/$path)"
@@ -1088,8 +1087,7 @@ class CreateVoiceActivity : BaseActivity() {
     private fun normalizeImagePath(path: String): String {
         val extracted = extractPathFromMarkdown(path) ?: path
         val trimmed = extracted.trim()
-        val resourcesMatch = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
-            .find(trimmed)
+        val resourcesMatch = RESOURCES_MATCH_REGEX.find(trimmed)
         val reduced = if (resourcesMatch != null) {
             resourcesMatch.value
         } else {
@@ -1518,6 +1516,9 @@ class CreateVoiceActivity : BaseActivity() {
         private const val MAX_HEADING_LEVEL = 6
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
         private val MARKDOWN_IMAGE_REGEX = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
+        private val GLOBAL_PATTERN_REGEX = Regex("(!\\[[^\\]]*\\]\\()(.*?)(\\))")
+        private val RESOURCES_PATTERN_REGEX = Regex("!\\[[^\\]]*\\]\\((?:/?db/)?/?resources/([^)]+)\\)")
+        private val RESOURCES_MATCH_REGEX = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
         private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
