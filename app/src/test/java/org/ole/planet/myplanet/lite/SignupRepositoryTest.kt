@@ -50,7 +50,7 @@ class SignupActivityExecuteRequestTest {
     }
 
     @Test
-    fun `executeSignupRequest returns SUCCESS for 200 code`() = runTest(testDispatcher) {
+    fun `submitSignup returns SUCCESS for 200 code`() = runTest(testDispatcher) {
         val controller = Robolectric.buildActivity(SignupActivity::class.java).create().start().resume()
         val activity = controller.get()
 
@@ -61,7 +61,7 @@ class SignupActivityExecuteRequestTest {
         val mediaType = "application/json; charset=utf-8".toMediaType()
 
         val deferred = async {
-            activity.executeSignupRequest(url, payload, mediaType)
+            activity.signupRepository.submitSignup(url, "testUser", payload)
         }
 
         delay(10)
@@ -73,7 +73,7 @@ class SignupActivityExecuteRequestTest {
     }
 
     @Test
-    fun `executeSignupRequest returns USERNAME_TAKEN for 409 code`() = runTest(testDispatcher) {
+    fun `submitSignup returns USERNAME_TAKEN for 409 code`() = runTest(testDispatcher) {
         val controller = Robolectric.buildActivity(SignupActivity::class.java).create().start().resume()
         val activity = controller.get()
 
@@ -84,7 +84,7 @@ class SignupActivityExecuteRequestTest {
         val mediaType = "application/json; charset=utf-8".toMediaType()
 
         val deferred = async {
-            activity.executeSignupRequest(url, payload, mediaType)
+            activity.signupRepository.submitSignup(url, "testUser", payload)
         }
 
         delay(10)
@@ -96,7 +96,7 @@ class SignupActivityExecuteRequestTest {
     }
 
     @Test
-    fun `executeSignupRequest returns FAILED for 500 code`() = runTest(testDispatcher) {
+    fun `submitSignup returns FAILED for 500 code`() = runTest(testDispatcher) {
         val controller = Robolectric.buildActivity(SignupActivity::class.java).create().start().resume()
         val activity = controller.get()
 
@@ -107,7 +107,7 @@ class SignupActivityExecuteRequestTest {
         val mediaType = "application/json; charset=utf-8".toMediaType()
 
         val deferred = async {
-            activity.executeSignupRequest(url, payload, mediaType)
+            activity.signupRepository.submitSignup(url, "testUser", payload)
         }
 
         delay(10)
@@ -119,7 +119,7 @@ class SignupActivityExecuteRequestTest {
     }
 
     @Test
-    fun `executeSignupRequest rethrows CancellationException`() = runTest(testDispatcher) {
+    fun `submitSignup rethrows CancellationException`() = runTest(testDispatcher) {
         val controller = Robolectric.buildActivity(SignupActivity::class.java).create().start().resume()
         val activity = controller.get()
 
@@ -131,7 +131,7 @@ class SignupActivityExecuteRequestTest {
 
         val deferred = async {
             try {
-                activity.executeSignupRequest(url, payload, mediaType)
+                activity.signupRepository.submitSignup(url, "testUser", payload)
             } catch (e: Exception) {
                 if (e is kotlinx.coroutines.CancellationException) {
                     throw e

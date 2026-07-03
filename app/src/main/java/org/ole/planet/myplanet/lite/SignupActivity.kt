@@ -97,6 +97,9 @@ class SignupActivity : BaseActivity() {
     internal val serverConnectivityRepository: ServerConnectivityRepository by lazy {
         ServerConnectivityRepository(connectivityClient, moshi)
     }
+    internal val signupRepository: SignupRepository by lazy {
+        SignupRepository(connectivityClient)
+    }
 
     internal val steps = SignupStep.entries
     internal var currentStepIndex = 0
@@ -158,36 +161,9 @@ class SignupActivity : BaseActivity() {
     }
 
     suspend fun checkUsernameAvailability(username: String): UsernameAvailability {
-        val requestUrl = buildUsernameLookupUrl(username) ?: return UsernameAvailability.UNKNOWN
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .get()
-                    .build()
-                connectivityClient.newCall(request).execute().use { response ->
-                    if (response.code == 200) {
-                        UsernameAvailability.TAKEN
-                    } else {
-                        UsernameAvailability.AVAILABLE
-                    }
-                }
-            }.getOrElse {
-                UsernameAvailability.UNKNOWN
-            }
-        }
+        return signupRepository.checkUsernameAvailability(serverBaseUrl, username)
     }
 
-    private fun buildUsernameLookupUrl(username: String): String? {
-        val baseUrl = serverBaseUrl.trim()
-        if (baseUrl.isEmpty()) {
-            return null
-        }
-        return baseUrl.toHttpUrlOrNull()?.newBuilder()
-            ?.addPathSegments("db/_users/org.couchdb.user:$username")
-            ?.build()
-            ?.toString()
-    }
 
     internal fun validateCurrentStep(): Boolean {
         return when (steps[currentStepIndex]) {
@@ -208,41 +184,8 @@ class SignupActivity : BaseActivity() {
             return SignupSubmissionResult.FAILED
         }
 
-        val requestUrl = buildUsernameLookupUrl(username) ?: return SignupSubmissionResult.FAILED
         val payload = buildSignupPayload(username) ?: return SignupSubmissionResult.FAILED
-        val mediaType = "application/json; charset=utf-8".toMediaType()
-
-        return executeSignupRequest(requestUrl, payload, mediaType)
-    }
-
-    internal suspend fun executeSignupRequest(
-        requestUrl: String,
-        payload: JSONObject,
-        mediaType: okhttp3.MediaType
-    ): SignupSubmissionResult {
-        return withContext(Dispatchers.IO) {
-            try {
-                val body = payload.toString().toRequestBody(mediaType)
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .put(body)
-                    .build()
-                connectivityClient.newCall(request).execute().use { response ->
-                    when (response.code) {
-                        in 200..299 -> SignupSubmissionResult.SUCCESS
-                        409 -> SignupSubmissionResult.USERNAME_TAKEN
-                        else -> SignupSubmissionResult.FAILED
-                    }
-                }
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                withContext(Dispatchers.Main) {
-                    android.widget.Toast.makeText(this@SignupActivity, "An unexpected error occurred.", android.widget.Toast.LENGTH_SHORT).show()
-                }
-                SignupSubmissionResult.FAILED
-            }
-        }
+        return signupRepository.submitSignup(serverBaseUrl, username, payload)
     }
 
     private fun buildSignupPayload(username: String): JSONObject? {
