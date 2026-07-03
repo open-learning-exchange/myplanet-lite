@@ -279,7 +279,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
             courseImageLoader = DashboardPostImageLoader(base, sessionCookie, viewLifecycleOwner.lifecycleScope)
             isCourseImageLoaderLoading = false
-            adapter.notifyDataSetChanged()
+            adapter.notifyImageLoaderReady()
         }
     }
 
@@ -1228,6 +1228,14 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         fun updateTagFilter(courseIds: Set<String>?) {
             activeTagCourseIds = courseIds
             applyFilter()
+        }
+
+        fun notifyImageLoaderReady() {
+            displayedItems.forEachIndexed { index, item ->
+                if (!item.coverPath.isNullOrBlank()) {
+                    notifyItemChanged(index + 1)
+                }
+            }
         }
 
         fun updateDownloadedCourses(courseIds: Set<String>) {
