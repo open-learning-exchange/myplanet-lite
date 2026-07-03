@@ -22,6 +22,8 @@ import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlin.math.abs
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.AddTeamMemberRequest
@@ -233,6 +235,7 @@ internal class DashboardTeamMembersInviteDialogController(
     private var hasMorePages = true
     private var nextSkip = 0
     private var currentSearchTerm = ""
+    private var searchJob: Job? = null
     private var pendingReset = false
     private var pagingDialog: AlertDialog? = null
     private lateinit var inviteAdapter: InviteMembersAdapter
@@ -258,14 +261,19 @@ internal class DashboardTeamMembersInviteDialogController(
         dialogBinding.inviteMembersSearchInput.addTextChangedListener { editable ->
             val newQuery = editable?.toString()?.trim().orEmpty()
             if (newQuery != currentSearchTerm) {
-                currentSearchTerm = newQuery
-                loadInvitePage(reset = true)
+                searchJob?.cancel()
+                searchJob = lifecycleScope.launch {
+                    currentSearchTerm = newQuery
+                    delay(300)
+                    loadInvitePage(reset = true)
+                }
             }
         }
 
         val dialog = AlertDialog.Builder(fragment.requireContext()).setView(dialogBinding.root).create()
         dialogBinding.inviteMembersCancel.setOnClickListener { dialog.dismiss() }
         dialog.setOnDismissListener {
+            searchJob?.cancel()
             pagingDialog?.dismiss()
             pagingDialog = null
             onReload()
