@@ -63,7 +63,6 @@ import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
-import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
@@ -456,7 +455,9 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     private suspend fun initializeSession() {
         val context = applicationContext
         baseUrl = DashboardServerPreferences.getServerBaseUrl(context)
-        credentials = ProfileCredentialsStore.getStoredCredentials(context)
+        val session = ProfileCredentialsStore.getCurrentUserSession(context)
+        credentials = session?.credentials
+        cachedProfile = session?.profile
         serverCode = DashboardServerPreferences.getServerCode(context)
         serverParentCode = DashboardServerPreferences.getServerParentCode(context)
         baseUrl?.let { base ->
@@ -594,7 +595,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             Toast.makeText(this, R.string.dashboard_post_detail_comments_error, Toast.LENGTH_SHORT).show()
             return
         }
-        val credentials = ProfileCredentialsStore.getStoredCredentials(this)
+        val credentials = this.credentials
         if (credentials == null) {
             Toast.makeText(this, R.string.dashboard_post_reply_missing_credentials, Toast.LENGTH_SHORT).show()
             return
@@ -654,7 +655,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             exitCommentEditMode(clearFields = true)
             return
         }
-        val credentials = ProfileCredentialsStore.getStoredCredentials(this)
+        val credentials = this.credentials
         if (credentials == null) {
             Toast.makeText(this, R.string.dashboard_post_reply_missing_credentials, Toast.LENGTH_SHORT).show()
             return
@@ -1275,15 +1276,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private suspend fun loadCachedProfile(): UserProfile? {
-        val existing = cachedProfile
-        if (existing != null) {
-            return existing
-        }
-        val profile = withContext(Dispatchers.IO) {
-            UserProfileDatabase.getInstance(applicationContext).getProfile()
-        }
-        cachedProfile = profile
-        return profile
+        return cachedProfile
     }
 
 
@@ -1310,9 +1303,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private suspend fun buildUserPayload(credentials: StoredCredentials): VoicesComposerRepository.UserPayload {
-        val profile = withContext(Dispatchers.IO) {
-            UserProfileDatabase.getInstance(applicationContext).getProfile()
-        }
+        val profile = cachedProfile
         val planetCode = serverCode?.takeIf { it.isNotBlank() } ?: document?.createdOn
         return VoicesComposerRepository.UserPayload(
             id = "org.couchdb.user:${credentials.username}",
