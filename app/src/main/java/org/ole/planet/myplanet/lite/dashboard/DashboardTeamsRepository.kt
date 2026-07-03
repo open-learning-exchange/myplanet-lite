@@ -16,7 +16,7 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
 class DashboardTeamsRepository(
-    client: OkHttpClient = OkHttpClient.Builder().build(),
+    client: OkHttpClient,
     moshi: Moshi = Moshi.Builder()
         .add(DateStringAdapter())
         .addLast(KotlinJsonAdapterFactory())
