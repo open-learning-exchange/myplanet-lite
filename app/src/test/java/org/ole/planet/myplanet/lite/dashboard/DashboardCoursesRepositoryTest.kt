@@ -3,13 +3,18 @@ package org.ole.planet.myplanet.lite.dashboard
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import java.io.File
+import java.nio.file.Files
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.junit.Test
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
+@RunWith(RobolectricTestRunner::class)
 class DashboardCoursesRepositoryTest {
 
     private lateinit var mockWebServer: MockWebServer
@@ -175,5 +180,97 @@ class DashboardCoursesRepositoryTest {
         assertEquals("PUT", req2.method)
         val requestBody = req2.body.readUtf8()
         assertTrue(requestBody.contains("\"courseIds\":[\"c1\",\"c2\"]"))
+    }
+
+    @Test
+    fun estimateResourcesSize_success() = runTest {
+        val mockResponse = MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Length", "1024")
+        mockWebServer.enqueue(mockResponse)
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val resources = listOf(DashboardCoursesRepository.DownloadResource("res1", "file1.pdf"))
+
+        val result = repository.estimateResourcesSize(
+            base = baseUrl,
+            creds = StoredCredentials("testuser", "pass"),
+            resources = resources
+        )
+
+        assertEquals(1024L, result)
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("/db/resources/res1/file1.pdf", request.path)
+        assertEquals("HEAD", request.method)
+    }
+
+    @Test
+    fun estimateMarkdownImagesSize_success() = runTest {
+        val mockResponse = MockResponse()
+            .setResponseCode(200)
+            .setHeader("Content-Length", "512")
+        mockWebServer.enqueue(mockResponse)
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val sources = listOf("/db/images/img1.png")
+
+        val result = repository.estimateMarkdownImagesSize(
+            base = baseUrl,
+            creds = StoredCredentials("testuser", "pass"),
+            sources = sources
+        )
+
+        assertEquals(512L, result)
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("/db/images/img1.png", request.path)
+        assertEquals("HEAD", request.method)
+    }
+
+    @Test
+    fun downloadCourseResources_success() = runTest {
+        val resourceResponse = MockResponse()
+            .setResponseCode(200)
+            .setBody("resource content")
+        val markdownResponse = MockResponse()
+            .setResponseCode(200)
+            .setBody("image content")
+
+        mockWebServer.enqueue(resourceResponse)
+        mockWebServer.enqueue(markdownResponse)
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val resources = listOf(DashboardCoursesRepository.DownloadResource("res1", "file1.pdf"))
+        val markdownSources = listOf("/db/images/img1.png")
+
+        val tempDir = Files.createTempDirectory("dashboard_test").toFile()
+
+        var progressCount = 0
+
+        val result = repository.downloadCourseResources(
+            base = baseUrl,
+            creds = StoredCredentials("testuser", "pass"),
+            resources = resources,
+            markdownImageSources = markdownSources,
+            getResourceTarget = { resId, filename -> File(tempDir, "$resId-$filename") },
+            getMarkdownTarget = { source -> File(tempDir, source.substringAfterLast("/")) },
+            onProgress = { (downloaded, total) ->
+                progressCount++
+            }
+        )
+
+        assertTrue(result)
+        assertEquals(2, progressCount)
+
+        val req1 = mockWebServer.takeRequest()
+        val req2 = mockWebServer.takeRequest()
+
+        // Assert we hit the right endpoints
+        val paths = listOf(req1.path, req2.path)
+        assertTrue(paths.contains("/db/resources/res1/file1.pdf"))
+        assertTrue(paths.contains("/db/images/img1.png"))
+
+        tempDir.deleteRecursively()
     }
 }
