@@ -15,10 +15,11 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerCatalog
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository
+import org.ole.planet.myplanet.lite.dashboard.SharedBitmapDependencies
 import org.ole.planet.myplanet.lite.util.IntentUtils
 
 class DeepLinkResolverActivity : ComponentActivity() {
-    private val surveysRepository = DashboardSurveysRepository()
+    private val surveysRepository = DashboardSurveysRepository(client = SharedBitmapDependencies.client)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

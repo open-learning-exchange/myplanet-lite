@@ -35,7 +35,7 @@ import kotlin.coroutines.resumeWithException
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 class DashboardSurveysRepository(
-    private val client: OkHttpClient = OkHttpClient.Builder().build(),
+    private val client: OkHttpClient,
     private val moshi: Moshi = Moshi.Builder()
         .add(FlexibleSurveyJsonAdapter())
         .addLast(KotlinJsonAdapterFactory())

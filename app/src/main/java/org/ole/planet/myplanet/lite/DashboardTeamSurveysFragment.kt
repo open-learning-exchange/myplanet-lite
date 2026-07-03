@@ -36,6 +36,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
+import org.ole.planet.myplanet.lite.dashboard.SharedBitmapDependencies
 import org.ole.planet.myplanet.lite.dashboard.SurveyStatus
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
@@ -65,7 +66,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
     private var savedSurveyRevisions: Map<String, String?> = emptyMap()
     private var outboxEntries: List<OutboxEntry> = emptyList()
 
-    private val repository = DashboardSurveysRepository()
+    private val repository = DashboardSurveysRepository(client = SharedBitmapDependencies.client)
     private var baseUrl: String? = null
     private var sessionCookie: String? = null
     private var credentials: StoredCredentials? = null
