@@ -21,6 +21,7 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -84,6 +85,7 @@ class DashboardTeamMembersFragment : Fragment() {
     private var isCurrentUserTeamLeader: Boolean = false
     private var currentUsername: String? = null
     private var fetchJob: Job? = null
+    private var searchJob: Job? = null
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -98,6 +100,8 @@ class DashboardTeamMembersFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
         fetchJob?.cancel()
         fetchJob = null
+        searchJob?.cancel()
+        searchJob = null
         binding.dashboardTeamMembersList.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@DashboardTeamMembersFragment.adapter
@@ -111,7 +115,11 @@ class DashboardTeamMembersFragment : Fragment() {
         binding.dashboardTeamMembersSwipeRefresh.setOnRefreshListener { onRefreshRequested() }
         binding.dashboardTeamMembersSearchInput.addTextChangedListener { editable ->
             searchQuery = editable?.toString().orEmpty()
-            applySearchFilter()
+            searchJob?.cancel()
+            searchJob = viewLifecycleOwner.lifecycleScope.launch {
+                delay(300)
+                applySearchFilter()
+            }
         }
         binding.fabAddMember.setOnClickListener {
             animateFabClick(binding.fabAddMember)
@@ -138,6 +146,8 @@ class DashboardTeamMembersFragment : Fragment() {
         super.onDestroyView()
         fetchJob?.cancel()
         fetchJob = null
+        searchJob?.cancel()
+        searchJob = null
         avatarLoader?.destroy()
         avatarLoader = null
         binding.dashboardTeamMembersSwipeRefresh.setOnRefreshListener(null as SwipeRefreshLayout.OnRefreshListener?)
