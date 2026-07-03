@@ -454,7 +454,7 @@ class DashboardActivity : BaseActivity() {
         if (fragment !is DashboardSurveysFragment) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.dashboardSurveysContainer, DashboardSurveysFragment())
-                .commit()
+                .commitAllowingStateLoss()
         }
 
         updateBottomNavigationState()
@@ -473,7 +473,7 @@ class DashboardActivity : BaseActivity() {
         if (fragment !is DashboardTeamMembersFragment) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.dashboardTeamMembersContainer, DashboardTeamMembersFragment())
-                .commit()
+                .commitAllowingStateLoss()
         }
 
         updateBottomNavigationState()
@@ -492,7 +492,7 @@ class DashboardActivity : BaseActivity() {
         if (fragment !is DashboardCoursesFragment) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.dashboardCoursesContainer, DashboardCoursesFragment())
-                .commit()
+                .commitAllowingStateLoss()
         }
 
         updateBottomNavigationState()
@@ -511,7 +511,7 @@ class DashboardActivity : BaseActivity() {
         if (fragment !is DashboardResourcesFragment) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.dashboardResourcesContainer, DashboardResourcesFragment())
-                .commit()
+                .commitAllowingStateLoss()
         }
 
         updateBottomNavigationState()
