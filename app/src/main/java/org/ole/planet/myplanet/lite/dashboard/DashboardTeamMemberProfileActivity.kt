@@ -56,7 +56,7 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
     private var credentials: StoredCredentials? = null
     private var avatarLoader: DashboardAvatarLoader? = null
 
-    private val repository = DashboardTeamsRepository()
+    private val repository = DashboardTeamsDependencies.provideTeamsRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
