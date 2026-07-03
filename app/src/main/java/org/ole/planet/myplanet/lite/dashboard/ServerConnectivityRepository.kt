@@ -8,7 +8,7 @@ import org.ole.planet.myplanet.lite.model.ServerConnectivityResult
 import org.ole.planet.myplanet.lite.util.ServerMetadataExtractor
 
 class ServerConnectivityRepository(
-    private val client: OkHttpClient,
+    val client: OkHttpClient,
     private val moshi: Moshi
 ) {
 
@@ -39,5 +39,29 @@ class ServerConnectivityRepository(
             ?.addQueryParameter("include_docs", "true")
             ?.build()
             ?.toString()
+    }
+
+    fun checkUsernameAvailability(usernameUrl: String): Boolean? {
+        return runCatching {
+            val request = Request.Builder()
+                .url(usernameUrl)
+                .get()
+                .build()
+            client.newCall(request).execute().use { response ->
+                response.code == 200
+            }
+        }.getOrNull()
+    }
+
+    fun submitSignup(requestUrl: String, body: okhttp3.RequestBody): Int? {
+        return runCatching {
+            val request = Request.Builder()
+                .url(requestUrl)
+                .put(body)
+                .build()
+            client.newCall(request).execute().use { response ->
+                response.code
+            }
+        }.getOrNull()
     }
 }

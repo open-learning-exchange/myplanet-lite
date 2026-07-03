@@ -32,18 +32,16 @@ import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SplashScreen : BaseActivity() {
-
-    private val connectivityClient: OkHttpClient by lazy { OkHttpClient.Builder().build() }
     private val connectivityMoshi: Moshi by lazy { Moshi.Builder().build() }
     private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
-        ServerConnectivityRepository(connectivityClient, connectivityMoshi)
+        ServerConnectivityRepository(OkHttpClient.Builder().build(), connectivityMoshi)
     }
 
     private val userProfileDatabase: UserProfileDatabase by lazy {
         UserProfileDatabase.getInstance(applicationContext)
     }
     private val userProfileSync: UserProfileSync by lazy {
-        UserProfileSync(connectivityClient, userProfileDatabase)
+        UserProfileSync(serverConnectivityRepository.client, userProfileDatabase)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

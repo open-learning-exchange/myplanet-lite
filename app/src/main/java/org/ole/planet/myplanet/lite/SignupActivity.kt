@@ -80,8 +80,6 @@ class SignupActivity : BaseActivity() {
     internal var selectedLanguageOption: SignupLanguageOption? = null
 
     internal lateinit var stepViews: Map<SignupStep, View>
-
-    internal val connectivityClient: OkHttpClient by lazy { OkHttpClient.Builder().build() }
     internal var serverBaseUrl: String = ""
     internal var isServerReachable: Boolean = false
     internal var isCheckingServerAvailability: Boolean = false
@@ -95,7 +93,7 @@ class SignupActivity : BaseActivity() {
     }
     internal val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
     internal val serverConnectivityRepository: ServerConnectivityRepository by lazy {
-        ServerConnectivityRepository(connectivityClient, moshi)
+        ServerConnectivityRepository(OkHttpClient.Builder().build(), moshi)
     }
 
     internal val steps = SignupStep.entries
@@ -160,20 +158,11 @@ class SignupActivity : BaseActivity() {
     suspend fun checkUsernameAvailability(username: String): UsernameAvailability {
         val requestUrl = buildUsernameLookupUrl(username) ?: return UsernameAvailability.UNKNOWN
         return withContext(Dispatchers.IO) {
-            runCatching {
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .get()
-                    .build()
-                connectivityClient.newCall(request).execute().use { response ->
-                    if (response.code == 200) {
-                        UsernameAvailability.TAKEN
-                    } else {
-                        UsernameAvailability.AVAILABLE
-                    }
-                }
-            }.getOrElse {
-                UsernameAvailability.UNKNOWN
+            val taken = serverConnectivityRepository.checkUsernameAvailability(requestUrl)
+            when (taken) {
+                true -> UsernameAvailability.TAKEN
+                false -> UsernameAvailability.AVAILABLE
+                null -> UsernameAvailability.UNKNOWN
             }
         }
     }
@@ -223,16 +212,12 @@ class SignupActivity : BaseActivity() {
         return withContext(Dispatchers.IO) {
             try {
                 val body = payload.toString().toRequestBody(mediaType)
-                val request = Request.Builder()
-                    .url(requestUrl)
-                    .put(body)
-                    .build()
-                connectivityClient.newCall(request).execute().use { response ->
-                    when (response.code) {
-                        in 200..299 -> SignupSubmissionResult.SUCCESS
-                        409 -> SignupSubmissionResult.USERNAME_TAKEN
-                        else -> SignupSubmissionResult.FAILED
-                    }
+                val responseCode = serverConnectivityRepository.submitSignup(requestUrl, body)
+                    ?: throw java.io.IOException("Network error")
+                when (responseCode) {
+                    in 200..299 -> SignupSubmissionResult.SUCCESS
+                    409 -> SignupSubmissionResult.USERNAME_TAKEN
+                    else -> SignupSubmissionResult.FAILED
                 }
             } catch (e: kotlinx.coroutines.CancellationException) {
                 throw e
