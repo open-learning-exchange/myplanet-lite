@@ -53,7 +53,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.R
@@ -72,6 +71,8 @@ internal fun transformCommentMarkdownForDisplay(markdown: String): String {
 }
 
 class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() {
+
+    private var imageCleanupJob: kotlinx.coroutines.Job? = null
 
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: View
@@ -776,8 +777,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val filesToDelete = pendingReplyImages.values.map { it.file }.toList()
         pendingReplyImages.clear()
 
-        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
+        imageCleanupJob = lifecycleScope.launch(Dispatchers.IO) {
             filesToDelete.forEach { file ->
                 if (file.exists()) {
                     file.delete()
@@ -1298,6 +1298,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     override fun onDestroy() {
+        imageCleanupJob?.cancel()
         super.onDestroy()
         recyclerView.adapter = null
         avatarLoader?.destroy()
