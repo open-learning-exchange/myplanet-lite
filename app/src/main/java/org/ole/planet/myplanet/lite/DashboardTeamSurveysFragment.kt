@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.lite.dashboard.SurveyStatus
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
+import org.ole.planet.myplanet.lite.util.DiffUtils
 
 class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_surveys) {
 
@@ -524,17 +525,12 @@ private data class SurveyItemUiModel(
     val savedRevision: String?,
 )
 
-private class SurveyItemUiModelDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<SurveyItemUiModel>() {
-    override fun areItemsTheSame(oldItem: SurveyItemUiModel, newItem: SurveyItemUiModel): Boolean = oldItem.document.id == newItem.document.id
-    override fun areContentsTheSame(oldItem: SurveyItemUiModel, newItem: SurveyItemUiModel): Boolean = oldItem == newItem
-}
-
 private class SurveyItemsAdapter(
     private val statusStore: DashboardSurveyStatusStore,
     private val onStatusChanged: () -> Unit,
     private val onSurveySelected: (SurveyDocument) -> Unit,
     private val onDownloadRequested: (SurveyDocument) -> Unit,
-) : androidx.recyclerview.widget.ListAdapter<SurveyItemUiModel, SurveyItemsAdapter.SurveyViewHolder>(SurveyItemUiModelDiffCallback()) {
+) : androidx.recyclerview.widget.ListAdapter<SurveyItemUiModel, SurveyItemsAdapter.SurveyViewHolder>(DiffUtils.itemCallback({ oldItem, newItem -> oldItem.document.id == newItem.document.id })) {
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): SurveyViewHolder {
         val view = android.view.LayoutInflater.from(parent.context)
@@ -648,14 +644,9 @@ private val SurveyStatus.iconRes: Int
         SurveyStatus.COMPLETED -> R.drawable.ic_survey_completed_24
     }
 
-private class OutboxEntryDiffCallback : androidx.recyclerview.widget.DiffUtil.ItemCallback<OutboxEntry>() {
-    override fun areItemsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean = oldItem.id == newItem.id
-    override fun areContentsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean = oldItem == newItem
-}
-
 private class SurveyOutboxAdapter(
     private val onOutboxSelected: (OutboxEntry) -> Unit,
-) : androidx.recyclerview.widget.ListAdapter<OutboxEntry, SurveyOutboxAdapter.OutboxViewHolder>(OutboxEntryDiffCallback()) {
+) : androidx.recyclerview.widget.ListAdapter<OutboxEntry, SurveyOutboxAdapter.OutboxViewHolder>(DiffUtils.itemCallback({ oldItem, newItem -> oldItem.id == newItem.id })) {
 
     override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): OutboxViewHolder {
         val view = android.view.LayoutInflater.from(parent.context)
