@@ -55,6 +55,8 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -1086,11 +1088,14 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val context = buildReplyImageResourceContext(credentials)
 
         val uploads = pendingReplyImages.values.filter { it.resourceId == null }
+        val semaphore = Semaphore(10)
         val uploadResults = coroutineScope {
             uploads.map { pending ->
                 async {
-                    val markdown = ensureReplyImageUpload(baseUrl, credentials, context, pending)
-                    pending to markdown
+                    semaphore.withPermit {
+                        val markdown = ensureReplyImageUpload(baseUrl, credentials, context, pending)
+                        pending to markdown
+                    }
                 }
             }.awaitAll()
         }
@@ -1185,8 +1190,13 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             return
         }
         val loaded = coroutineScope {
+            val semaphore = Semaphore(10)
             comment.imagePaths.map { path ->
-                async(Dispatchers.IO) { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { VoiceImageFactory.generateImageFileName() }, { generatePendingImageId(it) }) }
+                async(Dispatchers.IO) {
+                    semaphore.withPermit {
+                        VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { VoiceImageFactory.generateImageFileName() }, { generatePendingImageId(it) })
+                    }
+                }
             }.awaitAll().filterNotNull().toMutableList()
         }
         if (loaded.isEmpty()) {
