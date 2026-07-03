@@ -20,11 +20,9 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 
 class DashboardNewsActionsRepository(
-    private val client: OkHttpClient = OkHttpClient.Builder().build(),
-    private val moshi: Moshi = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
-        .build(),
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val client: OkHttpClient,
+    private val moshi: Moshi,
+    private val dispatcher: CoroutineDispatcher
 ) {
 
     private val deleteRequestAdapter = moshi.adapter(DeleteNewsRequest::class.java)

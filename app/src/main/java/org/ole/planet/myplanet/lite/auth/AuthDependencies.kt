@@ -23,6 +23,18 @@ object AuthDependencies {
     @Volatile
     private var cachedMoshi: Moshi? = null
 
+    val client: OkHttpClient
+        get() = cachedClient ?: synchronized(this) {
+            cachedClient ?: OkHttpClient.Builder().build().also { cachedClient = it }
+        }
+
+    val moshi: Moshi
+        get() = cachedMoshi ?: synchronized(this) {
+            cachedMoshi ?: Moshi.Builder()
+                .addLast(KotlinJsonAdapterFactory())
+                .build().also { cachedMoshi = it }
+        }
+
     fun provideAuthService(context: Context, baseUrl: String = BuildConfig.PLANET_BASE_URL): AuthService {
         return authServiceOverride ?: createAuthService(context.applicationContext, baseUrl)
     }
@@ -38,15 +50,8 @@ object AuthDependencies {
     }
 
     private fun createAuthService(context: Context, baseUrl: String): AuthService {
-        val client = cachedClient ?: synchronized(this) {
-            cachedClient ?: OkHttpClient.Builder()
-                .build().also { cachedClient = it }
-        }
-        val moshi = cachedMoshi ?: synchronized(this) {
-            cachedMoshi ?: Moshi.Builder()
-                .addLast(KotlinJsonAdapterFactory())
-                .build().also { cachedMoshi = it }
-        }
+        val client = this.client
+        val moshi = this.moshi
         val retrofit = Retrofit.Builder()
             .baseUrl(baseUrl)
             .addConverterFactory(MoshiConverterFactory.create(moshi))

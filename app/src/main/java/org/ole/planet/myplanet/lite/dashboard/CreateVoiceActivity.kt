@@ -86,7 +86,7 @@ class CreateVoiceActivity : BaseActivity() {
         client = OkHttpClient.Builder().build(),
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     )
-    private val newsActionsRepository = DashboardNewsActionsRepository()
+    private val newsActionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
     private val httpClient = OkHttpClient.Builder().build()
     private val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
     private val decodedBitmaps = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
