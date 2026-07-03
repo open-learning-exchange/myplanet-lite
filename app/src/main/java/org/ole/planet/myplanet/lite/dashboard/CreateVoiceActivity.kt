@@ -42,6 +42,7 @@ import java.util.ArrayList
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
+import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -69,9 +70,6 @@ import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.SupervisorJob
-import java.io.File
 
 class CreateVoiceActivity : BaseActivity() {
 
@@ -661,7 +659,7 @@ class CreateVoiceActivity : BaseActivity() {
         }
 
         if (filesToDelete.isNotEmpty()) {
-            CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
+            lifecycleScope.launch(Dispatchers.IO) {
                 filesToDelete.forEach {
                     if (it.exists()) {
                         it.delete()
