@@ -50,8 +50,6 @@ class DashboardSurveysRepository(
     private val completionsResponseAdapter = moshi.adapter(SurveyCompletionsResponse::class.java)
     private val surveyDocumentAdapter = moshi.adapter(SurveyDocument::class.java)
     private val publicSurveyResponseAdapter = moshi.adapter(PublicSurveyResponse::class.java)
-
-
     suspend fun loadSurveysState(
         baseUrl: String?,
         credentials: StoredCredentials?,
@@ -386,8 +384,6 @@ class DashboardSurveysRepository(
     data class SurveyCompletionsResponse(
         @param:Json(name = "docs") val docs: List<Map<String, Any?>> = emptyList(),
     )
-
-
     data class SurveysLoadState(
         val teamSurveys: List<SurveyDocument>,
         val adoptedSurveys: List<SurveyDocument>,

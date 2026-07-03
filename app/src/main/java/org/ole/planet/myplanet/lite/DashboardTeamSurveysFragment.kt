@@ -165,7 +165,6 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         }
     }
 
-
     private fun loadSurveys(isSwipeRefresh: Boolean = false) {
         val base = baseUrl
         val team = teamId

@@ -42,6 +42,106 @@ class DashboardSurveysRepositoryTest {
         mockWebServer.shutdown()
     }
 
+
+    @Test
+    fun loadSurveysState_offlineMode() = runTest {
+        val mockLocalRepo = mock<org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository>()
+
+        val doc1 = DashboardSurveysRepository.SurveyDocument(id = "s1", sourceSurveyId = null)
+        val doc2 = DashboardSurveysRepository.SurveyDocument(id = "s2", sourceSurveyId = "adopted1")
+        val outbox = listOf(mock<org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry>())
+
+        org.mockito.Mockito.`when`(mockLocalRepo.getSavedSurveysForTeam("team1")).thenReturn(listOf(doc1, doc2))
+        org.mockito.Mockito.`when`(mockLocalRepo.getSavedSurveyIds()).thenReturn(setOf("s1"))
+        org.mockito.Mockito.`when`(mockLocalRepo.getSavedSurveyRevisions()).thenReturn(mapOf("s1" to "rev1"))
+        org.mockito.Mockito.`when`(mockLocalRepo.getPendingForTeam("team1")).thenReturn(outbox)
+
+        val result = repository.loadSurveysState(
+            baseUrl = "http://localhost",
+            credentials = StoredCredentials("user", "pass"),
+            sessionCookie = "cookie",
+            teamId = "team1",
+            offlineMode = true,
+            localRepository = mockLocalRepo
+        )
+
+        if (result.isFailure) throw result.exceptionOrNull()!!
+        assertTrue(result.isSuccess)
+        val state = result.getOrThrow()
+
+        assertEquals(1, state.teamSurveys.size)
+        assertEquals("s1", state.teamSurveys[0].id)
+
+        assertEquals(1, state.adoptedSurveys.size)
+        assertEquals("s2", state.adoptedSurveys[0].id)
+
+        assertEquals(2, state.completionCounts.size)
+        assertEquals(0, state.completionCounts["s1"])
+        assertEquals(0, state.completionCounts["s2"])
+
+        assertEquals(setOf("s1"), state.savedSurveyIds)
+        assertEquals("rev1", state.savedSurveyRevisions["s1"])
+        assertEquals(outbox, state.outboxEntries)
+
+        // Ensure no network calls
+        assertEquals(0, mockWebServer.requestCount)
+    }
+
+    @Test
+    fun loadSurveysState_online_fetchFails_fallbackEmpty() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        val mockLocalRepo = mock<org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository>()
+        org.mockito.Mockito.`when`(mockLocalRepo.getSavedSurveysForTeam("team1")).thenReturn(emptyList())
+        org.mockito.Mockito.`when`(mockLocalRepo.getSavedSurveyIds()).thenReturn(emptySet())
+        org.mockito.Mockito.`when`(mockLocalRepo.getSavedSurveyRevisions()).thenReturn(emptyMap())
+        org.mockito.Mockito.`when`(mockLocalRepo.getPendingForTeam("team1")).thenReturn(emptyList())
+
+        val result = repository.loadSurveysState(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = StoredCredentials("user", "pass"),
+            sessionCookie = "cookie",
+            teamId = "team1",
+            offlineMode = false,
+            localRepository = mockLocalRepo
+        )
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is IOException)
+        assertEquals("Error loading surveys and no cached versions available", result.exceptionOrNull()?.message)
+    }
+
+    @Test
+    fun loadSurveysState_online_fetchFails_fallbackSuccess() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        val mockLocalRepo = mock<org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository>()
+        val doc1 = DashboardSurveysRepository.SurveyDocument(id = "s1")
+        org.mockito.Mockito.`when`(mockLocalRepo.getSavedSurveysForTeam("team1")).thenReturn(listOf(doc1))
+        org.mockito.Mockito.`when`(mockLocalRepo.getSavedSurveyIds()).thenReturn(emptySet())
+        org.mockito.Mockito.`when`(mockLocalRepo.getSavedSurveyRevisions()).thenReturn(emptyMap())
+        org.mockito.Mockito.`when`(mockLocalRepo.getPendingForTeam("team1")).thenReturn(emptyList())
+
+        // Submissions API fallback counts
+        val countsResponse = """{ "docs": [ { "parentId": "s1@x" } ] }"""
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(countsResponse))
+
+        val result = repository.loadSurveysState(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = StoredCredentials("user", "pass"),
+            sessionCookie = "cookie",
+            teamId = "team1",
+            offlineMode = false,
+            localRepository = mockLocalRepo
+        )
+
+        if (result.isFailure) throw result.exceptionOrNull()!!
+        assertTrue(result.isSuccess)
+        val state = result.getOrThrow()
+        assertEquals(1, state.teamSurveys.size)
+        assertEquals(1, state.completionCounts["s1"])
+    }
+
     @Test
     fun fetchTeamSurveys_success() = runTest {
         val jsonResponse = """
@@ -65,6 +165,7 @@ class DashboardSurveysRepositoryTest {
             teamId = "team1"
         )
 
+        if (result.isFailure) throw result.exceptionOrNull()!!
         assertTrue(result.isSuccess)
         val surveys = result.getOrNull()
         assertEquals(1, surveys?.size)
@@ -114,6 +215,7 @@ class DashboardSurveysRepositoryTest {
             surveyId = "survey1",
         )
 
+        if (result.isFailure) throw result.exceptionOrNull()!!
         assertTrue(result.isSuccess)
         assertEquals("survey1", result.getOrNull()?.survey?.id)
         assertEquals("Public Survey", result.getOrNull()?.survey?.name)
@@ -163,6 +265,7 @@ class DashboardSurveysRepositoryTest {
             teamId = "team1"
         )
 
+        if (result.isFailure) throw result.exceptionOrNull()!!
         assertTrue(result.isSuccess)
         val survey = result.getOrThrow().single()
         assertEquals("survey1", survey.id)
