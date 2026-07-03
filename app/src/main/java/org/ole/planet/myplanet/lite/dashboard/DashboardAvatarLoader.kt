@@ -139,6 +139,13 @@ class DashboardAvatarLoader(
             }
         }
 
+        fun clearInFlightRequests() {
+            synchronized(inFlightRequests) {
+                inFlightScope.coroutineContext[Job]?.cancelChildren()
+                inFlightRequests.clear()
+            }
+        }
+
         @androidx.annotation.VisibleForTesting
         fun resetForTesting() {
             synchronized(missingAvatars) { missingAvatars.clear() }

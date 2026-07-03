@@ -1301,7 +1301,10 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         super.onDestroy()
         recyclerView.adapter = null
         avatarLoader?.destroy()
+        DashboardAvatarLoader.clearInFlightRequests()
         avatarLoader = null
+        imageLoader?.destroy()
+        DashboardPostImageLoader.clearInFlightRequests()
         imageLoader = null
         shareHelper = null
         AvatarUpdateNotifier.unregister(avatarUpdateListener)

@@ -18,6 +18,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -75,6 +77,9 @@ class DashboardPostImageLoader(
         }
     }
 
+    fun destroy() {
+    }
+
     private fun fetchImageBitmap(imagePath: String): Bitmap? {
         val requestUrl = resolveUrl(imagePath) ?: return null
         if (Uri.parse(requestUrl).scheme.equals("file", ignoreCase = true)) {
@@ -123,13 +128,20 @@ class DashboardPostImageLoader(
         return "$normalizedBase/$finalPath"
     }
 
-    private companion object {
+    companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
         private val inFlightScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
         private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
         private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
             override fun sizeOf(key: String, value: Bitmap): Int {
                 return value.byteCount
+            }
+        }
+
+        fun clearInFlightRequests() {
+            synchronized(inFlightRequests) {
+                inFlightScope.coroutineContext[Job]?.cancelChildren()
+                inFlightRequests.clear()
             }
         }
     }

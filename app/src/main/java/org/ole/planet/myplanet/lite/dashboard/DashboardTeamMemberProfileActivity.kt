@@ -111,6 +111,7 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
     override fun onDestroy() {
         super.onDestroy()
         avatarLoader?.destroy()
+        DashboardAvatarLoader.clearInFlightRequests()
         avatarLoader = null
     }
 

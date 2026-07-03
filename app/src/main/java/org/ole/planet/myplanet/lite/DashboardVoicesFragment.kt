@@ -256,7 +256,10 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         fetchJob = null
         recyclerView.adapter = null
         avatarLoader?.destroy()
+        DashboardAvatarLoader.clearInFlightRequests()
         avatarLoader = null
+        postImageLoader?.destroy()
+        DashboardPostImageLoader.clearInFlightRequests()
         postImageLoader = null
         postShareHelper = null
         AvatarUpdateNotifier.unregister(avatarUpdateListener)
