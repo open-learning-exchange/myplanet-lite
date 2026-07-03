@@ -36,8 +36,9 @@ class DashboardOfflineSurveyStoreTest {
         store.writableDatabase.delete("surveys", null, null)
     }
 
-    @After
+@After
     fun teardown() {
+        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = null
         DashboardOfflineSurveyStore.resetForTesting(ApplicationProvider.getApplicationContext())
     }
 
