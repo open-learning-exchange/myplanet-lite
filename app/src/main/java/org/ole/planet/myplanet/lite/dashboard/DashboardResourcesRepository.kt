@@ -5,6 +5,8 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
+import java.util.Locale
+import org.ole.planet.myplanet.lite.DashboardResourcesMediaUtils
 import java.net.URLEncoder
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -17,6 +19,7 @@ import okio.Buffer
 import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.util.BirthDateString
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
 class DashboardResourcesRepository {
@@ -194,6 +197,95 @@ class DashboardResourcesRepository {
         }
     }
 
+
+
+    class InvalidServerResponseException(message: String) : IOException(message)
+
+    data class CreateAndUploadResourceRequest(
+        val baseUrl: String,
+        val sessionCookie: String?,
+        val credentials: StoredCredentials?,
+        val payload: JSONObject,
+        val fileExtension: String,
+        val mimeType: String,
+        val bytes: ByteArray,
+        val teamId: String?,
+        val planetCode: String?
+    )
+
+    suspend fun createAndUploadResourceSequence(
+        request: CreateAndUploadResourceRequest
+    ): Result<Unit> {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val creationResponse = createResourceDocument(
+                    baseUrl = request.baseUrl,
+                    sessionCookie = request.sessionCookie,
+                    username = request.credentials?.username,
+                    password = request.credentials?.password,
+                    payload = request.payload
+                ).getOrThrow()
+
+                val resourceId = creationResponse.optString("id").orEmpty()
+                val creationRevision = creationResponse.optString("rev").orEmpty()
+                if (resourceId.isBlank() || creationRevision.isBlank()) {
+                    throw InvalidServerResponseException("Invalid server response")
+                }
+
+                val renamedFileName = "${resourceId}.${request.fileExtension.lowercase(Locale.ROOT)}"
+                val normalizedMediaType = DashboardResourcesMediaUtils.normalizeResourceMediaType(request.mimeType)
+                val updatePayload = JSONObject(request.payload.toString())
+                    .put("_id", resourceId)
+                    .put("_rev", creationRevision)
+                    .put("filename", renamedFileName)
+                    .put("mediaType", normalizedMediaType)
+
+                val updateResponse = updateResourceDocument(
+                    baseUrl = request.baseUrl,
+                    sessionCookie = request.sessionCookie,
+                    username = request.credentials?.username,
+                    password = request.credentials?.password,
+                    resourceId = resourceId,
+                    payload = updatePayload
+                ).getOrThrow()
+
+                val updateRevision = updateResponse.optString("rev").orEmpty().ifBlank { creationRevision }
+
+                uploadResourceAttachment(
+                    UploadAttachmentRequest(
+                        baseUrl = request.baseUrl,
+                        sessionCookie = request.sessionCookie,
+                        username = request.credentials?.username,
+                        password = request.credentials?.password,
+                        resourceId = resourceId,
+                        filename = renamedFileName,
+                        revision = updateRevision,
+                        mimeType = request.mimeType,
+                        bytes = request.bytes
+                    )
+                ).getOrThrow()
+
+                if (!request.teamId.isNullOrBlank() && !request.planetCode.isNullOrBlank()) {
+                    val linkPayload = JSONObject()
+                        .put("resourceId", resourceId)
+                        .put("sourcePlanet", request.planetCode)
+                        .put("title", request.payload.optString("title"))
+                        .put("teamId", request.teamId)
+                        .put("teamPlanetCode", request.planetCode)
+                        .put("teamType", "local")
+                        .put("docType", "resourceLink")
+
+                    createTeamDocument(
+                        baseUrl = request.baseUrl,
+                        sessionCookie = request.sessionCookie,
+                        username = request.credentials?.username,
+                        password = request.credentials?.password,
+                        payload = linkPayload
+                    ).getOrThrow()
+                }
+            }
+        }
+    }
 
     data class UploadAttachmentRequest(
         val baseUrl: String,
