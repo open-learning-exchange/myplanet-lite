@@ -30,6 +30,7 @@ class DashboardPostImageLoader(
 ) {
 
     private val cache = sharedCache
+    private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
 
     fun bind(imageView: ImageView, imagePath: String, onResult: ((Boolean) -> Unit)? = null) {
         imageView.setImageDrawable(null)
@@ -125,7 +126,6 @@ class DashboardPostImageLoader(
 
     private companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
-        private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
         private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
             override fun sizeOf(key: String, value: Bitmap): Int {
                 return value.byteCount
