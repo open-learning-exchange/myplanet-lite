@@ -7,6 +7,7 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -302,7 +303,7 @@ class UserProfileSyncTest {
 
     @Test
     fun `refreshProfile with server disconnect returns false`() = runTest {
-        mockWebServer.enqueue(MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AT_START))
+        mockWebServer.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
         val baseUrl = mockWebServer.url("/").toString()
         val result = userProfileSync.refreshProfile(baseUrl, "testuser", null)
         assertFalse(result)
@@ -329,7 +330,7 @@ class UserProfileSyncTest {
                         MockResponse().setResponseCode(200).setBody(jsonResponse)
                     }
                     "/db/_users/org.couchdb.user:avataruser_disconnect/img" -> {
-                        MockResponse().setSocketPolicy(okhttp3.mockwebserver.SocketPolicy.DISCONNECT_AT_START)
+                        MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST)
                     }
                     else -> MockResponse().setResponseCode(404)
                 }
@@ -345,12 +346,7 @@ class UserProfileSyncTest {
         val captor = argumentCaptor<UserProfile>()
         verify(mockDatabase).saveProfile(captor.capture())
 
-        val bytes = captor.firstValue.avatarImage
-        if (bytes != null) {
-            assertEquals(0, bytes.size)
-        } else {
-            assertNull(bytes)
-        }
+        assertNull(captor.firstValue.avatarImage)
     }
 
     @Test
