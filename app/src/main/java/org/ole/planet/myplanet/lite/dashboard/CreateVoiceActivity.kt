@@ -52,7 +52,8 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.NonCancellable
+import org.ole.planet.myplanet.lite.util.ApplicationScope
+import org.ole.planet.myplanet.lite.util.FileUtils.deleteFiles
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -232,7 +233,7 @@ class CreateVoiceActivity : BaseActivity() {
         val filesToDelete = pendingImages.values.map { it.file }.toList()
         pendingImages.clear()
 
-        lifecycleScope.launch(NonCancellable) {
+        ApplicationScope.io.launch {
             deleteFiles(filesToDelete)
         }
 

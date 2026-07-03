@@ -1,4 +1,4 @@
-package org.ole.planet.myplanet.lite.dashboard
+package org.ole.planet.myplanet.lite.util
 
 import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -9,7 +9,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
-class PendingVoiceImageTest {
+class FileUtilsTest {
 
     @Test
     fun testDeleteFiles() = runTest {
@@ -24,7 +24,7 @@ class PendingVoiceImageTest {
 
         val filesList = listOf(tempFile1, tempFile2, nonExistentFile)
 
-        deleteFiles(filesList, testDispatcher)
+        FileUtils.deleteFiles(filesList, testDispatcher)
 
         assertFalse(tempFile1.exists())
         assertFalse(tempFile2.exists())
