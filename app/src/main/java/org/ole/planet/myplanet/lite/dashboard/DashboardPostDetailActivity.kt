@@ -53,7 +53,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.R
@@ -64,6 +63,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.ApplicationScope
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
@@ -76,16 +76,18 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: View
 
+    private val moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+
     private val repository = DashboardNewsRepository(
-        client = OkHttpClient.Builder().build(),
-        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+        client = SharedBitmapDependencies.client,
+        moshi = moshi
     )
     private val actionsRepository = DashboardNewsActionsRepository()
     private val composerRepository = VoicesComposerRepository(
-        client = OkHttpClient.Builder().build(),
-        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+        client = SharedBitmapDependencies.client,
+        moshi = moshi
     )
-    private val httpClient = OkHttpClient.Builder().build()
+    private val httpClient = SharedBitmapDependencies.client
     private lateinit var adapter: PostDetailAdapter
     private lateinit var markwon: Markwon
 
@@ -776,8 +778,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val filesToDelete = pendingReplyImages.values.map { it.file }.toList()
         pendingReplyImages.clear()
 
-        @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-        GlobalScope.launch(Dispatchers.IO) {
+        ApplicationScope.io.launch {
             filesToDelete.forEach { file ->
                 if (file.exists()) {
                     file.delete()
@@ -1163,8 +1164,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
 
         val pendingByFileName = pendingReplyImages.values.associateBy { it.fileName }
         if (pendingByFileName.isNotEmpty()) {
-            val globalPattern = Regex("(!\\[[^\\]]*\\]\\()(.*?)(\\))")
-            processed = globalPattern.replace(processed) { matchResult ->
+            processed = GLOBAL_PATTERN_REGEX.replace(processed) { matchResult ->
                 val path = matchResult.groupValues.getOrNull(2).orEmpty()
                 val pending = pendingByFileName[path]
                 if (pending != null) {
@@ -1577,6 +1577,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
 
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
         private val IMAGE_MARKDOWN_REGEX = Regex("!\\[([^\\]]*)\\]\\(([^)]+)\\)")
+        private val GLOBAL_PATTERN_REGEX = Regex("(!\\[[^\\]]*\\]\\()(.*?)(\\))")
         private val RESOURCES_MARKDOWN_REGEX = Regex("!\\[[^\\]]*\\]\\((resources/[^)]+)\\)")
         private val RESOURCES_PATH_REGEX = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
     }
