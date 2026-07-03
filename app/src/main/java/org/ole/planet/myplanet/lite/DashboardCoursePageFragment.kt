@@ -1173,12 +1173,8 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         private val categoriesProvider: () -> List<CourseCategory>
     ) : androidx.recyclerview.widget.ListAdapter<CourseAdapter.CourseListItem, RecyclerView.ViewHolder>(CourseDiffCallback()) {
 
-        init {
-            submitList(listOf(CourseListItem.Header))
-        }
-
         sealed class CourseListItem {
-            data object Header : CourseListItem()
+            data class Header(val categories: List<CourseCategory>, val selectedIndex: Int, val searchQuery: String) : CourseListItem()
             data class CourseItemWrapper(
                 val course: CourseItem,
                 val isDownloaded: Boolean,
@@ -1223,6 +1219,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         var onCourseDeleteClick: ((CourseItem) -> Unit)? = null
         var onCategorySelected: ((String?) -> Unit)? = null
 
+        init {
+            submitList(listOf(CourseListItem.Header(categoriesProvider(), selectedCategory, searchQuery)))
+        }
+
         override fun getItemViewType(position: Int): Int {
             return if (getItem(position) is CourseListItem.Header) VIEW_TYPE_HEADER else VIEW_TYPE_ITEM
         }
@@ -1240,11 +1240,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
 
         override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
             val item = getItem(position)
-            if (holder is HeaderViewHolder) {
+            if (holder is HeaderViewHolder && item is CourseListItem.Header) {
                 holder.onCategorySelected = onCategorySelected
-                holder.bind(selectedCategory, categoriesProvider(), searchQuery, { index ->
+                holder.bind(item.selectedIndex, item.categories, item.searchQuery, { index ->
                     selectedCategory = index
-                    notifyItemChanged(0)
+                    applyFilter()
                 }) { query ->
                     updateSearchQuery(query)
                 }
@@ -1349,7 +1349,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             } ?: filtered
 
             val newList = mutableListOf<CourseListItem>()
-            newList.add(CourseListItem.Header)
+            newList.add(CourseListItem.Header(categoriesProvider(), selectedCategory, searchQuery))
             newList.addAll(tagFiltered.map {
                 CourseListItem.CourseItemWrapper(
                     course = it,
