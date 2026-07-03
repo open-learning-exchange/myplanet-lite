@@ -4,6 +4,8 @@ import android.content.ContentValues
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -26,6 +28,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardSurveyOutboxStoreTest {
 
     private lateinit var store: DashboardSurveyOutboxStore
@@ -33,7 +36,11 @@ class DashboardSurveyOutboxStoreTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardSurveyOutboxStore.getInstance(context)
+        store = DashboardSurveyOutboxStore(
+            context = context,
+            ioDispatcher = UnconfinedTestDispatcher(),
+            defaultDispatcher = UnconfinedTestDispatcher(),
+        )
         store.writableDatabase.delete("outbox_submissions", null, null)
     }
 
@@ -77,7 +84,7 @@ class DashboardSurveyOutboxStoreTest {
 
         store.saveSubmission(submission1, "survey1", "Survey 1", "team1", "Team A")
         // Delay to ensure created_at is different
-        kotlinx.coroutines.delay(10)
+
         store.saveSubmission(submission2, "survey2", "Survey 2", "team1", "Team A")
 
         val pending = store.getPendingForTeam("team1")

@@ -12,13 +12,16 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.ole.planet.myplanet.lite.util.getStringOrNull
 
-class DashboardSurveyOutboxStore private constructor(
+class DashboardSurveyOutboxStore internal constructor(
     context: Context,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default,
     moshi: Moshi = Moshi.Builder()
         .add(FlexibleSurveyJsonAdapter())
         .addLast(KotlinJsonAdapterFactory())
@@ -59,7 +62,7 @@ class DashboardSurveyOutboxStore private constructor(
         teamName: String?,
     ): Boolean {
         val serialized = submissionAdapter.toJson(submission) ?: return false
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             val values = ContentValues().apply {
                 put(COLUMN_SURVEY_ID, surveyId)
                 put(COLUMN_TEAM_ID, teamId)
@@ -72,7 +75,7 @@ class DashboardSurveyOutboxStore private constructor(
         }
     }
 
-    suspend fun getPendingForTeam(teamId: String?): List<OutboxEntry> = withContext(Dispatchers.IO) {
+    suspend fun getPendingForTeam(teamId: String?): List<OutboxEntry> = withContext(ioDispatcher) {
         val rawEntries = readableDatabase.query(
             TABLE_SUBMISSIONS,
             arrayOf(
@@ -116,7 +119,7 @@ class DashboardSurveyOutboxStore private constructor(
             }
         }
 
-        withContext(Dispatchers.Default) {
+        withContext(defaultDispatcher) {
             rawEntries.mapNotNull { raw ->
                 val parsed = try { submissionAdapter.fromJson(raw.payload) } catch(e: Exception) { null } ?: return@mapNotNull null
                 OutboxEntry(
@@ -132,7 +135,7 @@ class DashboardSurveyOutboxStore private constructor(
         }
     }
 
-    suspend fun getEntry(id: Long): OutboxEntry? = withContext(Dispatchers.IO) {
+    suspend fun getEntry(id: Long): OutboxEntry? = withContext(ioDispatcher) {
         val rawEntry = readableDatabase.query(
             TABLE_SUBMISSIONS,
             arrayOf(
@@ -176,7 +179,7 @@ class DashboardSurveyOutboxStore private constructor(
         }
 
         if (rawEntry != null) {
-            withContext(Dispatchers.Default) {
+            withContext(defaultDispatcher) {
                 val parsed = try { submissionAdapter.fromJson(rawEntry.payload) } catch(e: Exception) { null } ?: return@withContext null
                 OutboxEntry(
                     id = rawEntry.id,
@@ -193,11 +196,11 @@ class DashboardSurveyOutboxStore private constructor(
         }
     }
 
-    suspend fun deleteEntry(id: Long): Boolean = withContext(Dispatchers.IO) {
+    suspend fun deleteEntry(id: Long): Boolean = withContext(ioDispatcher) {
         writableDatabase.delete(TABLE_SUBMISSIONS, "$COLUMN_ID = ?", arrayOf(id.toString())) > 0
     }
 
-    suspend fun deleteEntries(ids: Collection<Long>): Boolean = withContext(Dispatchers.IO) {
+    suspend fun deleteEntries(ids: Collection<Long>): Boolean = withContext(ioDispatcher) {
         if (ids.isEmpty()) return@withContext false
         var deletedCount = 0
         val db = writableDatabase

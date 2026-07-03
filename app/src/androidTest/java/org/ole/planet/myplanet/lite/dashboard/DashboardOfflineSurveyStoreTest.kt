@@ -6,6 +6,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -16,6 +19,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 
 @RunWith(AndroidJUnit4::class)
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardOfflineSurveyStoreTest {
 
     private lateinit var store: DashboardOfflineSurveyStore
@@ -32,7 +36,11 @@ class DashboardOfflineSurveyStoreTest {
         context.getSharedPreferences("dashboard_offline_surveys", Context.MODE_PRIVATE).edit().clear().commit()
 
         // Pass both context and explicit moshi instance as mentioned in prompt
-        store = DashboardOfflineSurveyStore(context, moshi)
+        store = DashboardOfflineSurveyStore(
+            context = context,
+            ioDispatcher = UnconfinedTestDispatcher(),
+            moshi = moshi
+        )
     }
 
     @After
@@ -43,14 +51,14 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun testSaveSurvey_invalidId() = runBlocking {
+    fun testSaveSurvey_invalidId() = runTest {
         val document = SurveyDocument(id = "   ", rev = "1-abc", teamId = "team1")
         val result = store.saveSurvey(document, null)
         assertFalse(result)
     }
 
     @Test
-    fun testSaveSurvey_validId() = runBlocking {
+    fun testSaveSurvey_validId() = runTest {
         val document = SurveyDocument(id = "survey1", rev = "1-abc", teamId = "team1")
         val result = store.saveSurvey(document, null)
         assertTrue(result)
@@ -60,7 +68,7 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun testSaveSurvey_fallbackTeamId() = runBlocking {
+    fun testSaveSurvey_fallbackTeamId() = runTest {
         val document = SurveyDocument(id = "survey1", rev = "1-abc", teamId = null)
         val result = store.saveSurvey(document, "fallbackTeam")
         assertTrue(result)
@@ -71,7 +79,7 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun testGetSavedSurveyIds() = runBlocking {
+    fun testGetSavedSurveyIds() = runTest {
         val doc1 = SurveyDocument(id = "s1", rev = "1-a", teamId = "t1")
         val doc2 = SurveyDocument(id = "s2", rev = "1-b", teamId = "t2")
 
@@ -85,7 +93,7 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun testGetSavedSurveysForTeam() = runBlocking {
+    fun testGetSavedSurveysForTeam() = runTest {
         val doc1 = SurveyDocument(id = "s1", rev = "1-a", teamId = "t1")
         val doc2 = SurveyDocument(id = "s2", rev = "1-b", teamId = "t2")
         val doc3 = SurveyDocument(id = "s3", rev = "1-c", teamId = "t1")
@@ -109,7 +117,7 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun testGetSavedSurveyRevisions() = runBlocking {
+    fun testGetSavedSurveyRevisions() = runTest {
         val doc1 = SurveyDocument(id = "s1", rev = "1-a", teamId = "t1")
         val doc2 = SurveyDocument(id = "s2", rev = "1-b", teamId = "t2")
         val doc3 = SurveyDocument(id = "s3", rev = null, teamId = "t1") // null rev

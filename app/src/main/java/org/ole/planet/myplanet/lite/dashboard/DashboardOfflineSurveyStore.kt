@@ -12,6 +12,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
@@ -19,6 +20,7 @@ import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class DashboardOfflineSurveyStore(
     context: Context,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     moshi: Moshi = Moshi.Builder()
         .add(FlexibleSurveyJsonAdapter())
         .addLast(KotlinJsonAdapterFactory())
@@ -51,7 +53,7 @@ class DashboardOfflineSurveyStore(
         val serialized = documentAdapter.toJson(document) ?: return false
         val rev = document.rev
         val teamId = document.teamId ?: fallbackTeamId
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             val values = ContentValues().apply {
                 put(COLUMN_ID, id)
                 put(COLUMN_REV, rev)
@@ -67,7 +69,7 @@ class DashboardOfflineSurveyStore(
         }
     }
 
-    suspend fun getSavedSurveyIds(): Set<String> = withContext(Dispatchers.IO) {
+    suspend fun getSavedSurveyIds(): Set<String> = withContext(ioDispatcher) {
         readableDatabase.query(
             TABLE_SURVEYS,
             arrayOf(COLUMN_ID),
@@ -86,7 +88,7 @@ class DashboardOfflineSurveyStore(
         }
     }
 
-    suspend fun getSavedSurveysForTeam(teamId: String): List<SurveyDocument> = withContext(Dispatchers.IO) {
+    suspend fun getSavedSurveysForTeam(teamId: String): List<SurveyDocument> = withContext(ioDispatcher) {
         val jsons = readableDatabase.query(
             TABLE_SURVEYS,
             arrayOf(COLUMN_DOCUMENT),
@@ -107,7 +109,7 @@ class DashboardOfflineSurveyStore(
         jsons.mapNotNull { json -> documentAdapter.fromJson(json) }
     }
 
-    suspend fun getSavedSurveyRevisions(): Map<String, String?> = withContext(Dispatchers.IO) {
+    suspend fun getSavedSurveyRevisions(): Map<String, String?> = withContext(ioDispatcher) {
         readableDatabase.query(
             TABLE_SURVEYS,
             arrayOf(COLUMN_ID, COLUMN_REV),

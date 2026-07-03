@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -19,6 +21,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardOfflineSurveyStoreTest {
 
     private lateinit var store: DashboardOfflineSurveyStore
@@ -31,7 +34,10 @@ class DashboardOfflineSurveyStoreTest {
         org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = mockPrefs
 
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardOfflineSurveyStore.getInstance(context)
+        store = DashboardOfflineSurveyStore(
+            context = context,
+            ioDispatcher = UnconfinedTestDispatcher(),
+        )
         // Clear db before test
         store.writableDatabase.delete("surveys", null, null)
     }
