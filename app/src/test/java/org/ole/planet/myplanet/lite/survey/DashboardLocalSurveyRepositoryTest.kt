@@ -73,6 +73,70 @@ class DashboardLocalSurveyRepositoryTest {
         totalMarks = 100
     )
 
+
+    @Test
+    fun `submitOrQueue offline queues when allowed`() = runTest {
+        val submission = createSubmission()
+        val result = repository.submitOrQueue(
+            base = "http://example.com",
+            credentials = null,
+            sessionCookie = null,
+            submission = submission,
+            surveyId = "survey123",
+            surveyName = "Test Survey",
+            teamId = "team1",
+            teamName = "Team A",
+            allowQueueing = true
+        )
+
+        assertEquals(DashboardLocalSurveyRepository.SubmissionResult.QUEUED_OFFLINE, result)
+        val pending = repository.getPendingForTeam("team1")
+        assertEquals(1, pending.size)
+    }
+
+    @Test
+    fun `submitOrQueue offline fails when queueing not allowed`() = runTest {
+        val submission = createSubmission()
+        val result = repository.submitOrQueue(
+            base = "http://example.com",
+            credentials = null,
+            sessionCookie = null,
+            submission = submission,
+            surveyId = "survey123",
+            surveyName = "Test Survey",
+            teamId = "team1",
+            teamName = "Team A",
+            allowQueueing = false
+        )
+
+        assertEquals(DashboardLocalSurveyRepository.SubmissionResult.FAILED_OFFLINE, result)
+        val pending = repository.getPendingForTeam("team1")
+        assertTrue(pending.isEmpty())
+    }
+
+    @Test
+    fun `resendOutboxEntry fails when offline`() = runTest {
+        val submission = createSubmission()
+        repository.saveSubmission(
+            submission = submission,
+            surveyId = "survey123",
+            surveyName = "Test Survey",
+            teamId = "team1",
+            teamName = "Team A"
+        )
+        val pending = repository.getPendingForTeam("team1")
+        val entry = pending[0]
+
+        val result = repository.resendOutboxEntry(
+            base = "http://example.com",
+            credentials = null,
+            sessionCookie = null,
+            entry = entry
+        )
+
+        assertEquals(DashboardLocalSurveyRepository.SubmissionResult.FAILED_OFFLINE, result)
+    }
+
     @Test
     fun `saveSurvey success saves document to offline store`() = runTest {
         val document = createSurveyDocument()

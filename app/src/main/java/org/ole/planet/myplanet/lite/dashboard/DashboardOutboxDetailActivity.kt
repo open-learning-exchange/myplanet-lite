@@ -35,6 +35,7 @@ import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 
@@ -291,16 +292,16 @@ class DashboardOutboxDetailActivity : BaseActivity() {
             )
 
             when (result) {
-                org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult.FAILED_OFFLINE -> {
+                SubmissionResult.FAILED_OFFLINE -> {
                     Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_outbox_offline_cannot_send, Toast.LENGTH_SHORT).show()
                 }
-                org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult.FAILED_REVISION_CHECK -> {
+                SubmissionResult.FAILED_REVISION_CHECK -> {
                     Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_outbox_unable_to_verify_rev, Toast.LENGTH_SHORT).show()
                 }
-                org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult.REVISION_MISMATCH -> {
+                SubmissionResult.REVISION_MISMATCH -> {
                     showRevMismatchDialog(entry)
                 }
-                org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult.SUBMITTED_ONLINE -> {
+                SubmissionResult.SUBMITTED_ONLINE -> {
                     Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_outbox_send_success, Toast.LENGTH_SHORT).show()
                     finish()
                 }

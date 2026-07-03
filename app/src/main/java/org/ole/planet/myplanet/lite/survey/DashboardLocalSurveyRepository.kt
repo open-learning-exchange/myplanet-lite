@@ -103,7 +103,7 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
         teamName: String?,
         allowQueueing: Boolean
     ): SubmissionResult {
-        val isOnline = isDeviceOnline()
+        val isOnline = NetworkUtils.isDeviceOnline(context)
         if (!isOnline) {
             if (!allowQueueing) return SubmissionResult.FAILED_OFFLINE
             val saved = saveSubmission(submission, surveyId, surveyName, teamId, teamName)
@@ -126,12 +126,16 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
         sessionCookie: String?,
         entry: OutboxEntry
     ): SubmissionResult {
-        if (!isDeviceOnline()) {
+        if (!NetworkUtils.isDeviceOnline(context)) {
             return SubmissionResult.FAILED_OFFLINE
+        }
+        val surveyId = entry.submission.parent.id
+        if (surveyId.isNullOrBlank()) {
+            return SubmissionResult.FAILED_REVISION_CHECK
         }
         val serverRev = submissionsRepo.fetchSurveyRevision(
             baseUrl = base,
-            surveyId = entry.submission.parent.id ?: "",
+            surveyId = surveyId,
             teamId = entry.teamId,
             sessionCookie = sessionCookie,
             credentials = credentials
@@ -151,12 +155,7 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
         return SubmissionResult.FAILED
     }
 
-    private fun isDeviceOnline(): Boolean {
-        val manager = context.getSystemService(ConnectivityManager::class.java) ?: return false
-        val network = manager.activeNetwork ?: return false
-        val capabilities = manager.getNetworkCapabilities(network) ?: return false
-        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-    }
+
 
     override fun close() {
         // Managed by singletons

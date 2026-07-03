@@ -72,6 +72,7 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
 import org.ole.planet.myplanet.lite.util.NetworkUtils
@@ -354,7 +355,7 @@ internal suspend fun SurveyWizardFragment.processSubmission(
     setSubmitting(false)
 
     when (result) {
-        org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult.SUBMITTED_ONLINE -> {
+        SubmissionResult.SUBMITTED_ONLINE -> {
             DashboardSurveyStatusStore(
                 requireContext().applicationContext,
                 username,
@@ -372,7 +373,7 @@ internal suspend fun SurveyWizardFragment.processSubmission(
             ).show()
             finishWithResult()
         }
-        org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository.SubmissionResult.QUEUED_OFFLINE -> {
+        SubmissionResult.QUEUED_OFFLINE -> {
             Toast.makeText(
                 requireContext(),
                 getString(R.string.dashboard_survey_submission_saved_offline),
