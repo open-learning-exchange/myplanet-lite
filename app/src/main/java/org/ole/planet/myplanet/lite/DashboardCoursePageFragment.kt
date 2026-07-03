@@ -74,7 +74,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private var courseCategories: List<CourseCategory> = emptyList()
     private var selectedCategoryId: String? = null
     private val tagCourseIdsByTag = mutableMapOf<String, Set<String>>()
-    private val httpClient = OkHttpClient()
+    private val httpClient: OkHttpClient = org.ole.planet.myplanet.lite.dashboard.SharedBitmapDependencies.client
     private val activeDownloads = mutableMapOf<String, Job>()
     private val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
     private val courseWizardLauncher =
@@ -279,7 +279,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
             courseImageLoader = DashboardPostImageLoader(base, sessionCookie, viewLifecycleOwner.lifecycleScope)
             isCourseImageLoaderLoading = false
-            adapter.notifyDataSetChanged()
+            adapter.notifyItemRangeChanged(1, (adapter.itemCount - 1).coerceAtLeast(0), "IMAGE_ONLY")
         }
     }
 
@@ -1216,6 +1216,14 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             }
         }
 
+        override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: MutableList<Any>) {
+            if (payloads.contains("IMAGE_ONLY") && holder is CourseViewHolder) {
+                holder.bindImage(displayedItems[position - 1])
+            } else {
+                super.onBindViewHolder(holder, position, payloads)
+            }
+        }
+
         override fun getItemCount(): Int = displayedItems.size + 1
 
         fun updateCategories() {
@@ -1485,7 +1493,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 bindClickListeners(course)
             }
 
-            private fun bindImage(course: CourseItem) {
+            fun bindImage(course: CourseItem) {
                 val coverPath = course.coverPath
                 val loader = imageLoaderProvider()
                 if (!coverPath.isNullOrBlank()) {
