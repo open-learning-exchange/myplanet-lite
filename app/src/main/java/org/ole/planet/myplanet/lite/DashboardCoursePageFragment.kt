@@ -1221,6 +1221,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             if (selectedCategory >= categoriesProvider().size) {
                 selectedCategory = 0
             }
+            notifyItemChanged(0)
         }
 
         fun updateTagFilter(courseIds: Set<String>?) {
