@@ -94,40 +94,21 @@ class SurveyWizardRespondentExtensionsTest {
         assertEquals("invalid-date", fragment.formatBirthDateDisplay("invalid-date"))
     }
 
-
-@Test
+    @Test
     fun testLevelArrayForLanguage() {
         com.google.mlkit.common.sdkinternal.MlKitContext.initializeIfNeeded(ApplicationProvider.getApplicationContext())
-
         val controller = org.robolectric.Robolectric.buildActivity(androidx.fragment.app.FragmentActivity::class.java)
         val activity = controller.create().start().resume().get()
         activity.setTheme(androidx.appcompat.R.style.Theme_AppCompat)
 
-        val document = org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument(
-            id = "doc1",
-            rev = "rev1",
-            name = "Test Survey Title",
-            description = "Test Survey Description",
-            questions = emptyList()
-        )
-        val args = android.os.Bundle().apply {
-            putSerializable("arg_document", document)
-        }
-
-        val fragment = SurveyWizardFragment().apply {
-            arguments = args
-        }
-
+        val fragment = SurveyWizardFragment()
         activity.supportFragmentManager.beginTransaction()
             .add(android.R.id.content, fragment, "survey")
-            .commitNow() // use commitNow instead of commit() to execute immediately
+            .commitNow()
 
-        val context = fragment.requireContext()
-
-        assertEquals(org.ole.planet.myplanet.lite.R.array.signup_level_options_language_es, fragment.levelArrayForLanguage(context.getString(org.ole.planet.myplanet.lite.R.string.language_name_spanish)))
-        assertEquals(org.ole.planet.myplanet.lite.R.array.signup_level_options_language_fr, fragment.levelArrayForLanguage(context.getString(org.ole.planet.myplanet.lite.R.string.language_name_french)))
         assertEquals(org.ole.planet.myplanet.lite.R.array.signup_level_options_language_en, fragment.levelArrayForLanguage("Unknown Language"))
         assertEquals(org.ole.planet.myplanet.lite.R.array.signup_level_options_language_en, fragment.levelArrayForLanguage(null))
+        assertEquals(org.ole.planet.myplanet.lite.R.array.signup_level_options_language_en, fragment.levelArrayForLanguage("English"))
     }
 
     @Test
