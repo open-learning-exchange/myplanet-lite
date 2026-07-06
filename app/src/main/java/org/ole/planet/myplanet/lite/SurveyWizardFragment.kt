@@ -42,6 +42,7 @@ import com.google.android.material.button.MaterialButton
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import io.noties.markwon.Markwon
 import com.squareup.moshi.Json
 import java.text.ParseException
 import java.text.SimpleDateFormat
@@ -111,6 +112,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     internal var translatedDescription: String? = null
     internal val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
 
+    internal lateinit var markwon: Markwon
     internal lateinit var titleView: TextView
     internal lateinit var descriptionView: TextView
     internal lateinit var counterView: TextView
@@ -148,6 +150,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         super.onViewCreated(view, savedInstanceState)
         bindViews(view)
         setupInsets(view)
+        markwon = Markwon.builder(requireContext()).build()
 
         translationNoticeView.setOnClickListener {
             startActivity(Intent(requireContext(), PrivacyPolicyActivity::class.java))
@@ -168,9 +171,9 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             return
         }
 
-        titleView.text = survey.name.orEmpty()
+        setSurveyTitle(survey.name.orEmpty())
         val description = survey.description?.takeIf { it.isNotBlank() }
-        descriptionView.text = description.orEmpty()
+        setSurveyDescription(description.orEmpty())
         descriptionView.isVisible = !description.isNullOrBlank()
 
         progressBar.max = steps.size
@@ -194,7 +197,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         progressBar.max = steps.size
         counterView.text = getString(R.string.dashboard_survey_wizard_step_counter, index + 1, steps.size)
         updateDescriptionVisibility(index)
-        questionBodyView.text = when (step) {
+        val questionBody = when (step) {
             WizardStep.Basics -> getString(R.string.dashboard_survey_wizard_participant_basics_title)
             WizardStep.Names -> getString(R.string.dashboard_survey_wizard_names_title)
             WizardStep.BirthDate -> getString(R.string.dashboard_survey_wizard_birthdate_title)
@@ -203,6 +206,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             is WizardStep.Question -> questionTranslations[step.questionIndex]?.body
                 ?: step.question.body.orEmpty()
         }
+        setQuestionBody(questionBody)
         questionContainer.removeAllViews()
         val (renderedView, collector) = renderStep(step)
         questionContainer.addView(renderedView)
