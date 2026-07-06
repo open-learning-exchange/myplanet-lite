@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
 import android.net.Uri

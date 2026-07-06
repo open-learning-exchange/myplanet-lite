@@ -15,7 +15,6 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationCache
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
