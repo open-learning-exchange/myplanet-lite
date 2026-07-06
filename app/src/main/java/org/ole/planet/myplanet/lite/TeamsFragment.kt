@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.dashboard.JoinTeamRequest
 import org.ole.planet.myplanet.lite.dashboard.MembershipDocument
@@ -52,7 +53,8 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
     private lateinit var exploreSection: View
     private lateinit var refreshLayout: SwipeRefreshLayout
 
-    private val repository = DashboardTeamsRepository()
+    private val repository: DashboardTeamsRepository
+        get() = DashboardTeamsDependencies.provideRepository()
     private var baseUrl: String? = null
     private var sessionCookie: String? = null
     private var currentUsername: String? = null
