@@ -26,6 +26,7 @@ import okhttp3.Request
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import java.util.concurrent.ConcurrentHashMap
 
 class DashboardAvatarLoader(
     private val baseUrl: String,
@@ -36,6 +37,7 @@ class DashboardAvatarLoader(
 ) {
 
     private val cache = sharedCache
+    private val inFlightRequests = ConcurrentHashMap<String, Deferred<Bitmap?>>()
     private val avatarUpdateListener = AvatarUpdateNotifier.register(
         AvatarUpdateNotifier.Listener { username ->
             val cacheKey = username.lowercase(Locale.ROOT)
@@ -71,7 +73,7 @@ class DashboardAvatarLoader(
         scope.launch {
             val deferred = synchronized(inFlightRequests) {
                 inFlightRequests.getOrPut(cacheKey) {
-                    inFlightScope.async {
+                    async(Dispatchers.IO) {
                         runCatching { fetchAvatarBitmap(username) }.getOrNull()
                     }
                 }
@@ -131,8 +133,6 @@ class DashboardAvatarLoader(
     companion object {
         private const val CACHE_SIZE_BYTES = 2 * 1024 * 1024 // 2MB cache for avatars
         private val missingAvatars = mutableSetOf<String>()
-        private val inFlightScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
-        private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
         private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
             override fun sizeOf(key: String, value: Bitmap): Int {
                 return value.byteCount
@@ -142,10 +142,6 @@ class DashboardAvatarLoader(
         @androidx.annotation.VisibleForTesting
         fun resetForTesting() {
             synchronized(missingAvatars) { missingAvatars.clear() }
-            synchronized(inFlightRequests) {
-                inFlightScope.coroutineContext[Job]?.cancelChildren()
-                inFlightRequests.clear()
-            }
             sharedCache.evictAll()
         }
     }
