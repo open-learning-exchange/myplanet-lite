@@ -136,10 +136,10 @@ class SurveyWizardFragmentTest {
             fragment.view?.findViewById<android.widget.TextView>(R.id.surveyWizardDescription)
 
         assertNotNull("Title view should be present", titleView)
-        assertEquals("Test Survey Title", titleView?.text)
+        assertEquals("Test Survey Title", titleView?.text.toString())
 
         assertNotNull("Description view should be present", descriptionView)
-        assertEquals("Test Survey Description", descriptionView?.text)
+        assertEquals("Test Survey Description", descriptionView?.text.toString())
     }
 
     @Test

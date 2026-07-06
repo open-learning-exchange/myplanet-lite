@@ -216,11 +216,24 @@ internal fun SurveyWizardFragment.applySurveyTranslations() {
     val survey = document ?: return
     val titleText = translatedTitle?.takeIf { it.isNotBlank() }
         ?: survey.name.orEmpty()
-    titleView.text = titleText
+    setSurveyTitle(titleText)
     val descriptionText = translatedDescription?.takeIf { it.isNotBlank() }
         ?: survey.description.orEmpty()
-    descriptionView.text = descriptionText
+    setSurveyDescription(descriptionText)
     updateDescriptionVisibility(currentIndex)
+}
+
+internal fun SurveyWizardFragment.setSurveyTitle(title: String) {
+    markwon.setMarkdown(titleView, title.replace("\n", "  \n"))
+}
+
+internal fun SurveyWizardFragment.setSurveyDescription(description: String) {
+    val rendered = description.replace("\n", "  \n")
+    markwon.setMarkdown(descriptionView, rendered)
+}
+
+internal fun SurveyWizardFragment.setQuestionBody(body: String) {
+    markwon.setMarkdown(questionBodyView, body.replace("\n", "  \n"))
 }
 
 internal fun SurveyWizardFragment.updateTranslationNotice(showConsentNotice: Boolean, showAppliedNotice: Boolean) {
