@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.lite.survey
 import android.content.Context
 import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -74,7 +74,7 @@ class DashboardLocalSurveyRepositoryTest {
     )
 
     @Test
-    fun `saveSurvey success saves document to offline store`() = runTest {
+    fun `saveSurvey success saves document to offline store`() = runBlocking {
         val document = createSurveyDocument()
         val success = repository.saveSurvey(document, fallbackTeamId = null)
         assertTrue(success)
@@ -91,7 +91,7 @@ class DashboardLocalSurveyRepositoryTest {
     }
 
     @Test
-    fun `saveSubmission success saves to outbox store`() = runTest {
+    fun `saveSubmission success saves to outbox store`() = runBlocking {
         val submission = createSubmission()
         val success = repository.saveSubmission(
             submission = submission,
@@ -114,7 +114,7 @@ class DashboardLocalSurveyRepositoryTest {
     }
 
     @Test
-    fun `deleteEntry removes from outbox store`() = runTest {
+    fun `deleteEntry removes from outbox store`() = runBlocking {
         val submission = createSubmission()
         repository.saveSubmission(
             submission = submission,
@@ -135,7 +135,7 @@ class DashboardLocalSurveyRepositoryTest {
     }
 
     @Test
-    fun `flushPendingSurveyOutbox exits early if offline`() = runTest {
+    fun `flushPendingSurveyOutbox exits early if offline`() = runBlocking {
         // Robolectric network is offline by default unless explicitly configured otherwise
         val submission = createSubmission()
         repository.saveSubmission(
