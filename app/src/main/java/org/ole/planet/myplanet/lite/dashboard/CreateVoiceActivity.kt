@@ -42,6 +42,7 @@ import java.util.ArrayList
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
+import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -644,6 +645,8 @@ class CreateVoiceActivity : BaseActivity() {
             .filter { derivePendingNormalizedKey(it) == normalizedKey }
             .map { it.id }
 
+        val filesToDelete = mutableListOf<File>()
+
         idsToRemove.forEach { id ->
             val removed = pendingImages.remove(id) ?: return@forEach
             decodedBitmaps.remove(id)?.let { bitmap ->
@@ -652,8 +655,16 @@ class CreateVoiceActivity : BaseActivity() {
                 }
             }
             removeImageMarkdownReferences(removed)
-            if (removed.file.exists()) {
-                removed.file.delete()
+            filesToDelete.add(removed.file)
+        }
+
+        if (filesToDelete.isNotEmpty()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                filesToDelete.forEach {
+                    if (it.exists()) {
+                        it.delete()
+                    }
+                }
             }
         }
 
