@@ -681,10 +681,14 @@ class CreateVoiceActivity : BaseActivity() {
             extractPathFromMarkdown(pending.uploadedMarkdown).takeIf { !it.isNullOrBlank() }
         ).distinct()
 
-        candidates.forEach { candidate ->
-            val escaped = Regex.escape(candidate.trim())
-            val pattern = Regex("(?:^|\\n)!\\[[^\\]]*\\]\\((?:https?://[^)]+/)?(?:/?db/)?/?$escaped\\)\\n?")
-            updated = pattern.replace(updated, "\n")
+        if (candidates.isNotEmpty()) {
+            val combinedEscaped = candidates.joinToString("|") { Regex.escape(it.trim()) }
+            val pattern = Regex("(?:^|\\n)!\\[[^\\]]*\\]\\((?:https?://[^)]+/)?(?:/?db/)?/?(?:$combinedEscaped)\\)\\n?")
+            var previous: String
+            do {
+                previous = updated
+                updated = pattern.replace(updated, "\n")
+            } while (updated != previous)
         }
 
         updated = updated
