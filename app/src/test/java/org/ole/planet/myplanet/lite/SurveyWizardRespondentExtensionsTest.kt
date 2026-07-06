@@ -2,13 +2,16 @@ package org.ole.planet.myplanet.lite
 
 import android.widget.RadioButton
 import androidx.test.core.app.ApplicationProvider
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_MALE
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.util.Calendar
@@ -16,6 +19,18 @@ import java.util.Calendar
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
 class SurveyWizardRespondentExtensionsTest {
+
+    @Before
+    fun setup() {
+        val context = ApplicationProvider.getApplicationContext<android.content.Context>()
+        SecurePreferencesProvider.injectedPreferences =
+            context.getSharedPreferences("survey_wizard_respondent_test_prefs", android.content.Context.MODE_PRIVATE)
+    }
+
+    @After
+    fun teardown() {
+        SecurePreferencesProvider.resetForTesting()
+    }
 
     @Test
     fun testUpdateRespondentBirthYear_withValidYear() {
