@@ -3,8 +3,9 @@ package org.ole.planet.myplanet.lite
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.fragment.app.testing.launchFragmentInContainer
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -36,7 +37,6 @@ import org.mockito.Mockito.`when`
 import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.MembershipDocument
-import org.ole.planet.myplanet.lite.dashboard.TeamDocument
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], instrumentedPackages = ["androidx.loader.content"])
