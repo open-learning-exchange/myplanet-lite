@@ -1,13 +1,7 @@
 package org.ole.planet.myplanet.lite
 
-import android.widget.AutoCompleteTextView
-import android.widget.CheckBox
 import android.widget.RadioButton
-import android.widget.RadioGroup
-import android.widget.TextView
 import androidx.test.core.app.ApplicationProvider
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

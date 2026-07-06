@@ -4,7 +4,6 @@ import android.content.ContentValues
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.test.resetMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -24,6 +23,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
@@ -78,7 +78,7 @@ class DashboardSurveyOutboxStoreTest {
 
         store.saveSubmission(submission1, "survey1", "Survey 1", "team1", "Team A")
         // Delay to ensure created_at is different
-        kotlinx.coroutines.delay(10)
+        kotlinx.coroutines.delay(10.milliseconds)
         store.saveSubmission(submission2, "survey2", "Survey 2", "team1", "Team A")
 
         val pending = store.getPendingForTeam("team1")
