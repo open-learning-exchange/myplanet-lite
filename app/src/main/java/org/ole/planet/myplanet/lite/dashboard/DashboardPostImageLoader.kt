@@ -8,7 +8,6 @@ package org.ole.planet.myplanet.lite.dashboard
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.util.LruCache
 import android.view.View
 import android.widget.ImageView
