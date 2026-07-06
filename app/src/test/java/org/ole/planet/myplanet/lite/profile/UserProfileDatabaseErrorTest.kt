@@ -125,4 +125,148 @@ class UserProfileDatabaseErrorTest {
         verify(mockDb).beginTransaction()
         verify(mockDb).endTransaction()
     }
+
+    @Test
+    fun testSaveProfileBeginTransactionError() {
+        val spyDatabase = spy(database)
+        val mockDb = mock(SQLiteDatabase::class.java)
+
+        doReturn(mockDb).`when`(spyDatabase).writableDatabase
+        doThrow(SQLiteException("Mocked Begin Transaction Exception")).`when`(mockDb).beginTransaction()
+
+        val profile = UserProfile(
+            username = "test",
+            firstName = "test",
+            middleName = "test",
+            lastName = "test",
+            email = "test",
+            language = "test",
+            phoneNumber = "test",
+            birthDate = "test",
+            gender = "test",
+            level = "test",
+            avatarImage = byteArrayOf(),
+            revision = "test",
+            derivedKey = "test",
+            rawDocument = "test",
+            isUserAdmin = false
+        )
+
+        assertThrows(SQLiteException::class.java) {
+            spyDatabase.saveProfile(profile)
+        }
+
+        verify(mockDb).beginTransaction()
+    }
+
+    @Test
+    fun testSaveProfileDeleteError() {
+        val spyDatabase = spy(database)
+        val mockDb = mock(SQLiteDatabase::class.java)
+
+        doReturn(mockDb).`when`(spyDatabase).writableDatabase
+        doThrow(SQLiteException("Mocked Delete Exception")).`when`(mockDb).delete(
+            anyString(),
+            isNull(),
+            isNull()
+        )
+
+        val profile = UserProfile(
+            username = "test",
+            firstName = "test",
+            middleName = "test",
+            lastName = "test",
+            email = "test",
+            language = "test",
+            phoneNumber = "test",
+            birthDate = "test",
+            gender = "test",
+            level = "test",
+            avatarImage = byteArrayOf(),
+            revision = "test",
+            derivedKey = "test",
+            rawDocument = "test",
+            isUserAdmin = false
+        )
+
+        assertThrows(SQLiteException::class.java) {
+            spyDatabase.saveProfile(profile)
+        }
+
+        verify(mockDb).beginTransaction()
+        verify(mockDb).delete(anyString(), isNull(), isNull())
+        verify(mockDb).endTransaction()
+    }
+
+    @Test
+    fun testSaveProfileSetTransactionSuccessfulError() {
+        val spyDatabase = spy(database)
+        val mockDb = mock(SQLiteDatabase::class.java)
+
+        doReturn(mockDb).`when`(spyDatabase).writableDatabase
+        doThrow(SQLiteException("Mocked Set Transaction Successful Exception")).`when`(mockDb).setTransactionSuccessful()
+
+        val profile = UserProfile(
+            username = "test",
+            firstName = "test",
+            middleName = "test",
+            lastName = "test",
+            email = "test",
+            language = "test",
+            phoneNumber = "test",
+            birthDate = "test",
+            gender = "test",
+            level = "test",
+            avatarImage = byteArrayOf(),
+            revision = "test",
+            derivedKey = "test",
+            rawDocument = "test",
+            isUserAdmin = false
+        )
+
+        assertThrows(SQLiteException::class.java) {
+            spyDatabase.saveProfile(profile)
+        }
+
+        verify(mockDb).beginTransaction()
+        verify(mockDb).insertOrThrow(anyString(), isNull(), any())
+        verify(mockDb).setTransactionSuccessful()
+        verify(mockDb).endTransaction()
+    }
+
+    @Test
+    fun testSaveProfileEndTransactionError() {
+        val spyDatabase = spy(database)
+        val mockDb = mock(SQLiteDatabase::class.java)
+
+        doReturn(mockDb).`when`(spyDatabase).writableDatabase
+        doThrow(SQLiteException("Mocked End Transaction Exception")).`when`(mockDb).endTransaction()
+
+        val profile = UserProfile(
+            username = "test",
+            firstName = "test",
+            middleName = "test",
+            lastName = "test",
+            email = "test",
+            language = "test",
+            phoneNumber = "test",
+            birthDate = "test",
+            gender = "test",
+            level = "test",
+            avatarImage = byteArrayOf(),
+            revision = "test",
+            derivedKey = "test",
+            rawDocument = "test",
+            isUserAdmin = false
+        )
+
+        assertThrows(SQLiteException::class.java) {
+            spyDatabase.saveProfile(profile)
+        }
+
+        verify(mockDb).beginTransaction()
+        verify(mockDb).insertOrThrow(anyString(), isNull(), any())
+        verify(mockDb).setTransactionSuccessful()
+        verify(mockDb).endTransaction()
+    }
 }
