@@ -28,7 +28,6 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.lite.SurveyWizardActivity
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardOutboxDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
@@ -672,9 +671,6 @@ private class SurveyOutboxAdapter(
         holder.bind(getItem(position))
     }
 
-    fun submit(newItems: List<OutboxEntry>) {
-        submitList(newItems)
-    }
 
     class OutboxViewHolder(
         itemView: View,
