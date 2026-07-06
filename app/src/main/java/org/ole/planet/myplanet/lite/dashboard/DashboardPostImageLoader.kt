@@ -11,6 +11,7 @@ import android.graphics.BitmapFactory
 import android.util.LruCache
 import android.view.View
 import android.widget.ImageView
+import androidx.core.net.toUri
 import java.io.File
 import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
@@ -20,7 +21,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import androidx.core.net.toUri
 
 class DashboardPostImageLoader(
     private val baseUrl: String,
@@ -30,6 +30,7 @@ class DashboardPostImageLoader(
 ) {
 
     private val cache = sharedCache
+    private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
 
     fun bind(imageView: ImageView, imagePath: String, onResult: ((Boolean) -> Unit)? = null) {
         imageView.setImageDrawable(null)
@@ -43,7 +44,7 @@ class DashboardPostImageLoader(
         scope.launch {
             val deferred = synchronized(inFlightRequests) {
                 inFlightRequests.getOrPut(imagePath) {
-                    inFlightScope.async {
+                    scope.async(Dispatchers.IO) {
                         runCatching { fetchImageBitmap(imagePath) }.getOrNull()
                     }
                 }
@@ -124,8 +125,6 @@ class DashboardPostImageLoader(
 
     private companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
-        private val inFlightScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
-        private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
         private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
             override fun sizeOf(key: String, value: Bitmap): Int {
                 return value.byteCount
