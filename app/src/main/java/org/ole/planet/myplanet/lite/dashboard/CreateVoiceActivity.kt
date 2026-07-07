@@ -30,7 +30,6 @@ import com.google.android.material.textfield.TextInputEditText
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
-import java.util.LinkedHashMap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -46,9 +45,9 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.util.ApplicationScope
 import org.ole.planet.myplanet.lite.util.FileUtils.deleteFiles
+import java.util.LinkedHashMap
 
 class CreateVoiceActivity : BaseActivity() {
-
     internal lateinit var toolbar: MaterialToolbar
     internal lateinit var markwon: Markwon
     internal lateinit var createVoiceInput: TextInputEditText
@@ -68,13 +67,14 @@ class CreateVoiceActivity : BaseActivity() {
     internal val httpClient = OkHttpClient.Builder().build()
     internal val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
     internal val decodedBitmaps = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
-    private val imagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            lifecycleScope.launch {
-                handleImageSelection(it)
+    private val imagePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let {
+                lifecycleScope.launch {
+                    handleImageSelection(it)
+                }
             }
         }
-    }
 
     internal var baseUrl: String? = null
     internal var sessionCookie: String? = null
@@ -198,24 +198,26 @@ class CreateVoiceActivity : BaseActivity() {
 
         editPostId = intent.getStringExtra(EXTRA_EDIT_POST_ID)
         editInitialMessage = intent.getStringExtra(EXTRA_EDIT_INITIAL_MESSAGE)
-        editDocument = intent.extras?.let { bundle ->
-            BundleCompat.getSerializable(
-                bundle,
-                EXTRA_EDIT_DOCUMENT,
-                DashboardNewsRepository.NewsDocument::class.java
-            )
-        }
-        val documentImagePaths = editDocument?.images
-            ?.mapNotNull { image ->
-                extractPathFromMarkdown(image.markdown)
-                    ?: buildResourcePath(image.resourceId, image.filename)
+        editDocument =
+            intent.extras?.let { bundle ->
+                BundleCompat.getSerializable(
+                    bundle,
+                    EXTRA_EDIT_DOCUMENT,
+                    DashboardNewsRepository.NewsDocument::class.java,
+                )
             }
-            ?.filter { it.isNotBlank() }
-            .orEmpty()
-        val combinedImagePaths = (
-            intent.getStringArrayListExtra(EXTRA_EDIT_INITIAL_IMAGE_PATHS) ?: emptyList()
-            )
-            .plus(documentImagePaths)
+        val documentImagePaths =
+            editDocument
+                ?.images
+                ?.mapNotNull { image ->
+                    extractPathFromMarkdown(image.markdown)
+                        ?: buildResourcePath(image.resourceId, image.filename)
+                }?.filter { it.isNotBlank() }
+                .orEmpty()
+        val combinedImagePaths =
+            (
+                intent.getStringArrayListExtra(EXTRA_EDIT_INITIAL_IMAGE_PATHS) ?: emptyList()
+            ).plus(documentImagePaths)
         editInitialImagePaths = mergeImagePaths(combinedImagePaths)
 
         supportActionBar?.setTitle(R.string.edit_voice_title)
@@ -243,16 +245,15 @@ class CreateVoiceActivity : BaseActivity() {
 
     private fun handleTextChanged(text: Editable?) {
         previewJob?.cancel()
-        previewJob = lifecycleScope.launch {
-            delay(PREVIEW_DEBOUNCE_MS)
-            updatePreview(text?.toString().orEmpty())
-            updateActionAvailability()
-        }
+        previewJob =
+            lifecycleScope.launch {
+                delay(PREVIEW_DEBOUNCE_MS)
+                updatePreview(text?.toString().orEmpty())
+                updateActionAvailability()
+            }
     }
 
-    private fun transformMarkdownForPreview(markdown: String): String {
-        return transformMarkdownForPreviewContent(markdown)
-    }
+    private fun transformMarkdownForPreview(markdown: String): String = transformMarkdownForPreviewContent(markdown)
 
     private suspend fun initializeSession() {
         val context = applicationContext
@@ -274,7 +275,11 @@ class CreateVoiceActivity : BaseActivity() {
     }
 
     private fun attemptPost() {
-        val message = createVoiceInput.text?.toString()?.trim().orEmpty()
+        val message =
+            createVoiceInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         if (message.isBlank()) {
             Toast.makeText(this, R.string.create_voice_empty_error, Toast.LENGTH_SHORT).show()
             return
@@ -292,21 +297,24 @@ class CreateVoiceActivity : BaseActivity() {
             Toast.makeText(this, R.string.create_voice_missing_credentials, Toast.LENGTH_SHORT).show()
             return
         }
-        val confirmTitle = if (isEditMode) {
-            R.string.edit_voice_confirm_title
-        } else {
-            R.string.create_voice_confirm_title
-        }
-        val confirmMessage = if (isEditMode) {
-            R.string.edit_voice_confirm_message
-        } else {
-            R.string.create_voice_confirm_message
-        }
-        val positiveAction = if (isEditMode) {
-            R.string.edit_voice_confirm_positive
-        } else {
-            R.string.create_voice_confirm_positive
-        }
+        val confirmTitle =
+            if (isEditMode) {
+                R.string.edit_voice_confirm_title
+            } else {
+                R.string.create_voice_confirm_title
+            }
+        val confirmMessage =
+            if (isEditMode) {
+                R.string.edit_voice_confirm_message
+            } else {
+                R.string.create_voice_confirm_message
+            }
+        val positiveAction =
+            if (isEditMode) {
+                R.string.edit_voice_confirm_positive
+            } else {
+                R.string.create_voice_confirm_positive
+            }
         MaterialAlertDialogBuilder(this)
             .setTitle(confirmTitle)
             .setMessage(confirmMessage)
@@ -316,52 +324,62 @@ class CreateVoiceActivity : BaseActivity() {
                 } else {
                     postVoice(message, base, credentials)
                 }
-            }
-            .setNegativeButton(R.string.create_voice_confirm_negative, null)
+            }.setNegativeButton(R.string.create_voice_confirm_negative, null)
             .show()
     }
 
-    private fun postVoice(message: String, base: String, credentials: StoredCredentials) {
+    private fun postVoice(
+        message: String,
+        base: String,
+        credentials: StoredCredentials,
+    ) {
         setPosting(true)
         lifecycleScope.launch {
             val profile = loadCachedProfile()
             val codes = resolvePostingCodes(profile)
-            val preparedContent = runCatching {
-                prepareImagesForPosting(base, credentials, message)
-            }.getOrElse {
-                Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_image_upload_error, Toast.LENGTH_SHORT).show()
-                setPosting(false)
-                return@launch
-            }
+            val preparedContent =
+                runCatching {
+                    prepareImagesForPosting(base, credentials, message)
+                }.getOrElse {
+                    Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_image_upload_error, Toast.LENGTH_SHORT).show()
+                    setPosting(false)
+                    return@launch
+                }
             val userPayload = buildUserPayload(profile, credentials, codes)
-            val result = repository.createVoice(
-                VoicesComposerRepository.CreateVoiceParams(
-                    baseUrl = base,
-                    credentials = credentials,
-                    sessionCookie = sessionCookie,
-                    message = preparedContent.message,
-                    createdOn = codes?.planetCode ?: serverCode,
-                    parentCode = codes?.parentCode,
-                    replyTo = null,
-                    images = preparedContent.images,
-                    labels = emptyList(),
-                    userPayload = userPayload,
-                    teamId = targetTeamId,
-                    teamName = targetTeamName
+            val result =
+                repository.createVoice(
+                    VoicesComposerRepository.CreateVoiceParams(
+                        baseUrl = base,
+                        credentials = credentials,
+                        sessionCookie = sessionCookie,
+                        message = preparedContent.message,
+                        createdOn = codes?.planetCode ?: serverCode,
+                        parentCode = codes?.parentCode,
+                        replyTo = null,
+                        images = preparedContent.images,
+                        labels = emptyList(),
+                        userPayload = userPayload,
+                        teamId = targetTeamId,
+                        teamName = targetTeamName,
+                    ),
                 )
-            )
-            result.onSuccess {
-                Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_post_success, Toast.LENGTH_SHORT).show()
-                setResult(Activity.RESULT_OK)
-                finish()
-            }.onFailure {
-                Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_post_error, Toast.LENGTH_SHORT).show()
-                setPosting(false)
-            }
+            result
+                .onSuccess {
+                    Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_post_success, Toast.LENGTH_SHORT).show()
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                }.onFailure {
+                    Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_post_error, Toast.LENGTH_SHORT).show()
+                    setPosting(false)
+                }
         }
     }
 
-    private fun updateVoice(message: String, base: String, credentials: StoredCredentials) {
+    private fun updateVoice(
+        message: String,
+        base: String,
+        credentials: StoredCredentials,
+    ) {
         setPosting(true)
         lifecycleScope.launch {
             val doc = editDocument
@@ -370,37 +388,41 @@ class CreateVoiceActivity : BaseActivity() {
                 setPosting(false)
                 return@launch
             }
-            val preparedContent = runCatching {
-                prepareImagesForPosting(base, credentials, message)
-            }.getOrElse {
-                Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_image_upload_error, Toast.LENGTH_SHORT).show()
-                setPosting(false)
-                return@launch
-            }
-            val images = preparedContent.images.map { image ->
-                DashboardNewsRepository.NewsImage(
-                    resourceId = image.resourceId,
-                    filename = image.filename,
-                    markdown = image.markdown
+            val preparedContent =
+                runCatching {
+                    prepareImagesForPosting(base, credentials, message)
+                }.getOrElse {
+                    Toast.makeText(this@CreateVoiceActivity, R.string.create_voice_image_upload_error, Toast.LENGTH_SHORT).show()
+                    setPosting(false)
+                    return@launch
+                }
+            val images =
+                preparedContent.images.map { image ->
+                    DashboardNewsRepository.NewsImage(
+                        resourceId = image.resourceId,
+                        filename = image.filename,
+                        markdown = image.markdown,
+                    )
+                }
+            val result =
+                newsActionsRepository.updateNews(
+                    baseUrl = base,
+                    sessionCookie = sessionCookie,
+                    document = doc,
+                    message = preparedContent.message,
+                    images = images,
+                    teamId = targetTeamId,
+                    teamName = targetTeamName,
                 )
-            }
-            val result = newsActionsRepository.updateNews(
-                baseUrl = base,
-                sessionCookie = sessionCookie,
-                document = doc,
-                message = preparedContent.message,
-                images = images,
-                teamId = targetTeamId,
-                teamName = targetTeamName
-            )
-            result.onSuccess {
-                Toast.makeText(this@CreateVoiceActivity, R.string.edit_voice_update_success, Toast.LENGTH_SHORT).show()
-                setResult(Activity.RESULT_OK)
-                finish()
-            }.onFailure {
-                Toast.makeText(this@CreateVoiceActivity, R.string.edit_voice_update_error, Toast.LENGTH_SHORT).show()
-                setPosting(false)
-            }
+            result
+                .onSuccess {
+                    Toast.makeText(this@CreateVoiceActivity, R.string.edit_voice_update_success, Toast.LENGTH_SHORT).show()
+                    setResult(Activity.RESULT_OK)
+                    finish()
+                }.onFailure {
+                    Toast.makeText(this@CreateVoiceActivity, R.string.edit_voice_update_error, Toast.LENGTH_SHORT).show()
+                    setPosting(false)
+                }
         }
     }
 

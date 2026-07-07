@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-07-07
@@ -17,10 +17,6 @@ import android.widget.Toast
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import java.io.File
-import java.util.LinkedHashMap
-import java.util.LinkedHashSet
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -30,16 +26,21 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.R
+import java.io.File
+import java.util.LinkedHashMap
+import java.util.LinkedHashSet
+import java.util.Locale
 
 internal fun CreateVoiceActivity.updatePreview(text: String) {
     val trimmed = text.trim()
-    val content = if (trimmed.isEmpty()) {
-        createVoicePreviewText.alpha = 0.6f
-        getString(R.string.create_voice_preview_placeholder)
-    } else {
-        createVoicePreviewText.alpha = 1f
-        trimmed
-    }
+    val content =
+        if (trimmed.isEmpty()) {
+            createVoicePreviewText.alpha = 0.6f
+            getString(R.string.create_voice_preview_placeholder)
+        } else {
+            createVoicePreviewText.alpha = 1f
+            trimmed
+        }
     val previewSource = transformMarkdownForPreviewContent(content)
     markwon.setMarkdown(createVoicePreviewText, previewSource)
 }
@@ -50,17 +51,18 @@ internal fun CreateVoiceActivity.transformMarkdownForPreviewContent(markdown: St
         val pendingByFileName = pendingImages.values.associateBy { it.fileName }
         if (pendingByFileName.isNotEmpty()) {
             val globalPattern = Regex("(!\\[[^\\]]*\\]\\()(.*?)(\\))")
-            processed = globalPattern.replace(processed) { matchResult ->
-                val path = matchResult.groupValues.getOrNull(2).orEmpty()
-                val pending = pendingByFileName[path]
-                if (pending != null) {
-                    val prefix = matchResult.groupValues.getOrNull(1).orEmpty()
-                    val suffix = matchResult.groupValues.getOrNull(3).orEmpty()
-                    "$prefix${pending.file.toURI()}$suffix"
-                } else {
-                    matchResult.value
+            processed =
+                globalPattern.replace(processed) { matchResult ->
+                    val path = matchResult.groupValues.getOrNull(2).orEmpty()
+                    val pending = pendingByFileName[path]
+                    if (pending != null) {
+                        val prefix = matchResult.groupValues.getOrNull(1).orEmpty()
+                        val suffix = matchResult.groupValues.getOrNull(3).orEmpty()
+                        "$prefix${pending.file.toURI()}$suffix"
+                    } else {
+                        matchResult.value
+                    }
                 }
-            }
         }
     }
     val base = baseUrl?.trim()?.trimEnd('/')
@@ -93,25 +95,29 @@ internal fun CreateVoiceActivity.renderPreviewImages() {
     val spacing = resources.getDimensionPixelSize(R.dimen.create_voice_preview_image_spacing)
     val thumbnailSize = resources.getDimensionPixelSize(R.dimen.create_voice_preview_image_thumbnail_size)
     displayPendings.forEachIndexed { index, pending ->
-        val preview = ImageView(this).apply {
-            layoutParams = LinearLayout.LayoutParams(
-                thumbnailSize,
-                thumbnailSize
-            ).apply {
-                setMargins(0, if (index == 0) 0 else spacing, 0, 0)
+        val preview =
+            ImageView(this).apply {
+                layoutParams =
+                    LinearLayout.LayoutParams(
+                        thumbnailSize,
+                        thumbnailSize,
+                    )
+                        .apply {
+                            setMargins(0, if (index == 0) 0 else spacing, 0, 0)
+                        }
+                adjustViewBounds = false
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                contentDescription = pending.fileName
+                setOnClickListener {
+                    showImageOptionsDialog(pending)
+                }
             }
-            adjustViewBounds = false
-            scaleType = ImageView.ScaleType.CENTER_CROP
-            contentDescription = pending.fileName
-            setOnClickListener {
-                showImageOptionsDialog(pending)
-            }
-        }
         wrapper.addView(preview)
         lifecycleScope.launch(Dispatchers.Default) {
-            val bitmap = decodedBitmaps.getOrPut(pending.id) {
-                BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
-            }
+            val bitmap =
+                decodedBitmaps.getOrPut(pending.id) {
+                    BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+                }
             withContext(Dispatchers.Main) {
                 preview.setImageBitmap(bitmap)
             }
@@ -120,43 +126,46 @@ internal fun CreateVoiceActivity.renderPreviewImages() {
 }
 
 internal fun CreateVoiceActivity.showImageOptionsDialog(pending: PendingVoiceImage) {
-    val optionItems = arrayOf(
-        getString(R.string.create_voice_image_option_view),
-        getString(R.string.create_voice_image_option_delete)
-    )
-    val optionIcons = intArrayOf(
-        R.drawable.icon_image_view,
-        R.drawable.ic_dashboard_delete_24
-    )
-    MaterialAlertDialogBuilder(this)
-        .setTitle(R.string.create_voice_image_options_title)
+    val optionItems =
+        arrayOf(
+            getString(R.string.create_voice_image_option_view),
+            getString(R.string.create_voice_image_option_delete),
+        )
+    val optionIcons =
+        intArrayOf(
+            R.drawable.icon_image_view,
+            R.drawable.ic_dashboard_delete_24,
+        )
+    MaterialAlertDialogBuilder(this).setTitle(R.string.create_voice_image_options_title)
         .setAdapter(ImageOptionAdapter(this, optionItems, optionIcons)) { dialog, which ->
             when (which) {
                 0 -> showImagePreviewDialog(pending)
                 1 -> deletePendingImage(pending)
             }
             dialog.dismiss()
-        }
-        .setNegativeButton(android.R.string.cancel, null)
+        }.setNegativeButton(android.R.string.cancel, null)
         .show()
 }
 
 internal fun CreateVoiceActivity.showImagePreviewDialog(pending: PendingVoiceImage) {
-    val imageView = ImageView(this).apply {
-        layoutParams = ViewGroup.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT
-        )
-        adjustViewBounds = true
-        scaleType = ImageView.ScaleType.FIT_CENTER
-        contentDescription = pending.fileName
-        val padding = resources.getDimensionPixelSize(R.dimen.create_voice_image_preview_dialog_padding)
-        setPadding(padding, padding, padding, padding)
-    }
-    lifecycleScope.launch(Dispatchers.Default) {
-        val bitmap = decodedBitmaps.getOrPut(pending.id) {
-            BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+    val imageView =
+        ImageView(this).apply {
+            layoutParams =
+                ViewGroup.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+            adjustViewBounds = true
+            scaleType = ImageView.ScaleType.FIT_CENTER
+            contentDescription = pending.fileName
+            val padding = resources.getDimensionPixelSize(R.dimen.create_voice_image_preview_dialog_padding)
+            setPadding(padding, padding, padding, padding)
         }
+    lifecycleScope.launch(Dispatchers.Default) {
+        val bitmap =
+            decodedBitmaps.getOrPut(pending.id) {
+                BitmapFactory.decodeByteArray(pending.jpegBytes, 0, pending.jpegBytes.size)
+            }
         withContext(Dispatchers.Main) {
             imageView.setImageBitmap(bitmap)
         }
@@ -170,9 +179,10 @@ internal fun CreateVoiceActivity.showImagePreviewDialog(pending: PendingVoiceIma
 
 internal fun CreateVoiceActivity.deletePendingImage(pending: PendingVoiceImage) {
     val normalizedKey = derivePendingNormalizedKey(pending)
-    val idsToRemove = pendingImages.values
-        .filter { derivePendingNormalizedKey(it) == normalizedKey }
-        .map { it.id }
+    val idsToRemove =
+        pendingImages.values
+            .filter { derivePendingNormalizedKey(it) == normalizedKey }
+            .map { it.id }
 
     val filesToDelete = mutableListOf<File>()
 
@@ -205,10 +215,11 @@ internal fun CreateVoiceActivity.removeImageMarkdownReferences(pending: PendingV
     val editable = createVoiceInput.text ?: return
     val current = editable.toString()
     var updated = current
-    val candidates = listOfNotNull(
-        pending.fileName.takeIf { it.isNotBlank() },
-        extractPathFromMarkdown(pending.uploadedMarkdown).takeIf { !it.isNullOrBlank() }
-    ).distinct()
+    val candidates =
+        listOfNotNull(
+            pending.fileName.takeIf { it.isNotBlank() },
+            extractPathFromMarkdown(pending.uploadedMarkdown).takeIf { !it.isNullOrBlank() },
+        ).distinct()
 
     if (candidates.isNotEmpty()) {
         val combinedEscaped = candidates.joinToString("|") { Regex.escape(it.trim()) }
@@ -220,9 +231,10 @@ internal fun CreateVoiceActivity.removeImageMarkdownReferences(pending: PendingV
         } while (updated != previous)
     }
 
-    updated = updated
-        .replace(Regex("\\n{3,}"), "\n\n")
-        .trimEnd()
+    updated =
+        updated
+            .replace(Regex("\\n{3,}"), "\n\n")
+            .trimEnd()
 
     if (updated != current) {
         editable.replace(0, editable.length, updated)
@@ -233,21 +245,27 @@ internal fun CreateVoiceActivity.removeImageMarkdownReferences(pending: PendingV
 private class ImageOptionAdapter(
     context: CreateVoiceActivity,
     private val items: Array<String>,
-    private val icons: IntArray
+    private val icons: IntArray,
 ) : android.widget.ArrayAdapter<String>(
-    context,
-    android.R.layout.select_dialog_item,
-    items
-) {
-    override fun getView(position: Int, convertView: android.view.View?, parent: ViewGroup): android.view.View {
+        context,
+        android.R.layout.select_dialog_item,
+        items,
+    ) {
+    override fun getView(
+        position: Int,
+        convertView: android.view.View?,
+        parent: ViewGroup,
+    ): android.view.View {
         val view = super.getView(position, convertView, parent)
         val text = view.findViewById<TextView>(android.R.id.text1)
         text.setCompoundDrawablesRelativeWithIntrinsicBounds(icons[position], 0, 0, 0)
-        text.compoundDrawablePadding = TypedValue.applyDimension(
-            TypedValue.COMPLEX_UNIT_DIP,
-            12f,
-            context.resources.displayMetrics
-        ).toInt()
+        text.compoundDrawablePadding =
+            TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                12f,
+                context.resources.displayMetrics,
+            )
+                .toInt()
         return view
     }
 }
@@ -267,19 +285,28 @@ internal fun CreateVoiceActivity.buildUniquePendingList(includeUploaded: Boolean
 }
 
 internal suspend fun CreateVoiceActivity.handleImageSelection(uri: Uri) {
-    val pendingResult = withContext(Dispatchers.IO) {
-        runCatching { VoiceImageFactory.createPendingVoiceImage(uri, contentResolver, cacheDir, ::generatePendingImageId) }
-    }
-    pendingResult.onSuccess { pending ->
-        pendingImages[pending.id] = pending
-        if (isEditMode) {
-            insertTemporaryImagePlaceholder(pending.fileName)
+    val pendingResult =
+        withContext(Dispatchers.IO) {
+            runCatching {
+                VoiceImageFactory.createPendingVoiceImage(
+                    uri,
+                    contentResolver,
+                    cacheDir,
+                    ::generatePendingImageId,
+                )
+            }
         }
-        updatePreview(createVoiceInput.text?.toString().orEmpty())
-        renderPreviewImages()
-    }.onFailure {
-        Toast.makeText(this, R.string.create_voice_image_processing_error, Toast.LENGTH_SHORT).show()
-    }
+    pendingResult
+        .onSuccess { pending ->
+            pendingImages[pending.id] = pending
+            if (isEditMode) {
+                insertTemporaryImagePlaceholder(pending.fileName)
+            }
+            updatePreview(createVoiceInput.text?.toString().orEmpty())
+            renderPreviewImages()
+        }.onFailure {
+            Toast.makeText(this, R.string.create_voice_image_processing_error, Toast.LENGTH_SHORT).show()
+        }
 }
 
 internal suspend fun CreateVoiceActivity.loadEditInitialImages() {
@@ -287,16 +314,29 @@ internal suspend fun CreateVoiceActivity.loadEditInitialImages() {
         return
     }
     val base = baseUrl ?: return
-    val loaded = coroutineScope {
-        val semaphore = Semaphore(10)
-        editInitialImagePaths.map { path ->
-            async(Dispatchers.IO) {
-                semaphore.withPermit {
-                    runCatching { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { VoiceImageFactory.generateImageFileName() }, { generatePendingImageId(it) }) }.getOrNull()
-                }
-            }
-        }.awaitAll().filterNotNull()
-    }
+    val loaded =
+        coroutineScope {
+            val semaphore = Semaphore(10)
+            editInitialImagePaths
+                .map { path ->
+                    async(Dispatchers.IO) {
+                        semaphore.withPermit {
+                            runCatching {
+                                VoiceImageFetcher.fetchExistingImage(
+                                    httpClient,
+                                    cacheDir,
+                                    sessionCookie,
+                                    base,
+                                    path,
+                                    { VoiceImageFactory.generateImageFileName() },
+                                    { generatePendingImageId(it) },
+                                )
+                            }.getOrNull()
+                        }
+                    }
+                }.awaitAll()
+                .filterNotNull()
+        }
     if (loaded.isEmpty()) {
         return
     }
@@ -312,10 +352,17 @@ internal fun CreateVoiceActivity.extractPathFromMarkdown(markdown: String?): Str
         return null
     }
     val match = CreateVoiceActivity.MARKDOWN_IMAGE_REGEX.find(markdown)
-    return match?.groupValues?.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+    return match
+        ?.groupValues
+        ?.getOrNull(1)
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
 }
 
-internal fun CreateVoiceActivity.buildResourcePath(resourceId: String?, fileName: String?): String? {
+internal fun CreateVoiceActivity.buildResourcePath(
+    resourceId: String?,
+    fileName: String?,
+): String? {
     if (resourceId.isNullOrBlank() || fileName.isNullOrBlank()) {
         return null
     }
@@ -323,31 +370,34 @@ internal fun CreateVoiceActivity.buildResourcePath(resourceId: String?, fileName
 }
 
 internal fun CreateVoiceActivity.derivePendingNormalizedKey(pending: PendingVoiceImage): String {
-    val candidates = listOfNotNull(
-        pending.uploadedMarkdown?.let { extractPathFromMarkdown(it) },
-        buildResourcePath(pending.resourceId, pending.fileName),
-        pending.fileName
-    )
-    val normalized = candidates
-        .map { candidate -> normalizeImagePath(candidate) }
-        .firstOrNull { candidate -> candidate.isNotBlank() }
+    val candidates =
+        listOfNotNull(
+            pending.uploadedMarkdown?.let { extractPathFromMarkdown(it) },
+            buildResourcePath(pending.resourceId, pending.fileName),
+            pending.fileName,
+        )
+    val normalized =
+        candidates
+            .map { candidate -> normalizeImagePath(candidate) }
+            .firstOrNull { candidate -> candidate.isNotBlank() }
     return (normalized ?: normalizeImagePath(pending.fileName)).trim()
 }
 
-internal fun CreateVoiceActivity.mergeImagePaths(paths: List<String>): List<String> {
-    return paths.distinctBy { normalizeImagePath(it) }
-}
+internal fun CreateVoiceActivity.mergeImagePaths(paths: List<String>): List<String> =
+    paths.distinctBy { normalizeImagePath(it) }
 
 internal fun CreateVoiceActivity.normalizeImagePath(path: String): String {
     val extracted = extractPathFromMarkdown(path) ?: path
     val trimmed = extracted.trim()
-    val resourcesMatch = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
-        .find(trimmed)
-    val reduced = if (resourcesMatch != null) {
-        resourcesMatch.value
-    } else {
-        trimmed.trimStart('/').removePrefix("db/").trimStart('/')
-    }
+    val resourcesMatch =
+        Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
+            .find(trimmed)
+    val reduced =
+        if (resourcesMatch != null) {
+            resourcesMatch.value
+        } else {
+            trimmed.trimStart('/').removePrefix("db/").trimStart('/')
+        }
     return reduced.lowercase(Locale.US)
 }
 

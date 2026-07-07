@@ -189,7 +189,10 @@ internal fun CreateVoiceActivity.applyQuoteFormatting() {
     editText.setSelection((rangeStart + formatted.length).coerceAtMost(editable.length))
 }
 
-internal fun CreateVoiceActivity.findLineStart(editable: Editable, position: Int): Int {
+internal fun CreateVoiceActivity.findLineStart(
+    editable: Editable,
+    position: Int,
+): Int {
     var index = position - 1
     while (index >= 0) {
         if (editable[index] == '\n') {
