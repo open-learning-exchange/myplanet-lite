@@ -1,9 +1,8 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.content.Context
-import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -11,9 +10,7 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Mockito.mock
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
@@ -36,13 +33,14 @@ class DashboardOfflineSurveyStoreTest {
         store.writableDatabase.delete("surveys", null, null)
     }
 
-    @After
+@After
     fun teardown() {
-        DashboardOfflineSurveyStore.resetForTesting(ApplicationProvider.getApplicationContext())
+        org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = null
+        DashboardOfflineSurveyStore.resetForTesting(androidx.test.core.app.ApplicationProvider.getApplicationContext())
     }
 
     @Test
-    fun `saveSurvey with null id returns false`() = runTest {
+    fun `saveSurvey with null id returns false`() = runBlocking {
         val document = SurveyDocument(id = null)
         val result = store.saveSurvey(document, "fallbackTeam")
         assertFalse(result)
@@ -52,7 +50,7 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun `saveSurvey with empty id returns false`() = runTest {
+    fun `saveSurvey with empty id returns false`() = runBlocking {
         val document = SurveyDocument(id = "   ")
         val result = store.saveSurvey(document, "fallbackTeam")
         assertFalse(result)
@@ -62,7 +60,7 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun `saveSurvey successfully saves valid document`() = runTest {
+    fun `saveSurvey successfully saves valid document`() = runBlocking {
         val document = SurveyDocument(id = "survey123", rev = "1-abc", name = "Test Survey")
         val result = store.saveSurvey(document, "teamA")
 
@@ -79,7 +77,7 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun `saveSurvey prioritizes document teamId over fallbackTeamId`() = runTest {
+    fun `saveSurvey prioritizes document teamId over fallbackTeamId`() = runBlocking {
         val document = SurveyDocument(id = "survey123", teamId = "documentTeamId")
         val result = store.saveSurvey(document, "fallbackTeamId")
 
@@ -94,7 +92,7 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun `saveSurvey uses fallbackTeamId when document teamId is null`() = runTest {
+    fun `saveSurvey uses fallbackTeamId when document teamId is null`() = runBlocking {
         val document = SurveyDocument(id = "survey123", teamId = null)
         val result = store.saveSurvey(document, "fallbackTeamId")
 
@@ -106,7 +104,7 @@ class DashboardOfflineSurveyStoreTest {
     }
 
     @Test
-    fun `saveSurvey with existing id replaces old record`() = runTest {
+    fun `saveSurvey with existing id replaces old record`() = runBlocking {
         val documentV1 = SurveyDocument(id = "survey123", rev = "1", name = "V1")
         store.saveSurvey(documentV1, "teamA")
 

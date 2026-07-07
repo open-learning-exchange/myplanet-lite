@@ -141,42 +141,57 @@
 
             <ImageView
                 android:id="@+id/dashboardHomeIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="14dp"
+                android:layout_width="@dimen/dashboard_icon_button_size"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:layout_marginHorizontal="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/dashboard_home"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
                 android:src="@drawable/ic_home_24" />
 
             <ImageView
                 android:id="@+id/dashboardSurveysIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="14dp"
+                android:layout_width="@dimen/dashboard_icon_button_size"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:layout_marginHorizontal="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/dashboard_surveys_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
                 android:src="@drawable/ic_surveys_24" />
 
             <ImageView
                 android:id="@+id/dashboardTeamMembersIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="14dp"
+                android:layout_width="@dimen/dashboard_icon_button_size"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:layout_marginHorizontal="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/dashboard_team_members_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
                 android:src="@drawable/ic_team_members_24" />
 
             <ImageView
                 android:id="@+id/dashboardCoursesIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="14dp"
+                android:layout_width="@dimen/dashboard_icon_button_size"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:layout_marginHorizontal="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/dashboard_courses_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
                 android:src="@drawable/ic_courses_24" />
 
             <ImageView
                 android:id="@+id/dashboardResourcesIcon"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginHorizontal="14dp"
+                android:layout_width="@dimen/dashboard_icon_button_size"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:layout_marginHorizontal="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
                 android:contentDescription="@string/dashboard_resources_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
                 android:src="@drawable/ic_resources_24" />
 
         </LinearLayout>

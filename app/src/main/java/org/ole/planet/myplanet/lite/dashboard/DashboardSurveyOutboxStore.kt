@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-19
@@ -19,12 +19,13 @@ import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class DashboardSurveyOutboxStore private constructor(
     context: Context,
-    moshi: Moshi = Moshi.Builder()
-        .add(FlexibleSurveyJsonAdapter())
-        .addLast(KotlinJsonAdapterFactory())
-        .build(),
+    moshi: Moshi =
+        Moshi
+            .Builder()
+            .add(FlexibleSurveyJsonAdapter())
+            .addLast(KotlinJsonAdapterFactory())
+            .build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
-
     private val submissionAdapter = moshi.adapter(SurveySubmission::class.java)
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -44,7 +45,11 @@ class DashboardSurveyOutboxStore private constructor(
         db.execSQL("CREATE INDEX idx_outbox_team_id ON outbox_submissions(team_id)")
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+    override fun onUpgrade(
+        db: SQLiteDatabase,
+        oldVersion: Int,
+        newVersion: Int,
+    ) {
         if (oldVersion < DATABASE_VERSION) {
             db.execSQL("DROP TABLE IF EXISTS outbox_submissions")
             onCreate(db)
@@ -60,174 +65,193 @@ class DashboardSurveyOutboxStore private constructor(
     ): Boolean {
         val serialized = submissionAdapter.toJson(submission) ?: return false
         return withContext(Dispatchers.IO) {
-            val values = ContentValues().apply {
-                put(COLUMN_SURVEY_ID, surveyId)
-                put(COLUMN_TEAM_ID, teamId)
-                put(COLUMN_TEAM_NAME, teamName)
-                put(COLUMN_SURVEY_NAME, surveyName)
-                put(COLUMN_CREATED_AT, System.currentTimeMillis())
-                put(COLUMN_PAYLOAD, serialized)
-            }
+            val values =
+                ContentValues().apply {
+                    put(COLUMN_SURVEY_ID, surveyId)
+                    put(COLUMN_TEAM_ID, teamId)
+                    put(COLUMN_TEAM_NAME, teamName)
+                    put(COLUMN_SURVEY_NAME, surveyName)
+                    put(COLUMN_CREATED_AT, System.currentTimeMillis())
+                    put(COLUMN_PAYLOAD, serialized)
+                }
             writableDatabase.insert(TABLE_SUBMISSIONS, null, values) != -1L
         }
     }
 
-    suspend fun getPendingForTeam(teamId: String?): List<OutboxEntry> = withContext(Dispatchers.IO) {
-        val rawEntries = readableDatabase.query(
-            TABLE_SUBMISSIONS,
-            arrayOf(
-                COLUMN_ID,
-                COLUMN_SURVEY_ID,
-                COLUMN_TEAM_ID,
-                COLUMN_TEAM_NAME,
-                COLUMN_SURVEY_NAME,
-                COLUMN_CREATED_AT,
-                COLUMN_PAYLOAD,
-            ),
-            if (teamId.isNullOrBlank()) null else "$COLUMN_TEAM_ID = ?",
-            if (teamId.isNullOrBlank()) null else arrayOf(teamId),
-            null,
-            null,
-            "$COLUMN_CREATED_AT DESC, $COLUMN_ID DESC",
-        ).use { cursor ->
-            val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
-            val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)
-            val teamIdIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_ID)
-            val teamNameIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_NAME)
-            val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
-            val createdAtIdx = cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)
-            val payloadIdx = cursor.getColumnIndexOrThrow(COLUMN_PAYLOAD)
+    suspend fun getPendingForTeam(teamId: String?): List<OutboxEntry> =
+        withContext(Dispatchers.IO) {
+            val rawEntries =
+                readableDatabase
+                    .query(
+                        TABLE_SUBMISSIONS,
+                        arrayOf(
+                            COLUMN_ID,
+                            COLUMN_SURVEY_ID,
+                            COLUMN_TEAM_ID,
+                            COLUMN_TEAM_NAME,
+                            COLUMN_SURVEY_NAME,
+                            COLUMN_CREATED_AT,
+                            COLUMN_PAYLOAD,
+                        ),
+                        if (teamId.isNullOrBlank()) null else "$COLUMN_TEAM_ID = ?",
+                        if (teamId.isNullOrBlank()) null else arrayOf(teamId),
+                        null,
+                        null,
+                        "$COLUMN_CREATED_AT DESC, $COLUMN_ID DESC",
+                    ).use { cursor ->
+                        val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
+                        val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)
+                        val teamIdIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_ID)
+                        val teamNameIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_NAME)
+                        val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
+                        val createdAtIdx = cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)
+                        val payloadIdx = cursor.getColumnIndexOrThrow(COLUMN_PAYLOAD)
 
-            buildList {
-                while (cursor.moveToNext()) {
-                    val payload = cursor.getStringOrNull(payloadIdx) ?: continue
-                    add(
-                        RawEntry(
-                            id = cursor.getLong(idIdx),
-                            surveyId = cursor.getStringOrNull(surveyIdIdx),
-                            teamId = cursor.getStringOrNull(teamIdIdx),
-                            teamName = cursor.getStringOrNull(teamNameIdx),
-                            surveyName = cursor.getStringOrNull(surveyNameIdx),
-                            createdAt = cursor.getLong(createdAtIdx),
-                            payload = payload,
-                        )
+                        buildList {
+                            while (cursor.moveToNext()) {
+                                val payload = cursor.getStringOrNull(payloadIdx) ?: continue
+                                add(
+                                    RawEntry(
+                                        id = cursor.getLong(idIdx),
+                                        surveyId = cursor.getStringOrNull(surveyIdIdx),
+                                        teamId = cursor.getStringOrNull(teamIdIdx),
+                                        teamName = cursor.getStringOrNull(teamNameIdx),
+                                        surveyName = cursor.getStringOrNull(surveyNameIdx),
+                                        createdAt = cursor.getLong(createdAtIdx),
+                                        payload = payload,
+                                    ),
+                                )
+                            }
+                        }
+                    }
+
+            withContext(Dispatchers.Default) {
+                rawEntries.mapNotNull { raw ->
+                    val parsed =
+                        try {
+                            submissionAdapter.fromJson(raw.payload)
+                        } catch (e: Exception) {
+                            null
+                        } ?: return@mapNotNull null
+                    OutboxEntry(
+                        id = raw.id,
+                        surveyId = raw.surveyId,
+                        teamId = raw.teamId,
+                        teamName = raw.teamName,
+                        surveyName = raw.surveyName,
+                        createdAt = raw.createdAt,
+                        submission = parsed,
                     )
                 }
             }
         }
 
-        withContext(Dispatchers.Default) {
-            rawEntries.mapNotNull { raw ->
-                val parsed = try { submissionAdapter.fromJson(raw.payload) } catch(e: Exception) { null } ?: return@mapNotNull null
-                OutboxEntry(
-                    id = raw.id,
-                    surveyId = raw.surveyId,
-                    teamId = raw.teamId,
-                    teamName = raw.teamName,
-                    surveyName = raw.surveyName,
-                    createdAt = raw.createdAt,
-                    submission = parsed,
-                )
-            }
-        }
-    }
+    suspend fun getEntry(id: Long): OutboxEntry? =
+        withContext(Dispatchers.IO) {
+            val rawEntry =
+                readableDatabase
+                    .query(
+                        TABLE_SUBMISSIONS,
+                        arrayOf(
+                            COLUMN_ID,
+                            COLUMN_SURVEY_ID,
+                            COLUMN_TEAM_ID,
+                            COLUMN_TEAM_NAME,
+                            COLUMN_SURVEY_NAME,
+                            COLUMN_CREATED_AT,
+                            COLUMN_PAYLOAD,
+                        ),
+                        "$COLUMN_ID = ?",
+                        arrayOf(id.toString()),
+                        null,
+                        null,
+                        null,
+                        "1",
+                    ).use { cursor ->
+                        val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
+                        val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)
+                        val teamIdIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_ID)
+                        val teamNameIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_NAME)
+                        val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
+                        val createdAtIdx = cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)
+                        val payloadIdx = cursor.getColumnIndexOrThrow(COLUMN_PAYLOAD)
 
-    suspend fun getEntry(id: Long): OutboxEntry? = withContext(Dispatchers.IO) {
-        val rawEntry = readableDatabase.query(
-            TABLE_SUBMISSIONS,
-            arrayOf(
-                COLUMN_ID,
-                COLUMN_SURVEY_ID,
-                COLUMN_TEAM_ID,
-                COLUMN_TEAM_NAME,
-                COLUMN_SURVEY_NAME,
-                COLUMN_CREATED_AT,
-                COLUMN_PAYLOAD,
-            ),
-            "$COLUMN_ID = ?",
-            arrayOf(id.toString()),
-            null,
-            null,
-            null,
-            "1",
-        ).use { cursor ->
-            val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
-            val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)
-            val teamIdIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_ID)
-            val teamNameIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_NAME)
-            val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
-            val createdAtIdx = cursor.getColumnIndexOrThrow(COLUMN_CREATED_AT)
-            val payloadIdx = cursor.getColumnIndexOrThrow(COLUMN_PAYLOAD)
+                        if (cursor.moveToFirst()) {
+                            val payload = cursor.getStringOrNull(payloadIdx) ?: return@use null
+                            RawEntry(
+                                id = cursor.getLong(idIdx),
+                                surveyId = cursor.getStringOrNull(surveyIdIdx),
+                                teamId = cursor.getStringOrNull(teamIdIdx),
+                                teamName = cursor.getStringOrNull(teamNameIdx),
+                                surveyName = cursor.getStringOrNull(surveyNameIdx),
+                                createdAt = cursor.getLong(createdAtIdx),
+                                payload = payload,
+                            )
+                        } else {
+                            null
+                        }
+                    }
 
-            if (cursor.moveToFirst()) {
-                val payload = cursor.getStringOrNull(payloadIdx) ?: return@use null
-                RawEntry(
-                    id = cursor.getLong(idIdx),
-                    surveyId = cursor.getStringOrNull(surveyIdIdx),
-                    teamId = cursor.getStringOrNull(teamIdIdx),
-                    teamName = cursor.getStringOrNull(teamNameIdx),
-                    surveyName = cursor.getStringOrNull(surveyNameIdx),
-                    createdAt = cursor.getLong(createdAtIdx),
-                    payload = payload,
-                )
+            if (rawEntry != null) {
+                withContext(Dispatchers.Default) {
+                    val parsed =
+                        try {
+                            submissionAdapter.fromJson(rawEntry.payload)
+                        } catch (e: Exception) {
+                            null
+                        } ?: return@withContext null
+                    OutboxEntry(
+                        id = rawEntry.id,
+                        surveyId = rawEntry.surveyId,
+                        teamId = rawEntry.teamId,
+                        teamName = rawEntry.teamName,
+                        surveyName = rawEntry.surveyName,
+                        createdAt = rawEntry.createdAt,
+                        submission = parsed,
+                    )
+                }
             } else {
                 null
             }
         }
 
-        if (rawEntry != null) {
-            withContext(Dispatchers.Default) {
-                val parsed = try { submissionAdapter.fromJson(rawEntry.payload) } catch(e: Exception) { null } ?: return@withContext null
-                OutboxEntry(
-                    id = rawEntry.id,
-                    surveyId = rawEntry.surveyId,
-                    teamId = rawEntry.teamId,
-                    teamName = rawEntry.teamName,
-                    surveyName = rawEntry.surveyName,
-                    createdAt = rawEntry.createdAt,
-                    submission = parsed,
-                )
-            }
-        } else {
-            null
+    suspend fun deleteEntry(id: Long): Boolean =
+        withContext(Dispatchers.IO) {
+            writableDatabase.delete(TABLE_SUBMISSIONS, "$COLUMN_ID = ?", arrayOf(id.toString())) > 0
         }
-    }
 
-    suspend fun deleteEntry(id: Long): Boolean = withContext(Dispatchers.IO) {
-        writableDatabase.delete(TABLE_SUBMISSIONS, "$COLUMN_ID = ?", arrayOf(id.toString())) > 0
-    }
+    suspend fun deleteEntries(ids: Collection<Long>): Boolean =
+        withContext(Dispatchers.IO) {
+            if (ids.isEmpty()) return@withContext false
+            var deletedCount = 0
+            val db = writableDatabase
+            db.beginTransaction()
+            try {
+                val maxChunkSize = 900
+                val idStrings = Array(maxChunkSize) { "" }
+                val placeholders900 = "?,".repeat(maxChunkSize).dropLast(1)
 
-    suspend fun deleteEntries(ids: Collection<Long>): Boolean = withContext(Dispatchers.IO) {
-        if (ids.isEmpty()) return@withContext false
-        var deletedCount = 0
-        val db = writableDatabase
-        db.beginTransaction()
-        try {
-            val maxChunkSize = 900
-            val idStrings = Array(maxChunkSize) { "" }
-            val placeholders900 = "?,".repeat(maxChunkSize).dropLast(1)
-
-            val iterator = ids.iterator()
-            while (iterator.hasNext()) {
-                var count = 0
-                while (iterator.hasNext() && count < maxChunkSize) {
-                    idStrings[count] = iterator.next().toString()
-                    count++
+                val iterator = ids.iterator()
+                while (iterator.hasNext()) {
+                    var count = 0
+                    while (iterator.hasNext() && count < maxChunkSize) {
+                        idStrings[count] = iterator.next().toString()
+                        count++
+                    }
+                    if (count == maxChunkSize) {
+                        deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders900)", idStrings)
+                    } else {
+                        val remainingStrings = idStrings.copyOfRange(0, count)
+                        val placeholders = "?,".repeat(count).dropLast(1)
+                        deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders)", remainingStrings)
+                    }
                 }
-                if (count == maxChunkSize) {
-                    deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders900)", idStrings)
-                } else {
-                    val remainingStrings = idStrings.copyOfRange(0, count)
-                    val placeholders = "?,".repeat(count).dropLast(1)
-                    deletedCount += db.delete(TABLE_SUBMISSIONS, "$COLUMN_ID IN ($placeholders)", remainingStrings)
-                }
+                db.setTransactionSuccessful()
+            } finally {
+                db.endTransaction()
             }
-            db.setTransactionSuccessful()
-        } finally {
-            db.endTransaction()
+            deletedCount > 0
         }
-        deletedCount > 0
-    }
 
     data class OutboxEntry(
         val id: Long,
@@ -264,11 +288,10 @@ class DashboardSurveyOutboxStore private constructor(
         @Volatile
         private var instance: DashboardSurveyOutboxStore? = null
 
-        fun getInstance(context: Context): DashboardSurveyOutboxStore {
-            return instance ?: synchronized(this) {
+        fun getInstance(context: Context): DashboardSurveyOutboxStore =
+            instance ?: synchronized(this) {
                 instance ?: DashboardSurveyOutboxStore(context.applicationContext).also { instance = it }
             }
-        }
 
         fun resetForTesting(context: Context) {
             instance?.close()
