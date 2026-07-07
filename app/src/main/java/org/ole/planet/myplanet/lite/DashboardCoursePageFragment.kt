@@ -1142,18 +1142,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
 
             val newDisplayed = displayedItems.toList()
 
-            val diffResult = androidx.recyclerview.widget.DiffUtil.calculateDiff(object : androidx.recyclerview.widget.DiffUtil.Callback() {
-                override fun getOldListSize() = oldDisplayed.size
-                override fun getNewListSize() = newDisplayed.size
+            val diffCallback = org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback<CourseItem>(
+                areItemsTheSame = { oldItem, newItem -> oldItem.id == newItem.id }
+            )
 
-                override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    return oldDisplayed[oldItemPosition].id == newDisplayed[newItemPosition].id
-                }
-
-                override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean {
-                    return oldDisplayed[oldItemPosition] == newDisplayed[newItemPosition]
-                }
-            })
+            val diffResult = org.ole.planet.myplanet.lite.util.DiffUtils.calculateDiff(oldDisplayed, newDisplayed, diffCallback)
 
             diffResult.dispatchUpdatesTo(object : androidx.recyclerview.widget.ListUpdateCallback {
                 override fun onInserted(position: Int, count: Int) {
