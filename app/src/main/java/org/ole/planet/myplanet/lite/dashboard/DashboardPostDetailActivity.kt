@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
 import android.net.Uri
@@ -64,7 +63,6 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 internal fun transformCommentMarkdownForDisplay(markdown: String): String {
@@ -583,7 +581,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun attemptReply(message: String) {
-        if (message.isBlank()) {
+        if (message.isBlank() && pendingReplyImages.isEmpty()) {
             Toast.makeText(this, R.string.dashboard_post_reply_empty, Toast.LENGTH_SHORT).show()
             return
         }
@@ -643,7 +641,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun attemptUpdateComment(message: String) {
-        if (message.isBlank()) {
+        if (message.isBlank() && pendingReplyImages.isEmpty()) {
             Toast.makeText(this, R.string.dashboard_post_reply_empty, Toast.LENGTH_SHORT).show()
             return
         }
@@ -767,7 +765,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun updateReplyActionAvailability(text: CharSequence?) {
-        val hasContent = !text.isNullOrBlank()
+        val hasContent = !text.isNullOrBlank() || pendingReplyImages.isNotEmpty()
         val canSend = (headerItem.canReply || isEditingComment) && !isPostingReply && hasContent && isReplyComposerExpanded
         replySendButton.isEnabled = canSend
     }
@@ -785,6 +783,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             }
         }
         updateReplyPreviewImages()
+        updateReplyActionAvailability(replyInput.text)
     }
 
     private fun setReplyPosting(posting: Boolean) {
@@ -813,32 +812,11 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         }
         pendingResult.onSuccess { pending ->
             pendingReplyImages[pending.id] = pending
-            insertReplyImageMarkdown(pending.fileName)
             updateReplyPreview(replyPreview, replyInput.text?.toString())
+            updateReplyActionAvailability(replyInput.text)
         }.onFailure {
             Toast.makeText(this, R.string.create_voice_image_processing_error, Toast.LENGTH_SHORT).show()
         }
-    }
-
-    private fun insertReplyImageMarkdown(fileName: String) {
-        val editText = replyInput
-        val editable = editText.text ?: return
-        val start = max(0, editText.selectionStart)
-        val end = max(0, editText.selectionEnd)
-        val insertStart = min(start, end)
-        val insertEnd = max(start, end)
-        val needsLeadingLineBreak = insertStart > 0 && editable[insertStart - 1] != '\n'
-        val snippet = buildString {
-            if (needsLeadingLineBreak) {
-                append("\n\n")
-            }
-            append("![](")
-            append(fileName)
-            append(")\n")
-        }
-        editable.replace(insertStart, insertEnd, snippet)
-        val cursor = (insertStart + snippet.length).coerceAtMost(editable.length)
-        editText.setSelection(cursor)
     }
 
     private fun collapseReplyComposerIfExpanded(): Boolean {
@@ -1095,12 +1073,9 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             }.awaitAll()
         }
 
-        var updatedMessage = originalMessage
         val preparedImages = mutableListOf<VoicesComposerRepository.ImagePayload>()
 
         for ((pending, markdown) in uploadResults) {
-            val replaced = MarkdownUtils.replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
-            updatedMessage = ensureMarkdownPresent(replaced, markdown)
             val resourceId = pending.resourceId
             if (resourceId != null) {
                 preparedImages += VoicesComposerRepository.ImagePayload(
@@ -1110,7 +1085,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
                 )
             }
         }
-        return PreparedVoicePost(updatedMessage, preparedImages)
+        return PreparedVoicePost(originalMessage, preparedImages)
     }
 
     private suspend fun ensureReplyImageUpload(
@@ -1198,18 +1173,6 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         updateReplyPreview(replyPreview, replyInput.text?.toString())
     }
 
-    private fun ensureMarkdownPresent(message: String, markdown: String): String {
-        if (message.contains(markdown)) {
-            return message
-        }
-        val builder = StringBuilder(message.trimEnd())
-        if (builder.isNotEmpty()) {
-            builder.append("\n\n")
-        }
-        builder.append(markdown)
-        return builder.toString()
-    }
-
     private suspend fun buildReplyImageResourceContext(credentials: StoredCredentials): VoiceImageResourceContext {
         val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
         val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)?.takeIf { it.isNotBlank() }
@@ -1242,36 +1205,6 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             val parentCode = json.optString("parentCode").takeIf { it.isNotBlank() }
             ProfileCodes(planetCode, parentCode)
         }.getOrNull()
-    }
-
-    private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
-        var matched = false
-        val updated = IMAGE_MARKDOWN_REGEX.replace(source) { matchResult ->
-            val altText = matchResult.groupValues.getOrNull(1).orEmpty()
-            val url = matchResult.groupValues.getOrNull(2).orEmpty()
-            if (url == fileName) {
-                matched = true
-                if (altText.isBlank()) {
-                    replacement
-                } else {
-                    MarkdownUtils.applyAltText(replacement, altText)
-                }
-            } else {
-                matchResult.value
-            }
-        }
-        if (matched) {
-            return updated
-        }
-        val builder = StringBuilder(source)
-        if (builder.isNotEmpty()) {
-            if (builder[builder.length - 1] != '\n') {
-                builder.append('\n')
-            }
-            builder.append('\n')
-        }
-        builder.append(replacement)
-        return builder.toString()
     }
 
     private suspend fun loadCachedProfile(): UserProfile? {

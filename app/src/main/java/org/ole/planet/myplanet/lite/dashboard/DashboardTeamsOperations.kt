@@ -360,11 +360,7 @@ internal class DashboardTeamsOperations(
             multipleMemberCountResponseAdapter.fromJson(response.body.string())?.docs ?: emptyList()
         }
 
-        return buildMap {
-            allDocs.forEach { doc ->
-                doc.teamId?.let { teamId -> put(teamId, (get(teamId) ?: 0) + 1) }
-            }
-        }
+        return allDocs.mapNotNull { it.teamId }.groupingBy { it }.eachCount()
     }
 
     fun requestTeamMembership(baseUrl: String, credentials: StoredCredentials?, sessionCookie: String?, request: JoinTeamRequest) {
