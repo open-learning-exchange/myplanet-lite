@@ -1,23 +1,30 @@
 package org.ole.planet.myplanet.lite.dashboard
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.json.JSONObject
+import java.io.File
 import org.junit.After
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
+@RunWith(RobolectricTestRunner::class)
 class DashboardResourcesRepositoryTest {
     private lateinit var server: MockWebServer
     private lateinit var repository: DashboardResourcesRepository
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Before
     fun setup() {
         server = MockWebServer()
         server.start()
-        repository = DashboardResourcesRepository()
+        repository = DashboardResourcesRepository(UnconfinedTestDispatcher())
     }
 
     @After
@@ -26,7 +33,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun fetchCommunityResources_sendsCorrectSort() = runBlocking {
+    fun fetchCommunityResources_sendsCorrectSort() = runTest {
         server.enqueue(MockResponse().setBody("{\"docs\": []}"))
 
         repository.fetchCommunityResources(
@@ -50,7 +57,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun downloadResourceBytes_reportsProgress() = runBlocking {
+    fun downloadResourceBytes_reportsProgress() = runTest {
         server.enqueue(
             MockResponse()
                 .setBody("abcd")
@@ -152,4 +159,37 @@ class DashboardResourcesRepositoryTest {
         server.takeRequest() // Upload
         server.takeRequest() // Team link
     } }
+    fun downloadPdfToCache_success_writesFile() = runTest {
+        val pdfContent = "dummy pdf content"
+        server.enqueue(MockResponse().setResponseCode(200).setBody(pdfContent))
+
+        val cacheDir = File(System.getProperty("java.io.tmpdir")!!, "test-cache")
+        cacheDir.mkdirs()
+
+        val result = repository.downloadPdfToCache(server.url("/test.pdf").toString(), "Basic auth", cacheDir)
+
+        org.junit.Assert.assertNotNull(result)
+        org.junit.Assert.assertTrue(result!!.exists())
+        org.junit.Assert.assertEquals(pdfContent, result.readText())
+
+        val request = server.takeRequest()
+        org.junit.Assert.assertNull(request.getHeader("Authorization"))
+
+        result.delete()
+        cacheDir.delete()
+    }
+
+    @Test
+    fun downloadPdfToCache_non2xx_returnsNull() = runTest {
+        server.enqueue(MockResponse().setResponseCode(404))
+
+        val cacheDir = File(System.getProperty("java.io.tmpdir")!!, "test-cache")
+        cacheDir.mkdirs()
+
+        val result = repository.downloadPdfToCache(server.url("/test.pdf").toString(), "Basic auth", cacheDir)
+
+        org.junit.Assert.assertNull(result)
+
+        cacheDir.delete()
+    }
 }

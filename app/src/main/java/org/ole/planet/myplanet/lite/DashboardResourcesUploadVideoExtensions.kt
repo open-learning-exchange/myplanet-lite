@@ -31,8 +31,6 @@ import kotlin.math.max
 import kotlin.math.roundToInt
 import org.json.JSONArray
 import org.json.JSONObject
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 @OptIn(UnstableApi::class)
 internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
