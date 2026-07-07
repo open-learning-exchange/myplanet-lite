@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
@@ -30,7 +30,6 @@ import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
 
 class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
-
     internal var document: SurveyDocument? = null
     internal var questions: List<SurveyQuestion> = emptyList()
     internal var teamId: String? = null
@@ -79,14 +78,20 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        document = arguments?.let { args ->
-            BundleCompat.getSerializable(args, ARG_DOCUMENT, SurveyDocument::class.java)
-        }
+        document =
+            arguments?.let { args ->
+                BundleCompat.getSerializable(args, ARG_DOCUMENT, SurveyDocument::class.java)
+            }
         teamId = arguments?.getString(ARG_TEAM_ID)
         teamName = arguments?.getString(ARG_TEAM_NAME)
         courseId = arguments?.getString(ARG_COURSE_ID)
         isExam = arguments?.getBoolean(ARG_IS_EXAM) == true
-        baseUrlOverride = arguments?.getString(ARG_BASE_URL)?.trim()?.trimEnd('/')?.takeIf { it.isNotBlank() }
+        baseUrlOverride =
+            arguments
+                ?.getString(ARG_BASE_URL)
+                ?.trim()
+                ?.trimEnd('/')
+                ?.takeIf { it.isNotBlank() }
         includeUserContext = arguments?.getBoolean(ARG_INCLUDE_USER_CONTEXT, true) != false
         questions = document?.questions.orEmpty()
         applyProfileDefaultsForCourseContent()
@@ -96,7 +101,10 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         translationManager = SurveyTranslationManager(requireContext().applicationContext)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         bindViews(view)
         setupInsets(view)
@@ -147,15 +155,33 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         progressBar.max = steps.size
         counterView.text = getString(R.string.dashboard_survey_wizard_step_counter, index + 1, steps.size)
         updateDescriptionVisibility(index)
-        val questionBody = when (step) {
-            WizardStep.Basics -> getString(R.string.dashboard_survey_wizard_participant_basics_title)
-            WizardStep.Names -> getString(R.string.dashboard_survey_wizard_names_title)
-            WizardStep.BirthDate -> getString(R.string.dashboard_survey_wizard_birthdate_title)
-            WizardStep.Contact -> getString(R.string.dashboard_survey_wizard_contact_title)
-            WizardStep.LanguageLevel -> getString(R.string.dashboard_survey_wizard_language_level_title)
-            is WizardStep.Question -> questionTranslations[step.questionIndex]?.body
-                ?: step.question.body.orEmpty()
-        }
+        val questionBody =
+            when (step) {
+                WizardStep.Basics -> {
+                    getString(R.string.dashboard_survey_wizard_participant_basics_title)
+                }
+
+                WizardStep.Names -> {
+                    getString(R.string.dashboard_survey_wizard_names_title)
+                }
+
+                WizardStep.BirthDate -> {
+                    getString(R.string.dashboard_survey_wizard_birthdate_title)
+                }
+
+                WizardStep.Contact -> {
+                    getString(R.string.dashboard_survey_wizard_contact_title)
+                }
+
+                WizardStep.LanguageLevel -> {
+                    getString(R.string.dashboard_survey_wizard_language_level_title)
+                }
+
+                is WizardStep.Question -> {
+                    questionTranslations[step.questionIndex]?.body
+                        ?: step.question.body.orEmpty()
+                }
+            }
         setQuestionBody(questionBody)
         questionContainer.removeAllViews()
         val (renderedView, collector) = renderStep(step)
@@ -163,11 +189,12 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         activeCollector = collector
         progressBar.progress = index + 1
         val isLast = index == steps.lastIndex
-        nextButton.text = if (isLast) {
-            getString(R.string.dashboard_survey_wizard_finish)
-        } else {
-            getString(R.string.dashboard_survey_wizard_next)
-        }
+        nextButton.text =
+            if (isLast) {
+                getString(R.string.dashboard_survey_wizard_finish)
+            } else {
+                getString(R.string.dashboard_survey_wizard_next)
+            }
         updateNavigationEnabled()
     }
 
@@ -188,18 +215,18 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             isExam: Boolean = false,
             baseUrl: String? = null,
             includeUserContext: Boolean = true,
-        ): SurveyWizardFragment {
-            return SurveyWizardFragment().apply {
-                arguments = Bundle().apply {
-                    putSerializable(ARG_DOCUMENT, document)
-                    putString(ARG_TEAM_ID, teamId)
-                    putString(ARG_TEAM_NAME, teamName)
-                    putString(ARG_COURSE_ID, courseId)
-                    putBoolean(ARG_IS_EXAM, isExam)
-                    putString(ARG_BASE_URL, baseUrl)
-                    putBoolean(ARG_INCLUDE_USER_CONTEXT, includeUserContext)
-                }
+        ): SurveyWizardFragment =
+            SurveyWizardFragment().apply {
+                arguments =
+                    Bundle().apply {
+                        putSerializable(ARG_DOCUMENT, document)
+                        putString(ARG_TEAM_ID, teamId)
+                        putString(ARG_TEAM_NAME, teamName)
+                        putString(ARG_COURSE_ID, courseId)
+                        putBoolean(ARG_IS_EXAM, isExam)
+                        putString(ARG_BASE_URL, baseUrl)
+                        putBoolean(ARG_INCLUDE_USER_CONTEXT, includeUserContext)
+                    }
             }
-        }
     }
 }

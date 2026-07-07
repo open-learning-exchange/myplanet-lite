@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
@@ -43,7 +43,10 @@ internal sealed class WizardStep : java.io.Serializable {
         private fun readResolve(): Any = LanguageLevel
     }
 
-    data class Question(val question: SurveyQuestion, val questionIndex: Int) : WizardStep()
+    data class Question(
+        val question: SurveyQuestion,
+        val questionIndex: Int,
+    ) : WizardStep()
 }
 
 internal data class SurveyRespondent(
@@ -62,10 +65,21 @@ internal data class SurveyRespondent(
 )
 
 internal sealed class SurveyAnswer : java.io.Serializable {
-    data class Text(val value: String) : SurveyAnswer()
-    data class SingleChoice(val choice: SelectedOption?) : SurveyAnswer()
-    data class MultipleChoice(val choices: List<SelectedOption>) : SurveyAnswer()
-    data class Rating(val score: Int) : SurveyAnswer()
+    data class Text(
+        val value: String,
+    ) : SurveyAnswer()
+
+    data class SingleChoice(
+        val choice: SelectedOption?,
+    ) : SurveyAnswer()
+
+    data class MultipleChoice(
+        val choices: List<SelectedOption>,
+    ) : SurveyAnswer()
+
+    data class Rating(
+        val score: Int,
+    ) : SurveyAnswer()
 }
 
 internal data class SelectedOption(
@@ -73,13 +87,12 @@ internal data class SelectedOption(
     val text: String,
     val isOther: Boolean = false,
 ) : java.io.Serializable {
-    fun toSubmissionValue(): SubmissionOptionValue {
-        return SubmissionOptionValue(
+    fun toSubmissionValue(): SubmissionOptionValue =
+        SubmissionOptionValue(
             id = id,
             text = text,
             isOther = isOther,
         )
-    }
 }
 
 internal data class SubmissionOptionValue(
@@ -96,5 +109,5 @@ internal data class SurveySubmissionParams(
     val parentId: String,
     val answersPayload: List<SubmissionAnswer>,
     val totalGrade: Int,
-    val profile: UserProfile?
+    val profile: UserProfile?,
 )

@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-15
@@ -12,8 +12,6 @@ import android.util.LruCache
 import android.view.View
 import android.widget.ImageView
 import androidx.core.net.toUri
-import java.io.File
-import java.io.IOException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -21,18 +19,23 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
+import java.io.IOException
 
 class DashboardPostImageLoader(
     private val baseUrl: String,
     private val sessionCookie: String?,
     private val scope: CoroutineScope,
-    private val client: OkHttpClient = SharedBitmapDependencies.client
+    private val client: OkHttpClient = SharedBitmapDependencies.client,
 ) {
-
     private val cache = sharedCache
     private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
 
-    fun bind(imageView: ImageView, imagePath: String, onResult: ((Boolean) -> Unit)? = null) {
+    fun bind(
+        imageView: ImageView,
+        imagePath: String,
+        onResult: ((Boolean) -> Unit)? = null,
+    ) {
         imageView.setImageDrawable(null)
         val cached = cache.get(imagePath)
         if (cached != null) {
@@ -42,22 +45,24 @@ class DashboardPostImageLoader(
         }
         imageView.tag = imagePath
         scope.launch {
-            val deferred = synchronized(inFlightRequests) {
-                inFlightRequests.getOrPut(imagePath) {
-                    scope.async(Dispatchers.IO) {
-                        runCatching { fetchImageBitmap(imagePath) }.getOrNull()
-                    }
-                }
-            }
-            val bitmap = try {
-                deferred.await()
-            } finally {
+            val deferred =
                 synchronized(inFlightRequests) {
-                    if (inFlightRequests[imagePath] == deferred) {
-                        inFlightRequests.remove(imagePath)
+                    inFlightRequests.getOrPut(imagePath) {
+                        scope.async(Dispatchers.IO) {
+                            runCatching { fetchImageBitmap(imagePath) }.getOrNull()
+                        }
                     }
                 }
-            }
+            val bitmap =
+                try {
+                    deferred.await()
+                } finally {
+                    synchronized(inFlightRequests) {
+                        if (inFlightRequests[imagePath] == deferred) {
+                            inFlightRequests.remove(imagePath)
+                        }
+                    }
+                }
             if (imageView.tag != imagePath) {
                 onResult?.invoke(bitmap != null)
                 return@launch
@@ -83,9 +88,11 @@ class DashboardPostImageLoader(
             if (!file.exists()) return null
             return BitmapFactory.decodeFile(file.absolutePath)
         }
-        val requestBuilder = Request.Builder()
-            .url(requestUrl)
-            .get()
+        val requestBuilder =
+            Request
+                .Builder()
+                .url(requestUrl)
+                .get()
         sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
             requestBuilder.addHeader("Cookie", cookie)
         }
@@ -116,19 +123,22 @@ class DashboardPostImageLoader(
             return null
         }
         val normalizedPath = trimmedPath.trimStart('/')
-        val finalPath = when {
-            normalizedPath.startsWith("db/") -> normalizedPath
-            else -> "db/$normalizedPath"
-        }
+        val finalPath =
+            when {
+                normalizedPath.startsWith("db/") -> normalizedPath
+                else -> "db/$normalizedPath"
+            }
         return "$normalizedBase/$finalPath"
     }
 
     private companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
-        private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
-            override fun sizeOf(key: String, value: Bitmap): Int {
-                return value.byteCount
+        private val sharedCache =
+            object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
+                override fun sizeOf(
+                    key: String,
+                    value: Bitmap,
+                ): Int = value.byteCount
             }
-        }
     }
 }

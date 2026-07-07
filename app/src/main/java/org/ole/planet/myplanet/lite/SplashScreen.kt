@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-15
@@ -18,7 +18,6 @@ import android.widget.TextView
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.lifecycleScope
 import com.squareup.moshi.Moshi
-import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -30,9 +29,9 @@ import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import java.util.UUID
 
 class SplashScreen : BaseActivity() {
-
     private val connectivityClient: OkHttpClient by lazy { OkHttpClient.Builder().build() }
     private val connectivityMoshi: Moshi by lazy { Moshi.Builder().build() }
     private val serverConnectivityRepository: ServerConnectivityRepository by lazy {
@@ -68,8 +67,9 @@ class SplashScreen : BaseActivity() {
         if (isTaskRoot) {
             return false
         }
-        val isLauncherIntent = launchIntent?.action == Intent.ACTION_MAIN &&
-            launchIntent.hasCategory(Intent.CATEGORY_LAUNCHER)
+        val isLauncherIntent =
+            launchIntent?.action == Intent.ACTION_MAIN &&
+                launchIntent.hasCategory(Intent.CATEGORY_LAUNCHER)
         return isLauncherIntent
     }
 
@@ -79,7 +79,8 @@ class SplashScreen : BaseActivity() {
         logo.translationY = startOffset
         logo.alpha = 0f
         logo.post {
-            logo.animate()
+            logo
+                .animate()
                 .translationY(0f)
                 .rotationBy(360f)
                 .alpha(1f)
@@ -91,27 +92,29 @@ class SplashScreen : BaseActivity() {
         appName.scaleX = 1f
         appName.scaleY = 1f
         appName.post {
-            appName.animate()
+            appName
+                .animate()
                 .scaleX(1.15f)
                 .scaleY(1.15f)
                 .setDuration(200)
                 .setInterpolator(AccelerateDecelerateInterpolator())
                 .withEndAction {
-                    appName.animate()
+                    appName
+                        .animate()
                         .scaleX(1f)
                         .scaleY(1f)
                         .setDuration(200)
                         .setInterpolator(AccelerateDecelerateInterpolator())
                         .start()
-                }
-                .start()
+                }.start()
         }
         val appVersion = findViewById<TextView>(R.id.appVersionTextView)
         appVersion.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
         appVersion.translationY = resources.displayMetrics.density * 40
         appVersion.alpha = 0f
         appVersion.post {
-            appVersion.animate()
+            appVersion
+                .animate()
                 .translationY(0f)
                 .alpha(1f)
                 .setDuration(400)
@@ -122,18 +125,29 @@ class SplashScreen : BaseActivity() {
 
     private suspend fun routeToNextActivity() {
         val launchMode = attemptDirectDashboardLaunch()
-        val nextIntent = when (launchMode) {
-            DashboardLaunchMode.ONLINE -> Intent(this@SplashScreen, DashboardActivity::class.java)
-            DashboardLaunchMode.OFFLINE -> Intent(this@SplashScreen, DashboardActivity::class.java).apply {
-                putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
-            }
-            DashboardLaunchMode.NONE -> Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
-                putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
-            }
-        }
+        val nextIntent =
+            when (launchMode) {
+                DashboardLaunchMode.ONLINE -> {
+                    Intent(this@SplashScreen, DashboardActivity::class.java)
+                }
 
-        val forwardedPostId = intent.getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
-            ?.takeIf { it.isNotBlank() }
+                DashboardLaunchMode.OFFLINE -> {
+                    Intent(this@SplashScreen, DashboardActivity::class.java).apply {
+                        putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
+                    }
+                }
+
+                DashboardLaunchMode.NONE -> {
+                    Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
+                        putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
+                    }
+                }
+            }
+
+        val forwardedPostId =
+            intent
+                .getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
+                ?.takeIf { it.isNotBlank() }
 
         if (forwardedPostId != null) {
             nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, forwardedPostId)
@@ -155,19 +169,22 @@ class SplashScreen : BaseActivity() {
 
     private suspend fun attemptDirectDashboardLaunch(): DashboardLaunchMode {
         val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
-        val baseUrl = preferences.getString(KEY_SERVER_URL, null)?.trim()?.takeIf { it.isNotEmpty() }
-            ?: return DashboardLaunchMode.NONE
+        val baseUrl =
+            preferences.getString(KEY_SERVER_URL, null)?.trim()?.takeIf { it.isNotEmpty() }
+                ?: return DashboardLaunchMode.NONE
         val authService = AuthDependencies.provideAuthService(this, baseUrl)
         val storedToken = authService.getStoredToken()
         if (storedToken.isNullOrBlank()) {
             return DashboardLaunchMode.NONE
         }
-        val cachedUsername = withContext(Dispatchers.IO) {
-            userProfileDatabase.getProfile()?.username
-        }?.takeIf { it.isNotBlank() } ?: return DashboardLaunchMode.NONE
-        val isServerReachable = withContext(Dispatchers.IO) {
-            serverConnectivityRepository.checkServerConnectivity(baseUrl).reachable
-        }
+        val cachedUsername =
+            withContext(Dispatchers.IO) {
+                userProfileDatabase.getProfile()?.username
+            }?.takeIf { it.isNotBlank() } ?: return DashboardLaunchMode.NONE
+        val isServerReachable =
+            withContext(Dispatchers.IO) {
+                serverConnectivityRepository.checkServerConnectivity(baseUrl).reachable
+            }
         if (!isServerReachable) {
             return DashboardLaunchMode.OFFLINE
         }
@@ -181,21 +198,20 @@ class SplashScreen : BaseActivity() {
         }
     }
 
-
-
-
-
     @SuppressLint("HardwareIds")
     private fun cacheDeviceIdentifiers() {
         val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
 
-        val androidId = runCatching {
-            Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
-        }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+        val androidId =
+            runCatching {
+                Settings.Secure.getString(contentResolver, Settings.Secure.ANDROID_ID)
+            }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
 
-        val storedUniqueId = preferences.getString(KEY_DEVICE_UNIQUE_ANDROID_ID, null)
-            ?.trim()
-            ?.takeIf { it.isNotEmpty() }
+        val storedUniqueId =
+            preferences
+                .getString(KEY_DEVICE_UNIQUE_ANDROID_ID, null)
+                ?.trim()
+                ?.takeIf { it.isNotEmpty() }
 
         val uniqueAndroidId = storedUniqueId ?: generateUniqueAndroidId()
         val customDeviceName = resolveCustomDeviceName().trim()
@@ -208,28 +224,29 @@ class SplashScreen : BaseActivity() {
         }
     }
 
-    private fun generateUniqueAndroidId(): String {
-        return UUID.randomUUID().toString()
-    }
+    private fun generateUniqueAndroidId(): String = UUID.randomUUID().toString()
 
     private fun resolveCustomDeviceName(): String {
-        val globalName = runCatching {
-            Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
-        }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+        val globalName =
+            runCatching {
+                Settings.Global.getString(contentResolver, Settings.Global.DEVICE_NAME)
+            }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
 
         if (globalName != null) {
             return globalName
         }
 
-        val systemName = runCatching {
-            Settings.System.getString(contentResolver, "device_name")
-        }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
+        val systemName =
+            runCatching {
+                Settings.System.getString(contentResolver, "device_name")
+            }.getOrNull()?.trim()?.takeIf { it.isNotEmpty() }
 
         if (systemName != null) {
             return systemName
         }
 
-        return org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName()
+        return org.ole.planet.myplanet.lite.util.DeviceUtils
+            .getDeviceName()
     }
 
     companion object {
@@ -243,6 +260,6 @@ class SplashScreen : BaseActivity() {
     private enum class DashboardLaunchMode {
         NONE,
         ONLINE,
-        OFFLINE
+        OFFLINE,
     }
 }

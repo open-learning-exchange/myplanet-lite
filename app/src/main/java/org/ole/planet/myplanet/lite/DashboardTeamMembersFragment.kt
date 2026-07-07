@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
@@ -28,8 +28,8 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamMemberProfileActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies
+import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
 import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
 import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
@@ -39,37 +39,38 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.enableDrag
 
 class DashboardTeamMembersFragment : Fragment() {
-
     private var _binding: FragmentDashboardTeamMembersBinding? = null
     private val binding get() = _binding ?: error("Binding is only valid between onCreateView and onDestroyView")
 
     private val repository = DashboardTeamsDependencies.provideRepository()
     private var avatarLoader: DashboardAvatarLoader? = null
 
-    private val adapter = TeamMembersAdapter(
-        avatarBinder = { imageView, username, hasAvatar ->
-            val shouldAttemptLoad = hasAvatar || !username.isNullOrBlank()
-            avatarLoader?.bind(imageView, username, shouldAttemptLoad)
-        },
-        onMemberClicked = { member ->
-            openTeamMemberProfile(member)
-        },
-        onRemoveMemberClicked = { member ->
-            confirmMemberRemoval(member)
-        }
-    )
-    private val joinRequestsAdapter = TeamJoinRequestsAdapter(
-        avatarBinder = { imageView, username, hasAvatar ->
-            val shouldAttemptLoad = hasAvatar || !username.isNullOrBlank()
-            avatarLoader?.bind(imageView, username, shouldAttemptLoad)
-        },
-        onAcceptClicked = { request ->
-            confirmAcceptJoinRequest(request)
-        },
-        onRejectClicked = { request ->
-            confirmRejectJoinRequest(request)
-        },
-    )
+    private val adapter =
+        TeamMembersAdapter(
+            avatarBinder = { imageView, username, hasAvatar ->
+                val shouldAttemptLoad = hasAvatar || !username.isNullOrBlank()
+                avatarLoader?.bind(imageView, username, shouldAttemptLoad)
+            },
+            onMemberClicked = { member ->
+                openTeamMemberProfile(member)
+            },
+            onRemoveMemberClicked = { member ->
+                confirmMemberRemoval(member)
+            },
+        )
+    private val joinRequestsAdapter =
+        TeamJoinRequestsAdapter(
+            avatarBinder = { imageView, username, hasAvatar ->
+                val shouldAttemptLoad = hasAvatar || !username.isNullOrBlank()
+                avatarLoader?.bind(imageView, username, shouldAttemptLoad)
+            },
+            onAcceptClicked = { request ->
+                confirmAcceptJoinRequest(request)
+            },
+            onRejectClicked = { request ->
+                confirmRejectJoinRequest(request)
+            },
+        )
 
     private var currentMembers: List<TeamMemberDetails> = emptyList()
     private var currentJoinRequests: List<TeamJoinRequestUiModel> = emptyList()
@@ -89,13 +90,16 @@ class DashboardTeamMembersFragment : Fragment() {
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
+        savedInstanceState: Bundle?,
     ): View {
         _binding = FragmentDashboardTeamMembersBinding.inflate(inflater, container, false)
         return binding.root
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         fetchJob?.cancel()
         fetchJob = null
@@ -194,20 +198,22 @@ class DashboardTeamMembersFragment : Fragment() {
     private fun openTeamMemberProfile(member: TeamMemberDetails) {
         val username = member.username
         if (username.isNullOrBlank()) {
-            Toast.makeText(
-                requireContext(),
-                R.string.dashboard_team_members_profile_unavailable,
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast
+                .makeText(
+                    requireContext(),
+                    R.string.dashboard_team_members_profile_unavailable,
+                    Toast.LENGTH_SHORT,
+                ).show()
             return
         }
         val displayName = member.fullName?.ifBlank { null } ?: username
-        val intent = DashboardTeamMemberProfileActivity.buildIntent(
-            requireContext(),
-            username,
-            displayName,
-            member.isLeader
-        )
+        val intent =
+            DashboardTeamMemberProfileActivity.buildIntent(
+                requireContext(),
+                username,
+                displayName,
+                member.isLeader,
+            )
         startActivity(intent)
     }
 
@@ -218,56 +224,69 @@ class DashboardTeamMembersFragment : Fragment() {
         updateLeaderActionsVisibility()
     }
 
-    private fun processTeamMembers(members: List<TeamMemberDetails>, creds: StoredCredentials) {
-        val sortedMembers = members.sortedWith(
-            compareBy(String.CASE_INSENSITIVE_ORDER) { member ->
-                member.fullName?.takeIf { it.isNotBlank() }
-                    ?: member.username.orEmpty()
-            }
-        )
-        val normalizedCurrentUsername = creds.username.substringAfter(
-            "org.couchdb.user:",
-            creds.username
-        )
+    private fun processTeamMembers(
+        members: List<TeamMemberDetails>,
+        creds: StoredCredentials,
+    ) {
+        val sortedMembers =
+            members.sortedWith(
+                compareBy(String.CASE_INSENSITIVE_ORDER) { member ->
+                    member.fullName?.takeIf { it.isNotBlank() }
+                        ?: member.username.orEmpty()
+                },
+            )
+        val normalizedCurrentUsername =
+            creds.username.substringAfter(
+                "org.couchdb.user:",
+                creds.username,
+            )
         currentMembers = sortedMembers
-        currentTeamPlanetCode = sortedMembers.firstNotNullOfOrNull { member ->
-            member.membership?.teamPlanetCode?.takeIf { it.isNotBlank() }
-        }
+        currentTeamPlanetCode =
+            sortedMembers.firstNotNullOfOrNull { member ->
+                member.membership?.teamPlanetCode?.takeIf { it.isNotBlank() }
+            }
         currentTeamType = sortedMembers.firstNotNullOfOrNull { member ->
             member.membership?.teamType?.takeIf { it.isNotBlank() }
         } ?: "local"
-        isCurrentUserTeamLeader = sortedMembers.any { member ->
-            val username = member.username
-            member.isLeader && (
-                username.equals(creds.username, ignoreCase = true) ||
-                    username.equals(normalizedCurrentUsername, ignoreCase = true)
+        isCurrentUserTeamLeader =
+            sortedMembers.any { member ->
+                val username = member.username
+                member.isLeader && (
+                    username.equals(creds.username, ignoreCase = true) ||
+                        username.equals(normalizedCurrentUsername, ignoreCase = true)
                 )
-        }
+            }
         currentUsername = normalizedCurrentUsername
         updateLeaderActionsVisibility()
     }
 
-    private suspend fun fetchAndProcessJoinRequests(base: String, creds: StoredCredentials, teamId: String) {
+    private suspend fun fetchAndProcessJoinRequests(
+        base: String,
+        creds: StoredCredentials,
+        teamId: String,
+    ) {
         if (!isCurrentUserTeamLeader) {
             hideJoinRequestsSection()
             return
         }
 
         val teamPlanetCodeForRequests = currentTeamPlanetCode ?: serverPlanetCode
-        val joinRequests = if (teamPlanetCodeForRequests.isNullOrBlank()) {
-            emptyList<JoinRequestDocument>()
-        } else {
-            repository.fetchTeamJoinRequests(
-                baseUrl = base,
-                credentials = creds,
-                sessionCookie = sessionCookie,
-                teamId = teamId,
-                teamPlanetCode = teamPlanetCodeForRequests,
-            ).getOrElse {
-                showJoinRequestsError()
-                null
+        val joinRequests =
+            if (teamPlanetCodeForRequests.isNullOrBlank()) {
+                emptyList<JoinRequestDocument>()
+            } else {
+                repository
+                    .fetchTeamJoinRequests(
+                        baseUrl = base,
+                        credentials = creds,
+                        sessionCookie = sessionCookie,
+                        teamId = teamId,
+                        teamPlanetCode = teamPlanetCodeForRequests,
+                    ).getOrElse {
+                        showJoinRequestsError()
+                        null
+                    }
             }
-        }
         if (joinRequests != null) {
             loadJoinRequestsData(base, creds, joinRequests)
         } else {
@@ -275,7 +294,10 @@ class DashboardTeamMembersFragment : Fragment() {
         }
     }
 
-    private fun loadTeamMembers(teamId: String, isPullToRefresh: Boolean = false) {
+    private fun loadTeamMembers(
+        teamId: String,
+        isPullToRefresh: Boolean = false,
+    ) {
         val base = baseUrl
         val creds = credentials
         if (base.isNullOrBlank()) {
@@ -289,31 +311,36 @@ class DashboardTeamMembersFragment : Fragment() {
 
         showLoading(!isPullToRefresh)
         fetchJob?.cancel()
-        fetchJob = viewLifecycleOwner.lifecycleScope.launch {
-            val result = repository.fetchTeamMemberDetails(base, creds, sessionCookie, teamId)
-            val members = result.getOrElse {
-                handleLoadError(R.string.dashboard_team_members_error_loading)
-                return@launch
-            }
-            if (members.isEmpty()) {
-                handleLoadError(R.string.dashboard_team_members_empty)
-                return@launch
-            }
+        fetchJob =
+            viewLifecycleOwner.lifecycleScope.launch {
+                val result = repository.fetchTeamMemberDetails(base, creds, sessionCookie, teamId)
+                val members =
+                    result.getOrElse {
+                        handleLoadError(R.string.dashboard_team_members_error_loading)
+                        return@launch
+                    }
+                if (members.isEmpty()) {
+                    handleLoadError(R.string.dashboard_team_members_empty)
+                    return@launch
+                }
 
-            processTeamMembers(members, creds)
-            fetchAndProcessJoinRequests(base, creds, teamId)
+                processTeamMembers(members, creds)
+                fetchAndProcessJoinRequests(base, creds, teamId)
 
-            searchQuery = binding.dashboardTeamMembersSearchInput.text?.toString().orEmpty()
-            applySearchFilter()
-            binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
-            showLoading(false)
-        }
+                searchQuery =
+                    binding.dashboardTeamMembersSearchInput.text
+                        ?.toString()
+                        .orEmpty()
+                applySearchFilter()
+                binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
+                showLoading(false)
+            }
     }
 
     private suspend fun loadJoinRequestsData(
         base: String,
         creds: StoredCredentials,
-        joinRequests: List<JoinRequestDocument>
+        joinRequests: List<JoinRequestDocument>,
     ) {
         if (joinRequests.isEmpty()) {
             currentJoinRequests = emptyList()
@@ -323,26 +350,31 @@ class DashboardTeamMembersFragment : Fragment() {
         }
 
         val userIds = joinRequests.mapNotNull { it.userId?.takeIf(String::isNotBlank) }.distinct()
-        val profilesById = repository.fetchUserProfiles(base, creds, sessionCookie, userIds)
-            .getOrDefault(emptyList())
-            .associateBy { it._id }
-        val requests = joinRequests.map { request ->
-            val userId = request.userId.orEmpty()
-            val profile = profilesById[userId]
-            val username = userId.substringAfter("org.couchdb.user:", userId)
-            val fullName = listOfNotNull(
-                profile?.firstName,
-                profile?.middleName,
-                profile?.lastName
-            ).filter { it.isNotBlank() }.joinToString(" ").ifBlank { username }
-            TeamJoinRequestUiModel(
-                id = request.id ?: userId,
-                username = username,
-                fullName = fullName,
-                hasAvatar = profile?.attachments?.image != null,
-                request = request,
-            )
-        }.sortedBy { it.fullName.lowercase() }
+        val profilesById =
+            repository
+                .fetchUserProfiles(base, creds, sessionCookie, userIds)
+                .getOrDefault(emptyList())
+                .associateBy { it._id }
+        val requests =
+            joinRequests
+                .map { request ->
+                    val userId = request.userId.orEmpty()
+                    val profile = profilesById[userId]
+                    val username = userId.substringAfter("org.couchdb.user:", userId)
+                    val fullName =
+                        listOfNotNull(
+                            profile?.firstName,
+                            profile?.middleName,
+                            profile?.lastName,
+                        ).filter { it.isNotBlank() }.joinToString(" ").ifBlank { username }
+                    TeamJoinRequestUiModel(
+                        id = request.id ?: userId,
+                        username = username,
+                        fullName = fullName,
+                        hasAvatar = profile?.attachments?.image != null,
+                        request = request,
+                    )
+                }.sortedBy { it.fullName.lowercase() }
 
         currentJoinRequests = requests
         updateJoinRequestsAdapterList(requests)
@@ -372,11 +404,12 @@ class DashboardTeamMembersFragment : Fragment() {
             binding.dashboardTeamMembersListTitle.isVisible = true
             return
         }
-        val filtered = currentMembers.filter { member ->
-            val name = member.fullName?.lowercase().orEmpty()
-            val username = member.username?.lowercase().orEmpty()
-            name.contains(query) || username.contains(query)
-        }
+        val filtered =
+            currentMembers.filter { member ->
+                val name = member.fullName?.lowercase().orEmpty()
+                val username = member.username?.lowercase().orEmpty()
+                name.contains(query) || username.contains(query)
+            }
         updateTeamMembersAdapterList(filtered)
         val hasResults = filtered.isNotEmpty()
         binding.dashboardTeamMembersSearchEmptyView.isVisible = !hasResults
@@ -414,11 +447,12 @@ class DashboardTeamMembersFragment : Fragment() {
     private fun showJoinRequestsError() {
         binding.dashboardTeamJoinRequestsTitle.isVisible = false
         binding.dashboardTeamJoinRequestsList.isVisible = false
-        Toast.makeText(
-            requireContext(),
-            getString(R.string.dashboard_team_members_requests_error_loading),
-            Toast.LENGTH_SHORT
-        ).show()
+        Toast
+            .makeText(
+                requireContext(),
+                getString(R.string.dashboard_team_members_requests_error_loading),
+                Toast.LENGTH_SHORT,
+            ).show()
     }
 
     private fun updateLeaderActionsVisibility() {
@@ -438,40 +472,49 @@ class DashboardTeamMembersFragment : Fragment() {
         binding.dashboardTeamJoinRequestsList.isVisible = hasRequests
     }
 
-    private fun createActionContext(): DashboardTeamActionContext {
-        return DashboardTeamActionContext(this, repository, baseUrl, credentials, sessionCookie)
-    }
+    private fun createActionContext(): DashboardTeamActionContext =
+        DashboardTeamActionContext(this, repository, baseUrl, credentials, sessionCookie)
 
-    private fun acceptJoinRequest(request: TeamJoinRequestUiModel) = runAcceptJoinRequest(
-        AcceptJoinRequestParams(
-            fragment = this,
-            repository = repository,
-            baseUrl = baseUrl,
-            credentials = credentials,
-            sessionCookie = sessionCookie,
-            request = request,
-            currentTeamPlanetCode = currentTeamPlanetCode,
-            serverPlanetCode = serverPlanetCode,
-            onReload = { currentTeamId?.let(::loadTeamMembers) }
+    private fun acceptJoinRequest(request: TeamJoinRequestUiModel) =
+        runAcceptJoinRequest(
+            AcceptJoinRequestParams(
+                fragment = this,
+                repository = repository,
+                baseUrl = baseUrl,
+                credentials = credentials,
+                sessionCookie = sessionCookie,
+                request = request,
+                currentTeamPlanetCode = currentTeamPlanetCode,
+                serverPlanetCode = serverPlanetCode,
+                onReload = { currentTeamId?.let(::loadTeamMembers) },
+            ),
         )
-    )
 
     private fun confirmAcceptJoinRequest(request: TeamJoinRequestUiModel) {
         confirmAcceptJoinRequestDialog(this, request) { acceptJoinRequest(it) }
     }
 
-    private fun rejectJoinRequest(request: TeamJoinRequestUiModel) = runRejectJoinRequest(createActionContext(), request) { currentTeamId?.let(::loadTeamMembers) }
+    private fun rejectJoinRequest(request: TeamJoinRequestUiModel) =
+        runRejectJoinRequest(createActionContext(), request) {
+            currentTeamId?.let(::loadTeamMembers)
+        }
 
     private fun confirmRejectJoinRequest(request: TeamJoinRequestUiModel) {
         confirmRejectJoinRequestDialog(this, request) { rejectJoinRequest(it) }
     }
 
-    private fun confirmMemberRemoval(member: TeamMemberDetails) = confirmMemberRemovalDialog(this, member) { selectedMember, displayName ->
-        runRemoveTeamMember(createActionContext(), currentTeamId, selectedMember, displayName,
-            onStart = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = true },
-            onStop = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false },
-            onReload = { currentTeamId?.let(::loadTeamMembers) })
-    }
+    private fun confirmMemberRemoval(member: TeamMemberDetails) =
+        confirmMemberRemovalDialog(this, member) { selectedMember, displayName ->
+            runRemoveTeamMember(
+                createActionContext(),
+                currentTeamId,
+                selectedMember,
+                displayName,
+                onStart = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = true },
+                onStop = { binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false },
+                onReload = { currentTeamId?.let(::loadTeamMembers) },
+            )
+        }
 
     private fun showInviteMembersDialog() {
         val base = baseUrl

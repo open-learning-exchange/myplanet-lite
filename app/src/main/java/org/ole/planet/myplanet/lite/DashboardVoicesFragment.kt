@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
@@ -9,6 +9,7 @@ package org.ole.planet.myplanet.lite
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.icu.text.CompactDecimalFormat
 import android.net.Uri
 import android.os.Bundle
 import android.text.TextUtils
@@ -23,15 +24,12 @@ import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import android.icu.text.CompactDecimalFormat
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
-import java.util.ArrayList
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -55,46 +53,51 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.enableDrag
+import java.util.ArrayList
+import java.util.Locale
 
 class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
-
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: View
     private lateinit var emptyView: TextView
     private lateinit var markwon: Markwon
     private lateinit var adapter: DashboardNewsAdapter
-    private val createVoiceLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            if (::recyclerView.isInitialized) {
-                recyclerView.post { recyclerView.scrollToPosition(0) }
-            }
-            loadInitial()
-        }
-    }
-
-    private val postDetailLauncher = registerForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val deletedId = result.data?.getStringExtra(DashboardPostDetailActivity.EXTRA_DELETED_POST_ID)
-            if (deletedId != null) {
-                handlePostDeleted(deletedId)
-            } else {
+    private val createVoiceLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult(),
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
                 if (::recyclerView.isInitialized) {
                     recyclerView.post { recyclerView.scrollToPosition(0) }
                 }
                 loadInitial()
             }
         }
-    }
 
-    private val repository = DashboardNewsRepository(
-        client = OkHttpClient.Builder().build(),
-        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
-    )
+    private val postDetailLauncher =
+        registerForActivityResult(
+            ActivityResultContracts.StartActivityForResult(),
+        ) { result ->
+            if (result.resultCode == Activity.RESULT_OK) {
+                val deletedId = result.data?.getStringExtra(DashboardPostDetailActivity.EXTRA_DELETED_POST_ID)
+                if (deletedId != null) {
+                    handlePostDeleted(deletedId)
+                } else {
+                    if (::recyclerView.isInitialized) {
+                        recyclerView.post { recyclerView.scrollToPosition(0) }
+                    }
+                    loadInitial()
+                }
+            }
+        }
+
+    private val repository =
+        DashboardNewsRepository(
+            client = OkHttpClient.Builder().build(),
+            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+        )
     private val actionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
+
     @androidx.annotation.VisibleForTesting
     internal val items = mutableListOf<DashboardNewsItem>()
     private val commentCounts = mutableMapOf<String, Int>()
@@ -119,6 +122,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     private var nextSkip = 0
     private var nextBookmark: String? = null
     private var currentEmptyMessage: Int = R.string.dashboard_voices_empty
+
     @androidx.annotation.VisibleForTesting
     internal var pageSize: Int = DashboardActivity.VOICE_PAGE_SIZE_OPTIONS[1]
 
@@ -127,7 +131,10 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         pageSize = DashboardActivity.getVoicePageSizePreference(context)
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         setupViews(view)
         setupRecyclerView()
@@ -155,8 +162,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         setupScrollListener()
     }
 
-    private fun createDashboardNewsAdapter(): DashboardNewsAdapter {
-        return DashboardNewsAdapter(
+    private fun createDashboardNewsAdapter(): DashboardNewsAdapter =
+        DashboardNewsAdapter(
             markwon,
             avatarBinder = { imageView, username, hasAvatar ->
                 avatarLoader?.bind(imageView, username, hasAvatar)
@@ -187,60 +194,71 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             },
             onAuthorClicked = { item ->
                 openTeamMemberProfile(item)
-            }
+            },
         )
-    }
 
     private fun setupScrollListener() {
-        recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-            override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                super.onScrolled(recyclerView, dx, dy)
-                if (dy <= 0) {
-                    return
-                }
-                val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
-                val visibleItemCount = layoutManager.childCount
-                val totalItemCount = layoutManager.itemCount
-                val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
-                if (!isLoading && hasMore && totalItemCount > 0) {
-                    if (firstVisibleItemPosition + visibleItemCount >= totalItemCount - LOAD_MORE_THRESHOLD) {
-                        loadMore(pageSize)
+        recyclerView.addOnScrollListener(
+            object : RecyclerView.OnScrollListener() {
+                override fun onScrolled(
+                    recyclerView: RecyclerView,
+                    dx: Int,
+                    dy: Int,
+                ) {
+                    super.onScrolled(recyclerView, dx, dy)
+                    if (dy <= 0) {
+                        return
+                    }
+                    val layoutManager = recyclerView.layoutManager as? LinearLayoutManager ?: return
+                    val visibleItemCount = layoutManager.childCount
+                    val totalItemCount = layoutManager.itemCount
+                    val firstVisibleItemPosition = layoutManager.findFirstVisibleItemPosition()
+                    if (!isLoading && hasMore && totalItemCount > 0) {
+                        if (firstVisibleItemPosition + visibleItemCount >= totalItemCount - LOAD_MORE_THRESHOLD) {
+                            loadMore(pageSize)
+                        }
                     }
                 }
-            }
-        })
+            },
+        )
     }
 
     private fun setupObserversAndLoadInitial() {
         initJob?.cancel()
-        initJob = viewLifecycleOwner.lifecycleScope.launch {
-            initializeSession()
-            val profile = loadCurrentUserProfile()
-            currentUsername = profile?.username
-            isUserAdmin = profile?.isUserAdmin == true
-            val currentBaseUrl = baseUrl
-            if (currentBaseUrl.isNullOrEmpty()) {
-                showEmptyState(R.string.dashboard_voices_no_server)
-                updateLoadingVisibility()
-                return@launch
+        initJob =
+            viewLifecycleOwner.lifecycleScope.launch {
+                initializeSession()
+                val profile = loadCurrentUserProfile()
+                currentUsername = profile?.username
+                isUserAdmin = profile?.isUserAdmin == true
+                val currentBaseUrl = baseUrl
+                if (currentBaseUrl.isNullOrEmpty()) {
+                    showEmptyState(R.string.dashboard_voices_no_server)
+                    updateLoadingVisibility()
+                    return@launch
+                }
+                avatarLoader = DashboardAvatarLoader(currentBaseUrl, sessionCookie, credentials, viewLifecycleOwner.lifecycleScope)
+                avatarUpdateListener =
+                    AvatarUpdateNotifier.register(
+                        AvatarUpdateNotifier.Listener { username ->
+                            handleAvatarUpdated(username)
+                        },
+                    )
+                postImageLoader = DashboardPostImageLoader(currentBaseUrl, sessionCookie, viewLifecycleOwner.lifecycleScope)
+                postShareHelper =
+                    PostShareHelper(
+                        requireContext().applicationContext,
+                        { currentBaseUrl },
+                        { sessionCookie },
+                        { serverCode ?: Uri.parse(currentBaseUrl).host },
+                    )
+                loadInitial()
             }
-            avatarLoader = DashboardAvatarLoader(currentBaseUrl, sessionCookie, credentials, viewLifecycleOwner.lifecycleScope)
-            avatarUpdateListener = AvatarUpdateNotifier.register(AvatarUpdateNotifier.Listener { username ->
-                handleAvatarUpdated(username)
-            })
-            postImageLoader = DashboardPostImageLoader(currentBaseUrl, sessionCookie, viewLifecycleOwner.lifecycleScope)
-            postShareHelper = PostShareHelper(
-                requireContext().applicationContext,
-                { currentBaseUrl },
-                { sessionCookie },
-                { serverCode ?: Uri.parse(currentBaseUrl).host }
-            )
-            loadInitial()
-        }
     }
 
     private fun animateFabClick(fab: FloatingActionButton) {
-        fab.animate()
+        fab
+            .animate()
             .rotationBy(360f)
             .setDuration(250)
             .withEndAction { fab.rotation = 0f }
@@ -267,17 +285,18 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             return
         }
 
-        val positions = if (adapter.isIndexAvailable()) {
-            adapter.getPositionsForUsername(username)
-        } else {
-            adapter.currentList.mapIndexedNotNull { index, item ->
-                if (item.username?.equals(username, ignoreCase = true) == true) {
-                    index
-                } else {
-                    null
+        val positions =
+            if (adapter.isIndexAvailable()) {
+                adapter.getPositionsForUsername(username)
+            } else {
+                adapter.currentList.mapIndexedNotNull { index, item ->
+                    if (item.username?.equals(username, ignoreCase = true) == true) {
+                        index
+                    } else {
+                        null
+                    }
                 }
             }
-        }
         if (positions.isEmpty()) {
             return
         }
@@ -324,41 +343,44 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         isLoading = true
         updateLoadingVisibility()
         fetchJob?.cancel()
-        fetchJob = viewLifecycleOwner.lifecycleScope.launch {
-            var accumulatedPosts = 0
-            var shouldContinue = true
-            val fetchLimit = maxOf(pageSize * 5, 100)
-            while (shouldContinue) {
-                val result = repository.fetchNews(
-                    base,
-                    sessionCookie,
-                    DashboardNewsRepository.NewsQuery(
-                        skip = nextSkip,
-                        bookmark = nextBookmark,
-                        limit = fetchLimit,
-                        createdOn = serverCode,
-                        parentCode = serverParentCode,
-                        teamName = teamName
-                    )
-                )
-                val addedPosts = result.fold(
-                    onSuccess = { page ->
-                        handlePage(page)
-                    },
-                    onFailure = {
-                        handleLoadError()
-                        -1
+        fetchJob =
+            viewLifecycleOwner.lifecycleScope.launch {
+                var accumulatedPosts = 0
+                var shouldContinue = true
+                val fetchLimit = maxOf(pageSize * 5, 100)
+                while (shouldContinue) {
+                    val result =
+                        repository.fetchNews(
+                            base,
+                            sessionCookie,
+                            DashboardNewsRepository.NewsQuery(
+                                skip = nextSkip,
+                                bookmark = nextBookmark,
+                                limit = fetchLimit,
+                                createdOn = serverCode,
+                                parentCode = serverParentCode,
+                                teamName = teamName,
+                            ),
+                        )
+                    val addedPosts =
+                        result.fold(
+                            onSuccess = { page ->
+                                handlePage(page)
+                            },
+                            onFailure = {
+                                handleLoadError()
+                                -1
+                            },
+                        )
+                    if (addedPosts < 0) {
+                        break
                     }
-                )
-                if (addedPosts < 0) {
-                    break
+                    accumulatedPosts += addedPosts
+                    shouldContinue = hasMore && accumulatedPosts < targetPosts
                 }
-                accumulatedPosts += addedPosts
-                shouldContinue = hasMore && accumulatedPosts < targetPosts
+                isLoading = false
+                updateLoadingVisibility()
             }
-            isLoading = false
-            updateLoadingVisibility()
-        }
     }
 
     private fun handlePage(page: NewsPage): Int {
@@ -383,11 +405,12 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 }
             }
         }
-        val mapped = page.items.mapNotNull { document ->
-            val id = document.id ?: return@mapNotNull null
-            val commentCount = commentCounts[id] ?: 0
-            mapToItem(document, commentCount)
-        }
+        val mapped =
+            page.items.mapNotNull { document ->
+                val id = document.id ?: return@mapNotNull null
+                val commentCount = commentCounts[id] ?: 0
+                mapToItem(document, commentCount)
+            }
         if (mapped.isNotEmpty()) {
             items.addAll(mapped)
             shouldUpdateAdapter = true
@@ -425,19 +448,21 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             return
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            val result = actionsRepository.deleteNews(
-                base,
-                cookie,
-                item.document,
-                teamId = teamId,
-                teamName = teamName
-            )
-            result.onSuccess {
-                Toast.makeText(requireContext(), R.string.dashboard_post_delete_success, Toast.LENGTH_SHORT).show()
-                handlePostDeleted(item.id)
-            }.onFailure {
-                Toast.makeText(requireContext(), R.string.dashboard_post_delete_error, Toast.LENGTH_SHORT).show()
-            }
+            val result =
+                actionsRepository.deleteNews(
+                    base,
+                    cookie,
+                    item.document,
+                    teamId = teamId,
+                    teamName = teamName,
+                )
+            result
+                .onSuccess {
+                    Toast.makeText(requireContext(), R.string.dashboard_post_delete_success, Toast.LENGTH_SHORT).show()
+                    handlePostDeleted(item.id)
+                }.onFailure {
+                    Toast.makeText(requireContext(), R.string.dashboard_post_delete_error, Toast.LENGTH_SHORT).show()
+                }
         }
     }
 
@@ -453,8 +478,9 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     }
 
     fun onPageSizeChanged(newPageSize: Int) {
-        val normalized = DashboardActivity.VOICE_PAGE_SIZE_OPTIONS.firstOrNull { it == newPageSize }
-            ?: DashboardActivity.VOICE_PAGE_SIZE_OPTIONS[1]
+        val normalized =
+            DashboardActivity.VOICE_PAGE_SIZE_OPTIONS.firstOrNull { it == newPageSize }
+                ?: DashboardActivity.VOICE_PAGE_SIZE_OPTIONS[1]
         if (normalized == pageSize) {
             return
         }
@@ -486,22 +512,31 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         emptyView.isVisible = true
     }
 
-    private fun mapToItem(document: NewsDocument, commentCount: Int): DashboardNewsItem? {
+    private fun mapToItem(
+        document: NewsDocument,
+        commentCount: Int,
+    ): DashboardNewsItem? {
         val id = document.id ?: return null
         val username = document.user?.name?.takeIf { it.isNotBlank() }
-        val displayName = document.user?.let { user ->
-            val parts = listOfNotNull(user.firstName, user.middleName, user.lastName)
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-            when {
-                parts.isNotEmpty() -> TextUtils.join(" ", parts)
-                !username.isNullOrEmpty() -> username
-                else -> getString(R.string.dashboard_profile_name_placeholder)
-            }
-        } ?: (username ?: getString(R.string.dashboard_profile_name_placeholder))
+        val displayName =
+            document.user?.let { user ->
+                val parts =
+                    listOfNotNull(user.firstName, user.middleName, user.lastName)
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                when {
+                    parts.isNotEmpty() -> TextUtils.join(" ", parts)
+                    !username.isNullOrEmpty() -> username
+                    else -> getString(R.string.dashboard_profile_name_placeholder)
+                }
+            } ?: (username ?: getString(R.string.dashboard_profile_name_placeholder))
         val timeMillis = document.time ?: 0L
-        val relativeTime = org.ole.planet.myplanet.lite.util.DateUtils.formatRelativeTime(requireContext(), timeMillis)
-        val metadata = org.ole.planet.myplanet.lite.util.DateUtils.buildMetadata(username, relativeTime)
+        val relativeTime =
+            org.ole.planet.myplanet.lite.util.DateUtils
+                .formatRelativeTime(requireContext(), timeMillis)
+        val metadata =
+            org.ole.planet.myplanet.lite.util.DateUtils
+                .buildMetadata(username, relativeTime)
         val rawMessage = document.message
         val messageImages = extractImagePaths(rawMessage)
         val documentImages = mapDocumentImages(document)
@@ -523,7 +558,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             canEdit = isAuthor,
             canDelete = isAuthor || isUserAdmin,
             canShare = hasSession,
-            document = document
+            document = document,
         )
     }
 
@@ -531,32 +566,40 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         if (raw.isNullOrBlank()) {
             return emptyList()
         }
-        return IMAGE_MARKDOWN_CAPTURE_REGEX.findAll(raw)
+        return IMAGE_MARKDOWN_CAPTURE_REGEX
+            .findAll(raw)
             .mapNotNull { match ->
-                match.groupValues.getOrNull(1)?.trim().orEmpty().takeIf { it.isNotBlank() }
-            }
-            .toList()
+                match.groupValues
+                    .getOrNull(1)
+                    ?.trim()
+                    .orEmpty()
+                    .takeIf { it.isNotBlank() }
+            }.toList()
     }
 
-    private fun mapDocumentImages(document: NewsDocument): List<String> {
-        return document.images
+    private fun mapDocumentImages(document: NewsDocument): List<String> =
+        document.images
             ?.mapNotNull { image ->
                 extractImagePath(image.markdown)
                     ?: buildResourcePath(image.resourceId, image.filename)
-            }
-            ?.filter { it.isNotBlank() }
+            }?.filter { it.isNotBlank() }
             .orEmpty()
-    }
 
     private fun extractImagePath(markdown: String?): String? {
         if (markdown.isNullOrBlank()) {
             return null
         }
         val match = IMAGE_MARKDOWN_CAPTURE_REGEX.find(markdown) ?: return null
-        return match.groupValues.getOrNull(1)?.trim()?.takeIf { it.isNotEmpty() }
+        return match.groupValues
+            .getOrNull(1)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
     }
 
-    private fun buildResourcePath(resourceId: String?, filename: String?): String? {
+    private fun buildResourcePath(
+        resourceId: String?,
+        filename: String?,
+    ): String? {
         val id = resourceId?.trim().takeUnless { it.isNullOrEmpty() }
         val name = filename?.trim().takeUnless { it.isNullOrEmpty() }
         if (id == null || name == null) {
@@ -579,7 +622,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         val canEdit: Boolean,
         val canDelete: Boolean,
         val canShare: Boolean,
-        val document: NewsDocument
+        val document: NewsDocument,
     )
 
     private suspend fun loadCurrentUserProfile(): UserProfile? {
@@ -589,7 +632,10 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
     }
 
-    private fun openImagePreview(item: DashboardNewsItem, index: Int) {
+    private fun openImagePreview(
+        item: DashboardNewsItem,
+        index: Int,
+    ) {
         val context = context ?: return
         if (item.imagePaths.isEmpty()) {
             return
@@ -597,7 +643,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         val intent = Intent(context, DashboardImagePreviewActivity::class.java)
         intent.putStringArrayListExtra(
             DashboardImagePreviewActivity.EXTRA_IMAGE_PATHS,
-            ArrayList(item.imagePaths)
+            ArrayList(item.imagePaths),
         )
         intent.putExtra(DashboardImagePreviewActivity.EXTRA_START_INDEX, index)
         startActivity(intent)
@@ -612,7 +658,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         intent.putExtra(DashboardPostDetailActivity.EXTRA_MESSAGE, item.message)
         intent.putStringArrayListExtra(
             DashboardPostDetailActivity.EXTRA_IMAGE_PATHS,
-            ArrayList(item.imagePaths)
+            ArrayList(item.imagePaths),
         )
         intent.putExtra(DashboardPostDetailActivity.EXTRA_HAS_AVATAR, item.hasAvatar)
         intent.putExtra(DashboardPostDetailActivity.EXTRA_TIMESTAMP, item.timestamp)
@@ -633,20 +679,22 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     private fun openTeamMemberProfile(item: DashboardNewsItem) {
         val username = item.username
         if (username.isNullOrBlank()) {
-            Toast.makeText(
-                requireContext(),
-                R.string.dashboard_team_members_profile_unavailable,
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast
+                .makeText(
+                    requireContext(),
+                    R.string.dashboard_team_members_profile_unavailable,
+                    Toast.LENGTH_SHORT,
+                ).show()
             return
         }
         val displayName = item.author.ifBlank { username }
-        val intent = DashboardTeamMemberProfileActivity.buildIntent(
-            requireContext(),
-            username,
-            displayName,
-            false
-        )
+        val intent =
+            DashboardTeamMemberProfileActivity.buildIntent(
+                requireContext(),
+                username,
+                displayName,
+                false,
+            )
         startActivity(intent)
     }
 
@@ -658,7 +706,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         intent.putExtra(CreateVoiceActivity.EXTRA_EDIT_INITIAL_MESSAGE, item.message)
         intent.putStringArrayListExtra(
             CreateVoiceActivity.EXTRA_EDIT_INITIAL_IMAGE_PATHS,
-            ArrayList(item.imagePaths)
+            ArrayList(item.imagePaths),
         )
         intent.putExtra(CreateVoiceActivity.EXTRA_EDIT_DOCUMENT, item.document)
         teamId?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_TEAM_ID, it) }
@@ -666,7 +714,10 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         createVoiceLauncher.launch(intent)
     }
 
-    fun isTeamFeedFor(id: String, name: String): Boolean {
+    fun isTeamFeedFor(
+        id: String,
+        name: String,
+    ): Boolean {
         val sameId = teamId?.equals(id, ignoreCase = true) == true
         val sameName = teamName?.equals(name, ignoreCase = true) == true
         return sameId && sameName
@@ -682,12 +733,16 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         private val onDeleteClicked: (DashboardNewsItem) -> Unit,
         private val onShareClicked: (DashboardNewsItem) -> Unit,
         private val onEditClicked: (DashboardNewsItem) -> Unit,
-        private val onAuthorClicked: (DashboardNewsItem) -> Unit
+        private val onAuthorClicked: (DashboardNewsItem) -> Unit,
     ) : androidx.recyclerview.widget.ListAdapter<DashboardNewsItem, DashboardNewsViewHolder>(DIFF_CALLBACK) {
-
-        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): DashboardNewsViewHolder {
-            val view = android.view.LayoutInflater.from(parent.context)
-                .inflate(R.layout.item_dashboard_post, parent, false)
+        override fun onCreateViewHolder(
+            parent: android.view.ViewGroup,
+            viewType: Int,
+        ): DashboardNewsViewHolder {
+            val view =
+                android.view.LayoutInflater
+                    .from(parent.context)
+                    .inflate(R.layout.item_dashboard_post, parent, false)
             return DashboardNewsViewHolder(
                 view,
                 markwon,
@@ -698,11 +753,14 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 onDeleteClicked,
                 onShareClicked,
                 onEditClicked,
-                onAuthorClicked
+                onAuthorClicked,
             )
         }
 
-        override fun onBindViewHolder(holder: DashboardNewsViewHolder, position: Int) {
+        override fun onBindViewHolder(
+            holder: DashboardNewsViewHolder,
+            position: Int,
+        ) {
             holder.bind(getItem(position))
         }
 
@@ -710,24 +768,26 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
         override fun onCurrentListChanged(
             previousList: List<DashboardNewsItem>,
-            currentList: List<DashboardNewsItem>
+            currentList: List<DashboardNewsItem>,
         ) {
             super.onCurrentListChanged(previousList, currentList)
-            usernameIndex = currentList.mapIndexedNotNull { index, item ->
-                item.username?.let { it.lowercase() to index }
-            }.groupBy({ it.first }, { it.second })
+            usernameIndex =
+                currentList
+                    .mapIndexedNotNull { index, item ->
+                        item.username?.let { it.lowercase() to index }
+                    }.groupBy({ it.first }, { it.second })
         }
 
-        fun getPositionsForUsername(username: String): List<Int> {
-            return usernameIndex[username.lowercase()] ?: emptyList()
-        }
+        fun getPositionsForUsername(username: String): List<Int> = usernameIndex[username.lowercase()] ?: emptyList()
 
-        fun isIndexAvailable(): Boolean {
-            return usernameIndex.isNotEmpty()
-        }
+        fun isIndexAvailable(): Boolean = usernameIndex.isNotEmpty()
 
         companion object {
-            private val DIFF_CALLBACK = org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback<DashboardNewsItem>({ oldItem, newItem -> oldItem.id == newItem.id })
+            private val DIFF_CALLBACK =
+                org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback<DashboardNewsItem>({ oldItem, newItem ->
+                    oldItem.id ==
+                        newItem.id
+                })
         }
     }
 
@@ -741,9 +801,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         private val onDeleteClicked: (DashboardNewsItem) -> Unit,
         private val onShareClicked: (DashboardNewsItem) -> Unit,
         private val onEditClicked: (DashboardNewsItem) -> Unit,
-        private val onAuthorClicked: (DashboardNewsItem) -> Unit
+        private val onAuthorClicked: (DashboardNewsItem) -> Unit,
     ) : RecyclerView.ViewHolder(view) {
-
         private val authorView: TextView = view.findViewById(R.id.postAuthor)
         private val metadataView: TextView = view.findViewById(R.id.postMetadata)
         private val bodyView: TextView = view.findViewById(R.id.postBody)
@@ -796,7 +855,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             view: View,
             enabled: Boolean,
             messageRes: Int,
-            onClick: (() -> Unit)? = null
+            onClick: (() -> Unit)? = null,
         ) {
             view.isEnabled = enabled
             view.alpha = if (enabled) 1f else DISABLED_ACTION_ALPHA
@@ -821,10 +880,11 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             val height = context.resources.getDimensionPixelSize(R.dimen.dashboard_card_image_height)
             imagePaths.forEachIndexed { index, path ->
                 val imageView = AppCompatImageView(context)
-                val params = LinearLayout.LayoutParams(
-                    android.view.ViewGroup.LayoutParams.MATCH_PARENT,
-                    height
-                )
+                val params =
+                    LinearLayout.LayoutParams(
+                        android.view.ViewGroup.LayoutParams.MATCH_PARENT,
+                        height,
+                    )
                 if (index > 0) {
                     params.topMargin = spacing
                 }
@@ -851,24 +911,27 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         }
     }
 
-        companion object {
-            private const val ARG_TEAM_ID = "arg_team_id"
-            private const val ARG_TEAM_NAME = "arg_team_name"
-            private const val LOAD_MORE_THRESHOLD = 3
-            private val IMAGE_MARKDOWN_CAPTURE_REGEX = Regex("!\\[[^]]*]\\(([^)]+)\\)")
+    companion object {
+        private const val ARG_TEAM_ID = "arg_team_id"
+        private const val ARG_TEAM_NAME = "arg_team_name"
+        private const val LOAD_MORE_THRESHOLD = 3
+        private val IMAGE_MARKDOWN_CAPTURE_REGEX = Regex("!\\[[^]]*]\\(([^)]+)\\)")
         private const val MINUTE_MILLIS = 60_000L
         private const val HOUR_MILLIS = 60 * MINUTE_MILLIS
         private const val DAY_MILLIS = 24 * HOUR_MILLIS
         private const val MONTH_MILLIS = 30 * DAY_MILLIS
         private const val YEAR_MILLIS = 12 * MONTH_MILLIS
 
-        fun newInstanceForTeam(teamId: String, teamName: String): DashboardVoicesFragment {
-            return DashboardVoicesFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_TEAM_ID, teamId)
-                    putString(ARG_TEAM_NAME, teamName)
-                }
+        fun newInstanceForTeam(
+            teamId: String,
+            teamName: String,
+        ): DashboardVoicesFragment =
+            DashboardVoicesFragment().apply {
+                arguments =
+                    Bundle().apply {
+                        putString(ARG_TEAM_ID, teamId)
+                        putString(ARG_TEAM_NAME, teamName)
+                    }
             }
-        }
     }
 }

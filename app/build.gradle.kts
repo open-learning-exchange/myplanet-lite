@@ -4,14 +4,16 @@ plugins {
     alias(libs.plugins.android.application)
 }
 
-val mockitoAgent = configurations.create("mockitoAgent") {
-    isTransitive = false
-}
+val mockitoAgent =
+    configurations.create("mockitoAgent") {
+        isTransitive = false
+    }
 val mockkAgent = configurations.create("mockkAgent")
-val sharedTestImplementation = configurations.create("sharedTestImplementation") {
-    isCanBeConsumed = false
-    isCanBeResolved = false
-}
+val sharedTestImplementation =
+    configurations.create("sharedTestImplementation") {
+        isCanBeConsumed = false
+        isCanBeResolved = false
+    }
 
 configurations.named("testImplementation") {
     extendsFrom(sharedTestImplementation)
@@ -32,8 +34,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 477
-        versionName = "0.4.77"
+        versionCode = 478
+        versionName = "0.4.78"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -69,7 +71,7 @@ tasks.withType<Test>().configureEach {
             "--add-opens=java.base/java.net=ALL-UNNAMED",
             "--add-opens=java.base/java.nio=ALL-UNNAMED",
             "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
-            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+            "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
         )
     }
     systemProperty("robolectric.logging", "none")
@@ -160,7 +162,7 @@ dependencies {
                 libs.androidx.espresso.core,
                 libs.androidx.espresso.intents,
                 libs.androidx.junit,
-                libs.core.ktx
+                libs.core.ktx,
             )
         }
     }

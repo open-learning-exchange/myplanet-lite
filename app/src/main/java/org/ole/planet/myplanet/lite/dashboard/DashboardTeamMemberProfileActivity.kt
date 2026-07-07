@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
@@ -17,23 +17,22 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
-import java.util.Locale
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies
+import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.profile.GenderTranslator
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.DateUtils
+import java.util.Locale
 
 class DashboardTeamMemberProfileActivity : BaseActivity() {
-
     private lateinit var avatarView: ImageView
     private lateinit var nameView: TextView
     private lateinit var usernameView: TextView
@@ -98,9 +97,10 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
         val resolvedName = displayName?.takeIf { it.isNotBlank() } ?: username
         nameView.text = resolvedName
         usernameView.text = getString(R.string.dashboard_team_member_profile_username_format, username)
-        roleView.text = getString(
-            if (isLeader) R.string.dashboard_team_members_leader_role else R.string.dashboard_team_members_member_role
-        )
+        roleView.text =
+            getString(
+                if (isLeader) R.string.dashboard_team_members_leader_role else R.string.dashboard_team_members_member_role,
+            )
         identityUsernameView.text = usernameView.text
 
         lifecycleScope.launch {
@@ -131,7 +131,10 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
         }
     }
 
-    private suspend fun loadProfile(username: String, fallbackName: String) {
+    private suspend fun loadProfile(
+        username: String,
+        fallbackName: String,
+    ) {
         val base = baseUrl
         if (base.isNullOrBlank()) {
             showError(getString(R.string.dashboard_team_members_missing_server))
@@ -140,16 +143,21 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
 
         showLoading(true)
         val result = repository.fetchTeamMemberProfileDetails(base, credentials, sessionCookie, username)
-        result.onSuccess { profile ->
-            showLoading(false)
-            contentView.isVisible = true
-            bindProfile(profile, fallbackName, username)
-        }.onFailure {
-            showError(getString(R.string.dashboard_team_member_profile_error))
-        }
+        result
+            .onSuccess { profile ->
+                showLoading(false)
+                contentView.isVisible = true
+                bindProfile(profile, fallbackName, username)
+            }.onFailure {
+                showError(getString(R.string.dashboard_team_member_profile_error))
+            }
     }
 
-    private fun bindProfile(profile: TeamMemberProfileDetails, fallbackName: String, username: String) {
+    private fun bindProfile(
+        profile: TeamMemberProfileDetails,
+        fallbackName: String,
+        username: String,
+    ) {
         val fullName = profile.fullName ?: fallbackName
         nameView.text = fullName
         identityNameView.text = fullName
@@ -166,22 +174,24 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
         bindContactLink(
             value = profile.email,
             valueView = contactEmailView,
-            actionView = contactEmailActionView
+            actionView = contactEmailActionView,
         ) { email ->
-            val intent = Intent(Intent.ACTION_SENDTO).apply {
-                data = Uri.parse("mailto:" + Uri.encode(email))
-            }
+            val intent =
+                Intent(Intent.ACTION_SENDTO).apply {
+                    data = Uri.parse("mailto:" + Uri.encode(email))
+                }
             startActivity(intent)
         }
 
         bindContactLink(
             value = profile.phoneNumber,
             valueView = contactPhoneView,
-            actionView = contactPhoneActionView
+            actionView = contactPhoneActionView,
         ) { phone ->
-            val intent = Intent(Intent.ACTION_DIAL).apply {
-                data = Uri.parse("tel:" + Uri.encode(phone))
-            }
+            val intent =
+                Intent(Intent.ACTION_DIAL).apply {
+                    data = Uri.parse("tel:" + Uri.encode(phone))
+                }
             startActivity(intent)
         }
 
@@ -191,7 +201,10 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
         identityBirthDateView.text = formatBirthDate(profile.birthDate)
     }
 
-    private fun resolveLevel(language: String?, level: String?): String {
+    private fun resolveLevel(
+        language: String?,
+        level: String?,
+    ): String {
         val unavailable = getString(R.string.dashboard_team_member_profile_not_available)
         val englishLevel = LearningLevelTranslator.toEnglish(this, level) ?: return unavailable
         val arrayRes = levelArrayResForLanguage(language)
@@ -220,62 +233,82 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
     private fun levelArrayResForLanguage(language: String?): Int? {
         val normalized = language?.trim()?.lowercase(Locale.ROOT) ?: return null
         return when (normalized) {
-            "english", getString(R.string.language_name_english).lowercase(Locale.ROOT), "en" ->
+            "english", getString(R.string.language_name_english).lowercase(Locale.ROOT), "en" -> {
                 R.array.signup_level_options_language_en
+            }
 
-            "spanish", "español", getString(R.string.language_name_spanish).lowercase(Locale.ROOT), "es" ->
+            "spanish", "español", getString(R.string.language_name_spanish).lowercase(Locale.ROOT), "es" -> {
                 R.array.signup_level_options_language_es
+            }
 
-            "french", "français", getString(R.string.language_name_french).lowercase(Locale.ROOT), "fr" ->
+            "french", "français", getString(R.string.language_name_french).lowercase(Locale.ROOT), "fr" -> {
                 R.array.signup_level_options_language_fr
+            }
 
-            "portuguese", "português", getString(R.string.language_name_portuguese).lowercase(Locale.ROOT), "pt" ->
+            "portuguese", "português", getString(R.string.language_name_portuguese).lowercase(Locale.ROOT), "pt" -> {
                 R.array.signup_level_options_language_pt
+            }
 
-            "arabic", "العربية", getString(R.string.language_name_arabic).lowercase(Locale.ROOT), "ar" ->
+            "arabic", "العربية", getString(R.string.language_name_arabic).lowercase(Locale.ROOT), "ar" -> {
                 R.array.signup_level_options_language_ar
+            }
 
-            "somali", "soomaali", getString(R.string.language_name_somali).lowercase(Locale.ROOT), "so" ->
+            "somali", "soomaali", getString(R.string.language_name_somali).lowercase(Locale.ROOT), "so" -> {
                 R.array.signup_level_options_language_so
+            }
 
-            "nepali", "नेपाली", getString(R.string.language_name_nepali).lowercase(Locale.ROOT), "ne" ->
+            "nepali", "नेपाली", getString(R.string.language_name_nepali).lowercase(Locale.ROOT), "ne" -> {
                 R.array.signup_level_options_language_ne
+            }
 
-            "hindi", "हिन्दी", getString(R.string.language_name_hindi).lowercase(Locale.ROOT), "hi" ->
+            "hindi", "हिन्दी", getString(R.string.language_name_hindi).lowercase(Locale.ROOT), "hi" -> {
                 R.array.signup_level_options_language_hi
+            }
 
-            else -> null
+            else -> {
+                null
+            }
         }
     }
 
     private fun genderArrayResForLanguage(languageTag: String?): Int? {
         val normalized = languageTag?.trim()?.lowercase(Locale.ROOT) ?: return null
         return when (normalized) {
-            "english", getString(R.string.language_name_english).lowercase(Locale.ROOT), "en" ->
+            "english", getString(R.string.language_name_english).lowercase(Locale.ROOT), "en" -> {
                 R.array.signup_gender_options_language_en
+            }
 
-            "spanish", "español", getString(R.string.language_name_spanish).lowercase(Locale.ROOT), "es" ->
+            "spanish", "español", getString(R.string.language_name_spanish).lowercase(Locale.ROOT), "es" -> {
                 R.array.signup_gender_options_language_es
+            }
 
-            "french", "français", getString(R.string.language_name_french).lowercase(Locale.ROOT), "fr" ->
+            "french", "français", getString(R.string.language_name_french).lowercase(Locale.ROOT), "fr" -> {
                 R.array.signup_gender_options_language_fr
+            }
 
-            "portuguese", "português", getString(R.string.language_name_portuguese).lowercase(Locale.ROOT), "pt" ->
+            "portuguese", "português", getString(R.string.language_name_portuguese).lowercase(Locale.ROOT), "pt" -> {
                 R.array.signup_gender_options_language_pt
+            }
 
-            "arabic", "العربية", getString(R.string.language_name_arabic).lowercase(Locale.ROOT), "ar" ->
+            "arabic", "العربية", getString(R.string.language_name_arabic).lowercase(Locale.ROOT), "ar" -> {
                 R.array.signup_gender_options_language_ar
+            }
 
-            "somali", "soomaali", getString(R.string.language_name_somali).lowercase(Locale.ROOT), "so" ->
+            "somali", "soomaali", getString(R.string.language_name_somali).lowercase(Locale.ROOT), "so" -> {
                 R.array.signup_gender_options_language_so
+            }
 
-            "nepali", "नेपाली", getString(R.string.language_name_nepali).lowercase(Locale.ROOT), "ne" ->
+            "nepali", "नेपाली", getString(R.string.language_name_nepali).lowercase(Locale.ROOT), "ne" -> {
                 R.array.signup_gender_options_language_ne
+            }
 
-            "hindi", "हिन्दी", getString(R.string.language_name_hindi).lowercase(Locale.ROOT), "hi" ->
+            "hindi", "हिन्दी", getString(R.string.language_name_hindi).lowercase(Locale.ROOT), "hi" -> {
                 R.array.signup_gender_options_language_hi
+            }
 
-            else -> null
+            else -> {
+                null
+            }
         }
     }
 
@@ -285,12 +318,11 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
         return locale.language
     }
 
-    private fun formatBirthDate(value: String?): String {
-        return DateUtils.formatBirthDate(
+    private fun formatBirthDate(value: String?): String =
+        DateUtils.formatBirthDate(
             value = value,
-            fallback = getString(R.string.dashboard_team_member_profile_not_available)
+            fallback = getString(R.string.dashboard_team_member_profile_not_available),
         )
-    }
 
     private fun showLoading(loading: Boolean) {
         loadingView.isVisible = loading
@@ -308,7 +340,7 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
         value: String?,
         valueView: TextView,
         actionView: View,
-        launchIntent: (String) -> Unit
+        launchIntent: (String) -> Unit,
     ) {
         val resolvedValue = value?.takeIf { it.isNotBlank() }
         val displayValue = resolvedValue ?: getString(R.string.dashboard_team_member_profile_not_available)
@@ -328,14 +360,16 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
         private const val EXTRA_DISPLAY_NAME = "extra_display_name"
         private const val EXTRA_IS_LEADER = "extra_is_leader"
 
-        fun buildIntent(context: Context, username: String, displayName: String, isLeader: Boolean): Intent {
-            return Intent(context, DashboardTeamMemberProfileActivity::class.java).apply {
+        fun buildIntent(
+            context: Context,
+            username: String,
+            displayName: String,
+            isLeader: Boolean,
+        ): Intent =
+            Intent(context, DashboardTeamMemberProfileActivity::class.java).apply {
                 putExtra(EXTRA_USERNAME, username)
                 putExtra(EXTRA_DISPLAY_NAME, displayName)
                 putExtra(EXTRA_IS_LEADER, isLeader)
             }
-        }
     }
-
-
 }
