@@ -34,7 +34,7 @@ class DashboardSurveysRepositoryTest {
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        repository = DashboardSurveysRepository()
+        repository = DashboardSurveysRepository(client = okhttp3.OkHttpClient.Builder().build())
     }
 
     @After
