@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-06-10
@@ -23,7 +23,10 @@ internal fun SignupActivity.setupServerConfiguration() {
     serverCode = serverPreferences.getString(SignupActivity.KEY_SERVER_CODE, null)
 }
 
-internal fun SignupActivity.verifyServerAvailability(step: SignupStep, force: Boolean = false): Job? {
+internal fun SignupActivity.verifyServerAvailability(
+    step: SignupStep,
+    force: Boolean = false,
+): Job? {
     val trimmedBaseUrl = serverBaseUrl.trim()
     if (trimmedBaseUrl.isEmpty()) {
         isServerReachable = false
@@ -38,29 +41,35 @@ internal fun SignupActivity.verifyServerAvailability(step: SignupStep, force: Bo
     serverCheckJob?.cancel()
     currentConnectivityStep = step
 
-    val job = lifecycleScope.launch {
-        applyConnectivityState(step, reachable = false, checking = true)
-        val connectivityResult = withContext(Dispatchers.IO) {
-            serverConnectivityRepository.checkServerConnectivity(trimmedBaseUrl)
+    val job =
+        lifecycleScope.launch {
+            applyConnectivityState(step, reachable = false, checking = true)
+            val connectivityResult =
+                withContext(Dispatchers.IO) {
+                    serverConnectivityRepository.checkServerConnectivity(trimmedBaseUrl)
+                }
+            if (!isActive) {
+                return@launch
+            }
+            if (connectivityResult.reachable) {
+                persistServerMetadata(
+                    trimmedBaseUrl,
+                    connectivityResult.parentCode,
+                    connectivityResult.code,
+                )
+            }
+            applyConnectivityState(step, reachable = connectivityResult.reachable, checking = false)
         }
-        if (!isActive) {
-            return@launch
-        }
-        if (connectivityResult.reachable) {
-            persistServerMetadata(
-                trimmedBaseUrl,
-                connectivityResult.parentCode,
-                connectivityResult.code
-            )
-        }
-        applyConnectivityState(step, reachable = connectivityResult.reachable, checking = false)
-    }
 
     serverCheckJob = job
     return job
 }
 
-internal fun SignupActivity.persistServerMetadata(baseUrl: String, parentCode: String?, code: String?) {
+internal fun SignupActivity.persistServerMetadata(
+    baseUrl: String,
+    parentCode: String?,
+    code: String?,
+) {
     serverParentCode = parentCode
     serverCode = code
     serverPreferences.edit {
@@ -78,7 +87,11 @@ internal fun SignupActivity.persistServerMetadata(baseUrl: String, parentCode: S
     }
 }
 
-internal fun SignupActivity.applyConnectivityState(step: SignupStep, reachable: Boolean, checking: Boolean) {
+internal fun SignupActivity.applyConnectivityState(
+    step: SignupStep,
+    reachable: Boolean,
+    checking: Boolean,
+) {
     isCheckingServerAvailability = checking
     isServerReachable = if (checking) false else reachable
 
@@ -88,6 +101,7 @@ internal fun SignupActivity.applyConnectivityState(step: SignupStep, reachable: 
                 usernameLayout.error = null
                 usernameLayout.helperText = null
             }
+
             reachable -> {
                 if (usernameLayout.helperText == getString(R.string.signup_connection_checking) ||
                     usernameLayout.helperText == getString(R.string.signup_connection_error_input)
@@ -95,6 +109,7 @@ internal fun SignupActivity.applyConnectivityState(step: SignupStep, reachable: 
                     usernameLayout.helperText = null
                 }
             }
+
             else -> {
                 usernameLayout.error = null
                 usernameLayout.helperText = getString(R.string.signup_connection_error_input)
@@ -106,7 +121,11 @@ internal fun SignupActivity.applyConnectivityState(step: SignupStep, reachable: 
     updateStepActionState()
 }
 
-internal fun SignupActivity.updateStepConnectivityMessage(step: SignupStep, reachable: Boolean, checking: Boolean) {
+internal fun SignupActivity.updateStepConnectivityMessage(
+    step: SignupStep,
+    reachable: Boolean,
+    checking: Boolean,
+) {
     if (step != steps[currentStepIndex]) {
         return
     }
@@ -120,12 +139,14 @@ internal fun SignupActivity.updateStepConnectivityMessage(step: SignupStep, reac
             subtitleView.isFocusable = false
             subtitleView.setOnClickListener(null)
         }
+
         reachable -> {
             subtitleView.setText(step.subtitleRes)
             subtitleView.isClickable = false
             subtitleView.isFocusable = false
             subtitleView.setOnClickListener(null)
         }
+
         else -> {
             subtitleView.text = getString(R.string.signup_connection_error_retry)
             subtitleView.isClickable = true
@@ -141,15 +162,19 @@ internal fun SignupActivity.updateStepActionState(step: SignupStep = steps[curre
     if (step != steps[currentStepIndex]) {
         return
     }
-    val shouldEnable = when (step) {
-        SignupStep.USERNAME, SignupStep.LICENSE ->
-            !isProcessingStepAction && !isCheckingServerAvailability && isServerReachable
-        else -> !isProcessingStepAction
-    }
+    val shouldEnable =
+        when (step) {
+            SignupStep.USERNAME, SignupStep.LICENSE -> {
+                !isProcessingStepAction && !isCheckingServerAvailability && isServerReachable
+            }
+
+            else -> {
+                !isProcessingStepAction
+            }
+        }
     nextButton.isEnabled = shouldEnable
     nextButton.alpha = if (shouldEnable) 1f else 0.5f
 }
 
-internal fun SignupActivity.loadStoredServerBaseUrl(): String {
-    return serverPreferences.getString(SignupActivity.KEY_SERVER_URL, "").orEmpty().trim()
-}
+internal fun SignupActivity.loadStoredServerBaseUrl(): String =
+    serverPreferences.getString(SignupActivity.KEY_SERVER_URL, "").orEmpty().trim()

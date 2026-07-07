@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
@@ -29,7 +29,6 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 
 class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses_page) {
-
     val coursesRepository = DashboardCoursesRepository()
     var baseUrl: String? = null
     var credentials: StoredCredentials? = null
@@ -58,22 +57,28 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             if (result.resultCode != android.app.Activity.RESULT_OK) return@registerForActivityResult
             val data = result.data
             val courseId = data?.getStringExtra(CourseWizardActivity.EXTRA_RESULT_COURSE_ID)
-            val progressPercent = data?.getIntExtra(
-                CourseWizardActivity.EXTRA_RESULT_PROGRESS_PERCENT,
-                -1
-            )?.takeIf { it >= 0 }
-            val currentStep = data?.getIntExtra(
-                CourseWizardActivity.EXTRA_RESULT_CURRENT_STEP,
-                -1
-            )?.takeIf { it >= 0 }
+            val progressPercent =
+                data
+                    ?.getIntExtra(
+                        CourseWizardActivity.EXTRA_RESULT_PROGRESS_PERCENT,
+                        -1,
+                    )?.takeIf { it >= 0 }
+            val currentStep =
+                data
+                    ?.getIntExtra(
+                        CourseWizardActivity.EXTRA_RESULT_CURRENT_STEP,
+                        -1,
+                    )?.takeIf { it >= 0 }
             if (!courseId.isNullOrBlank() && progressPercent != null && currentStep != null) {
                 adapter.updateCourseProgress(courseId, progressPercent, currentStep)
             }
             refreshCoursesAfterWizard()
         }
 
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         tabPosition = requireArguments().getInt(ARG_TAB_POSITION)
 
@@ -97,19 +102,21 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         emptyView = view.findViewById(R.id.dashboardCoursesEmptyView)
         refreshLayout = view.findViewById(R.id.dashboardCoursesRefresh)
         loadingOverlay = view.findViewById(R.id.dashboardCoursesLoadingOverlay)
-        courseCategories = listOf(
-            CourseCategory(id = null, name = getString(R.string.dashboard_courses_category_all))
-        )
+        courseCategories =
+            listOf(
+                CourseCategory(id = null, name = getString(R.string.dashboard_courses_category_all)),
+            )
     }
 
     private fun setupAdapter() {
-        adapter = CourseAdapter(
-            showProgress = tabPosition == 0,
-            showDownloadButton = tabPosition == 0,
-            imageLoaderProvider = { courseImageLoader },
-            ensureImageLoader = { ensureCourseImageLoader() },
-            categoriesProvider = { courseCategories }
-        )
+        adapter =
+            CourseAdapter(
+                showProgress = tabPosition == 0,
+                showDownloadButton = tabPosition == 0,
+                imageLoaderProvider = { courseImageLoader },
+                ensureImageLoader = { ensureCourseImageLoader() },
+                categoriesProvider = { courseCategories },
+            )
         adapter.onCategorySelected = { categoryId ->
             selectedCategoryId = categoryId
             if (categoryId.isNullOrBlank()) {
@@ -134,19 +141,24 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 childFragmentManager,
                 course,
                 isEnrolled = isEnrolledCourse,
-                onJoinCourse = if (isEnrolledCourse) null else {
-                    { handleJoinCourse(course) }
-                },
-                onLeaveCourse = if (isEnrolledCourse) {
-                    { handleLeaveCourse(course) }
-                } else {
-                    null
-                },
-                onOpenCourse = if (isEnrolledCourse) {
-                    { openCourseWizard(course) }
-                } else {
-                    null
-                }
+                onJoinCourse =
+                    if (isEnrolledCourse) {
+                        null
+                    } else {
+                        { handleJoinCourse(course) }
+                    },
+                onLeaveCourse =
+                    if (isEnrolledCourse) {
+                        { handleLeaveCourse(course) }
+                    } else {
+                        null
+                    },
+                onOpenCourse =
+                    if (isEnrolledCourse) {
+                        { openCourseWizard(course) }
+                    } else {
+                        null
+                    },
             )
         }
     }
@@ -154,11 +166,10 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
     private fun setupRecyclerView() {
         val spanCount = 2
         val layoutManager = GridLayoutManager(requireContext(), spanCount)
-        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-            override fun getSpanSize(position: Int): Int {
-                return if (adapter.isHeader(position)) spanCount else 1
+        layoutManager.spanSizeLookup =
+            object : GridLayoutManager.SpanSizeLookup() {
+                override fun getSpanSize(position: Int): Int = if (adapter.isHeader(position)) spanCount else 1
             }
-        }
 
         recyclerView.layoutManager = layoutManager
         recyclerView.adapter = adapter
@@ -173,9 +184,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 0 -> {
                     refreshUserCourses(adapter, refreshLayout)
                 }
+
                 1 -> {
                     refreshAllCourses(adapter, refreshLayout)
                 }
+
                 else -> {
                     refreshTeamCourses(adapter, refreshLayout, forceReload = true)
                 }
@@ -189,9 +202,11 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             0 -> {
                 refreshUserCourses(adapter, refreshLayout)
             }
+
             1 -> {
                 refreshAllCourses(adapter, refreshLayout)
             }
+
             else -> {
                 refreshTeamCourses(adapter, refreshLayout, forceReload = true)
             }
@@ -202,18 +217,24 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
 
     private fun setupPagination() {
         if (tabPosition == 1) {
-            recyclerView.addOnScrollListener(object : RecyclerView.OnScrollListener() {
-                override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
-                    super.onScrolled(recyclerView, dx, dy)
-                    if (dy <= 0 || isPaging || !hasMorePages) return
+            recyclerView.addOnScrollListener(
+                object : RecyclerView.OnScrollListener() {
+                    override fun onScrolled(
+                        recyclerView: RecyclerView,
+                        dx: Int,
+                        dy: Int,
+                    ) {
+                        super.onScrolled(recyclerView, dx, dy)
+                        if (dy <= 0 || isPaging || !hasMorePages) return
 
-                    val manager = recyclerView.layoutManager as? GridLayoutManager ?: return
-                    val lastVisible = manager.findLastVisibleItemPosition()
-                    if (lastVisible >= adapter.itemCount - 4) {
-                        loadNextCoursesPage(adapter, null)
+                        val manager = recyclerView.layoutManager as? GridLayoutManager ?: return
+                        val lastVisible = manager.findLastVisibleItemPosition()
+                        if (lastVisible >= adapter.itemCount - 4) {
+                            loadNextCoursesPage(adapter, null)
+                        }
                     }
-                }
-            })
+                },
+            )
         }
     }
 
@@ -249,11 +270,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
 
     private fun openCourseWizard(course: CourseItem) {
         if (course.steps.isEmpty()) {
-            Toast.makeText(
-                requireContext(),
-                getString(R.string.dashboard_courses_loading_error),
-                Toast.LENGTH_SHORT
-            ).show()
+            Toast
+                .makeText(
+                    requireContext(),
+                    getString(R.string.dashboard_courses_loading_error),
+                    Toast.LENGTH_SHORT,
+                ).show()
             return
         }
         val startStep = course.currentStep?.coerceIn(0, course.steps.lastIndex) ?: 0
@@ -263,8 +285,8 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 course.id,
                 course.title,
                 course.steps,
-                startStep
-            )
+                startStep,
+            ),
         )
     }
 
@@ -277,14 +299,15 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         }
     }
 
-
     companion object {
         private const val ARG_TAB_POSITION = "tab_position"
 
-        fun newInstance(position: Int) = DashboardCoursePageFragment().apply {
-            arguments = Bundle().apply {
-                putInt(ARG_TAB_POSITION, position)
+        fun newInstance(position: Int) =
+            DashboardCoursePageFragment().apply {
+                arguments =
+                    Bundle().apply {
+                        putInt(ARG_TAB_POSITION, position)
+                    }
             }
-        }
     }
 }

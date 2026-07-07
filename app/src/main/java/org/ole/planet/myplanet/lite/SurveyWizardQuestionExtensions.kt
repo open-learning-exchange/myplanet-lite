@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
@@ -25,8 +25,8 @@ internal fun SurveyWizardFragment.renderQuestion(
     question: SurveyQuestion,
     index: Int,
     translation: TranslatedQuestion?,
-): Pair<View, () -> Boolean> {
-    return when (question.type) {
+): Pair<View, () -> Boolean> =
+    when (question.type) {
         "input" -> renderTextInputQuestion(index, false)
         "textarea" -> renderTextInputQuestion(index, true)
         "select" -> renderSingleChoiceQuestion(question, index, translation)
@@ -34,20 +34,24 @@ internal fun SurveyWizardFragment.renderQuestion(
         "ratingScale" -> renderRatingQuestion(question, index)
         else -> renderTextInputQuestion(index, false)
     }
-}
 
-internal fun SurveyWizardFragment.renderTextInputQuestion(index: Int, multiline: Boolean): Pair<View, () -> Boolean> {
+internal fun SurveyWizardFragment.renderTextInputQuestion(
+    index: Int,
+    multiline: Boolean,
+): Pair<View, () -> Boolean> {
     val context = requireContext()
     val layout = TextInputLayout(context)
-    layout.layoutParams = LinearLayout.LayoutParams(
-        ViewGroup.LayoutParams.MATCH_PARENT,
-        ViewGroup.LayoutParams.WRAP_CONTENT,
-    )
+    layout.layoutParams =
+        LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
     val editText = TextInputEditText(context)
-    editText.layoutParams = LinearLayout.LayoutParams(
-        ViewGroup.LayoutParams.MATCH_PARENT,
-        ViewGroup.LayoutParams.WRAP_CONTENT,
-    )
+    editText.layoutParams =
+        LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
     editText.isSingleLine = !multiline
     if (multiline) {
         editText.minLines = 3
@@ -62,7 +66,11 @@ internal fun SurveyWizardFragment.renderTextInputQuestion(index: Int, multiline:
     }
     layout.addView(editText)
     val collector = {
-        val response = editText.text?.toString()?.trim().orEmpty()
+        val response =
+            editText.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         if (response.isBlank()) {
             showValidationMessage(R.string.dashboard_survey_wizard_input_required)
             false
@@ -80,27 +88,32 @@ internal fun SurveyWizardFragment.renderSingleChoiceQuestion(
     translation: TranslatedQuestion?,
 ): Pair<View, () -> Boolean> {
     val context = requireContext()
-    val container = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
-    val radioGroup = RadioGroup(context).apply {
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val container =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
+    val radioGroup =
+        RadioGroup(context).apply {
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
 
-    val otherInputLayout = buildSingleChoiceOptions(
-        context = context,
-        question = question,
-        translation = translation,
-        radioGroup = radioGroup,
-        container = container,
-    )
+    val otherInputLayout =
+        buildSingleChoiceOptions(
+            context = context,
+            question = question,
+            translation = translation,
+            radioGroup = radioGroup,
+            container = container,
+        )
     container.addView(radioGroup, 0)
 
     val savedSelection = (answers[index] as? SurveyAnswer.SingleChoice)?.choice
@@ -151,17 +164,18 @@ internal fun SurveyWizardFragment.restoreSingleChoiceSelection(
     savedSelection: SelectedOption?,
 ) {
     if (savedSelection != null) {
-        val matchedButton = (0 until radioGroup.childCount)
-            .mapNotNull { childIndex -> radioGroup.getChildAt(childIndex) as? RadioButton }
-            .firstOrNull { button ->
-                val taggedChoice = button.tag as? SurveyChoice
-                if (savedSelection.isOther) {
-                    button.tag == OTHER_CHOICE_TAG
-                } else {
-                    taggedChoice?.id == savedSelection.id ||
-                        button.text?.toString() == savedSelection.text
+        val matchedButton =
+            (0 until radioGroup.childCount)
+                .mapNotNull { childIndex -> radioGroup.getChildAt(childIndex) as? RadioButton }
+                .firstOrNull { button ->
+                    val taggedChoice = button.tag as? SurveyChoice
+                    if (savedSelection.isOther) {
+                        button.tag == OTHER_CHOICE_TAG
+                    } else {
+                        taggedChoice?.id == savedSelection.id ||
+                            button.text?.toString() == savedSelection.text
+                    }
                 }
-            }
         matchedButton?.isChecked = true
         if (savedSelection.isOther) {
             otherInputLayout?.isVisible = true
@@ -184,29 +198,37 @@ internal fun SurveyWizardFragment.collectSingleChoiceAnswer(
     }
     val selectedButton = radioGroup.findViewById<RadioButton>(selectedId)
     val isOther = selectedButton.tag == OTHER_CHOICE_TAG
-    val otherValue = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
+    val otherValue =
+        otherInputLayout
+            ?.editText
+            ?.text
+            ?.toString()
+            ?.trim()
+            .orEmpty()
     if (isOther && otherValue.isBlank()) {
         showValidationMessage(R.string.dashboard_survey_wizard_input_required)
         return false
     }
-    val choice = if (isOther) {
-        SelectedOption(
-            id = GENDER_OTHER,
-            text = otherValue,
-            isOther = true,
-        )
-    } else {
-        val originalChoice = selectedButton.tag as? SurveyChoice
-        val label = originalChoice?.text?.takeIf { it.isNotBlank() }
-            ?: selectedButton.text?.toString()?.takeIf { it.isNotBlank() }
-            ?: originalChoice?.id
-            ?: ""
-        SelectedOption(
-            id = originalChoice?.id ?: label,
-            text = label,
-            isOther = false,
-        )
-    }
+    val choice =
+        if (isOther) {
+            SelectedOption(
+                id = GENDER_OTHER,
+                text = otherValue,
+                isOther = true,
+            )
+        } else {
+            val originalChoice = selectedButton.tag as? SurveyChoice
+            val label =
+                originalChoice?.text?.takeIf { it.isNotBlank() }
+                    ?: selectedButton.text?.toString()?.takeIf { it.isNotBlank() }
+                    ?: originalChoice?.id
+                    ?: ""
+            SelectedOption(
+                id = originalChoice?.id ?: label,
+                text = label,
+                isOther = false,
+            )
+        }
     val answer = SurveyAnswer.SingleChoice(choice = choice)
     if (isExam && !isAnswerCorrect(question, answer)) {
         showValidationMessage(R.string.dashboard_exam_incorrect_answers)
@@ -222,13 +244,15 @@ internal fun SurveyWizardFragment.renderMultiChoiceQuestion(
     translation: TranslatedQuestion?,
 ): Pair<View, () -> Boolean> {
     val context = requireContext()
-    val container = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val container =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
     val checkboxes = mutableListOf<android.widget.CheckBox>()
     buildMultiChoiceCheckboxes(context, question, translation, container, checkboxes)
 
@@ -287,9 +311,10 @@ internal fun SurveyWizardFragment.restoreMultiChoiceSelections(
 ) {
     checkboxes.forEach { box ->
         val choice = box.tag as? SurveyChoice
-        val isSelected = savedSelections.any { saved ->
-            saved.id == choice?.id || saved.text == box.text?.toString()
-        }
+        val isSelected =
+            savedSelections.any { saved ->
+                saved.id == choice?.id || saved.text == box.text?.toString()
+            }
         box.isChecked = isSelected
     }
     val savedOther = savedSelections.firstOrNull { it.isOther }
@@ -308,21 +333,30 @@ internal fun SurveyWizardFragment.collectMultiChoiceAnswer(
     question: SurveyQuestion,
     index: Int,
 ): Boolean {
-    val selectedChoices = checkboxes.filter { it.isChecked }
-        .map { checkbox ->
-            val choice = checkbox.tag as? SurveyChoice
-            val label = choice?.text?.takeIf { it.isNotBlank() }
-                ?: checkbox.text?.toString()?.takeIf { it.isNotBlank() }
-                ?: choice?.id
-                ?: ""
-            SelectedOption(
-                id = choice?.id ?: label,
-                text = label,
-                isOther = false,
-            )
-        }
+    val selectedChoices =
+        checkboxes
+            .filter { it.isChecked }
+            .map { checkbox ->
+                val choice = checkbox.tag as? SurveyChoice
+                val label =
+                    choice?.text?.takeIf { it.isNotBlank() }
+                        ?: checkbox.text?.toString()?.takeIf { it.isNotBlank() }
+                        ?: choice?.id
+                        ?: ""
+                SelectedOption(
+                    id = choice?.id ?: label,
+                    text = label,
+                    isOther = false,
+                )
+            }
     val otherChecked = otherBox?.isChecked == true
-    val otherText = otherInputLayout?.editText?.text?.toString()?.trim().orEmpty()
+    val otherText =
+        otherInputLayout
+            ?.editText
+            ?.text
+            ?.toString()
+            ?.trim()
+            .orEmpty()
     if (selectedChoices.isEmpty() && !otherChecked) {
         showValidationMessage(R.string.dashboard_survey_wizard_choice_required)
         return false
@@ -352,16 +386,18 @@ internal fun SurveyWizardFragment.collectMultiChoiceAnswer(
 
 internal fun SurveyWizardFragment.buildOtherInputField(context: android.content.Context): TextInputLayout {
     val layout = TextInputLayout(context)
-    layout.layoutParams = LinearLayout.LayoutParams(
-        ViewGroup.LayoutParams.MATCH_PARENT,
-        ViewGroup.LayoutParams.WRAP_CONTENT,
-    )
+    layout.layoutParams =
+        LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
     val editText = TextInputEditText(context)
     editText.hint = getString(R.string.dashboard_survey_wizard_other_hint)
-    editText.layoutParams = LinearLayout.LayoutParams(
-        ViewGroup.LayoutParams.MATCH_PARENT,
-        ViewGroup.LayoutParams.WRAP_CONTENT,
-    )
+    editText.layoutParams =
+        LinearLayout.LayoutParams(
+            ViewGroup.LayoutParams.MATCH_PARENT,
+            ViewGroup.LayoutParams.WRAP_CONTENT,
+        )
     layout.addView(editText)
     return layout
 }

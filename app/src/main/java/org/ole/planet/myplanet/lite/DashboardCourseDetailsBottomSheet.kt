@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
@@ -29,24 +29,27 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 
 class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
-
     private lateinit var markwon: Markwon
     private var imageLoader: DashboardPostImageLoader? = null
     private var onJoinCourse: (() -> Unit)? = null
     private var onLeaveCourse: (() -> Unit)? = null
     private var onOpenCourse: (() -> Unit)? = null
 
-    private data class StepDisplay(val title: String, val mediaTypes: List<String>)
+    private data class StepDisplay(
+        val title: String,
+        val mediaTypes: List<String>,
+    )
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        return inflater.inflate(R.layout.bottom_sheet_dashboard_course_details, container, false)
-    }
+        savedInstanceState: Bundle?,
+    ): View = inflater.inflate(R.layout.bottom_sheet_dashboard_course_details, container, false)
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         val args = requireArguments()
         val courseTitle = args.getString(ARG_TITLE).orEmpty()
@@ -54,13 +57,16 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         val courseDescription = args.getString(ARG_DESCRIPTION).orEmpty()
         val stepTitles = args.getStringArrayList(ARG_STEP_TITLES) ?: arrayListOf()
         val stepMediaTypes = args.getStringArrayList(ARG_STEP_MEDIA_TYPES) ?: arrayListOf()
-        val steps = stepTitles.mapIndexed { index, title ->
-            val mediaTypes = stepMediaTypes.getOrNull(index)
-                ?.split(",")
-                ?.mapNotNull { it.trim().takeIf(String::isNotBlank) }
-                .orEmpty()
-            StepDisplay(title, mediaTypes)
-        }
+        val steps =
+            stepTitles.mapIndexed { index, title ->
+                val mediaTypes =
+                    stepMediaTypes
+                        .getOrNull(index)
+                        ?.split(",")
+                        ?.mapNotNull { it.trim().takeIf(String::isNotBlank) }
+                        .orEmpty()
+                StepDisplay(title, mediaTypes)
+            }
         val currentStep = args.getInt(ARG_CURRENT_STEP, -1).takeIf { it >= 0 }
         val isEnrolled = args.getBoolean(ARG_IS_ENROLLED, true)
 
@@ -88,11 +94,12 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         bindSteps(steps, currentStep, stepsContainer)
 
         if (ctaButton is TextView) {
-            ctaButton.text = if (isEnrolled) {
-                getString(R.string.dashboard_course_lessons_open_course)
-            } else {
-                getString(R.string.dashboard_course_lessons_join_course)
-            }
+            ctaButton.text =
+                if (isEnrolled) {
+                    getString(R.string.dashboard_course_lessons_open_course)
+                } else {
+                    getString(R.string.dashboard_course_lessons_join_course)
+                }
         }
 
         leaveButton.isVisible = isEnrolled
@@ -104,8 +111,7 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
                     .setPositiveButton(R.string.dashboard_course_leave_course) { _, _ ->
                         onLeaveCourse?.invoke()
                         dismiss()
-                    }
-                    .show()
+                    }.show()
             }
         }
 
@@ -124,7 +130,7 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         courseId: String,
         description: String,
         descriptionView: TextView,
-        imagesContainer: LinearLayout
+        imagesContainer: LinearLayout,
     ) {
         val trimmed = description.trim()
         descriptionView.isVisible = trimmed.isNotEmpty()
@@ -141,7 +147,11 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         bindImages(courseId, imagePaths, imagesContainer)
     }
 
-    private fun bindImages(courseId: String, imagePaths: List<String>, container: LinearLayout) {
+    private fun bindImages(
+        courseId: String,
+        imagePaths: List<String>,
+        container: LinearLayout,
+    ) {
         container.removeAllViews()
         if (imagePaths.isEmpty()) {
             container.isVisible = false
@@ -165,10 +175,11 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
             container.isVisible = true
             imagePaths.forEachIndexed { index, path ->
                 val imageView = ImageView(requireContext())
-                val params = LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT
-                )
+                val params =
+                    LinearLayout.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.WRAP_CONTENT,
+                    )
                 if (index > 0) {
                     params.topMargin = resources.getDimensionPixelSize(R.dimen.dashboard_post_image_spacing)
                 }
@@ -176,9 +187,10 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
                 imageView.adjustViewBounds = true
                 imageView.scaleType = ImageView.ScaleType.FIT_CENTER
                 container.addView(imageView)
-                val localUri = courseId.takeIf { it.isNotBlank() }?.let {
-                    OfflineCourseStorage.localMarkdownImageUri(requireContext(), it, path)
-                }
+                val localUri =
+                    courseId.takeIf { it.isNotBlank() }?.let {
+                        OfflineCourseStorage.localMarkdownImageUri(requireContext(), it, path)
+                    }
                 if (!localUri.isNullOrBlank()) {
                     Glide.with(imageView).load(Uri.parse(localUri)).into(imageView)
                 } else {
@@ -190,17 +202,18 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun transformMarkdownForDisplay(markdown: String): String {
-        return markdown.replace("\n", "  \n")
-    }
+    private fun transformMarkdownForDisplay(markdown: String): String = markdown.replace("\n", "  \n")
 
     private fun extractImagePaths(markdown: String): List<String> {
         if (markdown.isBlank()) return emptyList()
-        return IMAGE_MARKDOWN_CAPTURE_REGEX.findAll(markdown)
+        return IMAGE_MARKDOWN_CAPTURE_REGEX
+            .findAll(markdown)
             .mapNotNull { match ->
-                match.groupValues.getOrNull(1)?.trim()?.takeIf { it.isNotBlank() }
-            }
-            .toList()
+                match.groupValues
+                    .getOrNull(1)
+                    ?.trim()
+                    ?.takeIf { it.isNotBlank() }
+            }.toList()
     }
 
     private fun removeImageMarkdown(markdown: String): String {
@@ -208,7 +221,11 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         return IMAGE_MARKDOWN_CAPTURE_REGEX.replace(markdown) { _ -> "" }
     }
 
-    private fun bindSteps(steps: List<StepDisplay>, currentStep: Int?, container: LinearLayout) {
+    private fun bindSteps(
+        steps: List<StepDisplay>,
+        currentStep: Int?,
+        container: LinearLayout,
+    ) {
         container.removeAllViews()
         if (steps.isEmpty()) return
 
@@ -229,7 +246,10 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         }
     }
 
-    private fun bindMediaIcons(mediaTypes: List<String>, container: LinearLayout) {
+    private fun bindMediaIcons(
+        mediaTypes: List<String>,
+        container: LinearLayout,
+    ) {
         container.removeAllViews()
         if (mediaTypes.isEmpty()) {
             container.visibility = View.GONE
@@ -239,21 +259,23 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         container.visibility = View.VISIBLE
         val inflater = LayoutInflater.from(container.context)
         mediaTypes.forEach { mediaType ->
-            val iconRes = when (mediaType.lowercase().trim()) {
-                "video" -> R.drawable.ic_course_step_video_24
-                "pdf" -> R.drawable.ic_course_step_pdf_24
-                "image" -> R.drawable.ic_course_step_image_24
-                "audio" -> R.drawable.ic_course_step_audio_24
-                "survey" -> R.drawable.ic_course_step_survey_24
-                "exam" -> R.drawable.ic_course_step_exam_24
-                else -> null
-            }
+            val iconRes =
+                when (mediaType.lowercase().trim()) {
+                    "video" -> R.drawable.ic_course_step_video_24
+                    "pdf" -> R.drawable.ic_course_step_pdf_24
+                    "image" -> R.drawable.ic_course_step_image_24
+                    "audio" -> R.drawable.ic_course_step_audio_24
+                    "survey" -> R.drawable.ic_course_step_survey_24
+                    "exam" -> R.drawable.ic_course_step_exam_24
+                    else -> null
+                }
             if (iconRes != null) {
-                val icon = inflater.inflate(
-                    R.layout.item_dashboard_course_step_media_icon,
-                    container,
-                    false
-                ) as ImageView
+                val icon =
+                    inflater.inflate(
+                        R.layout.item_dashboard_course_step_media_icon,
+                        container,
+                        false,
+                    ) as ImageView
                 icon.setImageResource(iconRes)
                 container.addView(icon)
             }
@@ -279,29 +301,29 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
             isEnrolled: Boolean,
             onJoinCourse: (() -> Unit)? = null,
             onLeaveCourse: (() -> Unit)? = null,
-            onOpenCourse: (() -> Unit)? = null
+            onOpenCourse: (() -> Unit)? = null,
         ) {
             val sheet = DashboardCourseDetailsBottomSheet()
             sheet.onJoinCourse = onJoinCourse
             sheet.onLeaveCourse = onLeaveCourse
             sheet.onOpenCourse = onOpenCourse
-            sheet.arguments = Bundle().apply {
-                putString(ARG_TITLE, course.title)
-                putString(ARG_COURSE_ID, course.id)
-                putString(ARG_DESCRIPTION, course.description)
-                putStringArrayList(
-                    ARG_STEP_TITLES,
-                    ArrayList(course.steps.map { it.title })
-                )
-                putStringArrayList(
-                    ARG_STEP_MEDIA_TYPES,
-                    ArrayList(course.steps.map { it.mediaTypes.joinToString(",") })
-                )
-                course.currentStep?.let { putInt(ARG_CURRENT_STEP, it) }
-                putBoolean(ARG_IS_ENROLLED, isEnrolled)
-            }
+            sheet.arguments =
+                Bundle().apply {
+                    putString(ARG_TITLE, course.title)
+                    putString(ARG_COURSE_ID, course.id)
+                    putString(ARG_DESCRIPTION, course.description)
+                    putStringArrayList(
+                        ARG_STEP_TITLES,
+                        ArrayList(course.steps.map { it.title }),
+                    )
+                    putStringArrayList(
+                        ARG_STEP_MEDIA_TYPES,
+                        ArrayList(course.steps.map { it.mediaTypes.joinToString(",") }),
+                    )
+                    course.currentStep?.let { putInt(ARG_CURRENT_STEP, it) }
+                    putBoolean(ARG_IS_ENROLLED, isEnrolled)
+                }
             sheet.show(fragmentManager, "course_details")
         }
-
     }
 }

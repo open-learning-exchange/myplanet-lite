@@ -1,6 +1,6 @@
 package org.ole.planet.myplanet.lite.model
 
-/**
+/*
  * Represents a language option in the application.
  *
  * @property languageTag The language tag (e.g., "en", "es").
@@ -10,5 +10,5 @@ package org.ole.planet.myplanet.lite.model
 data class LanguageOption(
     val languageTag: String,
     val labelRes: Int,
-    val levelArrayRes: Int = 0
+    val levelArrayRes: Int = 0,
 )

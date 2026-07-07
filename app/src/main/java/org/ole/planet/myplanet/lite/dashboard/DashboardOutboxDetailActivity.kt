@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
@@ -18,9 +18,6 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import java.text.DateFormat
-import java.util.Date
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -37,9 +34,11 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.util.NetworkUtils
+import java.text.DateFormat
+import java.util.Date
+import java.util.Locale
 
 class DashboardOutboxDetailActivity : BaseActivity() {
-
     private lateinit var toolbar: MaterialToolbar
     private lateinit var teamView: TextView
     private lateinit var savedAtView: TextView
@@ -85,15 +84,19 @@ class DashboardOutboxDetailActivity : BaseActivity() {
             }
             toolbar.title = entry.surveyName.orEmpty().ifBlank { getString(R.string.dashboard_outbox_preview_title) }
             teamView.text = entry.teamName.orEmpty().ifBlank { getString(R.string.dashboard_outbox_unknown_team) }
-            val formattedDate = runCatching {
-                DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, Locale.getDefault())
-                    .format(Date(entry.createdAt))
-            }.getOrNull().orEmpty()
+            val formattedDate =
+                runCatching {
+                    DateFormat
+                        .getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT, Locale.getDefault())
+                        .format(Date(entry.createdAt))
+                }.getOrNull().orEmpty()
             savedAtView.text = getString(R.string.dashboard_outbox_saved_at, formattedDate)
 
             introView.text = getString(R.string.dashboard_outbox_detail_intro)
             answersContainer.removeAllViews()
-            val questions = entry.submission.parent.questions.orEmpty()
+            val questions =
+                entry.submission.parent.questions
+                    .orEmpty()
             val answers = entry.submission.answers
             val hasBasics = renderBasicDetails(entry)
             if ((questions.isEmpty() || answers.isEmpty()) && !hasBasics) {
@@ -129,10 +132,8 @@ class DashboardOutboxDetailActivity : BaseActivity() {
         }
     }
 
-
-
-    private fun formatAnswerValue(value: Any?): String {
-        return when (value) {
+    private fun formatAnswerValue(value: Any?): String =
+        when (value) {
             null -> getString(R.string.dashboard_outbox_no_answer)
             is String -> value.ifBlank { getString(R.string.dashboard_outbox_no_answer) }
             is Number, is Boolean -> value.toString()
@@ -140,20 +141,20 @@ class DashboardOutboxDetailActivity : BaseActivity() {
             is Map<*, *> -> value.entries.joinToString(separator = ", ") { "${it.key}: ${it.value}" }
             else -> value.toString()
         }
-    }
 
     private fun renderBasicDetails(entry: DashboardSurveyOutboxStore.OutboxEntry): Boolean {
         val user = entry.submission.user
-        val details = listOfNotNull(
-            user.name.takeIf { it?.isNotBlank() == true },
-            user.birthDate.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_birthdate_format, it) },
-            user.age?.takeIf { it > 0 }?.let { getString(R.string.dashboard_outbox_age_format, it) },
-            user.gender.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_gender_format, it) },
-            user.language.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_language_format, it) },
-            user.level.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_level_format, it) },
-            user.phoneNumber.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_phone_format, it) },
-            user.email.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_email_format, it) },
-        )
+        val details =
+            listOfNotNull(
+                user.name.takeIf { it?.isNotBlank() == true },
+                user.birthDate.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_birthdate_format, it) },
+                user.age?.takeIf { it > 0 }?.let { getString(R.string.dashboard_outbox_age_format, it) },
+                user.gender.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_gender_format, it) },
+                user.language.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_language_format, it) },
+                user.level.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_level_format, it) },
+                user.phoneNumber.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_phone_format, it) },
+                user.email.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_email_format, it) },
+            )
         if (details.isNotEmpty()) {
             val headerView = layoutInflater.inflate(R.layout.item_outbox_answer, answersContainer, false)
             headerView.findViewById<TextView>(R.id.outboxAnswerQuestion).text = getString(R.string.dashboard_outbox_participant_details)
@@ -181,45 +182,49 @@ class DashboardOutboxDetailActivity : BaseActivity() {
             if (questionType == "select") {
                 val group = RadioGroup(this).apply { isEnabled = false }
                 choices.forEach { choice ->
-                    val button = RadioButton(this).apply {
-                        text = choice.text.orEmpty()
-                        isEnabled = false
-                        isChecked = selectedOptions.any { it.matches(choice) }
-                    }
+                    val button =
+                        RadioButton(this).apply {
+                            text = choice.text.orEmpty()
+                            isEnabled = false
+                            isChecked = selectedOptions.any { it.matches(choice) }
+                        }
                     group.addView(button)
                 }
                 if (hasOtherOption) {
-                    val otherButton = RadioButton(this).apply {
-                        val other = selectedOptions.firstOrNull { it.isOther }
-                        val otherLabel = getString(R.string.dashboard_survey_wizard_other_option)
-                        val otherText = other?.text?.takeIf { !it.isNullOrBlank() }
-                        text = if (otherText != null) "$otherLabel: ${otherText}" else otherLabel
-                        isEnabled = false
-                        isChecked = other != null
-                        contentDescription = text
-                    }
+                    val otherButton =
+                        RadioButton(this).apply {
+                            val other = selectedOptions.firstOrNull { it.isOther }
+                            val otherLabel = getString(R.string.dashboard_survey_wizard_other_option)
+                            val otherText = other?.text?.takeIf { !it.isNullOrBlank() }
+                            text = if (otherText != null) "$otherLabel: $otherText" else otherLabel
+                            isEnabled = false
+                            isChecked = other != null
+                            contentDescription = text
+                        }
                     group.addView(otherButton)
                 }
                 optionsContainer.addView(group)
             } else {
                 choices.forEach { choice ->
-                    val checkbox = CheckBox(this).apply {
-                        text = choice.text.orEmpty()
-                        isEnabled = false
-                        isChecked = selectedOptions.any { it.matches(choice) }
-                    }
+                    val checkbox =
+                        CheckBox(this).apply {
+                            text = choice.text.orEmpty()
+                            isEnabled = false
+                            isChecked = selectedOptions.any { it.matches(choice) }
+                        }
                     optionsContainer.addView(checkbox)
                 }
                 if (hasOtherOption) {
-                    val otherCheck = CheckBox(this).apply {
-                        val other = selectedOptions.firstOrNull { it.isOther }
-                        val otherLabel = getString(R.string.dashboard_survey_wizard_other_option)
-                        val otherText = other?.text?.takeIf { !it.isNullOrBlank() }
-                        text = if (otherText != null) "$otherLabel: ${otherText}" else otherLabel
-                        isEnabled = false
-                        isChecked = other != null
-                        contentDescription = text
-                    }
+                    val otherCheck =
+                        CheckBox(this).apply {
+                            val other = selectedOptions.firstOrNull { it.isOther }
+                            val otherLabel = getString(R.string.dashboard_survey_wizard_other_option)
+                            val otherText = other?.text?.takeIf { !it.isNullOrBlank() }
+                            text = if (otherText != null) "$otherLabel: $otherText" else otherLabel
+                            isEnabled = false
+                            isChecked = other != null
+                            contentDescription = text
+                        }
                     optionsContainer.addView(otherCheck)
                 }
             }
@@ -230,21 +235,34 @@ class DashboardOutboxDetailActivity : BaseActivity() {
         }
     }
 
-    private fun parseSelectedOptions(rawValue: Any?): List<SubmissionOptionValue> {
-        return when (rawValue) {
-            null -> emptyList()
-            is Map<*, *> -> listOf(mapToOption(rawValue))
-            is List<*> -> rawValue.mapNotNull { element ->
-                when (element) {
-                    is Map<*, *> -> mapToOption(element)
-                    is SubmissionOptionValue -> element
-                    else -> null
+    private fun parseSelectedOptions(rawValue: Any?): List<SubmissionOptionValue> =
+        when (rawValue) {
+            null -> {
+                emptyList()
+            }
+
+            is Map<*, *> -> {
+                listOf(mapToOption(rawValue))
+            }
+
+            is List<*> -> {
+                rawValue.mapNotNull { element ->
+                    when (element) {
+                        is Map<*, *> -> mapToOption(element)
+                        is SubmissionOptionValue -> element
+                        else -> null
+                    }
                 }
             }
-            is SubmissionOptionValue -> listOf(rawValue)
-            else -> listOf(SubmissionOptionValue(id = null, text = rawValue.toString(), isOther = false))
+
+            is SubmissionOptionValue -> {
+                listOf(rawValue)
+            }
+
+            else -> {
+                listOf(SubmissionOptionValue(id = null, text = rawValue.toString(), isOther = false))
+            }
         }
-    }
 
     private fun mapToOption(map: Map<*, *>): SubmissionOptionValue {
         val id = map["id"] as? String
@@ -258,10 +276,9 @@ class DashboardOutboxDetailActivity : BaseActivity() {
         val text: String?,
         val isOther: Boolean,
     ) {
-        fun matches(choice: DashboardSurveysRepository.SurveyChoice): Boolean {
-            return (id != null && id == choice.id) ||
+        fun matches(choice: DashboardSurveysRepository.SurveyChoice): Boolean =
+            (id != null && id == choice.id) ||
                 (!text.isNullOrBlank() && text.equals(choice.text, ignoreCase = true))
-        }
     }
 
     companion object {
@@ -277,18 +294,31 @@ class DashboardOutboxDetailActivity : BaseActivity() {
         lifecycleScope.launch {
             val baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
             val credentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
-            val sessionCookie = baseUrl?.let { AuthDependencies.provideAuthService(this@DashboardOutboxDetailActivity, it).getStoredToken() }
-            val serverRev = fetchServerRevision(
-                baseUrl,
-                entry.submission.parent.id,
-                entry.teamId,
-                sessionCookie,
-                credentials?.username,
-                credentials?.password,
-            )
+            val sessionCookie =
+                baseUrl?.let {
+                    AuthDependencies
+                        .provideAuthService(
+                            this@DashboardOutboxDetailActivity,
+                            it,
+                        ).getStoredToken()
+                }
+            val serverRev =
+                fetchServerRevision(
+                    baseUrl,
+                    entry.submission.parent.id,
+                    entry.teamId,
+                    sessionCookie,
+                    credentials?.username,
+                    credentials?.password,
+                )
             val localRev = entry.submission.parent.rev
             if (serverRev == null) {
-                Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_outbox_unable_to_verify_rev, Toast.LENGTH_SHORT).show()
+                Toast
+                    .makeText(
+                        this@DashboardOutboxDetailActivity,
+                        R.string.dashboard_outbox_unable_to_verify_rev,
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 return@launch
             }
             if (localRev != null && localRev != serverRev) {
@@ -306,40 +336,46 @@ class DashboardOutboxDetailActivity : BaseActivity() {
         sessionCookie: String?,
         username: String?,
         password: String?,
-    ): String? = withContext(Dispatchers.IO) {
-        val normalized = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return@withContext null
-        val id = surveyId?.takeIf { it.isNotBlank() } ?: return@withContext null
-        val selector = JSONObject().apply {
-            put("_id", id)
-            put("type", "surveys")
-            teamId?.takeIf { it.isNotBlank() }?.let { put("teamId", it) }
-        }
-        val payload = JSONObject().apply {
-            put("selector", selector)
-            put("limit", 1)
-            put("fields", JSONArray().apply { put("_rev") })
-        }.toString()
-        val url = "$normalized/db/exams/_find"
-        val requestBuilder = Request.Builder()
-            .url(url)
-            .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-        if (!sessionCookie.isNullOrBlank()) {
-            requestBuilder.addHeader("Cookie", sessionCookie)
-        } else if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
-            val creds = okhttp3.Credentials.basic(username, password)
-            requestBuilder.addHeader("Authorization", creds)
-        }
-        runCatching {
-            httpClient.newCall(requestBuilder.build()).execute().use { response ->
-                if (!response.isSuccessful) return@use null
-                val body = response.body.string()
-                if (body.isBlank()) return@use null
-                val docs = JSONObject(body).optJSONArray("docs")
-                val first = docs?.optJSONObject(0)
-                first?.optString("_rev")?.takeIf { it.isNotBlank() }
+    ): String? =
+        withContext(Dispatchers.IO) {
+            val normalized = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return@withContext null
+            val id = surveyId?.takeIf { it.isNotBlank() } ?: return@withContext null
+            val selector =
+                JSONObject().apply {
+                    put("_id", id)
+                    put("type", "surveys")
+                    teamId?.takeIf { it.isNotBlank() }?.let { put("teamId", it) }
+                }
+            val payload =
+                JSONObject()
+                    .apply {
+                        put("selector", selector)
+                        put("limit", 1)
+                        put("fields", JSONArray().apply { put("_rev") })
+                    }.toString()
+            val url = "$normalized/db/exams/_find"
+            val requestBuilder =
+                Request
+                    .Builder()
+                    .url(url)
+                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+            if (!sessionCookie.isNullOrBlank()) {
+                requestBuilder.addHeader("Cookie", sessionCookie)
+            } else if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
+                val creds = okhttp3.Credentials.basic(username, password)
+                requestBuilder.addHeader("Authorization", creds)
             }
-        }.getOrNull()
-    }
+            runCatching {
+                httpClient.newCall(requestBuilder.build()).execute().use { response ->
+                    if (!response.isSuccessful) return@use null
+                    val body = response.body.string()
+                    if (body.isBlank()) return@use null
+                    val docs = JSONObject(body).optJSONArray("docs")
+                    val first = docs?.optJSONObject(0)
+                    first?.optString("_rev")?.takeIf { it.isNotBlank() }
+                }
+            }.getOrNull()
+        }
 
     private fun confirmDelete(entry: DashboardSurveyOutboxStore.OutboxEntry) {
         MaterialAlertDialogBuilder(this)
@@ -350,22 +386,23 @@ class DashboardOutboxDetailActivity : BaseActivity() {
                 lifecycleScope.launch {
                     val deleted = outboxStore.deleteEntry(entry.id)
                     if (deleted) {
-                        Toast.makeText(
-                            this@DashboardOutboxDetailActivity,
-                            R.string.dashboard_outbox_deleted,
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                        Toast
+                            .makeText(
+                                this@DashboardOutboxDetailActivity,
+                                R.string.dashboard_outbox_deleted,
+                                Toast.LENGTH_SHORT,
+                            ).show()
                         finish()
                     } else {
-                        Toast.makeText(
-                            this@DashboardOutboxDetailActivity,
-                            R.string.dashboard_outbox_delete_failed,
-                            Toast.LENGTH_SHORT,
-                        ).show()
+                        Toast
+                            .makeText(
+                                this@DashboardOutboxDetailActivity,
+                                R.string.dashboard_outbox_delete_failed,
+                                Toast.LENGTH_SHORT,
+                            ).show()
                     }
                 }
-            }
-            .show()
+            }.show()
     }
 
     private suspend fun submitEntry(
@@ -382,14 +419,21 @@ class DashboardOutboxDetailActivity : BaseActivity() {
         }
         val authService = AuthDependencies.provideAuthService(this, normalized)
         val token = sessionCookie ?: authService.getStoredToken()
-        val result = withContext(Dispatchers.IO) {
-            DashboardSurveySubmissionsRepository().submitSurvey(
-                normalized,
-                credentials = username?.let { user -> password?.let { pass -> org.ole.planet.myplanet.lite.profile.StoredCredentials(user, pass) } },
-                sessionCookie = token,
-                submission = entry.submission,
-            )
-        }
+        val result =
+            withContext(Dispatchers.IO) {
+                DashboardSurveySubmissionsRepository().submitSurvey(
+                    normalized,
+                    credentials =
+                        username?.let { user ->
+                            password?.let { pass ->
+                                org.ole.planet.myplanet.lite.profile
+                                    .StoredCredentials(user, pass)
+                            }
+                        },
+                    sessionCookie = token,
+                    submission = entry.submission,
+                )
+            }
         if (result.isSuccess) {
             outboxStore.deleteEntry(entry.id)
             Toast.makeText(this, R.string.dashboard_outbox_send_success, Toast.LENGTH_SHORT).show()
@@ -400,7 +444,8 @@ class DashboardOutboxDetailActivity : BaseActivity() {
     }
 
     private fun showRevMismatchDialog(entry: DashboardSurveyOutboxStore.OutboxEntry) {
-        androidx.appcompat.app.AlertDialog.Builder(this)
+        androidx.appcompat.app.AlertDialog
+            .Builder(this)
             .setTitle(R.string.dashboard_outbox_rev_mismatch_title)
             .setMessage(R.string.dashboard_outbox_rev_mismatch_message)
             .setPositiveButton(R.string.dashboard_outbox_delete_submission) { dialog, _ ->
@@ -410,8 +455,7 @@ class DashboardOutboxDetailActivity : BaseActivity() {
                     finish()
                 }
                 dialog.dismiss()
-            }
-            .setNegativeButton(R.string.dashboard_outbox_keep_submission) { dialog, _ -> dialog.dismiss() }
+            }.setNegativeButton(R.string.dashboard_outbox_keep_submission) { dialog, _ -> dialog.dismiss() }
             .show()
     }
 }

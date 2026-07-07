@@ -1,10 +1,8 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-07-07
  */
-
-@file:Suppress("ktlint:standard:kdoc")
 
 package org.ole.planet.myplanet.lite.dashboard
 

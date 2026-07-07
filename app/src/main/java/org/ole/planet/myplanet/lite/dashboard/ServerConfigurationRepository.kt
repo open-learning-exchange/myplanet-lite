@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-25
@@ -10,49 +10,59 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.IOException
 
 class ServerConfigurationRepository(
     private val client: OkHttpClient = OkHttpClient(),
-    private val moshi: Moshi = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
-        .build(),
+    private val moshi: Moshi =
+        Moshi
+            .Builder()
+            .addLast(KotlinJsonAdapterFactory())
+            .build(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-
     private val responseAdapter = moshi.adapter(ConfigurationResponse::class.java)
 
-    suspend fun fetchConfiguration(baseUrl: String?): Result<ConfigurationDocument?> {
-        return withContext(dispatcher) {
+    suspend fun fetchConfiguration(baseUrl: String?): Result<ConfigurationDocument?> =
+        withContext(dispatcher) {
             runCatching {
-                val normalized = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() }
-                    ?: throw IOException("Missing base url")
-                val url = normalized.toHttpUrlOrNull()?.newBuilder()
-                    ?.addPathSegments("db/configurations/_all_docs")
-                    ?.addQueryParameter("include_docs", "true")
-                    ?.build()
-                    ?.toString()
-                    ?: throw IOException("Invalid base url")
-                val request = Request.Builder()
-                    .url(url)
-                    .get()
-                    .build()
+                val normalized =
+                    baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() }
+                        ?: throw IOException("Missing base url")
+                val url =
+                    normalized
+                        .toHttpUrlOrNull()
+                        ?.newBuilder()
+                        ?.addPathSegments("db/configurations/_all_docs")
+                        ?.addQueryParameter("include_docs", "true")
+                        ?.build()
+                        ?.toString()
+                        ?: throw IOException("Invalid base url")
+                val request =
+                    Request
+                        .Builder()
+                        .url(url)
+                        .get()
+                        .build()
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
-                    responseAdapter.fromJson(body)?.rows?.mapNotNull { it.doc }?.firstOrNull()
+                    responseAdapter
+                        .fromJson(body)
+                        ?.rows
+                        ?.mapNotNull { it.doc }
+                        ?.firstOrNull()
                 }
             }
         }
-    }
 
     @JsonClass(generateAdapter = true)
     data class ConfigurationResponse(

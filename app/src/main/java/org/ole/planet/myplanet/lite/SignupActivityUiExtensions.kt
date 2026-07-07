@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-06-10
@@ -17,11 +17,11 @@ import androidx.core.view.updateLayoutParams
 import androidx.core.widget.doAfterTextChanged
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputLayout
+import org.ole.planet.myplanet.lite.util.BirthDateConstraints
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import org.ole.planet.myplanet.lite.util.BirthDateConstraints
 
 internal fun SignupActivity.initializeViews() {
     scrollView = findViewById(R.id.signupScroll)
@@ -108,7 +108,7 @@ internal fun SignupActivity.setupWindowInsets() {
             originalPaddingStart,
             originalPaddingTop,
             originalPaddingEnd,
-            bottomPadding
+            bottomPadding,
         )
 
         currentFocus?.let { focused ->
@@ -130,33 +130,35 @@ internal fun SignupActivity.setupStepViews() {
     val languageStep = findViewById<View>(R.id.signupStepLanguage)
     val licenseStep = findViewById<View>(R.id.signupStepLicense)
 
-    stepViews = mapOf(
-        SignupStep.USERNAME to usernameStep,
-        SignupStep.NAMES to namesStep,
-        SignupStep.BIRTH_DATE to birthDateStep,
-        SignupStep.GENDER to genderStep,
-        SignupStep.CONTACT to contactStep,
-        SignupStep.PASSWORD to passwordStep,
-        SignupStep.LANGUAGE to languageStep,
-        SignupStep.LICENSE to licenseStep
-    )
+    stepViews =
+        mapOf(
+            SignupStep.USERNAME to usernameStep,
+            SignupStep.NAMES to namesStep,
+            SignupStep.BIRTH_DATE to birthDateStep,
+            SignupStep.GENDER to genderStep,
+            SignupStep.CONTACT to contactStep,
+            SignupStep.PASSWORD to passwordStep,
+            SignupStep.LANGUAGE to languageStep,
+            SignupStep.LICENSE to licenseStep,
+        )
 }
 
 internal fun SignupActivity.setupUsernameFilter() {
-    val usernameFilter = InputFilter { source, start, end, dest, dstart, dend ->
-        if (start == end) {
-            return@InputFilter null
+    val usernameFilter =
+        InputFilter { source, start, end, dest, dstart, dend ->
+            if (start == end) {
+                return@InputFilter null
+            }
+            val replacement = source.subSequence(start, end).toString()
+            val prospective = StringBuilder(dest)
+            prospective.replace(dstart, dend, replacement)
+            val resultText = prospective.toString()
+            if (resultText.isEmpty() || SignupActivity.USERNAME_PATTERN.matches(resultText)) {
+                null
+            } else {
+                ""
+            }
         }
-        val replacement = source.subSequence(start, end).toString()
-        val prospective = StringBuilder(dest)
-        prospective.replace(dstart, dend, replacement)
-        val resultText = prospective.toString()
-        if (resultText.isEmpty() || SignupActivity.USERNAME_PATTERN.matches(resultText)) {
-            null
-        } else {
-            ""
-        }
-    }
     usernameInput.filters = arrayOf(usernameFilter)
 }
 
@@ -173,19 +175,20 @@ internal fun SignupActivity.setupFocusAndValidationListeners() {
 }
 
 internal fun SignupActivity.setupGeneralFocusListeners() {
-    val focusableInputs = listOf(
-        usernameInput,
-        firstNameInput,
-        middleNameInput,
-        lastNameInput,
-        birthDateInput,
-        emailInput,
-        phoneInput,
-        passwordInput,
-        confirmPasswordInput,
-        languageInput,
-        levelInput
-    )
+    val focusableInputs =
+        listOf(
+            usernameInput,
+            firstNameInput,
+            middleNameInput,
+            lastNameInput,
+            birthDateInput,
+            emailInput,
+            phoneInput,
+            passwordInput,
+            confirmPasswordInput,
+            languageInput,
+            levelInput,
+        )
 
     focusableInputs.forEach { input ->
         input.setOnFocusChangeListener { v, hasFocus ->
@@ -271,13 +274,14 @@ internal fun SignupActivity.showBirthDatePicker() {
         return
     }
 
-    val picker = MaterialDatePicker.Builder.datePicker()
-        .setTitleText(getString(R.string.signup_birth_date_picker_title))
-        .setCalendarConstraints(BirthDateConstraints.calendarConstraints())
-        .apply {
-            setSelection(BirthDateConstraints.coerceSelection(birthDateSelection))
-        }
-        .build()
+    val picker =
+        MaterialDatePicker.Builder
+            .datePicker()
+            .setTitleText(getString(R.string.signup_birth_date_picker_title))
+            .setCalendarConstraints(BirthDateConstraints.calendarConstraints())
+            .apply {
+                setSelection(BirthDateConstraints.coerceSelection(birthDateSelection))
+            }.build()
 
     picker.addOnPositiveButtonClickListener { selection ->
         if (BirthDateConstraints.isFuture(selection)) {
@@ -296,13 +300,17 @@ internal fun SignupActivity.showBirthDatePicker() {
 }
 
 internal fun SignupActivity.formatBirthDate(selection: Long): String {
-    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
+    val formatter =
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
     return formatter.format(Date(selection))
 }
 
-internal fun SignupActivity.ensureVisible(scrollView: ScrollView, view: View) {
+internal fun SignupActivity.ensureVisible(
+    scrollView: ScrollView,
+    view: View,
+) {
     scrollView.post {
         if (!isDescendantOf(scrollView, view)) {
             return@post
@@ -317,11 +325,12 @@ internal fun SignupActivity.ensureVisible(scrollView: ScrollView, view: View) {
         val top = rect.top
         val bottom = rect.bottom
 
-        val scrollDelta = when {
-            bottom > visibleBottom -> bottom - visibleBottom
-            top < scrollY -> top - scrollY
-            else -> 0
-        }
+        val scrollDelta =
+            when {
+                bottom > visibleBottom -> bottom - visibleBottom
+                top < scrollY -> top - scrollY
+                else -> 0
+            }
 
         if (scrollDelta != 0) {
             scrollView.smoothScrollBy(0, scrollDelta)
@@ -329,7 +338,10 @@ internal fun SignupActivity.ensureVisible(scrollView: ScrollView, view: View) {
     }
 }
 
-internal fun SignupActivity.isDescendantOf(parent: View, child: View): Boolean {
+internal fun SignupActivity.isDescendantOf(
+    parent: View,
+    child: View,
+): Boolean {
     var current: View? = child
     while (current != null && current != parent) {
         val currentParent = current.parent

@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-01-04
@@ -39,7 +39,7 @@ class CourseWizardActivity : BaseActivity() {
         SecurePreferencesProvider.getEncryptedPreferences(
             context = applicationContext,
             prefsName = PREF_ENCRYPTED_PENDING_COURSE_PROGRESS,
-            legacyPrefsName = PREF_LEGACY_PENDING_COURSE_PROGRESS
+            legacyPrefsName = PREF_LEGACY_PENDING_COURSE_PROGRESS,
         )
     }
 
@@ -73,10 +73,11 @@ class CourseWizardActivity : BaseActivity() {
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             val data = result.data ?: return@registerForActivityResult
             lastPlaybackIndex = data.getIntExtra(FullscreenPlayerActivity.EXTRA_RESULT_INDEX, 0)
-            lastPlaybackPositionMs = data.getLongExtra(
-                FullscreenPlayerActivity.EXTRA_RESULT_POSITION,
-                0L
-            )
+            lastPlaybackPositionMs =
+                data.getLongExtra(
+                    FullscreenPlayerActivity.EXTRA_RESULT_POSITION,
+                    0L,
+                )
         }
 
     val requiredStepLauncher =
@@ -95,11 +96,13 @@ class CourseWizardActivity : BaseActivity() {
         applyDeviceOrientationLock()
         WindowCompat.setDecorFitsSystemWindows(window, true)
         setContentView(R.layout.activity_course_wizard)
-        markwon = Markwon.builder(this)
-            .usePlugin(TablePlugin.create(this))
-            .usePlugin(HtmlPlugin.create())
-            .usePlugin(GlideImagesPlugin.create(this))
-            .build()
+        markwon =
+            Markwon
+                .builder(this)
+                .usePlugin(TablePlugin.create(this))
+                .usePlugin(HtmlPlugin.create())
+                .usePlugin(GlideImagesPlugin.create(this))
+                .build()
         val (courseTitle, startIndex) = parseIntentData(savedInstanceState)
         if (steps.isEmpty()) {
             finish()
@@ -125,21 +128,24 @@ class CourseWizardActivity : BaseActivity() {
             completedRequiredSteps.clear()
             completedRequiredSteps.addAll(restored)
         }
-        val rawSteps = IntentCompat.getSerializableExtra(
-            intent,
-            EXTRA_STEPS,
-            ArrayList::class.java
-        )
-        val stepPayload = rawSteps?.filterIsInstance<CourseItem.LessonStep>()
-        steps = stepPayload?.map { step ->
-            StepDisplay(
-                title = step.title,
-                description = step.description,
-                resources = step.resources,
-                survey = step.survey,
-                exam = step.exam
+        val rawSteps =
+            IntentCompat.getSerializableExtra(
+                intent,
+                EXTRA_STEPS,
+                ArrayList::class.java,
             )
-        }.orEmpty()
+        val stepPayload = rawSteps?.filterIsInstance<CourseItem.LessonStep>()
+        steps =
+            stepPayload
+                ?.map { step ->
+                    StepDisplay(
+                        title = step.title,
+                        description = step.description,
+                        resources = step.resources,
+                        survey = step.survey,
+                        exam = step.exam,
+                    )
+                }.orEmpty()
         return Pair(courseTitle, startIndex)
     }
 
@@ -165,7 +171,7 @@ class CourseWizardActivity : BaseActivity() {
                 initialPaddingLeft + systemBars.left,
                 initialPaddingTop + systemBars.top,
                 initialPaddingRight + systemBars.right,
-                initialPaddingBottom + systemBars.bottom
+                initialPaddingBottom + systemBars.bottom,
             )
             WindowInsetsCompat.CONSUMED
         }
@@ -181,21 +187,22 @@ class CourseWizardActivity : BaseActivity() {
         super.onSaveInstanceState(outState)
         outState.putIntegerArrayList(
             EXTRA_COMPLETED_REQUIRED_STEPS,
-            ArrayList(completedRequiredSteps)
+            ArrayList(completedRequiredSteps),
         )
     }
 
     fun bindStep() {
         val step = steps[currentIndex]
-        stepPositionView.text = getString(
-            R.string.course_wizard_step_position,
-            currentIndex + 1,
-            steps.size
-        )
+        stepPositionView.text =
+            getString(
+                R.string.course_wizard_step_position,
+                currentIndex + 1,
+                steps.size,
+            )
         stepTitleView.text = step.title
         markwon.setMarkdown(
             descriptionView,
-            resolveOfflineMarkdownImages(step.description).replace("\n", "  \n")
+            resolveOfflineMarkdownImages(step.description).replace("\n", "  \n"),
         )
         bindAttachments(
             step.resources,
@@ -203,7 +210,7 @@ class CourseWizardActivity : BaseActivity() {
             step.exam,
             attachmentsContainer,
             attachmentsTitle,
-            attachmentsList
+            attachmentsList,
         )
         previousButton.isEnabled = currentIndex > 0
         previousButton.setOnClickListener {
@@ -248,11 +255,12 @@ class CourseWizardActivity : BaseActivity() {
     }
 
     private fun showCompleteRequiredStepSnackbar() {
-        Snackbar.make(
-            findViewById(R.id.courseWizardRoot),
-            getString(R.string.course_wizard_complete_required_step),
-            Snackbar.LENGTH_SHORT
-        ).show()
+        Snackbar
+            .make(
+                findViewById(R.id.courseWizardRoot),
+                getString(R.string.course_wizard_complete_required_step),
+                Snackbar.LENGTH_SHORT,
+            ).show()
     }
 
     companion object {
@@ -266,27 +274,27 @@ class CourseWizardActivity : BaseActivity() {
         const val EXTRA_RESULT_COURSE_ID = "extra_result_course_id"
         const val EXTRA_RESULT_PROGRESS_PERCENT = "extra_result_progress_percent"
         const val EXTRA_RESULT_CURRENT_STEP = "extra_result_current_step"
+
         fun createIntent(
             context: Context,
             courseId: String,
             courseTitle: String,
             steps: List<CourseItem.LessonStep>,
-            startStep: Int
-        ): Intent {
-            return Intent(context, CourseWizardActivity::class.java).apply {
+            startStep: Int,
+        ): Intent =
+            Intent(context, CourseWizardActivity::class.java).apply {
                 putExtra(EXTRA_COURSE_ID, courseId)
                 putExtra(EXTRA_TITLE, courseTitle)
                 putExtra(EXTRA_STEPS, ArrayList(steps))
                 putExtra(EXTRA_START_STEP, startStep)
             }
-        }
 
         fun start(
             context: Context,
             courseId: String,
             courseTitle: String,
             steps: List<CourseItem.LessonStep>,
-            startStep: Int
+            startStep: Int,
         ) {
             val intent = createIntent(context, courseId, courseTitle, steps, startStep)
             context.startActivity(intent)

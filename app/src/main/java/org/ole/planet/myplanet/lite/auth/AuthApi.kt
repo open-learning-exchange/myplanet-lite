@@ -1,8 +1,9 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-07
  */
+
 package org.ole.planet.myplanet.lite.auth
 
 import retrofit2.Response
@@ -11,8 +12,13 @@ import retrofit2.http.POST
 
 interface AuthApi {
     @POST("db/_session")
-    suspend fun login(@Body request: LoginRequest): Response<LoginResponse>
+    suspend fun login(
+        @Body request: LoginRequest,
+    ): Response<LoginResponse>
 
     @POST
-    suspend fun authenticate(@retrofit2.http.Url url: String, @Body credentials: UserCredentials): Response<LoginResponse>
+    suspend fun authenticate(
+        @retrofit2.http.Url url: String,
+        @Body credentials: UserCredentials,
+    ): Response<LoginResponse>
 }

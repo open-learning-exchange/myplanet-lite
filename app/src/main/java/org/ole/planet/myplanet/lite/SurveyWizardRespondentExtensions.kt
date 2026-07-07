@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
@@ -22,17 +22,17 @@ import android.widget.TextView
 import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
+import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
+import org.ole.planet.myplanet.lite.profile.GENDER_MALE
+import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
+import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.BirthDateConstraints
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
-import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
-import org.ole.planet.myplanet.lite.profile.GENDER_MALE
-import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
-import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-import org.ole.planet.myplanet.lite.util.BirthDateConstraints
 
 internal fun SurveyWizardFragment.applyProfileDefaultsForCourseContent() {
     if (courseId.isNullOrBlank()) {
@@ -40,14 +40,17 @@ internal fun SurveyWizardFragment.applyProfileDefaultsForCourseContent() {
     }
     val profile = UserProfileDatabase.getInstance(requireContext()).getProfile() ?: return
     var hasOptionalDetails = false
-    fun assignIfEmpty(current: String?, incoming: String?): String? {
-        return if (current.isNullOrBlank() && !incoming.isNullOrBlank()) {
+
+    fun assignIfEmpty(
+        current: String?,
+        incoming: String?,
+    ): String? =
+        if (current.isNullOrBlank() && !incoming.isNullOrBlank()) {
             hasOptionalDetails = true
             incoming
         } else {
             current
         }
-    }
     respondent.gender = assignIfEmpty(respondent.gender, profile.gender)
     respondent.firstName = assignIfEmpty(respondent.firstName, profile.firstName)
     respondent.middleName = assignIfEmpty(respondent.middleName, profile.middleName)
@@ -66,9 +69,10 @@ internal fun SurveyWizardFragment.applyProfileDefaultsForCourseContent() {
     }
     val birthDateMillis = birthDateSelection
     if (birthDateMillis != null) {
-        val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
-            timeInMillis = birthDateMillis
-        }
+        val calendar =
+            Calendar.getInstance(TimeZone.getTimeZone("UTC")).apply {
+                timeInMillis = birthDateMillis
+            }
         val year = calendar.get(Calendar.YEAR)
         if (respondent.birthYear == null) {
             respondent.birthYear = year
@@ -84,25 +88,30 @@ internal fun SurveyWizardFragment.applyProfileDefaultsForCourseContent() {
 }
 
 internal fun SurveyWizardFragment.createGenderGroup(context: android.content.Context): Pair<TextView, RadioGroup> {
-    val genderLabel = TextView(context).apply {
-        text = getString(R.string.dashboard_survey_wizard_gender_label)
-    }
-    val genderGroup = RadioGroup(context).apply {
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
-    val maleButton = RadioButton(context).apply {
-        text = getString(R.string.signup_gender_option_male)
-        tag = GENDER_MALE
-        id = View.generateViewId()
-    }
-    val femaleButton = RadioButton(context).apply {
-        text = getString(R.string.signup_gender_option_female)
-        tag = GENDER_FEMALE
-        id = View.generateViewId()
-    }
+    val genderLabel =
+        TextView(context).apply {
+            text = getString(R.string.dashboard_survey_wizard_gender_label)
+        }
+    val genderGroup =
+        RadioGroup(context).apply {
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
+    val maleButton =
+        RadioButton(context).apply {
+            text = getString(R.string.signup_gender_option_male)
+            tag = GENDER_MALE
+            id = View.generateViewId()
+        }
+    val femaleButton =
+        RadioButton(context).apply {
+            text = getString(R.string.signup_gender_option_female)
+            tag = GENDER_FEMALE
+            id = View.generateViewId()
+        }
     genderGroup.addView(maleButton)
     genderGroup.addView(femaleButton)
     when (respondent.gender) {
@@ -113,34 +122,38 @@ internal fun SurveyWizardFragment.createGenderGroup(context: android.content.Con
 }
 
 internal fun SurveyWizardFragment.createBirthYearLayout(context: android.content.Context): Pair<TextInputLayout, TextInputEditText> {
-    val birthYearLayout = TextInputLayout(context).apply {
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val birthYearLayout =
+        TextInputLayout(context).apply {
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
     birthYearLayout.hint = getString(R.string.dashboard_survey_wizard_birth_year_label)
-    val birthYearInput = TextInputEditText(context).apply {
-        inputType = InputType.TYPE_CLASS_NUMBER
-        setText(respondent.birthYear?.toString().orEmpty())
-        setOnFocusChangeListener { view, hasFocus ->
-            if (hasFocus) {
-                scrollFocusedFieldIntoView(view)
-            } else {
-                updateRespondentBirthYear(text?.toString())
+    val birthYearInput =
+        TextInputEditText(context).apply {
+            inputType = InputType.TYPE_CLASS_NUMBER
+            setText(respondent.birthYear?.toString().orEmpty())
+            setOnFocusChangeListener { view, hasFocus ->
+                if (hasFocus) {
+                    scrollFocusedFieldIntoView(view)
+                } else {
+                    updateRespondentBirthYear(text?.toString())
+                }
+            }
+            setOnClickListener { scrollFocusedFieldIntoView(this) }
+            imeOptions = EditorInfo.IME_ACTION_DONE
+            setOnEditorActionListener { _, actionId, event ->
+                val isDoneAction =
+                    actionId == EditorInfo.IME_ACTION_DONE ||
+                        event?.keyCode == KeyEvent.KEYCODE_ENTER
+                if (isDoneAction) {
+                    updateRespondentBirthYear(text?.toString())
+                }
+                false
             }
         }
-        setOnClickListener { scrollFocusedFieldIntoView(this) }
-        imeOptions = EditorInfo.IME_ACTION_DONE
-        setOnEditorActionListener { _, actionId, event ->
-            val isDoneAction = actionId == EditorInfo.IME_ACTION_DONE ||
-                event?.keyCode == KeyEvent.KEYCODE_ENTER
-            if (isDoneAction) {
-                updateRespondentBirthYear(text?.toString())
-            }
-            false
-        }
-    }
     birthYearLayout.addView(birthYearInput)
     return birthYearLayout to birthYearInput
 }
@@ -164,22 +177,23 @@ internal fun SurveyWizardFragment.updateRespondentBirthYear(value: String?) {
     respondent.age = respondent.birthYear?.let { nowYear - it }
 }
 
-internal fun SurveyWizardFragment.createAdditionalCheckBox(context: android.content.Context): CheckBox {
-    return CheckBox(context).apply {
+internal fun SurveyWizardFragment.createAdditionalCheckBox(context: android.content.Context): CheckBox =
+    CheckBox(context).apply {
         text = getString(R.string.dashboard_survey_wizard_additional_info_label)
         isChecked = respondent.additionalInfo
     }
-}
 
 internal fun SurveyWizardFragment.renderBasicsStep(): Pair<View, () -> Boolean> {
     val context = requireContext()
-    val container = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val container =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
 
     val (genderLabel, genderGroup) = createGenderGroup(context)
     val (birthYearLayout, birthYearInput) = createBirthYearLayout(context)
@@ -192,7 +206,11 @@ internal fun SurveyWizardFragment.renderBasicsStep(): Pair<View, () -> Boolean> 
 
     val collector = {
         val checkedId = genderGroup.checkedRadioButtonId
-        val yearText = birthYearInput.text?.toString()?.trim().orEmpty()
+        val yearText =
+            birthYearInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         val year = yearText.toIntOrNull()
         if (yearText.isNotEmpty() && year == null) {
             showValidationMessage(R.string.dashboard_survey_wizard_birth_year_required)
@@ -218,43 +236,51 @@ internal fun SurveyWizardFragment.renderBasicsStep(): Pair<View, () -> Boolean> 
 
 internal fun SurveyWizardFragment.renderNamesStep(): Pair<View, () -> Boolean> {
     val context = requireContext()
-    val container = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val container =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
 
-    val firstLayout = TextInputLayout(context).apply {
-        hint = getString(R.string.dashboard_survey_wizard_first_name_label)
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val firstLayout =
+        TextInputLayout(context).apply {
+            hint = getString(R.string.dashboard_survey_wizard_first_name_label)
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
     val firstInput = TextInputEditText(context)
     firstInput.setText(respondent.firstName.orEmpty())
     firstLayout.addView(firstInput)
 
-    val middleLayout = TextInputLayout(context).apply {
-        hint = getString(R.string.dashboard_survey_wizard_middle_name_label)
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val middleLayout =
+        TextInputLayout(context).apply {
+            hint = getString(R.string.dashboard_survey_wizard_middle_name_label)
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
     val middleInput = TextInputEditText(context)
     middleInput.setText(respondent.middleName.orEmpty())
     middleLayout.addView(middleInput)
 
-    val lastLayout = TextInputLayout(context).apply {
-        hint = getString(R.string.dashboard_survey_wizard_last_name_label)
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val lastLayout =
+        TextInputLayout(context).apply {
+            hint = getString(R.string.dashboard_survey_wizard_last_name_label)
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
     val lastInput = TextInputEditText(context)
     lastInput.setText(respondent.lastName.orEmpty())
     lastLayout.addView(lastInput)
@@ -264,9 +290,24 @@ internal fun SurveyWizardFragment.renderNamesStep(): Pair<View, () -> Boolean> {
     container.addView(lastLayout)
 
     val collector = {
-        respondent.firstName = firstInput.text?.toString()?.trim().orEmpty().takeIf { it.isNotBlank() }
-        respondent.middleName = middleInput.text?.toString()?.trim().orEmpty().takeIf { it.isNotBlank() }
-        respondent.lastName = lastInput.text?.toString()?.trim().orEmpty().takeIf { it.isNotBlank() }
+        respondent.firstName =
+            firstInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+                .takeIf { it.isNotBlank() }
+        respondent.middleName =
+            middleInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+                .takeIf { it.isNotBlank() }
+        respondent.lastName =
+            lastInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+                .takeIf { it.isNotBlank() }
         true
     }
     return container to collector
@@ -274,29 +315,35 @@ internal fun SurveyWizardFragment.renderNamesStep(): Pair<View, () -> Boolean> {
 
 internal fun SurveyWizardFragment.renderBirthDateStep(): Pair<View, () -> Boolean> {
     val context = requireContext()
-    val container = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val container =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
 
-    val birthDateLayout = TextInputLayout(context).apply {
-        hint = getString(R.string.dashboard_survey_wizard_birth_date_label)
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val birthDateLayout =
+        TextInputLayout(context).apply {
+            hint = getString(R.string.dashboard_survey_wizard_birth_date_label)
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
     val birthDateInput = TextInputEditText(context)
     birthDateInput.apply {
         inputType = InputType.TYPE_CLASS_DATETIME or InputType.TYPE_DATETIME_VARIATION_DATE
         keyListener = null
         isFocusable = false
         isClickable = true
-        setText(respondent.birthDate?.let { formatBirthDateDisplay(it) }
-            ?: birthDateSelection?.let { formatBirthDateIso(it) }.orEmpty())
+        setText(
+            respondent.birthDate?.let { formatBirthDateDisplay(it) }
+                ?: birthDateSelection?.let { formatBirthDateIso(it) }.orEmpty(),
+        )
         setOnClickListener { showBirthDatePicker(this) }
         setOnFocusChangeListener { _, hasFocus ->
             if (hasFocus) {
@@ -308,9 +355,10 @@ internal fun SurveyWizardFragment.renderBirthDateStep(): Pair<View, () -> Boolea
     container.addView(birthDateLayout)
 
     val collector = {
-        respondent.birthDate = birthDateSelection
-            ?.takeUnless { BirthDateConstraints.isFuture(it) }
-            ?.let { formatBirthDateIso(it) }
+        respondent.birthDate =
+            birthDateSelection
+                ?.takeUnless { BirthDateConstraints.isFuture(it) }
+                ?.let { formatBirthDateIso(it) }
         true
     }
     return container to collector
@@ -321,13 +369,14 @@ internal fun SurveyWizardFragment.showBirthDatePicker(input: TextInputEditText) 
         return
     }
 
-    val picker = MaterialDatePicker.Builder.datePicker()
-        .setTitleText(getString(R.string.signup_birth_date_picker_title))
-        .setCalendarConstraints(BirthDateConstraints.calendarConstraints())
-        .apply {
-            setSelection(BirthDateConstraints.coerceSelection(birthDateSelection))
-        }
-        .build()
+    val picker =
+        MaterialDatePicker.Builder
+            .datePicker()
+            .setTitleText(getString(R.string.signup_birth_date_picker_title))
+            .setCalendarConstraints(BirthDateConstraints.calendarConstraints())
+            .apply {
+                setSelection(BirthDateConstraints.coerceSelection(birthDateSelection))
+            }.build()
 
     picker.addOnPositiveButtonClickListener { selection ->
         if (BirthDateConstraints.isFuture(selection)) {
@@ -348,9 +397,10 @@ internal fun SurveyWizardFragment.parseBirthDateIso(value: String?): Long? {
     if (value.isNullOrBlank()) {
         return null
     }
-    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
+    val formatter =
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
     return try {
         formatter.parse(value)?.time
     } catch (_: ParseException) {
@@ -359,9 +409,10 @@ internal fun SurveyWizardFragment.parseBirthDateIso(value: String?): Long? {
 }
 
 internal fun SurveyWizardFragment.formatBirthDateIso(selection: Long): String {
-    val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
-        timeZone = TimeZone.getTimeZone("UTC")
-    }
+    val formatter =
+        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
+            timeZone = TimeZone.getTimeZone("UTC")
+        }
     return formatter.format(Date(selection))
 }
 
@@ -372,65 +423,89 @@ internal fun SurveyWizardFragment.formatBirthDateDisplay(value: String): String 
 
 internal fun SurveyWizardFragment.renderContactStep(): Pair<View, () -> Boolean> {
     val context = requireContext()
-    val container = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val container =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
 
-    val emailLayout = TextInputLayout(context).apply {
-        hint = getString(R.string.dashboard_survey_wizard_email_label)
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
-    val emailInput = TextInputEditText(context).apply {
-        inputType = InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
-        setText(respondent.email.orEmpty())
-    }
+    val emailLayout =
+        TextInputLayout(context).apply {
+            hint = getString(R.string.dashboard_survey_wizard_email_label)
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
+    val emailInput =
+        TextInputEditText(context).apply {
+            inputType = InputType.TYPE_TEXT_VARIATION_EMAIL_ADDRESS
+            setText(respondent.email.orEmpty())
+        }
     emailLayout.addView(emailInput)
 
-    val phoneLayout = TextInputLayout(context).apply {
-        hint = getString(R.string.dashboard_survey_wizard_phone_label)
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
-    val phoneInput = TextInputEditText(context).apply {
-        inputType = InputType.TYPE_CLASS_PHONE
-        setText(respondent.phoneNumber.orEmpty())
-    }
+    val phoneLayout =
+        TextInputLayout(context).apply {
+            hint = getString(R.string.dashboard_survey_wizard_phone_label)
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
+    val phoneInput =
+        TextInputEditText(context).apply {
+            inputType = InputType.TYPE_CLASS_PHONE
+            setText(respondent.phoneNumber.orEmpty())
+        }
     phoneLayout.addView(phoneInput)
 
     container.addView(emailLayout)
     container.addView(phoneLayout)
 
     val collector = {
-        respondent.email = emailInput.text?.toString()?.trim().orEmpty().takeIf { it.isNotBlank() }
-        respondent.phoneNumber = phoneInput.text?.toString()?.trim().orEmpty().takeIf { it.isNotBlank() }
+        respondent.email =
+            emailInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+                .takeIf { it.isNotBlank() }
+        respondent.phoneNumber =
+            phoneInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+                .takeIf { it.isNotBlank() }
         true
     }
     return container to collector
 }
 
-internal fun SurveyWizardFragment.createDropdownLayout(context: android.content.Context, hintText: String): Pair<TextInputLayout, AutoCompleteTextView> {
-    val layout = TextInputLayout(context).apply {
-        hint = hintText
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
-    val input = AutoCompleteTextView(context).apply {
-        inputType = InputType.TYPE_NULL
-        keyListener = null
-        setOnClickListener { showDropDown() }
-        setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
-    }
+internal fun SurveyWizardFragment.createDropdownLayout(
+    context: android.content.Context,
+    hintText: String,
+): Pair<TextInputLayout, AutoCompleteTextView> {
+    val layout =
+        TextInputLayout(context).apply {
+            hint = hintText
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
+    val input =
+        AutoCompleteTextView(context).apply {
+            inputType = InputType.TYPE_NULL
+            keyListener = null
+            setOnClickListener { showDropDown() }
+            setOnFocusChangeListener { _, hasFocus -> if (hasFocus) showDropDown() }
+        }
     layout.addView(input)
     return layout to input
 }
@@ -451,22 +526,26 @@ internal fun SurveyWizardFragment.levelArrayForLanguage(languageLabel: String?):
 
 internal fun SurveyWizardFragment.renderLanguageLevelStep(): Pair<View, () -> Boolean> {
     val context = requireContext()
-    val container = LinearLayout(context).apply {
-        orientation = LinearLayout.VERTICAL
-        layoutParams = LinearLayout.LayoutParams(
-            ViewGroup.LayoutParams.MATCH_PARENT,
-            ViewGroup.LayoutParams.WRAP_CONTENT,
-        )
-    }
+    val container =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
 
-    val (languageLayout, languageInput) = createDropdownLayout(
-        context,
-        getString(R.string.dashboard_survey_wizard_language_label)
-    )
-    val (levelLayout, levelInput) = createDropdownLayout(
-        context,
-        getString(R.string.dashboard_survey_wizard_level_label)
-    )
+    val (languageLayout, languageInput) =
+        createDropdownLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_language_label),
+        )
+    val (levelLayout, levelInput) =
+        createDropdownLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_level_label),
+        )
 
     val languages = resources.getStringArray(R.array.signup_language_options).toList()
     val languageAdapter = ArrayAdapter(context, android.R.layout.simple_spinner_dropdown_item, languages)
@@ -500,15 +579,24 @@ internal fun SurveyWizardFragment.renderLanguageLevelStep(): Pair<View, () -> Bo
     container.addView(levelLayout)
 
     val collector = {
-        val selectedLanguage = languageInput.text?.toString()?.trim().orEmpty()
+        val selectedLanguage =
+            languageInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         respondent.language = selectedLanguage.takeIf { languages.contains(it) }
 
-        val levelText = levelInput.text?.toString()?.trim().orEmpty()
-        respondent.level = if (currentLevelOptions.contains(levelText)) {
-            LearningLevelTranslator.toEnglish(context, levelText)
-        } else {
-            null
-        }
+        val levelText =
+            levelInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        respondent.level =
+            if (currentLevelOptions.contains(levelText)) {
+                LearningLevelTranslator.toEnglish(context, levelText)
+            } else {
+                null
+            }
         true
     }
     return container to collector

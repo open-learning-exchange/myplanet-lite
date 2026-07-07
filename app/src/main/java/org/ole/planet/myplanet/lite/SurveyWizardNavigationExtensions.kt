@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
@@ -14,10 +14,10 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
-import java.util.Locale
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import java.util.Locale
 
 internal fun SurveyWizardFragment.setupNavigationButtons() {
     previousButton.setOnClickListener {
@@ -56,7 +56,7 @@ internal fun SurveyWizardFragment.setupInsets(view: View) {
             initialPaddingStart,
             initialPaddingTop,
             initialPaddingEnd,
-            initialPaddingBottom + bottomInset
+            initialPaddingBottom + bottomInset,
         )
         insets
     }
@@ -80,11 +80,12 @@ internal fun SurveyWizardFragment.bindViews(view: View) {
 internal suspend fun SurveyWizardFragment.initializeSession() {
     val context = requireContext().applicationContext
     baseUrl = baseUrlOverride ?: DashboardServerPreferences.getServerBaseUrl(context)
-    credentials = if (includeUserContext) {
-        ProfileCredentialsStore.getStoredCredentials(context)
-    } else {
-        null
-    }
+    credentials =
+        if (includeUserContext) {
+            ProfileCredentialsStore.getStoredCredentials(context)
+        } else {
+            null
+        }
     serverCode = if (includeUserContext) DashboardServerPreferences.getServerCode(context) else null
     parentCode = if (includeUserContext) DashboardServerPreferences.getServerParentCode(context) else null
     baseUrl?.takeIf { includeUserContext }?.let { base ->
@@ -110,25 +111,30 @@ internal suspend fun SurveyWizardFragment.attemptSurveyTranslation() {
         setTranslationInProgress(false)
         return
     }
-    val base = baseUrl?.takeIf { it.isNotBlank() }
-        ?: DashboardServerPreferences.getServerBaseUrl(requireContext().applicationContext)
-        ?: return
+    val base =
+        baseUrl?.takeIf { it.isNotBlank() }
+            ?: DashboardServerPreferences.getServerBaseUrl(requireContext().applicationContext)
+            ?: return
     val appLocales = AppCompatDelegate.getApplicationLocales()
-    val targetLanguage = appLocales[0]?.language
-        ?.takeIf { it.isNotBlank() }
-        ?: Locale.getDefault().language
+    val targetLanguage =
+        appLocales[0]
+            ?.language
+            ?.takeIf { it.isNotBlank() }
+            ?: Locale.getDefault().language
     targetSurveyLanguage = targetLanguage
     val detectedLanguage = translationManager.detectSurveyLanguage(survey)
     detectedSurveyLanguage = detectedLanguage
-    val shouldShowTranslationProgress = detectedLanguage != null &&
-        !detectedLanguage.equals(targetLanguage, ignoreCase = true)
+    val shouldShowTranslationProgress =
+        detectedLanguage != null &&
+            !detectedLanguage.equals(targetLanguage, ignoreCase = true)
     setTranslationInProgress(shouldShowTranslationProgress)
-    val result = translationManager.translateSurvey(
-        base,
-        survey,
-        targetLanguage,
-        detectedLanguage,
-    )
+    val result =
+        translationManager.translateSurvey(
+            base,
+            survey,
+            targetLanguage,
+            detectedLanguage,
+        )
     setTranslationInProgress(false)
     translatedTitle = result.titleTranslation?.takeIf { it.isNotBlank() }
     translatedDescription = result.descriptionTranslation?.takeIf { it.isNotBlank() }
@@ -144,9 +150,11 @@ internal suspend fun SurveyWizardFragment.attemptSurveyTranslation() {
         }
     }
     translationApplied = translatedTitle != null || translatedDescription != null ||
-        translations.isNotEmpty() || (detectedSurveyLanguage != null &&
-        targetSurveyLanguage != null &&
-        !detectedSurveyLanguage.equals(targetSurveyLanguage, ignoreCase = true))
+        translations.isNotEmpty() || (
+            detectedSurveyLanguage != null &&
+                targetSurveyLanguage != null &&
+                !detectedSurveyLanguage.equals(targetSurveyLanguage, ignoreCase = true)
+        )
     updateTranslationNotice(
         showConsentNotice = false,
         showAppliedNotice = translationApplied,
@@ -155,11 +163,13 @@ internal suspend fun SurveyWizardFragment.attemptSurveyTranslation() {
 
 internal fun SurveyWizardFragment.applySurveyTranslations() {
     val survey = document ?: return
-    val titleText = translatedTitle?.takeIf { it.isNotBlank() }
-        ?: survey.name.orEmpty()
+    val titleText =
+        translatedTitle?.takeIf { it.isNotBlank() }
+            ?: survey.name.orEmpty()
     setSurveyTitle(titleText)
-    val descriptionText = translatedDescription?.takeIf { it.isNotBlank() }
-        ?: survey.description.orEmpty()
+    val descriptionText =
+        translatedDescription?.takeIf { it.isNotBlank() }
+            ?: survey.description.orEmpty()
     setSurveyDescription(descriptionText)
     updateDescriptionVisibility(currentIndex)
 }
@@ -177,16 +187,21 @@ internal fun SurveyWizardFragment.setQuestionBody(body: String) {
     markwon.setMarkdown(questionBodyView, body.replace("\n", "  \n"))
 }
 
-internal fun SurveyWizardFragment.updateTranslationNotice(showConsentNotice: Boolean, showAppliedNotice: Boolean) {
+internal fun SurveyWizardFragment.updateTranslationNotice(
+    showConsentNotice: Boolean,
+    showAppliedNotice: Boolean,
+) {
     when {
         showConsentNotice -> {
             translationNoticeView.text = getString(R.string.dashboard_survey_translation_notice)
             translationNoticeView.isVisible = true
         }
+
         showAppliedNotice -> {
             translationNoticeView.text = getString(R.string.dashboard_survey_translation_applied_notice)
             translationNoticeView.isVisible = true
         }
+
         else -> {
             translationNoticeView.isVisible = false
         }
@@ -212,23 +227,39 @@ internal fun SurveyWizardFragment.updateDescriptionVisibility(stepIndex: Int) {
     descriptionView.isVisible = stepIndex == 0 && descriptionView.text.isNotBlank()
 }
 
-internal fun SurveyWizardFragment.renderStep(step: WizardStep): Pair<View, () -> Boolean> {
-    return when (step) {
-        WizardStep.Basics -> renderBasicsStep()
-        WizardStep.Names -> renderNamesStep()
-        WizardStep.BirthDate -> renderBirthDateStep()
-        WizardStep.Contact -> renderContactStep()
-        WizardStep.LanguageLevel -> renderLanguageLevelStep()
-        is WizardStep.Question -> renderQuestion(
-            step.question,
-            step.questionIndex,
-            questionTranslations[step.questionIndex],
-        )
-    }
-}
+internal fun SurveyWizardFragment.renderStep(step: WizardStep): Pair<View, () -> Boolean> =
+    when (step) {
+        WizardStep.Basics -> {
+            renderBasicsStep()
+        }
 
-internal fun SurveyWizardFragment.buildSteps(includeDetails: Boolean): List<WizardStep> {
-    return buildList {
+        WizardStep.Names -> {
+            renderNamesStep()
+        }
+
+        WizardStep.BirthDate -> {
+            renderBirthDateStep()
+        }
+
+        WizardStep.Contact -> {
+            renderContactStep()
+        }
+
+        WizardStep.LanguageLevel -> {
+            renderLanguageLevelStep()
+        }
+
+        is WizardStep.Question -> {
+            renderQuestion(
+                step.question,
+                step.questionIndex,
+                questionTranslations[step.questionIndex],
+            )
+        }
+    }
+
+internal fun SurveyWizardFragment.buildSteps(includeDetails: Boolean): List<WizardStep> =
+    buildList {
         add(WizardStep.Basics)
         if (includeDetails) {
             add(WizardStep.Names)
@@ -240,7 +271,6 @@ internal fun SurveyWizardFragment.buildSteps(includeDetails: Boolean): List<Wiza
             add(WizardStep.Question(question, index))
         }
     }
-}
 
 internal fun SurveyWizardFragment.finishWithResult() {
     requireActivity().setResult(Activity.RESULT_OK)
@@ -252,6 +282,8 @@ internal fun SurveyWizardFragment.setSubmitting(submitting: Boolean) {
     updateNavigationEnabled()
 }
 
-internal fun SurveyWizardFragment.showValidationMessage(@StringRes messageRes: Int) {
+internal fun SurveyWizardFragment.showValidationMessage(
+    @StringRes messageRes: Int,
+) {
     Toast.makeText(requireContext(), getString(messageRes), Toast.LENGTH_SHORT).show()
 }

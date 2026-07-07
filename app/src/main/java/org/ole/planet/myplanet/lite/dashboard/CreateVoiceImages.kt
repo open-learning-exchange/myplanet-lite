@@ -50,7 +50,7 @@ internal fun CreateVoiceActivity.transformMarkdownForPreviewContent(markdown: St
     if (pendingImages.isNotEmpty()) {
         val pendingByFileName = pendingImages.values.associateBy { it.fileName }
         if (pendingByFileName.isNotEmpty()) {
-            val globalPattern = Regex("(!\\[[^\\]]*\\]\\()(.*?)(\\))")
+            val globalPattern = Regex("(!\\[[^]]*]\\()(.*?)(\\))")
             processed =
                 globalPattern.replace(processed) { matchResult ->
                     val path = matchResult.groupValues.getOrNull(2).orEmpty()
@@ -69,7 +69,7 @@ internal fun CreateVoiceActivity.transformMarkdownForPreviewContent(markdown: St
     if (base.isNullOrEmpty()) {
         return processed
     }
-    val resourcesPattern = Regex("!\\[[^\\]]*\\]\\((?:/?db/)?/?resources/([^)]+)\\)")
+    val resourcesPattern = Regex("!\\[[^]]*]\\((?:/?db/)?/?resources/([^)]+)\\)")
     return resourcesPattern.replace(processed) { matchResult ->
         val path = matchResult.groupValues.getOrNull(1).orEmpty()
         "![]($base/db/resources/$path)"
@@ -98,11 +98,11 @@ internal fun CreateVoiceActivity.renderPreviewImages() {
         val preview =
             ImageView(this).apply {
                 layoutParams =
-                    LinearLayout.LayoutParams(
-                        thumbnailSize,
-                        thumbnailSize,
-                    )
-                        .apply {
+                    LinearLayout
+                        .LayoutParams(
+                            thumbnailSize,
+                            thumbnailSize,
+                        ).apply {
                             setMargins(0, if (index == 0) 0 else spacing, 0, 0)
                         }
                 adjustViewBounds = false
@@ -136,7 +136,8 @@ internal fun CreateVoiceActivity.showImageOptionsDialog(pending: PendingVoiceIma
             R.drawable.icon_image_view,
             R.drawable.ic_dashboard_delete_24,
         )
-    MaterialAlertDialogBuilder(this).setTitle(R.string.create_voice_image_options_title)
+    MaterialAlertDialogBuilder(this)
+        .setTitle(R.string.create_voice_image_options_title)
         .setAdapter(ImageOptionAdapter(this, optionItems, optionIcons)) { dialog, which ->
             when (which) {
                 0 -> showImagePreviewDialog(pending)
@@ -223,7 +224,7 @@ internal fun CreateVoiceActivity.removeImageMarkdownReferences(pending: PendingV
 
     if (candidates.isNotEmpty()) {
         val combinedEscaped = candidates.joinToString("|") { Regex.escape(it.trim()) }
-        val pattern = Regex("(?:^|\\n)!\\[[^\\]]*\\]\\((?:https?://[^)]+/)?(?:/?db/)?/?(?:$combinedEscaped)\\)\\n?")
+        val pattern = Regex("(?:^|\\n)!\\[[^]]*]\\((?:https?://[^)]+/)?(?:/?db/)?/?(?:$combinedEscaped)\\)\\n?")
         var previous: String
         do {
             previous = updated
@@ -260,12 +261,12 @@ private class ImageOptionAdapter(
         val text = view.findViewById<TextView>(android.R.id.text1)
         text.setCompoundDrawablesRelativeWithIntrinsicBounds(icons[position], 0, 0, 0)
         text.compoundDrawablePadding =
-            TypedValue.applyDimension(
-                TypedValue.COMPLEX_UNIT_DIP,
-                12f,
-                context.resources.displayMetrics,
-            )
-                .toInt()
+            TypedValue
+                .applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    12f,
+                    context.resources.displayMetrics,
+                ).toInt()
         return view
     }
 }
@@ -383,8 +384,7 @@ internal fun CreateVoiceActivity.derivePendingNormalizedKey(pending: PendingVoic
     return (normalized ?: normalizeImagePath(pending.fileName)).trim()
 }
 
-internal fun CreateVoiceActivity.mergeImagePaths(paths: List<String>): List<String> =
-    paths.distinctBy { normalizeImagePath(it) }
+internal fun CreateVoiceActivity.mergeImagePaths(paths: List<String>): List<String> = paths.distinctBy { normalizeImagePath(it) }
 
 internal fun CreateVoiceActivity.normalizeImagePath(path: String): String {
     val extracted = extractPathFromMarkdown(path) ?: path

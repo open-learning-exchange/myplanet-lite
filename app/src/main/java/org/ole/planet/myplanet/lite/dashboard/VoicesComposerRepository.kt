@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-17
@@ -9,7 +9,6 @@ package org.ole.planet.myplanet.lite.dashboard
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -19,18 +18,18 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import java.io.IOException
 
 class VoicesComposerRepository(
     private val client: OkHttpClient,
     private val moshi: Moshi,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val requestAdapter = moshi.adapter(CreateVoiceRequest::class.java)
     private val responseAdapter = moshi.adapter(CreateVoiceResponse::class.java)
     private val resourceMetadataAdapter = moshi.adapter(ResourceMetadataRequest::class.java)
     private val resourceCreationAdapter = moshi.adapter(ResourceCreationResponse::class.java)
     private val resourceUploadAdapter = moshi.adapter(ResourceUploadResponse::class.java)
-
 
     data class CreateVoiceParams(
         val baseUrl: String,
@@ -44,41 +43,44 @@ class VoicesComposerRepository(
         val labels: List<String>,
         val userPayload: UserPayload?,
         val teamId: String? = null,
-        val teamName: String? = null
+        val teamName: String? = null,
     )
 
-    suspend fun createVoice(
-        params: CreateVoiceParams
-    ): Result<CreateVoiceResponse> {
-        return withContext(dispatcher) {
+    suspend fun createVoice(params: CreateVoiceParams): Result<CreateVoiceResponse> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = params.baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
                 val timestamp = System.currentTimeMillis()
-                val payload = CreateVoiceRequest(
-                    chat = false,
-                    message = params.message,
-                    time = timestamp,
-                    createdOn = params.createdOn,
-                    docType = "message",
-                    viewIn = buildViewInEntries(params.createdOn, params.parentCode, params.teamId, params.teamName),
-                    avatar = "",
-                    messageType = "news",
-                    messagePlanetCode = params.createdOn,
-                    replyTo = params.replyTo ?: "",
-                    parentCode = params.parentCode,
-                    images = params.images,
-                    labels = params.labels,
-                    user = params.userPayload,
-                    news = buildNewsMetadata(params.userPayload?.id ?: params.userPayload?.name, timestamp)
-                )
-                val requestBody = requestAdapter.toJson(payload)
-                    .toRequestBody(JSON_MEDIA_TYPE)
-                val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/news")
-                    .post(requestBody)
+                val payload =
+                    CreateVoiceRequest(
+                        chat = false,
+                        message = params.message,
+                        time = timestamp,
+                        createdOn = params.createdOn,
+                        docType = "message",
+                        viewIn = buildViewInEntries(params.createdOn, params.parentCode, params.teamId, params.teamName),
+                        avatar = "",
+                        messageType = "news",
+                        messagePlanetCode = params.createdOn,
+                        replyTo = params.replyTo ?: "",
+                        parentCode = params.parentCode,
+                        images = params.images,
+                        labels = params.labels,
+                        user = params.userPayload,
+                        news = buildNewsMetadata(params.userPayload?.id ?: params.userPayload?.name, timestamp),
+                    )
+                val requestBody =
+                    requestAdapter
+                        .toJson(payload)
+                        .toRequestBody(JSON_MEDIA_TYPE)
+                val requestBuilder =
+                    Request
+                        .Builder()
+                        .url("$normalizedBase/db/news")
+                        .post(requestBody)
                 params.credentials?.let {
                     requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
                 }
@@ -95,36 +97,39 @@ class VoicesComposerRepository(
                 }
             }
         }
-    }
 
     suspend fun createResourceDocument(
         baseUrl: String,
         credentials: StoredCredentials,
-        metadata: ResourceMetadataRequest
-    ): ResourceCreationResponse {
-        return withContext(dispatcher) {
+        metadata: ResourceMetadataRequest,
+    ): ResourceCreationResponse =
+        withContext(dispatcher) {
             val normalizedBase = baseUrl.trim().trimEnd('/')
             if (normalizedBase.isEmpty()) {
                 throw IOException("Missing server base URL")
             }
-            val requestBody = resourceMetadataAdapter.toJson(metadata)
-                .toRequestBody(JSON_MEDIA_TYPE)
-            val request = Request.Builder()
-                .url("$normalizedBase/db/resources")
-                .post(requestBody)
-                .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                .build()
-            val creationResponse = client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    throw IOException("Unexpected response ${'$'}{response.code}")
+            val requestBody =
+                resourceMetadataAdapter
+                    .toJson(metadata)
+                    .toRequestBody(JSON_MEDIA_TYPE)
+            val request =
+                Request
+                    .Builder()
+                    .url("$normalizedBase/db/resources")
+                    .post(requestBody)
+                    .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
+                    .build()
+            val creationResponse =
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${'$'}{response.code}")
+                    }
+                    val body = response.body.string()
+                    resourceCreationAdapter.fromJson(body)
+                        ?: throw IOException("Invalid response body")
                 }
-                val body = response.body.string()
-                resourceCreationAdapter.fromJson(body)
-                    ?: throw IOException("Invalid response body")
-            }
             creationResponse
         }
-    }
 
     suspend fun uploadResourceBinary(
         baseUrl: String,
@@ -132,31 +137,33 @@ class VoicesComposerRepository(
         resourceId: String,
         fileName: String,
         revision: String,
-        bytes: ByteArray
-    ): ResourceUploadResponse {
-        return withContext(dispatcher) {
+        bytes: ByteArray,
+    ): ResourceUploadResponse =
+        withContext(dispatcher) {
             val normalizedBase = baseUrl.trim().trimEnd('/')
             if (normalizedBase.isEmpty()) {
                 throw IOException("Missing server base URL")
             }
             val url = "$normalizedBase/db/resources/${resourceId.trim()}/${fileName.trim()}"
-            val request = Request.Builder()
-                .url(url)
-                .put(bytes.toRequestBody(OCTET_STREAM_MEDIA_TYPE))
-                .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                .addHeader("If-Match", revision)
-                .build()
-            val uploadResponse = client.newCall(request).execute().use { response ->
-                if (!response.isSuccessful) {
-                    throw IOException("Unexpected response ${'$'}{response.code}")
+            val request =
+                Request
+                    .Builder()
+                    .url(url)
+                    .put(bytes.toRequestBody(OCTET_STREAM_MEDIA_TYPE))
+                    .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
+                    .addHeader("If-Match", revision)
+                    .build()
+            val uploadResponse =
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        throw IOException("Unexpected response ${'$'}{response.code}")
+                    }
+                    val body = response.body.string()
+                    resourceUploadAdapter.fromJson(body)
+                        ?: throw IOException("Invalid response body")
                 }
-                val body = response.body.string()
-                resourceUploadAdapter.fromJson(body)
-                    ?: throw IOException("Invalid response body")
-            }
             uploadResponse
         }
-    }
 
     @JsonClass(generateAdapter = true)
     data class CreateVoiceRequest(
@@ -174,14 +181,14 @@ class VoicesComposerRepository(
         val images: List<ImagePayload>,
         val labels: List<String>,
         val user: UserPayload?,
-        val news: NewsMetadata?
+        val news: NewsMetadata?,
     )
 
     @JsonClass(generateAdapter = true)
     data class CreateVoiceResponse(
         val ok: Boolean?,
         @param:Json(name = "id") val id: String?,
-        @param:Json(name = "rev") val revision: String?
+        @param:Json(name = "rev") val revision: String?,
     )
 
     @JsonClass(generateAdapter = true)
@@ -197,14 +204,14 @@ class VoicesComposerRepository(
         val deviceName: String?,
         val customDeviceName: String?,
         val mediaType: String,
-        val privateFor: String
+        val privateFor: String,
     ) {
         companion object {
             private const val PRIVATE_FOR_COMMUNITY = "community"
 
             fun fromContext(
                 context: VoiceImageResourceContext,
-                fileName: String
+                fileName: String,
             ): ResourceMetadataRequest {
                 val baseTitle = fileName.substringBeforeLast('.')
                 return ResourceMetadataRequest(
@@ -219,7 +226,7 @@ class VoicesComposerRepository(
                     deviceName = context.deviceName,
                     customDeviceName = context.customDeviceName,
                     mediaType = "image",
-                    privateFor = PRIVATE_FOR_COMMUNITY
+                    privateFor = PRIVATE_FOR_COMMUNITY,
                 )
             }
         }
@@ -229,7 +236,7 @@ class VoicesComposerRepository(
     data class ResourceCreationResponse(
         val ok: Boolean?,
         @param:Json(name = "id") val id: String,
-        @param:Json(name = "rev") val revision: String
+        @param:Json(name = "rev") val revision: String,
     )
 
     @JsonClass(generateAdapter = true)
@@ -239,14 +246,14 @@ class VoicesComposerRepository(
         @param:Json(name = "resourceId") val resourceId: String? = null,
         val filename: String? = null,
         val markdown: String? = null,
-        @param:Json(name = "rev") val revision: String? = null
+        @param:Json(name = "rev") val revision: String? = null,
     )
 
     @JsonClass(generateAdapter = true)
     data class ImagePayload(
         val resourceId: String,
         val filename: String,
-        val markdown: String
+        val markdown: String,
     )
 
     @JsonClass(generateAdapter = true)
@@ -255,7 +262,7 @@ class VoicesComposerRepository(
         @param:Json(name = "_id") val id: String,
         @param:Json(name = "public") val isPublic: Boolean? = null,
         val name: String? = null,
-        val mode: String? = null
+        val mode: String? = null,
     )
 
     @JsonClass(generateAdapter = true)
@@ -272,7 +279,7 @@ class VoicesComposerRepository(
         val parentCode: String?,
         val roles: List<String>?,
         val joinDate: Long?,
-        @param:Json(name = "_attachments") val attachments: Map<String, AttachmentPayload>?
+        @param:Json(name = "_attachments") val attachments: Map<String, AttachmentPayload>?,
     )
 
     @JsonClass(generateAdapter = true)
@@ -282,7 +289,7 @@ class VoicesComposerRepository(
         val digest: String?,
         val length: Int?,
         val stub: Boolean?,
-        val data: String?
+        val data: String?,
     )
 
     @JsonClass(generateAdapter = true)
@@ -295,7 +302,7 @@ class VoicesComposerRepository(
         val conversations: List<Any>?,
         val createdDate: Long?,
         val updatedDate: Long?,
-        val sharedBy: String?
+        val sharedBy: String?,
     )
 
     companion object {
@@ -307,7 +314,7 @@ class VoicesComposerRepository(
         createdOn: String?,
         parentCode: String?,
         teamId: String?,
-        teamName: String?
+        teamName: String?,
     ): List<ViewInEntry> {
         val targetTeamId = teamId?.takeIf { it.isNotBlank() }
         val targetTeamName = teamName?.takeIf { it.isNotBlank() }
@@ -318,8 +325,8 @@ class VoicesComposerRepository(
                     id = targetTeamId,
                     isPublic = false,
                     name = targetTeamName,
-                    mode = "team"
-                )
+                    mode = "team",
+                ),
             )
         }
 
@@ -331,8 +338,11 @@ class VoicesComposerRepository(
         return listOf(ViewInEntry(section = "community", id = "$planet@$parent"))
     }
 
-    private fun buildNewsMetadata(userId: String?, timestamp: Long): NewsMetadata {
-        return NewsMetadata(
+    private fun buildNewsMetadata(
+        userId: String?,
+        timestamp: Long,
+    ): NewsMetadata =
+        NewsMetadata(
             id = null,
             revision = null,
             user = userId,
@@ -341,9 +351,8 @@ class VoicesComposerRepository(
             conversations = emptyList<Any>(),
             createdDate = timestamp,
             updatedDate = timestamp,
-            sharedBy = ""
+            sharedBy = "",
         )
-    }
 }
 
 data class VoiceImageResourceContext(
@@ -352,10 +361,10 @@ data class VoiceImageResourceContext(
     val sourcePlanet: String?,
     val androidId: String?,
     val deviceName: String?,
-    val customDeviceName: String?
+    val customDeviceName: String?,
 )
 
 data class ProfileCodes(
     val planetCode: String?,
-    val parentCode: String?
+    val parentCode: String?,
 )

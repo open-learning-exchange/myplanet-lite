@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-24
@@ -26,16 +26,15 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardOutboxDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepositoryProvider
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepositoryProvider
 import org.ole.planet.myplanet.lite.dashboard.SurveyStatus
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 
 class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_surveys) {
-
     private var teamId: String? = null
     private var teamName: String? = null
 
@@ -73,7 +72,10 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         }
     }
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         titleView = view.findViewById(R.id.dashboardSurveysTitle)
         descriptionView = view.findViewById(R.id.dashboardSurveysDescription)
@@ -90,35 +92,38 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         titleView.text = getString(R.string.dashboard_surveys_header_title)
         descriptionView.text = getString(R.string.dashboard_surveys_header_description)
 
-        pagerAdapter = SurveysPagerAdapter(
-            teamEmptyMessage = getString(R.string.dashboard_surveys_empty_team),
-            adoptedEmptyMessage = getString(R.string.dashboard_surveys_empty_adopted),
-            outboxEmptyMessage = getString(R.string.dashboard_surveys_outbox_empty),
-            statusStore = statusStore,
-            onSurveySelected = { document ->
-                openSurveyWizard(document)
-            },
-            onSurveyDownloadRequested = { document ->
-                downloadSurvey(document)
-            },
-            onOutboxSelected = { entry ->
-                startActivity(
-                    Intent(requireContext(), DashboardOutboxDetailActivity::class.java).apply {
-                        putExtra(DashboardOutboxDetailActivity.EXTRA_OUTBOX_ID, entry.id)
-                    },
-                )
-            },
-        ) {
-            updateTabBadges()
-        }
-        viewPager.adapter = pagerAdapter
-        tabMediator = TabLayoutMediator(tabs, viewPager) { tab, position ->
-            tab.text = when (position) {
-                0 -> getString(R.string.dashboard_surveys_tab_team)
-                1 -> getString(R.string.dashboard_surveys_tab_adopted)
-                else -> getString(R.string.dashboard_surveys_tab_outbox)
+        pagerAdapter =
+            SurveysPagerAdapter(
+                teamEmptyMessage = getString(R.string.dashboard_surveys_empty_team),
+                adoptedEmptyMessage = getString(R.string.dashboard_surveys_empty_adopted),
+                outboxEmptyMessage = getString(R.string.dashboard_surveys_outbox_empty),
+                statusStore = statusStore,
+                onSurveySelected = { document ->
+                    openSurveyWizard(document)
+                },
+                onSurveyDownloadRequested = { document ->
+                    downloadSurvey(document)
+                },
+                onOutboxSelected = { entry ->
+                    startActivity(
+                        Intent(requireContext(), DashboardOutboxDetailActivity::class.java).apply {
+                            putExtra(DashboardOutboxDetailActivity.EXTRA_OUTBOX_ID, entry.id)
+                        },
+                    )
+                },
+            ) {
+                updateTabBadges()
             }
-        }.also { it.attach() }
+        viewPager.adapter = pagerAdapter
+        tabMediator =
+            TabLayoutMediator(tabs, viewPager) { tab, position ->
+                tab.text =
+                    when (position) {
+                        0 -> getString(R.string.dashboard_surveys_tab_team)
+                        1 -> getString(R.string.dashboard_surveys_tab_adopted)
+                        else -> getString(R.string.dashboard_surveys_tab_outbox)
+                    }
+            }.also { it.attach() }
 
         swipeRefresh.setOnRefreshListener {
             loadSurveys(isSwipeRefresh = true)
@@ -144,9 +149,10 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         }
     }
 
-    fun isSurveyFeedFor(id: String, name: String): Boolean {
-        return id == teamId && name == teamName
-    }
+    fun isSurveyFeedFor(
+        id: String,
+        name: String,
+    ): Boolean = id == teamId && name == teamName
 
     private suspend fun initializeSession() {
         val context = requireContext().applicationContext
@@ -188,20 +194,21 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
 
         viewLifecycleOwner.lifecycleScope.launch {
             try {
-                val documents = if (offlineMode) {
-                    localSurveyRepository.getSavedSurveysForTeam(team)
-                } else {
-                    val result = repository.fetchTeamSurveys(base, creds, sessionCookie, team)
-                    result.getOrElse {
-                        val cached = localSurveyRepository.getSavedSurveysForTeam(team)
-                        if (cached.isEmpty()) {
-                            showError(getString(R.string.dashboard_surveys_error_loading))
-                            swipeRefresh.isRefreshing = false
-                            return@launch
+                val documents =
+                    if (offlineMode) {
+                        localSurveyRepository.getSavedSurveysForTeam(team)
+                    } else {
+                        val result = repository.fetchTeamSurveys(base, creds, sessionCookie, team)
+                        result.getOrElse {
+                            val cached = localSurveyRepository.getSavedSurveysForTeam(team)
+                            if (cached.isEmpty()) {
+                                showError(getString(R.string.dashboard_surveys_error_loading))
+                                swipeRefresh.isRefreshing = false
+                                return@launch
+                            }
+                            cached
                         }
-                        cached
                     }
-                }
                 statusStore.ensureNewDefaults(documents.map { it.id })
                 adoptedSurveys = documents.filter { !it.sourceSurveyId.isNullOrBlank() }
                 teamSurveys = documents.filter { it.sourceSurveyId.isNullOrBlank() }
@@ -286,12 +293,16 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         private const val ARG_TEAM_ID = "arg_team_id"
         private const val ARG_TEAM_NAME = "arg_team_name"
 
-        fun newInstanceForTeam(teamId: String, teamName: String): DashboardTeamSurveysFragment {
+        fun newInstanceForTeam(
+            teamId: String,
+            teamName: String,
+        ): DashboardTeamSurveysFragment {
             val fragment = DashboardTeamSurveysFragment()
-            fragment.arguments = Bundle().apply {
-                putString(ARG_TEAM_ID, teamId)
-                putString(ARG_TEAM_NAME, teamName)
-            }
+            fragment.arguments =
+                Bundle().apply {
+                    putString(ARG_TEAM_ID, teamId)
+                    putString(ARG_TEAM_NAME, teamName)
+                }
             return fragment
         }
     }
@@ -300,11 +311,12 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         val questions: List<SurveyQuestion> = document.questions.orEmpty()
         if (questions.isEmpty()) {
             view?.let { root ->
-                android.widget.Toast.makeText(
-                    root.context,
-                    getString(R.string.dashboard_survey_wizard_empty_questions),
-                    android.widget.Toast.LENGTH_SHORT,
-                ).show()
+                android.widget.Toast
+                    .makeText(
+                        root.context,
+                        getString(R.string.dashboard_survey_wizard_empty_questions),
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
             }
             return
         }
@@ -324,36 +336,40 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         val surveyId = document.id
         if (surveyId.isNullOrBlank()) {
             view?.let { root ->
-                android.widget.Toast.makeText(
-                    root.context,
-                    getString(R.string.dashboard_survey_download_error),
-                    android.widget.Toast.LENGTH_SHORT,
-                ).show()
+                android.widget.Toast
+                    .makeText(
+                        root.context,
+                        getString(R.string.dashboard_survey_download_error),
+                        android.widget.Toast.LENGTH_SHORT,
+                    ).show()
             }
             return
         }
         viewLifecycleOwner.lifecycleScope.launch {
-            val saved = withContext(Dispatchers.IO) {
-                localSurveyRepository.saveSurvey(document, teamId)
-            }
+            val saved =
+                withContext(Dispatchers.IO) {
+                    localSurveyRepository.saveSurvey(document, teamId)
+                }
             if (saved) {
                 savedSurveyIds = savedSurveyIds + surveyId
                 savedSurveyRevisions = savedSurveyRevisions + (surveyId to document.rev)
                 pagerAdapter.updateSavedSurveys(savedSurveyIds, savedSurveyRevisions)
                 view?.let { root ->
-                    android.widget.Toast.makeText(
-                        root.context,
-                        getString(R.string.dashboard_survey_download_success),
-                        android.widget.Toast.LENGTH_SHORT,
-                    ).show()
+                    android.widget.Toast
+                        .makeText(
+                            root.context,
+                            getString(R.string.dashboard_survey_download_success),
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
                 }
             } else {
                 view?.let { root ->
-                    android.widget.Toast.makeText(
-                        root.context,
-                        getString(R.string.dashboard_survey_download_error),
-                        android.widget.Toast.LENGTH_SHORT,
-                    ).show()
+                    android.widget.Toast
+                        .makeText(
+                            root.context,
+                            getString(R.string.dashboard_survey_download_error),
+                            android.widget.Toast.LENGTH_SHORT,
+                        ).show()
                 }
             }
         }
