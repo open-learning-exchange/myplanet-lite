@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-01-10
@@ -26,9 +26,10 @@ import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
 import androidx.viewpager2.widget.ViewPager2
 import com.github.chrisbanes.photoview.PhotoView
-import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.OkHttpClient
@@ -36,10 +37,12 @@ import okhttp3.Request
 import okhttp3.Response
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import java.io.File
 
 class FullscreenPdfActivity : AppCompatActivity() {
-
-    private val httpClient = OkHttpClient()
+    private val repository =
+        org.ole.planet.myplanet.lite.dashboard
+            .DashboardResourcesRepository()
     private var pdfRenderer: PdfRenderer? = null
     private var fileDescriptor: ParcelFileDescriptor? = null
     private var pdfFile: File? = null
@@ -69,13 +72,14 @@ class FullscreenPdfActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             progressView.visibility = View.VISIBLE
-            val file = downloadPdf(pdfUrl, authHeader)
+            val file = repository.downloadPdfToCache(pdfUrl, authHeader, cacheDir)
             if (file == null) {
-                Toast.makeText(
-                    this@FullscreenPdfActivity,
-                    getString(R.string.course_wizard_play_error),
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast
+                    .makeText(
+                        this@FullscreenPdfActivity,
+                        getString(R.string.course_wizard_play_error),
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 finish()
                 return@launch
             }
@@ -85,30 +89,35 @@ class FullscreenPdfActivity : AppCompatActivity() {
             pdfRenderer = PdfRenderer(fd)
             val renderer = pdfRenderer
             if (renderer == null || renderer.pageCount == 0) {
-                Toast.makeText(
-                    this@FullscreenPdfActivity,
-                    getString(R.string.course_wizard_play_error),
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast
+                    .makeText(
+                        this@FullscreenPdfActivity,
+                        getString(R.string.course_wizard_play_error),
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 finish()
                 return@launch
             }
             val pageCount = renderer.pageCount
-            pager.adapter = PdfPageAdapter(renderer)
-            pageIndicator.text = getString(
-                R.string.course_wizard_pdf_page_counter,
-                1,
-                pageCount
+            pager.adapter = PdfPageAdapter(renderer, lifecycleScope)
+            pageIndicator.text =
+                getString(
+                    R.string.course_wizard_pdf_page_counter,
+                    1,
+                    pageCount,
+                )
+            pager.registerOnPageChangeCallback(
+                object : ViewPager2.OnPageChangeCallback() {
+                    override fun onPageSelected(position: Int) {
+                        pageIndicator.text =
+                            getString(
+                                R.string.course_wizard_pdf_page_counter,
+                                position + 1,
+                                pageCount,
+                            )
+                    }
+                },
             )
-            pager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) {
-                    pageIndicator.text = getString(
-                        R.string.course_wizard_pdf_page_counter,
-                        position + 1,
-                        pageCount
-                    )
-                }
-            })
             progressView.visibility = View.GONE
         }
     }
@@ -124,43 +133,6 @@ class FullscreenPdfActivity : AppCompatActivity() {
         WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
     }
 
-    private fun saveToTempFile(response: Response): File? {
-        val body = response.body
-        val file = File.createTempFile("course_resource_", ".pdf", cacheDir)
-        body.byteStream().use { input ->
-            file.outputStream().use { output ->
-                input.copyTo(output)
-            }
-        }
-        return file
-    }
-
-    private suspend fun downloadPdf(url: String, authHeader: String?): File? {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val parsedUri = android.net.Uri.parse(url)
-                if (parsedUri.scheme == "file") {
-                    val localFile = File(parsedUri.path.orEmpty())
-                    if (localFile.exists()) {
-                        return@withContext localFile
-                    }
-                }
-                val request = Request.Builder()
-                    .url(url)
-                    .apply {
-                        if (!authHeader.isNullOrBlank() && url.startsWith("https://", ignoreCase = true)) {
-                            addHeader("Authorization", authHeader)
-                        }
-                    }
-                    .build()
-                httpClient.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext null
-                    saveToTempFile(response)
-                }
-            }.getOrNull()
-        }
-    }
-
     private fun resolveAuthHeader(): String? {
         val credentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
         val baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
@@ -173,6 +145,8 @@ class FullscreenPdfActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        val pager = findViewById<ViewPager2?>(R.id.fullscreenPdfPager)
+        (pager?.adapter as? PdfPageAdapter)?.clearCache()
         pdfRenderer?.close()
         fileDescriptor?.close()
         pdfRenderer = null
@@ -182,37 +156,97 @@ class FullscreenPdfActivity : AppCompatActivity() {
     }
 
     private class PdfPageAdapter(
-        private val renderer: PdfRenderer
+        private val renderer: PdfRenderer,
+        private val coroutineScope: kotlinx.coroutines.CoroutineScope,
     ) : RecyclerView.Adapter<PdfPageAdapter.PdfPageViewHolder>() {
-
-        override fun onCreateViewHolder(parent: android.view.ViewGroup, viewType: Int): PdfPageViewHolder {
-            val imageView = PhotoView(parent.context).apply {
-                layoutParams = RecyclerView.LayoutParams(
-                    RecyclerView.LayoutParams.MATCH_PARENT,
-                    RecyclerView.LayoutParams.MATCH_PARENT
-                )
-                scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
-                adjustViewBounds = true
-                maximumScale = 6.0f
+        private val maxMemory = (Runtime.getRuntime().maxMemory() / 1024).toInt()
+        private val cacheSize = maxMemory / 8
+        private val bitmapCache =
+            object : android.util.LruCache<Int, Bitmap>(cacheSize) {
+                override fun sizeOf(
+                    key: Int,
+                    bitmap: Bitmap,
+                ): Int = bitmap.byteCount / 1024
             }
+        private val renderMutex = kotlinx.coroutines.sync.Mutex()
+
+        override fun onCreateViewHolder(
+            parent: android.view.ViewGroup,
+            viewType: Int,
+        ): PdfPageViewHolder {
+            val imageView =
+                PhotoView(parent.context).apply {
+                    layoutParams =
+                        RecyclerView.LayoutParams(
+                            RecyclerView.LayoutParams.MATCH_PARENT,
+                            RecyclerView.LayoutParams.MATCH_PARENT,
+                        )
+                    scaleType = android.widget.ImageView.ScaleType.FIT_CENTER
+                    adjustViewBounds = true
+                    maximumScale = 6.0f
+                }
             return PdfPageViewHolder(imageView)
         }
 
         override fun getItemCount(): Int = renderer.pageCount
 
-        override fun onBindViewHolder(holder: PdfPageViewHolder, position: Int) {
-            val page = renderer.openPage(position)
-            val bitmap = createBitmap(page.width, page.height)
-            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-            page.close()
-            holder.bind(bitmap)
+        override fun onBindViewHolder(
+            holder: PdfPageViewHolder,
+            position: Int,
+        ) {
+            holder.renderJob?.cancel()
+            val cachedBitmap = bitmapCache.get(position)
+            if (cachedBitmap != null) {
+                holder.bind(cachedBitmap)
+                return
+            }
+            holder.clear()
+            holder.renderJob =
+                coroutineScope.launch(Dispatchers.IO) {
+                    val bitmap =
+                        renderMutex.withLock {
+                            bitmapCache.get(position) ?: run {
+                                try {
+                                    val page = renderer.openPage(position)
+                                    val newBitmap =
+                                        try {
+                                            val bitmap = createBitmap(page.width, page.height)
+                                            page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                            bitmapCache.put(position, bitmap)
+                                            bitmap
+                                        } finally {
+                                            page.close()
+                                        }
+                                    newBitmap
+                                } catch (e: Exception) {
+                                    null
+                                }
+                            }
+                        }
+                    if (bitmap != null) {
+                        withContext(Dispatchers.Main) {
+                            if (holder.bindingAdapterPosition == position) {
+                                holder.bind(bitmap)
+                            }
+                        }
+                    }
+                }
         }
 
         override fun onViewRecycled(holder: PdfPageViewHolder) {
+            holder.renderJob?.cancel()
             holder.clear()
         }
 
-        class PdfPageViewHolder(private val imageView: PhotoView) : RecyclerView.ViewHolder(imageView) {
+        fun clearCache() {
+            bitmapCache.evictAll()
+        }
+
+        class PdfPageViewHolder(
+            private val imageView: PhotoView,
+        ) : RecyclerView.ViewHolder(imageView) {
+            var renderJob: kotlinx.coroutines.Job? = null
+
             fun bind(bitmap: Bitmap) {
                 imageView.setImageBitmap(bitmap)
             }
@@ -227,11 +261,14 @@ class FullscreenPdfActivity : AppCompatActivity() {
         private const val EXTRA_PDF_URL = "extra_pdf_url"
         private const val EXTRA_AUTH_HEADER = "extra_auth_header"
 
-        fun createIntent(context: Context, pdfUrl: String, authorizationHeader: String?): Intent {
-            return Intent(context, FullscreenPdfActivity::class.java).apply {
+        fun createIntent(
+            context: Context,
+            pdfUrl: String,
+            authorizationHeader: String?,
+        ): Intent =
+            Intent(context, FullscreenPdfActivity::class.java).apply {
                 putExtra(EXTRA_PDF_URL, pdfUrl)
                 putExtra(EXTRA_AUTH_HEADER, authorizationHeader)
             }
-        }
     }
 }

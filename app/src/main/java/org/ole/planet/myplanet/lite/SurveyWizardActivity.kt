@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
@@ -17,7 +17,6 @@ import com.google.android.material.appbar.MaterialToolbar
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 
 class SurveyWizardActivity : AppCompatActivity() {
-
     private var document: SurveyDocument? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -25,9 +24,10 @@ class SurveyWizardActivity : AppCompatActivity() {
         requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         setContentView(R.layout.activity_survey_wizard)
 
-        document = intent.extras?.let { extras ->
-            BundleCompat.getSerializable(extras, EXTRA_DOCUMENT, SurveyDocument::class.java)
-        }
+        document =
+            intent.extras?.let { extras ->
+                BundleCompat.getSerializable(extras, EXTRA_DOCUMENT, SurveyDocument::class.java)
+            }
 
         val survey = document
         if (survey == null) {
@@ -41,7 +41,8 @@ class SurveyWizardActivity : AppCompatActivity() {
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
 
         if (savedInstanceState == null) {
-            supportFragmentManager.beginTransaction()
+            supportFragmentManager
+                .beginTransaction()
                 .replace(
                     R.id.surveyWizardFragmentContainer,
                     SurveyWizardFragment.newInstance(
@@ -53,8 +54,7 @@ class SurveyWizardActivity : AppCompatActivity() {
                         intent.getStringExtra(EXTRA_BASE_URL),
                         intent.getBooleanExtra(EXTRA_INCLUDE_USER_CONTEXT, true),
                     ),
-                )
-                .commit()
+                ).commit()
         }
     }
 
@@ -76,8 +76,8 @@ class SurveyWizardActivity : AppCompatActivity() {
             isExam: Boolean = false,
             baseUrl: String? = null,
             includeUserContext: Boolean = true,
-        ): Intent {
-            return Intent(context, SurveyWizardActivity::class.java).apply {
+        ): Intent =
+            Intent(context, SurveyWizardActivity::class.java).apply {
                 putExtra(EXTRA_DOCUMENT, document)
                 putExtra(EXTRA_TEAM_ID, teamId)
                 putExtra(EXTRA_TEAM_NAME, teamName)
@@ -86,6 +86,5 @@ class SurveyWizardActivity : AppCompatActivity() {
                 putExtra(EXTRA_BASE_URL, baseUrl)
                 putExtra(EXTRA_INCLUDE_USER_CONTEXT, includeUserContext)
             }
-        }
     }
 }
