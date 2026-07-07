@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-23
@@ -15,7 +15,6 @@ import org.junit.Before
 import org.junit.Test
 
 class DashboardTeamSelectionPreferencesTest {
-
     private lateinit var mockContext: FakeContext
     private lateinit var mockPrefs: FakeSharedPreferences
 
@@ -74,7 +73,8 @@ class DashboardTeamSelectionPreferencesTest {
 
     @Test
     fun `setSelectedTeam clears both when id is null`() {
-        mockPrefs.edit()
+        mockPrefs
+            .edit()
             .putString("selected_team_id", "team-123")
             .putString("selected_team_name", "Team Alpha")
             .apply()
@@ -87,7 +87,8 @@ class DashboardTeamSelectionPreferencesTest {
 
     @Test
     fun `setSelectedTeam clears both when id is blank`() {
-        mockPrefs.edit()
+        mockPrefs
+            .edit()
             .putString("selected_team_id", "team-123")
             .putString("selected_team_name", "Team Alpha")
             .apply()
@@ -100,7 +101,8 @@ class DashboardTeamSelectionPreferencesTest {
 
     @Test
     fun `setSelectedTeam saves id but clears name when name is null`() {
-        mockPrefs.edit()
+        mockPrefs
+            .edit()
             .putString("selected_team_id", "team-123")
             .putString("selected_team_name", "Team Alpha")
             .apply()
@@ -113,7 +115,8 @@ class DashboardTeamSelectionPreferencesTest {
 
     @Test
     fun `setSelectedTeam saves id but clears name when name is blank`() {
-        mockPrefs.edit()
+        mockPrefs
+            .edit()
             .putString("selected_team_id", "team-123")
             .putString("selected_team_name", "Team Alpha")
             .apply()
@@ -126,7 +129,8 @@ class DashboardTeamSelectionPreferencesTest {
 
     @Test
     fun `clearSelectedTeam clears both id and name`() {
-        mockPrefs.edit()
+        mockPrefs
+            .edit()
             .putString("selected_team_id", "team-123")
             .putString("selected_team_name", "Team Alpha")
             .apply()
@@ -139,9 +143,15 @@ class DashboardTeamSelectionPreferencesTest {
 
     // --- Fakes ---
 
-    class FakeContext(private val prefs: SharedPreferences) : ContextWrapper(null) {
+    class FakeContext(
+        private val prefs: SharedPreferences,
+    ) : ContextWrapper(null) {
         override fun getApplicationContext(): Context = this
-        override fun getSharedPreferences(name: String?, mode: Int): SharedPreferences = prefs
+
+        override fun getSharedPreferences(
+            name: String?,
+            mode: Int,
+        ): SharedPreferences = prefs
     }
 
     class FakeSharedPreferences : SharedPreferences {
@@ -149,18 +159,36 @@ class DashboardTeamSelectionPreferencesTest {
 
         override fun getAll(): Map<String, *> = data
 
-        override fun getString(key: String, defValue: String?): String? = data[key] as? String ?: defValue
+        override fun getString(
+            key: String,
+            defValue: String?,
+        ): String? = data[key] as? String ?: defValue
 
         @Suppress("UNCHECKED_CAST")
-        override fun getStringSet(key: String, defValues: Set<String>?): Set<String>? = data[key] as? Set<String> ?: defValues
+        override fun getStringSet(
+            key: String,
+            defValues: Set<String>?,
+        ): Set<String>? = data[key] as? Set<String> ?: defValues
 
-        override fun getInt(key: String, defValue: Int): Int = data[key] as? Int ?: defValue
+        override fun getInt(
+            key: String,
+            defValue: Int,
+        ): Int = data[key] as? Int ?: defValue
 
-        override fun getLong(key: String, defValue: Long): Long = data[key] as? Long ?: defValue
+        override fun getLong(
+            key: String,
+            defValue: Long,
+        ): Long = data[key] as? Long ?: defValue
 
-        override fun getFloat(key: String, defValue: Float): Float = data[key] as? Float ?: defValue
+        override fun getFloat(
+            key: String,
+            defValue: Float,
+        ): Float = data[key] as? Float ?: defValue
 
-        override fun getBoolean(key: String, defValue: Boolean): Boolean = data[key] as? Boolean ?: defValue
+        override fun getBoolean(
+            key: String,
+            defValue: Boolean,
+        ): Boolean = data[key] as? Boolean ?: defValue
 
         override fun contains(key: String): Boolean = data.containsKey(key)
 
@@ -171,37 +199,57 @@ class DashboardTeamSelectionPreferencesTest {
         override fun unregisterOnSharedPreferenceChangeListener(listener: SharedPreferences.OnSharedPreferenceChangeListener?) {}
     }
 
-    class FakeEditor(private val data: MutableMap<String, Any?>) : SharedPreferences.Editor {
+    class FakeEditor(
+        private val data: MutableMap<String, Any?>,
+    ) : SharedPreferences.Editor {
         private val temp = mutableMapOf<String, Any?>()
         private val toRemove = mutableSetOf<String>()
         private var clear = false
 
-        override fun putString(key: String, value: String?): SharedPreferences.Editor {
+        override fun putString(
+            key: String,
+            value: String?,
+        ): SharedPreferences.Editor {
             temp[key] = value
             return this
         }
 
-        override fun putStringSet(key: String, values: Set<String>?): SharedPreferences.Editor {
+        override fun putStringSet(
+            key: String,
+            values: Set<String>?,
+        ): SharedPreferences.Editor {
             temp[key] = values
             return this
         }
 
-        override fun putInt(key: String, value: Int): SharedPreferences.Editor {
+        override fun putInt(
+            key: String,
+            value: Int,
+        ): SharedPreferences.Editor {
             temp[key] = value
             return this
         }
 
-        override fun putLong(key: String, value: Long): SharedPreferences.Editor {
+        override fun putLong(
+            key: String,
+            value: Long,
+        ): SharedPreferences.Editor {
             temp[key] = value
             return this
         }
 
-        override fun putFloat(key: String, value: Float): SharedPreferences.Editor {
+        override fun putFloat(
+            key: String,
+            value: Float,
+        ): SharedPreferences.Editor {
             temp[key] = value
             return this
         }
 
-        override fun putBoolean(key: String, value: Boolean): SharedPreferences.Editor {
+        override fun putBoolean(
+            key: String,
+            value: Boolean,
+        ): SharedPreferences.Editor {
             temp[key] = value
             return this
         }

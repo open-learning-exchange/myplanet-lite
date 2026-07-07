@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-24
@@ -10,7 +10,6 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,16 +21,18 @@ import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import java.io.IOException
 
 class DashboardSurveySubmissionsRepository(
     private val client: OkHttpClient = OkHttpClient.Builder().build(),
-    private val moshi: Moshi = Moshi.Builder()
-        .add(FlexibleSurveyJsonAdapter())
-        .addLast(KotlinJsonAdapterFactory())
-        .build(),
+    private val moshi: Moshi =
+        Moshi
+            .Builder()
+            .add(FlexibleSurveyJsonAdapter())
+            .addLast(KotlinJsonAdapterFactory())
+            .build(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-
     private val submissionAdapter = moshi.adapter(SurveySubmission::class.java)
     private val publicSubmissionAdapter = moshi.adapter(PublicSurveySubmissionRequest::class.java)
     private val lookupRequestAdapter = moshi.adapter(SubmissionLookupRequest::class.java)
@@ -42,8 +43,8 @@ class DashboardSurveySubmissionsRepository(
         credentials: StoredCredentials?,
         sessionCookie: String?,
         submission: SurveySubmission,
-    ): Result<Unit> {
-        return withContext(dispatcher) {
+    ): Result<Unit> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -51,9 +52,11 @@ class DashboardSurveySubmissionsRepository(
                 }
                 val endpoint = "$normalizedBase/db/submissions"
                 val payload = submissionAdapter.toJson(submission)
-                val requestBuilder = Request.Builder()
-                    .url(endpoint)
-                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                val requestBuilder =
+                    Request
+                        .Builder()
+                        .url(endpoint)
+                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
                 }
@@ -69,15 +72,14 @@ class DashboardSurveySubmissionsRepository(
                 }
             }
         }
-    }
 
     suspend fun submitPublicSurvey(
         baseUrl: String,
         teamId: String,
         surveyId: String,
         answers: List<Any?>,
-    ): Result<Unit> {
-        return withContext(dispatcher) {
+    ): Result<Unit> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -89,21 +91,26 @@ class DashboardSurveySubmissionsRepository(
                 if (surveyId.isBlank()) {
                     throw IOException("Missing survey id")
                 }
-                val base = normalizedBase.toHttpUrlOrNull()
-                    ?: throw IOException("Invalid server base URL")
-                val endpoint = base.newBuilder()
-                    .addPathSegment("api")
-                    .addPathSegment("public")
-                    .addPathSegment("surveys")
-                    .addPathSegment(teamId)
-                    .addPathSegment(surveyId)
-                    .addPathSegment("submissions")
-                    .build()
+                val base =
+                    normalizedBase.toHttpUrlOrNull()
+                        ?: throw IOException("Invalid server base URL")
+                val endpoint =
+                    base
+                        .newBuilder()
+                        .addPathSegment("api")
+                        .addPathSegment("public")
+                        .addPathSegment("surveys")
+                        .addPathSegment(teamId)
+                        .addPathSegment(surveyId)
+                        .addPathSegment("submissions")
+                        .build()
                 val payload = publicSubmissionAdapter.toJson(PublicSurveySubmissionRequest(answers))
-                val request = Request.Builder()
-                    .url(endpoint)
-                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-                    .build()
+                val request =
+                    Request
+                        .Builder()
+                        .url(endpoint)
+                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                        .build()
                 client.newCall(request).execute().use { response ->
                     val responseBody = response.body.string()
                     if (!response.isSuccessful) {
@@ -113,7 +120,6 @@ class DashboardSurveySubmissionsRepository(
                 }
             }
         }
-    }
 
     suspend fun fetchExistingSubmission(
         baseUrl: String,
@@ -124,8 +130,8 @@ class DashboardSurveySubmissionsRepository(
         userName: String?,
         parentRev: String?,
         type: String = "survey",
-    ): Result<SubmissionLookup?> {
-        return withContext(dispatcher) {
+    ): Result<SubmissionLookup?> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -134,21 +140,25 @@ class DashboardSurveySubmissionsRepository(
                 if (userId.isNullOrBlank() && userName.isNullOrBlank()) {
                     throw IOException("Missing user identifier")
                 }
-                val payload = lookupRequestAdapter.toJson(
-                    SubmissionLookupRequest(
-                        selector = SubmissionLookupSelector(
-                            type = type,
-                            parentId = parentId,
-                            userId = userId,
-                            userName = userName,
-                            parentRev = parentRev,
+                val payload =
+                    lookupRequestAdapter.toJson(
+                        SubmissionLookupRequest(
+                            selector =
+                                SubmissionLookupSelector(
+                                    type = type,
+                                    parentId = parentId,
+                                    userId = userId,
+                                    userName = userName,
+                                    parentRev = parentRev,
+                                ),
                         ),
-                    ),
-                )
+                    )
                 val endpoint = "$normalizedBase/db/submissions/_find"
-                val requestBuilder = Request.Builder()
-                    .url(endpoint)
-                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                val requestBuilder =
+                    Request
+                        .Builder()
+                        .url(endpoint)
+                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
                 }
@@ -168,7 +178,6 @@ class DashboardSurveySubmissionsRepository(
                 }
             }
         }
-    }
 
     @JsonClass(generateAdapter = true)
     data class SurveySubmission(

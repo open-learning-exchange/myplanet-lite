@@ -10,7 +10,9 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.resetMain
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.setMain
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
@@ -46,14 +48,37 @@ class DashboardPostImageLoaderTest {
         imageView = ImageView(ApplicationProvider.getApplicationContext())
     }
 
-    @After
+@After
     fun teardown() {
         Dispatchers.resetMain()
-        mockWebServer.shutdown()
+        try {
+            mockWebServer.shutdown()
+        } catch (e: Exception) {
+            // Ignore
+        }
+        try {
+            val field = org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader::class.java.getDeclaredField("sharedCache")
+            field.isAccessible = true
+            val cache = field.get(null) as android.util.LruCache<*, *>
+            cache.evictAll()
+        } catch (e: Exception) {
+            try {
+                // Use reflection by string name
+                val clsName = "org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader" + "$" + "Companion"
+                val cls = Class.forName(clsName)
+                val field = cls.getDeclaredField("sharedCache")
+                field.isAccessible = true
+                val instanceField = org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader::class.java.getDeclaredField("Companion")
+                instanceField.isAccessible = true
+                val instance = instanceField.get(null)
+                val cache = field.get(instance) as android.util.LruCache<*, *>
+                cache.evictAll()
+            } catch(ex: Exception) {}
+        }
     }
 
     @Test
-    fun `bind with successful network request sets bitmap`() = runTest {
+    fun `bind with successful network request sets bitmap`() = runBlocking {
         val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)
@@ -80,7 +105,7 @@ class DashboardPostImageLoaderTest {
     }
 
     @Test
-    fun `bind with failed network request hides imageView`() = runTest {
+    fun `bind with failed network request hides imageView`() = runBlocking {
         mockWebServer.enqueue(MockResponse().setResponseCode(404))
 
         val resultDeferred = kotlinx.coroutines.CompletableDeferred<Boolean>()
@@ -97,7 +122,7 @@ class DashboardPostImageLoaderTest {
     }
 
     @Test
-    fun `bind with cached image uses cache and skips network`() = runTest {
+    fun `bind with cached image uses cache and skips network`() = runBlocking {
         val bitmap = Bitmap.createBitmap(1, 1, Bitmap.Config.ARGB_8888)
         val outputStream = ByteArrayOutputStream()
         bitmap.compress(Bitmap.CompressFormat.PNG, 100, outputStream)

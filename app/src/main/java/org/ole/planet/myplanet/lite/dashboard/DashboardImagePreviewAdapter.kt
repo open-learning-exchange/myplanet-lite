@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-15
@@ -18,16 +18,23 @@ import org.ole.planet.myplanet.lite.R
 class DashboardImagePreviewAdapter(
     private val imagePaths: List<String>,
     private val imageLoader: DashboardPostImageLoader,
-    private val onDismissRequested: () -> Unit
+    private val onDismissRequested: () -> Unit,
 ) : RecyclerView.Adapter<DashboardImagePreviewAdapter.ImagePreviewViewHolder>() {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ImagePreviewViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_dashboard_image_preview_page, parent, false)
+    override fun onCreateViewHolder(
+        parent: ViewGroup,
+        viewType: Int,
+    ): ImagePreviewViewHolder {
+        val view =
+            LayoutInflater
+                .from(parent.context)
+                .inflate(R.layout.item_dashboard_image_preview_page, parent, false)
         return ImagePreviewViewHolder(view, imageLoader, onDismissRequested)
     }
 
-    override fun onBindViewHolder(holder: ImagePreviewViewHolder, position: Int) {
+    override fun onBindViewHolder(
+        holder: ImagePreviewViewHolder,
+        position: Int,
+    ) {
         holder.bind(imagePaths[position])
     }
 
@@ -36,9 +43,8 @@ class DashboardImagePreviewAdapter(
     class ImagePreviewViewHolder(
         view: View,
         private val imageLoader: DashboardPostImageLoader,
-        private val onDismissRequested: () -> Unit
+        private val onDismissRequested: () -> Unit,
     ) : RecyclerView.ViewHolder(view) {
-
         private val photoView: PhotoView = view.findViewById(R.id.previewPhotoView)
         private val progressBar: ProgressBar = view.findViewById(R.id.previewPageLoading)
 

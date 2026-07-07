@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-12
@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.app.Activity
-import android.content.Context
 import android.content.Intent
 import android.graphics.Rect
 import android.net.Uri
@@ -42,18 +41,12 @@ import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
-import java.util.ArrayList
-import java.util.LinkedHashMap
-import java.util.LinkedHashSet
-import java.util.Locale
-import kotlin.math.max
-import kotlin.math.min
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.R
@@ -64,27 +57,31 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-import org.ole.planet.myplanet.lite.util.MarkdownUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import java.util.ArrayList
+import java.util.LinkedHashMap
+import java.util.LinkedHashSet
+import java.util.Locale
+import kotlin.math.max
+import kotlin.math.min
 
-internal fun transformCommentMarkdownForDisplay(markdown: String): String {
-    return markdown.replace("\n", "  \n")
-}
+internal fun transformCommentMarkdownForDisplay(markdown: String): String = markdown.replace("\n", "  \n")
 
 class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() {
-
     private lateinit var recyclerView: RecyclerView
     private lateinit var loadingView: View
 
-    private val repository = DashboardNewsRepository(
-        client = OkHttpClient.Builder().build(),
-        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
-    )
-    private val actionsRepository = DashboardNewsActionsRepository()
-    private val composerRepository = VoicesComposerRepository(
-        client = OkHttpClient.Builder().build(),
-        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
-    )
+    private val repository =
+        DashboardNewsRepository(
+            client = OkHttpClient.Builder().build(),
+            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+        )
+    private val actionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
+    private val composerRepository =
+        VoicesComposerRepository(
+            client = OkHttpClient.Builder().build(),
+            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+        )
     private val httpClient = OkHttpClient.Builder().build()
     private lateinit var adapter: PostDetailAdapter
     private lateinit var markwon: Markwon
@@ -107,13 +104,14 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     private val pendingReplyImages = LinkedHashMap<String, PendingVoiceImage>()
     private var replyPendingNewlineIndex: Int? = null
     private var isHandlingReplyListContinuation = false
-    private val replyImagePickerLauncher = registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
-        uri?.let {
-            lifecycleScope.launch {
-                handleReplyImageSelection(it)
+    private val replyImagePickerLauncher =
+        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+            uri?.let {
+                lifecycleScope.launch {
+                    handleReplyImageSelection(it)
+                }
             }
         }
-    }
     private val editVoiceLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             if (result.resultCode == Activity.RESULT_OK) {
@@ -166,9 +164,10 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         supportActionBar?.setTitle(R.string.dashboard_post_detail_title)
         toolbar.setNavigationOnClickListener { onSupportNavigateUp() }
         toolbar.post {
-            val navButton = toolbar.children.firstOrNull { child ->
-                child is android.widget.ImageButton
-            } ?: return@post
+            val navButton =
+                toolbar.children.firstOrNull { child ->
+                    child is android.widget.ImageButton
+                } ?: return@post
             val extraTapArea = resources.getDimensionPixelSize(R.dimen.dashboard_nav_touch_inset)
             val hitRect = Rect()
             navButton.getHitRect(hitRect)
@@ -187,15 +186,16 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun setupBackNavigation() {
-        backCallback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                if (collapseReplyComposerIfExpanded()) {
-                    return
+        backCallback =
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    if (collapseReplyComposerIfExpanded()) {
+                        return
+                    }
+                    isEnabled = false
+                    onBackPressedDispatcher.onBackPressed()
                 }
-                isEnabled = false
-                onBackPressedDispatcher.onBackPressed()
             }
-        }
         onBackPressedDispatcher.addCallback(this, backCallback)
     }
 
@@ -234,7 +234,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
                 view.paddingLeft,
                 view.paddingTop,
                 view.paddingRight,
-                baseReplyContainerPaddingBottom + bottomInset
+                baseReplyContainerPaddingBottom + bottomInset,
             )
             insets
         }
@@ -267,7 +267,11 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             expandReplyComposer()
         }
         replySendButton.setOnClickListener {
-            val message = replyInput.text?.toString()?.trim().orEmpty()
+            val message =
+                replyInput.text
+                    ?.toString()
+                    ?.trim()
+                    .orEmpty()
             if (isEditingComment) {
                 attemptUpdateComment(message)
             } else {
@@ -319,25 +323,27 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val hasAvatar = intent.getBooleanExtra(EXTRA_HAS_AVATAR, false)
         val timestamp = intent.getLongExtra(EXTRA_TIMESTAMP, 0L)
         val commentCount = intent.getIntExtra(EXTRA_COMMENT_COUNT, 0)
-        document = intent.extras?.let { bundle ->
-            BundleCompat.getSerializable(bundle, EXTRA_DOCUMENT, NewsDocument::class.java)
-        }
+        document =
+            intent.extras?.let { bundle ->
+                BundleCompat.getSerializable(bundle, EXTRA_DOCUMENT, NewsDocument::class.java)
+            }
 
-        headerItem = PostDetailItem.Header(
-            id = postId,
-            author = author,
-            username = username,
-            hasAvatar = hasAvatar,
-            message = message,
-            imagePaths = imagePaths ?: emptyList(),
-            timestamp = timestamp,
-            commentCount = commentCount,
-            isLoadingComments = true,
-            canReply = false,
-            canEdit = false,
-            canDelete = false,
-            canShare = false
-        )
+        headerItem =
+            PostDetailItem.Header(
+                id = postId,
+                author = author,
+                username = username,
+                hasAvatar = hasAvatar,
+                message = message,
+                imagePaths = imagePaths ?: emptyList(),
+                timestamp = timestamp,
+                commentCount = commentCount,
+                isLoadingComments = true,
+                canReply = false,
+                canEdit = false,
+                canDelete = false,
+                canShare = false,
+            )
 
         updateReplyingToLabel(username)
         updateReplyComposerVisibility()
@@ -345,43 +351,44 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun setupAdapter() {
-        adapter = PostDetailAdapter(
-            markwon,
-            avatarBinder = { imageView, user, hasAvatar ->
-                val shouldAttemptLoad = hasAvatar || !user.isNullOrBlank()
-                avatarLoader?.bind(imageView, user, shouldAttemptLoad)
-            },
-            imageBinder = { imageView, path ->
-                val loader = imageLoader
-                if (loader != null) {
-                    loader.bind(imageView, path)
-                } else {
-                    imageView.isVisible = false
-                    imageView.setImageDrawable(null)
-                }
-            },
-            onImageClicked = { paths, index ->
-                openImagePreview(paths, index)
-            },
-            onDeleteClicked = {
-                attemptDeletePost()
-            },
-            onShareClicked = {
-                shareCurrentPost()
-            },
-            onEditClicked = { header ->
-                launchEditVoice(header)
-            },
-            onReplyClicked = {
-                promptReply()
-            },
-            onCommentEditClicked = { comment ->
-                startEditingComment(comment)
-            },
-            onCommentDeleteClicked = { comment ->
-                attemptDeleteComment(comment)
-            }
-        )
+        adapter =
+            PostDetailAdapter(
+                markwon,
+                avatarBinder = { imageView, user, hasAvatar ->
+                    val shouldAttemptLoad = hasAvatar || !user.isNullOrBlank()
+                    avatarLoader?.bind(imageView, user, shouldAttemptLoad)
+                },
+                imageBinder = { imageView, path ->
+                    val loader = imageLoader
+                    if (loader != null) {
+                        loader.bind(imageView, path)
+                    } else {
+                        imageView.isVisible = false
+                        imageView.setImageDrawable(null)
+                    }
+                },
+                onImageClicked = { paths, index ->
+                    openImagePreview(paths, index)
+                },
+                onDeleteClicked = {
+                    attemptDeletePost()
+                },
+                onShareClicked = {
+                    shareCurrentPost()
+                },
+                onEditClicked = { header ->
+                    launchEditVoice(header)
+                },
+                onReplyClicked = {
+                    promptReply()
+                },
+                onCommentEditClicked = { comment ->
+                    startEditingComment(comment)
+                },
+                onCommentDeleteClicked = { comment ->
+                    attemptDeleteComment(comment)
+                },
+            )
 
         recyclerView.layoutManager = LinearLayoutManager(this)
         recyclerView.adapter = adapter
@@ -397,26 +404,31 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             refreshHeaderActions()
             val base = baseUrl
             if (base.isNullOrBlank()) {
-                Toast.makeText(
-                    this@DashboardPostDetailActivity,
-                    R.string.dashboard_post_detail_comments_error,
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast
+                    .makeText(
+                        this@DashboardPostDetailActivity,
+                        R.string.dashboard_post_detail_comments_error,
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 updateItems(emptyList())
                 loadingView.isVisible = false
                 return@launch
             }
             avatarLoader = DashboardAvatarLoader(base, sessionCookie, credentials, lifecycleScope)
-            avatarUpdateListener = AvatarUpdateNotifier.register(AvatarUpdateNotifier.Listener { username ->
-                handleAvatarUpdated(username)
-            })
+            avatarUpdateListener =
+                AvatarUpdateNotifier.register(
+                    AvatarUpdateNotifier.Listener { username ->
+                        handleAvatarUpdated(username)
+                    },
+                )
             imageLoader = DashboardPostImageLoader(base, sessionCookie, lifecycleScope)
-            shareHelper = PostShareHelper(
-                applicationContext,
-                { baseUrl },
-                { sessionCookie },
-                { serverCode ?: baseUrl?.let { Uri.parse(it).host } }
-            )
+            shareHelper =
+                PostShareHelper(
+                    applicationContext,
+                    { baseUrl },
+                    { sessionCookie },
+                    { serverCode ?: baseUrl?.let { Uri.parse(it).host } },
+                )
             loadComments(headerItem.id)
         }
     }
@@ -432,17 +444,19 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         if (!::adapter.isInitialized) {
             return
         }
-        val positions = adapter.currentList.mapIndexedNotNull { index, item ->
-            val itemUsername = when (item) {
-                is PostDetailItem.Header -> item.username
-                is PostDetailItem.Comment -> item.username
+        val positions =
+            adapter.currentList.mapIndexedNotNull { index, item ->
+                val itemUsername =
+                    when (item) {
+                        is PostDetailItem.Header -> item.username
+                        is PostDetailItem.Comment -> item.username
+                    }
+                if (itemUsername?.equals(username, ignoreCase = true) == true) {
+                    index
+                } else {
+                    null
+                }
             }
-            if (itemUsername?.equals(username, ignoreCase = true) == true) {
-                index
-            } else {
-                null
-            }
-        }
         if (positions.isEmpty()) {
             return
         }
@@ -468,35 +482,39 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     private suspend fun loadComments(postId: String) {
         val base = baseUrl ?: return
         loadingView.isVisible = true
-        val result = repository.fetchComments(
-            base,
-            sessionCookie,
-            postId,
-            COMMENTS_LIMIT,
-            serverCode,
-            serverParentCode,
-            selectedTeamName
-        )
-        result.onSuccess { docs ->
-            val sorted = docs.sortedBy { it.time ?: 0L }
-            val mapped = sorted.mapNotNull { mapToCommentItem(it) }
-            updateItems(mapped)
-        }.onFailure {
-            Toast.makeText(
-                this,
-                R.string.dashboard_post_detail_comments_error,
-                Toast.LENGTH_SHORT
-            ).show()
-            updateItems(emptyList())
-        }
+        val result =
+            repository.fetchComments(
+                base,
+                sessionCookie,
+                postId,
+                COMMENTS_LIMIT,
+                serverCode,
+                serverParentCode,
+                selectedTeamName,
+            )
+        result
+            .onSuccess { docs ->
+                val sorted = docs.sortedBy { it.time ?: 0L }
+                val mapped = sorted.mapNotNull { mapToCommentItem(it) }
+                updateItems(mapped)
+            }.onFailure {
+                Toast
+                    .makeText(
+                        this,
+                        R.string.dashboard_post_detail_comments_error,
+                        Toast.LENGTH_SHORT,
+                    ).show()
+                updateItems(emptyList())
+            }
         loadingView.isVisible = false
     }
 
     private fun updateItems(comments: List<PostDetailItem.Comment>) {
-        headerItem = headerItem.copy(
-            commentCount = comments.size,
-            isLoadingComments = false
-        )
+        headerItem =
+            headerItem.copy(
+                commentCount = comments.size,
+                isLoadingComments = false,
+            )
         currentComments = comments
         submitItems(currentComments)
     }
@@ -507,12 +525,13 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val isAuthor = hasSession && !username.isNullOrBlank() && currentUsername?.equals(username, ignoreCase = true) == true
         val canShare = hasSession
         val canDelete = (isAuthor || isUserAdmin) && document != null
-        headerItem = headerItem.copy(
-            canReply = hasSession,
-            canEdit = isAuthor,
-            canDelete = canDelete,
-            canShare = canShare
-        )
+        headerItem =
+            headerItem.copy(
+                canReply = hasSession,
+                canEdit = isAuthor,
+                canDelete = canDelete,
+                canShare = canShare,
+            )
         updateReplyComposerVisibility()
         submitItems(currentComments)
     }
@@ -583,7 +602,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun attemptReply(message: String) {
-        if (message.isBlank()) {
+        if (message.isBlank() && pendingReplyImages.isEmpty()) {
             Toast.makeText(this, R.string.dashboard_post_reply_empty, Toast.LENGTH_SHORT).show()
             return
         }
@@ -611,39 +630,41 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         lifecycleScope.launch {
             val prepared = prepareReplyImagesForPosting(base, credentials, message)
             val userPayload = buildUserPayload(credentials)
-            val result = composerRepository.createVoice(
-                VoicesComposerRepository.CreateVoiceParams(
-                    baseUrl = base,
-                    credentials = credentials,
-                    sessionCookie = cookie,
-                    message = prepared.message,
-                    createdOn = doc.createdOn ?: serverCode,
-                    parentCode = doc.parentCode,
-                    replyTo = postId,
-                    images = prepared.images,
-                    labels = emptyList(),
-                    userPayload = userPayload,
-                    teamId = selectedTeamId,
-                    teamName = selectedTeamName
+            val result =
+                composerRepository.createVoice(
+                    VoicesComposerRepository.CreateVoiceParams(
+                        baseUrl = base,
+                        credentials = credentials,
+                        sessionCookie = cookie,
+                        message = prepared.message,
+                        createdOn = doc.createdOn ?: serverCode,
+                        parentCode = doc.parentCode,
+                        replyTo = postId,
+                        images = prepared.images,
+                        labels = emptyList(),
+                        userPayload = userPayload,
+                        teamId = selectedTeamId,
+                        teamName = selectedTeamName,
+                    ),
                 )
-            )
-            result.onSuccess {
-                Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_reply_success, Toast.LENGTH_SHORT).show()
-                replyInput.setText("")
-                clearPendingReplyImages()
-                updateReplyPreview(replyPreview, "")
-                hideReplyKeyboard()
-                collapseReplyComposerIfExpanded()
-                loadComments(postId)
-            }.onFailure {
-                Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_reply_error, Toast.LENGTH_SHORT).show()
-            }
+            result
+                .onSuccess {
+                    Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_reply_success, Toast.LENGTH_SHORT).show()
+                    replyInput.setText("")
+                    clearPendingReplyImages()
+                    updateReplyPreview(replyPreview, "")
+                    hideReplyKeyboard()
+                    collapseReplyComposerIfExpanded()
+                    loadComments(postId)
+                }.onFailure {
+                    Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_reply_error, Toast.LENGTH_SHORT).show()
+                }
             setReplyPosting(false)
         }
     }
 
     private fun attemptUpdateComment(message: String) {
-        if (message.isBlank()) {
+        if (message.isBlank() && pendingReplyImages.isEmpty()) {
             Toast.makeText(this, R.string.dashboard_post_reply_empty, Toast.LENGTH_SHORT).show()
             return
         }
@@ -670,39 +691,47 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         setReplyPosting(true)
         lifecycleScope.launch {
             val prepared = prepareReplyImagesForPosting(base, credentials, message)
-            val newImages = prepared.images.map { image ->
-                DashboardNewsRepository.NewsImage(
-                    resourceId = image.resourceId,
-                    filename = image.filename,
-                    markdown = image.markdown
-                )
-            }
+            val newImages =
+                prepared.images.map { image ->
+                    DashboardNewsRepository.NewsImage(
+                        resourceId = image.resourceId,
+                        filename = image.filename,
+                        markdown = image.markdown,
+                    )
+                }
             val mergedImages = mergeNewsImages(doc.images, newImages)
-            val result = actionsRepository.updateNews(
-                baseUrl = base,
-                sessionCookie = cookie,
-                document = doc,
-                message = prepared.message,
-                images = mergedImages,
-                teamId = selectedTeamId,
-                teamName = selectedTeamName
-            )
-            result.onSuccess {
-                Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_comment_edit_success, Toast.LENGTH_SHORT)
-                    .show()
-                exitCommentEditMode(clearFields = true)
-                hideReplyKeyboard()
-                collapseReplyComposerIfExpanded()
-                loadComments(headerItem.id)
-            }.onFailure {
-                Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_comment_edit_error, Toast.LENGTH_SHORT)
-                    .show()
-            }
+            val result =
+                actionsRepository.updateNews(
+                    baseUrl = base,
+                    sessionCookie = cookie,
+                    document = doc,
+                    message = prepared.message,
+                    images = mergedImages,
+                    teamId = selectedTeamId,
+                    teamName = selectedTeamName,
+                )
+            result
+                .onSuccess {
+                    Toast
+                        .makeText(this@DashboardPostDetailActivity, R.string.dashboard_comment_edit_success, Toast.LENGTH_SHORT)
+                        .show()
+                    exitCommentEditMode(clearFields = true)
+                    hideReplyKeyboard()
+                    collapseReplyComposerIfExpanded()
+                    loadComments(headerItem.id)
+                }.onFailure {
+                    Toast
+                        .makeText(this@DashboardPostDetailActivity, R.string.dashboard_comment_edit_error, Toast.LENGTH_SHORT)
+                        .show()
+                }
             setReplyPosting(false)
         }
     }
 
-    private fun updateReplyPreview(preview: TextView, message: String?) {
+    private fun updateReplyPreview(
+        preview: TextView,
+        message: String?,
+    ) {
         val content = message?.takeIf { it.isNotBlank() }
         val previewText = content ?: getString(R.string.dashboard_post_reply_preview_placeholder)
         val transformed = transformReplyMarkdownForPreview(previewText)
@@ -712,7 +741,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
 
     private fun mergeNewsImages(
         existingImages: List<DashboardNewsRepository.NewsImage>?,
-        newImages: List<DashboardNewsRepository.NewsImage>
+        newImages: List<DashboardNewsRepository.NewsImage>,
     ): List<DashboardNewsRepository.NewsImage> {
         if (existingImages.isNullOrEmpty() && newImages.isEmpty()) {
             return emptyList()
@@ -767,7 +796,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private fun updateReplyActionAvailability(text: CharSequence?) {
-        val hasContent = !text.isNullOrBlank()
+        val hasContent = !text.isNullOrBlank() || pendingReplyImages.isNotEmpty()
         val canSend = (headerItem.canReply || isEditingComment) && !isPostingReply && hasContent && isReplyComposerExpanded
         replySendButton.isEnabled = canSend
     }
@@ -785,6 +814,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             }
         }
         updateReplyPreviewImages()
+        updateReplyActionAvailability(replyInput.text)
     }
 
     private fun setReplyPosting(posting: Boolean) {
@@ -808,37 +838,18 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private suspend fun handleReplyImageSelection(uri: Uri) {
-        val pendingResult = withContext(Dispatchers.IO) {
-            runCatching { VoiceImageFactory.createPendingVoiceImage(uri, contentResolver, cacheDir, ::generatePendingImageId) }
-        }
-        pendingResult.onSuccess { pending ->
-            pendingReplyImages[pending.id] = pending
-            insertReplyImageMarkdown(pending.fileName)
-            updateReplyPreview(replyPreview, replyInput.text?.toString())
-        }.onFailure {
-            Toast.makeText(this, R.string.create_voice_image_processing_error, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-    private fun insertReplyImageMarkdown(fileName: String) {
-        val editText = replyInput
-        val editable = editText.text ?: return
-        val start = max(0, editText.selectionStart)
-        val end = max(0, editText.selectionEnd)
-        val insertStart = min(start, end)
-        val insertEnd = max(start, end)
-        val needsLeadingLineBreak = insertStart > 0 && editable[insertStart - 1] != '\n'
-        val snippet = buildString {
-            if (needsLeadingLineBreak) {
-                append("\n\n")
+        val pendingResult =
+            withContext(Dispatchers.IO) {
+                runCatching { VoiceImageFactory.createPendingVoiceImage(uri, contentResolver, cacheDir, ::generatePendingImageId) }
             }
-            append("![](")
-            append(fileName)
-            append(")\n")
-        }
-        editable.replace(insertStart, insertEnd, snippet)
-        val cursor = (insertStart + snippet.length).coerceAtMost(editable.length)
-        editText.setSelection(cursor)
+        pendingResult
+            .onSuccess { pending ->
+                pendingReplyImages[pending.id] = pending
+                updateReplyPreview(replyPreview, replyInput.text?.toString())
+                updateReplyActionAvailability(replyInput.text)
+            }.onFailure {
+                Toast.makeText(this, R.string.create_voice_image_processing_error, Toast.LENGTH_SHORT).show()
+            }
     }
 
     private fun collapseReplyComposerIfExpanded(): Boolean {
@@ -880,7 +891,12 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         updateReplyingToVisibility(expanded)
     }
 
-    private fun applyWrappedFormatting(prefix: String, suffix: String, placeholder: String, placeCursorInsideWhenNoSelection: Boolean = false) {
+    private fun applyWrappedFormatting(
+        prefix: String,
+        suffix: String,
+        placeholder: String,
+        placeCursorInsideWhenNoSelection: Boolean = false,
+    ) {
         if (!headerItem.canReply || isPostingReply) {
             return
         }
@@ -890,18 +906,20 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val selectionStart = min(start, end)
         val selectionEnd = max(start, end)
         val selected = editable.substring(selectionStart, selectionEnd)
-        val replacement = if (selectionStart == selectionEnd) {
-            val defaultText = placeholder
-            "$prefix$defaultText$suffix"
-        } else {
-            "$prefix$selected$suffix"
-        }
+        val replacement =
+            if (selectionStart == selectionEnd) {
+                val defaultText = placeholder
+                "$prefix$defaultText$suffix"
+            } else {
+                "$prefix$selected$suffix"
+            }
         editable.replace(selectionStart, selectionEnd, replacement)
-        val newCursor = if (selectionStart == selectionEnd && placeCursorInsideWhenNoSelection) {
-            selectionStart + prefix.length
-        } else {
-            selectionStart + replacement.length
-        }
+        val newCursor =
+            if (selectionStart == selectionEnd && placeCursorInsideWhenNoSelection) {
+                selectionStart + prefix.length
+            } else {
+                selectionStart + replacement.length
+            }
         val boundedCursor = min(max(newCursor, 0), editable.length)
         replyInput.setSelection(boundedCursor)
     }
@@ -924,15 +942,17 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         while (prefixEnd < lineLength && editable[prefixEnd].isWhitespace() && editable[prefixEnd] != '\n') {
             prefixEnd++
         }
-        val newHeadingLevel = if (currentHashes == 0) {
-            1
-        } else {
-            (currentHashes % MAX_HEADING_LEVEL) + 1
-        }
-        val replacement = buildString {
-            repeat(newHeadingLevel) { append('#') }
-            append(' ')
-        }
+        val newHeadingLevel =
+            if (currentHashes == 0) {
+                1
+            } else {
+                (currentHashes % MAX_HEADING_LEVEL) + 1
+            }
+        val replacement =
+            buildString {
+                repeat(newHeadingLevel) { append('#') }
+                append(' ')
+            }
         editable.replace(lineStart, prefixEnd, replacement)
         val selection = (lineStart + replacement.length).coerceAtMost(editable.length)
         editText.setSelection(selection)
@@ -951,35 +971,49 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         replyInput.setSelection(cursor)
     }
 
-    private val replyListContinuationWatcher = object : TextWatcher {
-        override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+    private val replyListContinuationWatcher =
+        object : TextWatcher {
+            override fun beforeTextChanged(
+                s: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int,
+            ) = Unit
 
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            if (isHandlingReplyListContinuation) {
-                return
+            override fun onTextChanged(
+                s: CharSequence?,
+                start: Int,
+                before: Int,
+                count: Int,
+            ) {
+                if (isHandlingReplyListContinuation) {
+                    return
+                }
+                if (count <= 0 || s == null) {
+                    return
+                }
+                val inserted = s.subSequence(start, start + count)
+                val newlineOffset = inserted.lastIndexOf('\n')
+                if (newlineOffset >= 0) {
+                    replyPendingNewlineIndex = start + newlineOffset
+                }
             }
-            if (count <= 0 || s == null) {
-                return
-            }
-            val inserted = s.subSequence(start, start + count)
-            val newlineOffset = inserted.lastIndexOf('\n')
-            if (newlineOffset >= 0) {
-                replyPendingNewlineIndex = start + newlineOffset
+
+            override fun afterTextChanged(s: Editable?) {
+                if (isHandlingReplyListContinuation) {
+                    return
+                }
+                val newlineIndex = replyPendingNewlineIndex ?: return
+                replyPendingNewlineIndex = null
+                s ?: return
+                handleReplyListContinuation(s, newlineIndex)
             }
         }
 
-        override fun afterTextChanged(s: Editable?) {
-            if (isHandlingReplyListContinuation) {
-                return
-            }
-            val newlineIndex = replyPendingNewlineIndex ?: return
-            replyPendingNewlineIndex = null
-            s ?: return
-            handleReplyListContinuation(s, newlineIndex)
-        }
-    }
-
-    private fun handleReplyListContinuation(editable: Editable, newlineIndex: Int) {
+    private fun handleReplyListContinuation(
+        editable: Editable,
+        newlineIndex: Int,
+    ) {
         if (newlineIndex <= 0 || newlineIndex > editable.length) {
             return
         }
@@ -1020,7 +1054,11 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         }
     }
 
-    private fun insertReplyListPrefix(editable: Editable, newlineIndex: Int, prefix: String) {
+    private fun insertReplyListPrefix(
+        editable: Editable,
+        newlineIndex: Int,
+        prefix: String,
+    ) {
         val insertPosition = (newlineIndex + 1).coerceAtMost(editable.length)
         isHandlingReplyListContinuation = true
         editable.insert(insertPosition, prefix)
@@ -1028,7 +1066,11 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         isHandlingReplyListContinuation = false
     }
 
-    private fun removeReplyListPrefix(editable: Editable, start: Int, markerLength: Int) {
+    private fun removeReplyListPrefix(
+        editable: Editable,
+        start: Int,
+        markerLength: Int,
+    ) {
         val end = (start + markerLength).coerceAtMost(editable.length)
         isHandlingReplyListContinuation = true
         editable.delete(start, end)
@@ -1036,7 +1078,10 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         isHandlingReplyListContinuation = false
     }
 
-    private fun findReplyLineStart(editable: Editable, index: Int): Int {
+    private fun findReplyLineStart(
+        editable: Editable,
+        index: Int,
+    ): Int {
         val boundedIndex = index.coerceIn(0, editable.length)
         for (i in boundedIndex - 1 downTo 0) {
             if (editable[i] == '\n') {
@@ -1078,7 +1123,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     private suspend fun prepareReplyImagesForPosting(
         baseUrl: String,
         credentials: StoredCredentials,
-        originalMessage: String
+        originalMessage: String,
     ): PreparedVoicePost {
         if (pendingReplyImages.isEmpty()) {
             return PreparedVoicePost(originalMessage, emptyList())
@@ -1086,38 +1131,38 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val context = buildReplyImageResourceContext(credentials)
 
         val uploads = pendingReplyImages.values.filter { it.resourceId == null }
-        val uploadResults = coroutineScope {
-            uploads.map { pending ->
-                async {
-                    val markdown = ensureReplyImageUpload(baseUrl, credentials, context, pending)
-                    pending to markdown
-                }
-            }.awaitAll()
-        }
+        val uploadResults =
+            coroutineScope {
+                uploads
+                    .map { pending ->
+                        async {
+                            val markdown = ensureReplyImageUpload(baseUrl, credentials, context, pending)
+                            pending to markdown
+                        }
+                    }.awaitAll()
+            }
 
-        var updatedMessage = originalMessage
         val preparedImages = mutableListOf<VoicesComposerRepository.ImagePayload>()
 
         for ((pending, markdown) in uploadResults) {
-            val replaced = MarkdownUtils.replaceImagePlaceholder(updatedMessage, pending.fileName, markdown)
-            updatedMessage = ensureMarkdownPresent(replaced, markdown)
             val resourceId = pending.resourceId
             if (resourceId != null) {
-                preparedImages += VoicesComposerRepository.ImagePayload(
-                    resourceId = resourceId,
-                    filename = pending.fileName,
-                    markdown = markdown
-                )
+                preparedImages +=
+                    VoicesComposerRepository.ImagePayload(
+                        resourceId = resourceId,
+                        filename = pending.fileName,
+                        markdown = markdown,
+                    )
             }
         }
-        return PreparedVoicePost(updatedMessage, preparedImages)
+        return PreparedVoicePost(originalMessage, preparedImages)
     }
 
     private suspend fun ensureReplyImageUpload(
         baseUrl: String,
         credentials: StoredCredentials,
         context: VoiceImageResourceContext,
-        pending: PendingVoiceImage
+        pending: PendingVoiceImage,
     ): String {
         pending.uploadedMarkdown?.let { return it }
         val existingResourceId = pending.resourceId
@@ -1131,20 +1176,22 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val creationResponse = composerRepository.createResourceDocument(baseUrl, credentials, metadata)
         pending.resourceId = creationResponse.id
         pending.resourceRevision = creationResponse.revision
-        val uploadResponse = composerRepository.uploadResourceBinary(
-            baseUrl,
-            credentials,
-            creationResponse.id,
-            pending.fileName,
-            creationResponse.revision,
-            pending.jpegBytes
-        )
+        val uploadResponse =
+            composerRepository.uploadResourceBinary(
+                baseUrl,
+                credentials,
+                creationResponse.id,
+                pending.fileName,
+                creationResponse.revision,
+                pending.jpegBytes,
+            )
         val resolvedResourceId = uploadResponse.resourceId ?: creationResponse.id
         val resolvedFileName = uploadResponse.filename ?: pending.fileName
         pending.resourceId = resolvedResourceId
         pending.resourceRevision = uploadResponse.revision ?: creationResponse.revision
-        val relativeMarkdown = uploadResponse.markdown
-            ?: "![](resources/${resolvedResourceId.trim()}/${resolvedFileName.trim()})"
+        val relativeMarkdown =
+            uploadResponse.markdown
+                ?: "![](resources/${resolvedResourceId.trim()}/${resolvedFileName.trim()})"
         pending.uploadedMarkdown = relativeMarkdown
         return relativeMarkdown
     }
@@ -1154,27 +1201,33 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() }
 
         if (!base.isNullOrEmpty()) {
-            processed = RESOURCES_MARKDOWN_REGEX.replace(processed) { matchResult ->
-                val path = matchResult.groupValues.getOrNull(1)?.trim().orEmpty()
-                val absolute = "$base/db/$path"
-                "![]($absolute)"
-            }
+            processed =
+                RESOURCES_MARKDOWN_REGEX.replace(processed) { matchResult ->
+                    val path =
+                        matchResult.groupValues
+                            .getOrNull(1)
+                            ?.trim()
+                            .orEmpty()
+                    val absolute = "$base/db/$path"
+                    "![]($absolute)"
+                }
         }
 
         val pendingByFileName = pendingReplyImages.values.associateBy { it.fileName }
         if (pendingByFileName.isNotEmpty()) {
-            val globalPattern = Regex("(!\\[[^\\]]*\\]\\()(.*?)(\\))")
-            processed = globalPattern.replace(processed) { matchResult ->
-                val path = matchResult.groupValues.getOrNull(2).orEmpty()
-                val pending = pendingByFileName[path]
-                if (pending != null) {
-                    val prefix = matchResult.groupValues.getOrNull(1).orEmpty()
-                    val suffix = matchResult.groupValues.getOrNull(3).orEmpty()
-                    "$prefix${pending.file.toURI()}$suffix"
-                } else {
-                    matchResult.value
+            val globalPattern = Regex("(!\\[[^]]*]\\()(.*?)(\\))")
+            processed =
+                globalPattern.replace(processed) { matchResult ->
+                    val path = matchResult.groupValues.getOrNull(2).orEmpty()
+                    val pending = pendingByFileName[path]
+                    if (pending != null) {
+                        val prefix = matchResult.groupValues.getOrNull(1).orEmpty()
+                        val suffix = matchResult.groupValues.getOrNull(3).orEmpty()
+                        "$prefix${pending.file.toURI()}$suffix"
+                    } else {
+                        matchResult.value
+                    }
                 }
-            }
         }
         return processed
     }
@@ -1184,11 +1237,19 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         if (comment.imagePaths.isEmpty()) {
             return
         }
-        val loaded = coroutineScope {
-            comment.imagePaths.map { path ->
-                async(Dispatchers.IO) { VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, { VoiceImageFactory.generateImageFileName() }, { generatePendingImageId(it) }) }
-            }.awaitAll().filterNotNull().toMutableList()
-        }
+        val loaded =
+            coroutineScope {
+                comment.imagePaths
+                    .map { path ->
+                        async(Dispatchers.IO) {
+                            VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, {
+                                VoiceImageFactory.generateImageFileName()
+                            }, { generatePendingImageId(it) })
+                        }
+                    }.awaitAll()
+                    .filterNotNull()
+                    .toMutableList()
+            }
         if (loaded.isEmpty()) {
             return
         }
@@ -1196,18 +1257,6 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             pendingReplyImages[pending.id] = pending
         }
         updateReplyPreview(replyPreview, replyInput.text?.toString())
-    }
-
-    private fun ensureMarkdownPresent(message: String, markdown: String): String {
-        if (message.contains(markdown)) {
-            return message
-        }
-        val builder = StringBuilder(message.trimEnd())
-        if (builder.isNotEmpty()) {
-            builder.append("\n\n")
-        }
-        builder.append(markdown)
-        return builder.toString()
     }
 
     private suspend fun buildReplyImageResourceContext(credentials: StoredCredentials): VoiceImageResourceContext {
@@ -1218,17 +1267,20 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val storedParentCode = preferences.getString(KEY_SERVER_PARENT_CODE, null)?.takeIf { it.isNotBlank() }
         val profile = withContext(Dispatchers.IO) { loadCachedProfile() }
         val parsedCodes = parseCodesFromProfile(profile?.rawDocument)
-        val resolvedResideOn = serverCode?.takeIf { it.isNotBlank() }
-            ?: storedServerCode
-            ?: parsedCodes?.planetCode
+        val resolvedResideOn =
+            serverCode?.takeIf { it.isNotBlank() }
+                ?: storedServerCode
+                ?: parsedCodes?.planetCode
         val resolvedParent = storedParentCode ?: parsedCodes?.parentCode
         return VoiceImageResourceContext(
             username = credentials.username,
             resideOn = resolvedResideOn,
             sourcePlanet = resolvedParent,
             androidId = androidId,
-            deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName(),
-            customDeviceName = customDeviceName
+            deviceName =
+                org.ole.planet.myplanet.lite.util.DeviceUtils
+                    .getDeviceName(),
+            customDeviceName = customDeviceName,
         )
     }
 
@@ -1244,48 +1296,18 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         }.getOrNull()
     }
 
-    private fun replaceImagePlaceholder(source: String, fileName: String, replacement: String): String {
-        var matched = false
-        val updated = IMAGE_MARKDOWN_REGEX.replace(source) { matchResult ->
-            val altText = matchResult.groupValues.getOrNull(1).orEmpty()
-            val url = matchResult.groupValues.getOrNull(2).orEmpty()
-            if (url == fileName) {
-                matched = true
-                if (altText.isBlank()) {
-                    replacement
-                } else {
-                    MarkdownUtils.applyAltText(replacement, altText)
-                }
-            } else {
-                matchResult.value
-            }
-        }
-        if (matched) {
-            return updated
-        }
-        val builder = StringBuilder(source)
-        if (builder.isNotEmpty()) {
-            if (builder[builder.length - 1] != '\n') {
-                builder.append('\n')
-            }
-            builder.append('\n')
-        }
-        builder.append(replacement)
-        return builder.toString()
-    }
-
     private suspend fun loadCachedProfile(): UserProfile? {
         val existing = cachedProfile
         if (existing != null) {
             return existing
         }
-        val profile = withContext(Dispatchers.IO) {
-            UserProfileDatabase.getInstance(applicationContext).getProfile()
-        }
+        val profile =
+            withContext(Dispatchers.IO) {
+                UserProfileDatabase.getInstance(applicationContext).getProfile()
+            }
         cachedProfile = profile
         return profile
     }
-
 
     private fun generatePendingImageId(baseName: String): String {
         var candidate = baseName
@@ -1310,9 +1332,10 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     }
 
     private suspend fun buildUserPayload(credentials: StoredCredentials): VoicesComposerRepository.UserPayload {
-        val profile = withContext(Dispatchers.IO) {
-            UserProfileDatabase.getInstance(applicationContext).getProfile()
-        }
+        val profile =
+            withContext(Dispatchers.IO) {
+                UserProfileDatabase.getInstance(applicationContext).getProfile()
+            }
         val planetCode = serverCode?.takeIf { it.isNotBlank() } ?: document?.createdOn
         return VoicesComposerRepository.UserPayload(
             id = "org.couchdb.user:${credentials.username}",
@@ -1327,7 +1350,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             parentCode = document?.parentCode,
             roles = null,
             joinDate = null,
-            attachments = null
+            attachments = null,
         )
     }
 
@@ -1352,23 +1375,27 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             return
         }
         lifecycleScope.launch {
-            val result = actionsRepository.deleteNews(
-                base,
-                cookie,
-                doc,
-                teamId = selectedTeamId,
-                teamName = selectedTeamName
-            )
-            result.onSuccess {
-                Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_delete_success, Toast.LENGTH_SHORT)
-                    .show()
-                val deletedIntent = Intent().putExtra(EXTRA_DELETED_POST_ID, doc.id)
-                setResult(RESULT_OK, deletedIntent)
-                finish()
-            }.onFailure {
-                Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_delete_error, Toast.LENGTH_SHORT)
-                    .show()
-            }
+            val result =
+                actionsRepository.deleteNews(
+                    base,
+                    cookie,
+                    doc,
+                    teamId = selectedTeamId,
+                    teamName = selectedTeamName,
+                )
+            result
+                .onSuccess {
+                    Toast
+                        .makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_delete_success, Toast.LENGTH_SHORT)
+                        .show()
+                    val deletedIntent = Intent().putExtra(EXTRA_DELETED_POST_ID, doc.id)
+                    setResult(RESULT_OK, deletedIntent)
+                    finish()
+                }.onFailure {
+                    Toast
+                        .makeText(this@DashboardPostDetailActivity, R.string.dashboard_post_delete_error, Toast.LENGTH_SHORT)
+                        .show()
+                }
         }
     }
 
@@ -1385,22 +1412,26 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             return
         }
         lifecycleScope.launch {
-            val result = actionsRepository.deleteNews(
-                base,
-                cookie,
-                doc,
-                teamId = selectedTeamId,
-                teamName = selectedTeamName
-            )
-            result.onSuccess {
-                Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_comment_delete_success, Toast.LENGTH_SHORT)
-                    .show()
-                currentComments = currentComments.filterNot { it.id == comment.id }
-                updateItems(currentComments)
-            }.onFailure {
-                Toast.makeText(this@DashboardPostDetailActivity, R.string.dashboard_comment_delete_error, Toast.LENGTH_SHORT)
-                    .show()
-            }
+            val result =
+                actionsRepository.deleteNews(
+                    base,
+                    cookie,
+                    doc,
+                    teamId = selectedTeamId,
+                    teamName = selectedTeamName,
+                )
+            result
+                .onSuccess {
+                    Toast
+                        .makeText(this@DashboardPostDetailActivity, R.string.dashboard_comment_delete_success, Toast.LENGTH_SHORT)
+                        .show()
+                    currentComments = currentComments.filterNot { it.id == comment.id }
+                    updateItems(currentComments)
+                }.onFailure {
+                    Toast
+                        .makeText(this@DashboardPostDetailActivity, R.string.dashboard_comment_delete_error, Toast.LENGTH_SHORT)
+                        .show()
+                }
         }
     }
 
@@ -1414,16 +1445,18 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     private fun mapToCommentItem(document: NewsDocument): PostDetailItem.Comment? {
         val id = document.id ?: return null
         val username = document.user?.name?.takeIf { it.isNotBlank() }
-        val displayName = document.user?.let { user ->
-            val parts = listOfNotNull(user.firstName, user.middleName, user.lastName)
-                .map { it.trim() }
-                .filter { it.isNotEmpty() }
-            when {
-                parts.isNotEmpty() -> TextUtils.join(" ", parts)
-                !username.isNullOrEmpty() -> username
-                else -> getString(R.string.dashboard_profile_name_placeholder)
-            }
-        } ?: (username ?: getString(R.string.dashboard_profile_name_placeholder))
+        val displayName =
+            document.user?.let { user ->
+                val parts =
+                    listOfNotNull(user.firstName, user.middleName, user.lastName)
+                        .map { it.trim() }
+                        .filter { it.isNotEmpty() }
+                when {
+                    parts.isNotEmpty() -> TextUtils.join(" ", parts)
+                    !username.isNullOrEmpty() -> username
+                    else -> getString(R.string.dashboard_profile_name_placeholder)
+                }
+            } ?: (username ?: getString(R.string.dashboard_profile_name_placeholder))
         val message = document.message?.takeUnless { it.isNullOrBlank() }
         val imagePaths = mapCommentImages(document)
         val hasAvatar = document.user?.attachments?.isNullOrEmpty() == false
@@ -1441,18 +1474,18 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             timestamp = timestamp,
             canEdit = isAuthor,
             canDelete = canDelete,
-            document = document
+            document = document,
         )
     }
 
     private fun mapCommentImages(document: NewsDocument): List<String> {
-        val fromImages = document.images
-            ?.mapNotNull { image ->
-                extractImagePath(image.markdown)
-                    ?: buildResourcePath(image.resourceId, image.filename)
-            }
-            ?.filter { it.isNotBlank() }
-            .orEmpty()
+        val fromImages =
+            document.images
+                ?.mapNotNull { image ->
+                    extractImagePath(image.markdown)
+                        ?: buildResourcePath(image.resourceId, image.filename)
+                }?.filter { it.isNotBlank() }
+                .orEmpty()
         val fromMessage = collectImagePaths(document.message)
         return mergeImagePaths(fromImages + fromMessage)
     }
@@ -1461,11 +1494,14 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         if (markdown.isNullOrBlank()) {
             return emptyList()
         }
-        return IMAGE_MARKDOWN_REGEX.findAll(markdown)
+        return IMAGE_MARKDOWN_REGEX
+            .findAll(markdown)
             .mapNotNull { match ->
-                match.groupValues.getOrNull(2)?.trim()?.takeIf { it.isNotEmpty() }
-            }
-            .toList()
+                match.groupValues
+                    .getOrNull(2)
+                    ?.trim()
+                    ?.takeIf { it.isNotEmpty() }
+            }.toList()
     }
 
     private fun mergeImagePaths(paths: List<String>): List<String> {
@@ -1487,13 +1523,15 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         val extracted = extractImagePath(path) ?: path
         val trimmed = extracted.trim()
         val resourcesMatch = RESOURCES_PATH_REGEX.find(trimmed)
-        val reduced = if (resourcesMatch != null) {
-            resourcesMatch.value
-        } else {
-            trimmed.trimStart('/')
-                .removePrefix("db/")
-                .trimStart('/')
-        }
+        val reduced =
+            if (resourcesMatch != null) {
+                resourcesMatch.value
+            } else {
+                trimmed
+                    .trimStart('/')
+                    .removePrefix("db/")
+                    .trimStart('/')
+            }
         return reduced.lowercase(Locale.US)
     }
 
@@ -1502,10 +1540,17 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
             return null
         }
         val match = IMAGE_MARKDOWN_REGEX.find(markdown)
-        return match?.groupValues?.getOrNull(2)?.trim()?.takeIf { it.isNotEmpty() }
+        return match
+            ?.groupValues
+            ?.getOrNull(2)
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
     }
 
-    private fun buildResourcePath(resourceId: String?, filename: String?): String? {
+    private fun buildResourcePath(
+        resourceId: String?,
+        filename: String?,
+    ): String? {
         val id = resourceId?.trim().takeUnless { it.isNullOrEmpty() }
         val name = filename?.trim().takeUnless { it.isNullOrEmpty() }
         if (id == null || name == null) {
@@ -1514,14 +1559,17 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         return "resources/$id/$name"
     }
 
-    private fun openImagePreview(imagePaths: List<String>, startIndex: Int) {
+    private fun openImagePreview(
+        imagePaths: List<String>,
+        startIndex: Int,
+    ) {
         if (imagePaths.isEmpty()) {
             return
         }
         val intent = Intent(this, DashboardImagePreviewActivity::class.java)
         intent.putStringArrayListExtra(
             DashboardImagePreviewActivity.EXTRA_IMAGE_PATHS,
-            ArrayList(imagePaths)
+            ArrayList(imagePaths),
         )
         intent.putExtra(DashboardImagePreviewActivity.EXTRA_START_INDEX, startIndex)
         startActivity(intent)
@@ -1534,14 +1582,13 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         intent.putExtra(CreateVoiceActivity.EXTRA_EDIT_INITIAL_MESSAGE, item.message)
         intent.putStringArrayListExtra(
             CreateVoiceActivity.EXTRA_EDIT_INITIAL_IMAGE_PATHS,
-            ArrayList(item.imagePaths)
+            ArrayList(item.imagePaths),
         )
         document?.let { intent.putExtra(CreateVoiceActivity.EXTRA_EDIT_DOCUMENT, it) }
         selectedTeamId?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_TEAM_ID, it) }
         selectedTeamName?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_TEAM_NAME, it) }
         editVoiceLauncher.launch(intent)
     }
-
 
     companion object {
         const val EXTRA_POST_ID = "extra_post_id"
@@ -1576,8 +1623,8 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         private const val MAX_HEADING_LEVEL = 6
 
         private val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
-        private val IMAGE_MARKDOWN_REGEX = Regex("!\\[([^\\]]*)\\]\\(([^)]+)\\)")
-        private val RESOURCES_MARKDOWN_REGEX = Regex("!\\[[^\\]]*\\]\\((resources/[^)]+)\\)")
+        private val IMAGE_MARKDOWN_REGEX = Regex("!\\[([^]]*)]\\(([^)]+)\\)")
+        private val RESOURCES_MARKDOWN_REGEX = Regex("!\\[[^]]*]\\((resources/[^)]+)\\)")
         private val RESOURCES_PATH_REGEX = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
     }
 }

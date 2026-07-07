@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-01-05
@@ -32,7 +32,6 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 @androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 class FullscreenPlayerActivity : AppCompatActivity() {
-
     private var player: ExoPlayer? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -58,28 +57,34 @@ class FullscreenPlayerActivity : AppCompatActivity() {
             showSystemBars()
             finish()
         }
-        val renderersFactory = DefaultRenderersFactory(this)
-            .setEnableDecoderFallback(true)
-        player = ExoPlayer.Builder(this, renderersFactory)
-            .setMediaSourceFactory(DefaultMediaSourceFactory(buildDataSourceFactory(authHeader)))
-            .build()
-            .also { exo ->
-                playerView.player = exo
-                exo.addListener(object : Player.Listener {
-                    override fun onPlayerError(error: PlaybackException) {
-                        val messageRes = if (isDecoderCapabilityError(error)) {
-                            R.string.fullscreen_player_unsupported_video
-                        } else {
-                            R.string.course_wizard_play_error
-                        }
-                        Toast.makeText(this@FullscreenPlayerActivity, getString(messageRes), Toast.LENGTH_SHORT).show()
-                    }
-                })
-                val items = mediaUrls.map { MediaItem.fromUri(it) }
-                exo.setMediaItems(items, startIndex, startPosition)
-                exo.prepare()
-                exo.playWhenReady = true
-            }
+        val renderersFactory =
+            DefaultRenderersFactory(this)
+                .setEnableDecoderFallback(true)
+        player =
+            ExoPlayer
+                .Builder(this, renderersFactory)
+                .setMediaSourceFactory(DefaultMediaSourceFactory(buildDataSourceFactory(authHeader)))
+                .build()
+                .also { exo ->
+                    playerView.player = exo
+                    exo.addListener(
+                        object : Player.Listener {
+                            override fun onPlayerError(error: PlaybackException) {
+                                val messageRes =
+                                    if (isDecoderCapabilityError(error)) {
+                                        R.string.fullscreen_player_unsupported_video
+                                    } else {
+                                        R.string.course_wizard_play_error
+                                    }
+                                Toast.makeText(this@FullscreenPlayerActivity, getString(messageRes), Toast.LENGTH_SHORT).show()
+                            }
+                        },
+                    )
+                    val items = mediaUrls.map { MediaItem.fromUri(it) }
+                    exo.setMediaItems(items, startIndex, startPosition)
+                    exo.prepare()
+                    exo.playWhenReady = true
+                }
     }
 
     private fun hideSystemBars() {
@@ -99,9 +104,8 @@ class FullscreenPlayerActivity : AppCompatActivity() {
         return factory
     }
 
-    private fun buildDataSourceFactory(authorizationHeader: String?): DefaultDataSource.Factory {
-        return DefaultDataSource.Factory(this, buildHttpDataSourceFactory(authorizationHeader))
-    }
+    private fun buildDataSourceFactory(authorizationHeader: String?): DefaultDataSource.Factory =
+        DefaultDataSource.Factory(this, buildHttpDataSourceFactory(authorizationHeader))
 
     private fun resolveAuthHeader(): String? {
         val credentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
@@ -145,11 +149,12 @@ class FullscreenPlayerActivity : AppCompatActivity() {
 
     private fun deliverPlaybackResult() {
         player?.let { exo ->
-            val result = Intent().apply {
-                putExtra(EXTRA_RESULT_INDEX, exo.currentMediaItemIndex)
-                putExtra(EXTRA_RESULT_POSITION, exo.currentPosition)
-                putExtra(EXTRA_RESULT_PLAY_WHEN_READY, exo.playWhenReady)
-            }
+            val result =
+                Intent().apply {
+                    putExtra(EXTRA_RESULT_INDEX, exo.currentMediaItemIndex)
+                    putExtra(EXTRA_RESULT_POSITION, exo.currentPosition)
+                    putExtra(EXTRA_RESULT_PLAY_WHEN_READY, exo.playWhenReady)
+                }
             setResult(RESULT_OK, result)
         }
     }
@@ -168,14 +173,13 @@ class FullscreenPlayerActivity : AppCompatActivity() {
             mediaUrls: ArrayList<String>,
             startIndex: Int,
             startPositionMs: Long,
-            authorizationHeader: String?
-        ): Intent {
-            return Intent(context, FullscreenPlayerActivity::class.java).apply {
+            authorizationHeader: String?,
+        ): Intent =
+            Intent(context, FullscreenPlayerActivity::class.java).apply {
                 putStringArrayListExtra(EXTRA_MEDIA_URLS, mediaUrls)
                 putExtra(EXTRA_START_INDEX, startIndex)
                 putExtra(EXTRA_START_POSITION, startPositionMs)
                 putExtra(EXTRA_AUTH_HEADER, authorizationHeader)
             }
-        }
     }
 }
