@@ -275,7 +275,7 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
 
         fun show(
             fragmentManager: FragmentManager,
-            course: DashboardCoursePageFragment.CourseItem,
+            course: CourseItem,
             isEnrolled: Boolean,
             onJoinCourse: (() -> Unit)? = null,
             onLeaveCourse: (() -> Unit)? = null,
