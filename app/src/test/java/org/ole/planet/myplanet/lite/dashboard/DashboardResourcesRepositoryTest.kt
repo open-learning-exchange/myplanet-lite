@@ -80,7 +80,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun downloadPdfToCache_success_writesFile() = runBlocking<Unit> {
+    fun downloadPdfToCache_success_writesFile() = runTest {
         val pdfContent = "dummy pdf content"
         server.enqueue(MockResponse().setResponseCode(200).setBody(pdfContent))
 
@@ -101,7 +101,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun downloadPdfToCache_non2xx_returnsNull() = runBlocking<Unit> {
+    fun downloadPdfToCache_non2xx_returnsNull() = runTest {
         server.enqueue(MockResponse().setResponseCode(404))
 
         val cacheDir = File(System.getProperty("java.io.tmpdir")!!, "test-cache")
