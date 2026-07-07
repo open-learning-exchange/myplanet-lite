@@ -4,11 +4,15 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.json.JSONObject
+import java.io.File
 import org.junit.After
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 
+@RunWith(RobolectricTestRunner::class)
 class DashboardResourcesRepositoryTest {
     private lateinit var server: MockWebServer
     private lateinit var repository: DashboardResourcesRepository
@@ -70,5 +74,40 @@ class DashboardResourcesRepositoryTest {
         assertEquals("abcd", result.getOrThrow().decodeToString())
         assertEquals(0, progressValues.first())
         assertEquals(100, progressValues.last())
+    }
+
+    @Test
+    fun downloadPdfToCache_success_writesFile() = runBlocking<Unit> {
+        val pdfContent = "dummy pdf content"
+        server.enqueue(MockResponse().setResponseCode(200).setBody(pdfContent))
+
+        val cacheDir = File(System.getProperty("java.io.tmpdir")!!, "test-cache")
+        cacheDir.mkdirs()
+
+        val result = repository.downloadPdfToCache(server.url("/test.pdf").toString(), "Basic auth", cacheDir)
+
+        org.junit.Assert.assertNotNull(result)
+        org.junit.Assert.assertTrue(result!!.exists())
+        org.junit.Assert.assertEquals(pdfContent, result.readText())
+
+        val request = server.takeRequest()
+        org.junit.Assert.assertNull(request.getHeader("Authorization"))
+
+        result.delete()
+        cacheDir.delete()
+    }
+
+    @Test
+    fun downloadPdfToCache_non2xx_returnsNull() = runBlocking<Unit> {
+        server.enqueue(MockResponse().setResponseCode(404))
+
+        val cacheDir = File(System.getProperty("java.io.tmpdir")!!, "test-cache")
+        cacheDir.mkdirs()
+
+        val result = repository.downloadPdfToCache(server.url("/test.pdf").toString(), "Basic auth", cacheDir)
+
+        org.junit.Assert.assertNull(result)
+
+        cacheDir.delete()
     }
 }
