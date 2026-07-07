@@ -28,13 +28,12 @@ import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.lite.SurveyWizardActivity
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardOutboxDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepositoryProvider
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.dashboard.SurveyStatus
@@ -66,7 +65,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
     private var savedSurveyRevisions: Map<String, String?> = emptyMap()
     private var outboxEntries: List<OutboxEntry> = emptyList()
 
-    private val repository = DashboardSurveysRepository()
+    private val repository = DashboardSurveysRepositoryProvider.getRepository()
     private var baseUrl: String? = null
     private var sessionCookie: String? = null
     private var credentials: StoredCredentials? = null
@@ -672,9 +671,6 @@ private class SurveyOutboxAdapter(
         holder.bind(getItem(position))
     }
 
-    fun submit(newItems: List<OutboxEntry>) {
-        submitList(newItems)
-    }
 
     class OutboxViewHolder(
         itemView: View,
