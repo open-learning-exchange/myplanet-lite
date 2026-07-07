@@ -94,7 +94,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         client = OkHttpClient.Builder().build(),
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     )
-    private val actionsRepository = DashboardNewsActionsRepository()
+    private val actionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
     @androidx.annotation.VisibleForTesting
     internal val items = mutableListOf<DashboardNewsItem>()
     private val commentCounts = mutableMapOf<String, Int>()

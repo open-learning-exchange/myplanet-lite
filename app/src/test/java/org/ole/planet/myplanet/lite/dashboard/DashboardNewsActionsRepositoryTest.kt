@@ -7,6 +7,8 @@ import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import kotlinx.coroutines.Dispatchers
 import org.junit.Before
 import org.junit.Test
 
@@ -19,7 +21,7 @@ class DashboardNewsActionsRepositoryTest {
     fun setup() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        repository = DashboardNewsActionsRepository()
+        repository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
     }
 
     @After

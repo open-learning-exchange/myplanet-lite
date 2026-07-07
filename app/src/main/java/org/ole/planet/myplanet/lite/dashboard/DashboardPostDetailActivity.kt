@@ -78,7 +78,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
         client = OkHttpClient.Builder().build(),
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     )
-    private val actionsRepository = DashboardNewsActionsRepository()
+    private val actionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
     private val composerRepository = VoicesComposerRepository(
         client = OkHttpClient.Builder().build(),
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
