@@ -14,9 +14,17 @@ import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import org.ole.planet.myplanet.lite.util.MarkdownUtils
+import java.io.File
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
@@ -74,7 +82,7 @@ class DashboardCoursesRepository(
                     .post(payload.toRequestBody(mediaType))
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         response.body.string()
                         throw IOException("Unexpected response ${response.code}")
@@ -109,7 +117,7 @@ class DashboardCoursesRepository(
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
 
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         val responseBody = response.body.string()
                         if (response.code == 404) {
@@ -175,7 +183,7 @@ class DashboardCoursesRepository(
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
 
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         val responseBody = response.body.string()
                         if (response.isSuccessful) {
                             val updatedRev = runCatching {
@@ -241,7 +249,7 @@ class DashboardCoursesRepository(
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
 
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         val responseBody = response.body.string()
                         if (response.isSuccessful) {
                             val updatedRev = runCatching {
@@ -297,7 +305,7 @@ class DashboardCoursesRepository(
                         .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                         .build()
 
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
                             throw IOException("Unexpected response ${response.code}")
@@ -354,7 +362,7 @@ class DashboardCoursesRepository(
                     .build()
 
                 val docs = withContext(Dispatchers.IO) {
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
                             throw IOException("Unexpected response ${response.code}")
@@ -413,7 +421,7 @@ class DashboardCoursesRepository(
                     .build()
 
                 val docs = withContext(Dispatchers.IO) {
-                    client.newCall(request).execute().use { response ->
+                    client.newCall(request).await().use { response ->
                         if (!response.isSuccessful) {
                             response.body.string()
                             throw IOException("Unexpected response ${response.code}")
@@ -458,7 +466,7 @@ class DashboardCoursesRepository(
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
 
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     val responseBody = response.body.string()
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
@@ -502,7 +510,7 @@ class DashboardCoursesRepository(
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
 
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -553,7 +561,7 @@ class DashboardCoursesRepository(
                     .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
                     .build()
 
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -596,7 +604,7 @@ class DashboardCoursesRepository(
                         }
                     }
                     .build()
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -640,7 +648,7 @@ class DashboardCoursesRepository(
                         }
                     }
                     .build()
-                client.newCall(request).execute().use { response ->
+                client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
                     }
@@ -845,4 +853,164 @@ class DashboardCoursesRepository(
 
     @JsonClass(generateAdapter = true)
     data class AllDocsRow(val doc: CourseDocument? = null)
+
+    data class DownloadResource(
+        val id: String,
+        val filename: String
+    )
+
+    private fun buildServerResourceUrl(base: String, resourceId: String, filename: String): String? {
+        val normalizedBase = base.trim().trimEnd('/').takeIf { it.isNotEmpty() } ?: return null
+        val parsed = normalizedBase.toHttpUrlOrNull() ?: return null
+        return parsed.newBuilder()
+            .addPathSegment("db")
+            .addPathSegment("resources")
+            .addPathSegment(resourceId)
+            .addPathSegment(filename)
+            .build()
+            .toString()
+    }
+
+    suspend fun estimateResourcesSize(
+        base: String,
+        creds: StoredCredentials,
+        resources: List<DownloadResource>
+    ): Long = withContext(dispatcher) {
+        coroutineScope {
+            resources.map { resource ->
+                async {
+                    val url = buildServerResourceUrl(base, resource.id, resource.filename) ?: return@async 0L
+                    val requestBuilder = Request.Builder()
+                        .url(url)
+                        .head()
+                    if (url.startsWith("https://", ignoreCase = true)) {
+                        requestBuilder.header("Authorization", Credentials.basic(creds.username, creds.password))
+                    }
+                    val request = requestBuilder.build()
+                    runCatching {
+                        client.newCall(request).await().use { response ->
+                            response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+                        }
+                    }.getOrDefault(0L)
+                }
+            }.awaitAll().sum()
+        }
+    }
+
+    suspend fun estimateMarkdownImagesSize(
+        base: String,
+        creds: StoredCredentials,
+        sources: List<String>
+    ): Long = withContext(dispatcher) {
+        val authHeader = Credentials.basic(creds.username, creds.password)
+        coroutineScope {
+            sources.map { source ->
+                async {
+                    val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@async 0L
+                    val requestBuilder = Request.Builder()
+                        .url(url)
+                        .head()
+                    if (url.startsWith("https://", ignoreCase = true)) {
+                        requestBuilder.header("Authorization", authHeader)
+                    }
+                    val request = requestBuilder.build()
+                    runCatching {
+                        client.newCall(request).await().use { response ->
+                            response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+                        }
+                    }.getOrDefault(0L)
+                }
+            }.awaitAll().sum()
+        }
+    }
+
+    suspend fun downloadCourseResources(
+        base: String,
+        creds: StoredCredentials,
+        resources: List<DownloadResource>,
+        markdownImageSources: List<String>,
+        getResourceTarget: (String, String) -> File,
+        getMarkdownTarget: (String) -> File,
+        onProgress: (Pair<Int, Int>) -> Unit
+    ): Boolean = withContext(dispatcher) {
+        val totalItems = resources.size + markdownImageSources.size
+        if (totalItems == 0) {
+            onProgress(0 to 0)
+            return@withContext true
+        }
+        var downloaded = 0
+        val progressMutex = Mutex()
+        val authHeader = Credentials.basic(creds.username, creds.password)
+
+        coroutineScope {
+            val resourceJobs = resources.map { resource ->
+                async {
+                    val url = buildServerResourceUrl(base, resource.id, resource.filename) ?: return@async false
+                    val target = getResourceTarget(resource.id, resource.filename)
+                    target.parentFile?.mkdirs()
+                    val requestBuilder = Request.Builder()
+                        .url(url)
+                    if (url.startsWith("https://", ignoreCase = true)) {
+                        requestBuilder.header("Authorization", authHeader)
+                    }
+                    val request = requestBuilder.build()
+                    val success = runCatching {
+                        client.newCall(request).await().use { response ->
+                            if (!response.isSuccessful) return@use false
+                            val body = response.body
+                            body.byteStream().use { input ->
+                                target.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            true
+                        }
+                    }.getOrDefault(false)
+                    if (!success) return@async false
+                    progressMutex.withLock {
+                        downloaded += 1
+                        onProgress(downloaded to totalItems)
+                    }
+                    true
+                }
+            }
+
+            val markdownJobs = markdownImageSources.map { source ->
+                async {
+                    val resolvedUrl = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@async true
+                    val target = getMarkdownTarget(source)
+                    target.parentFile?.mkdirs()
+                    val requestBuilder = Request.Builder()
+                        .url(resolvedUrl)
+                    if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
+                        requestBuilder.header("Authorization", authHeader)
+                    }
+                    val request = requestBuilder.build()
+                    runCatching {
+                        client.newCall(request).await().use { response ->
+                            if (!response.isSuccessful) return@use false
+                            response.body.byteStream().use { input ->
+                                target.outputStream().use { output ->
+                                    input.copyTo(output)
+                                }
+                            }
+                            true
+                        }
+                    }.getOrDefault(false)
+                    progressMutex.withLock {
+                        downloaded += 1
+                        onProgress(downloaded to totalItems)
+                    }
+                    true
+                }
+            }
+
+            val resourceResults = resourceJobs.awaitAll()
+            // Wait for markdown jobs to complete
+            markdownJobs.awaitAll()
+
+            // Return false if any resource download failed
+            !resourceResults.contains(false)
+        }
+    }
 }

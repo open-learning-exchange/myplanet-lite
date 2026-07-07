@@ -4,15 +4,18 @@ import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import java.io.File
 import java.io.IOException
 import java.net.URLEncoder
 import kotlinx.coroutines.CoroutineDispatcher
+import java.util.regex.Pattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import okhttp3.RequestBody.Companion.toRequestBody
 import okio.Buffer
 import org.json.JSONArray
@@ -53,7 +56,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
                     .put("privateFor", JSONObject().put($$"$exists", false))
 
                 if (searchQuery.isNotBlank()) {
-                    selectorJson.put("title", JSONObject().put($$"$regex", "(?i)$searchQuery"))
+                    selectorJson.put("title", JSONObject().put($$"$regex", "(?i)" + Pattern.quote(searchQuery)))
                 }
 
                 mediaTypeFilter?.takeIf { it.isNotBlank() }?.let { type ->
@@ -414,7 +417,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
         selectorJson.put($$"$or", orArray)
 
         if (searchQuery.isNotBlank()) {
-            selectorJson.put("title", JSONObject().put($$"$regex", "(?i)$searchQuery"))
+            selectorJson.put("title", JSONObject().put($$"$regex", "(?i)" + Pattern.quote(searchQuery)))
         }
 
         mediaTypeFilter?.takeIf { it.isNotBlank() }?.let { type ->
@@ -453,6 +456,44 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
         }
     }
 
+
+
+    private fun saveToTempFile(response: Response, cacheDir: File): File? {
+        val body = response.body
+        val file = File.createTempFile("course_resource_", ".pdf", cacheDir)
+        body.byteStream().use { input ->
+            file.outputStream().use { output ->
+                input.copyTo(output)
+            }
+        }
+        return file
+    }
+
+    suspend fun downloadPdfToCache(url: String, authHeader: String?, cacheDir: File): File? {
+        return withContext(Dispatchers.IO) {
+            runCatching {
+                val parsedUri = android.net.Uri.parse(url)
+                if (parsedUri.scheme == "file") {
+                    val localFile = File(parsedUri.path.orEmpty())
+                    if (localFile.exists()) {
+                        return@withContext localFile
+                    }
+                }
+                val request = Request.Builder()
+                    .url(url)
+                    .apply {
+                        if (!authHeader.isNullOrBlank() && url.startsWith("https://", ignoreCase = true)) {
+                            addHeader("Authorization", authHeader)
+                        }
+                    }
+                    .build()
+                client.newCall(request).execute().use { response ->
+                    if (!response.isSuccessful) return@withContext null
+                    saveToTempFile(response, cacheDir)
+                }
+            }.getOrNull()
+        }
+    }
 
     @JsonClass(generateAdapter = true)
     data class ResourcesFindResponse(

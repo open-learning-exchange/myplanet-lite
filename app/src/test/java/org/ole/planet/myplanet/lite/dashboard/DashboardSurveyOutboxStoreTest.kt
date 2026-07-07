@@ -3,7 +3,7 @@ package org.ole.planet.myplanet.lite.dashboard
 import android.content.ContentValues
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
-import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
@@ -56,7 +57,7 @@ class DashboardSurveyOutboxStoreTest {
     )
 
     @Test
-    fun saveSubmission_savesSuccessfully() = runTest {
+    fun saveSubmission_savesSuccessfully() = runBlocking {
         val submission = createSubmission()
         val saved = store.saveSubmission(submission, "survey1", "Test Survey", "team1", "Team A")
 
@@ -71,13 +72,13 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun getPendingForTeam_returnsDescendingOrder() = runTest {
+    fun getPendingForTeam_returnsDescendingOrder() = runBlocking {
         val submission1 = createSubmission()
         val submission2 = createSubmission()
 
         store.saveSubmission(submission1, "survey1", "Survey 1", "team1", "Team A")
         // Delay to ensure created_at is different
-        kotlinx.coroutines.delay(10)
+        kotlinx.coroutines.delay(10.milliseconds)
         store.saveSubmission(submission2, "survey2", "Survey 2", "team1", "Team A")
 
         val pending = store.getPendingForTeam("team1")
@@ -88,7 +89,7 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun getPendingForTeam_ignoresInvalidPayload() = runTest {
+    fun getPendingForTeam_ignoresInvalidPayload() = runBlocking {
         val submission = createSubmission()
         store.saveSubmission(submission, "survey1", "Test Survey", "team1", "Team A")
 
@@ -110,7 +111,7 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun getPendingForTeam_filtersByTeam() = runTest {
+    fun getPendingForTeam_filtersByTeam() = runBlocking {
         val submission1 = createSubmission()
         val submission2 = createSubmission()
 
@@ -136,7 +137,7 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun getEntry_returnsCorrectEntry() = runTest {
+    fun getEntry_returnsCorrectEntry() = runBlocking {
         val submission = createSubmission()
         store.saveSubmission(submission, "survey1", "Test Survey", "team1", "Team A")
 
@@ -157,7 +158,7 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun deleteEntry_removesEntryAndReturnsTrue() = runTest {
+    fun deleteEntry_removesEntryAndReturnsTrue() = runBlocking {
         val submission = createSubmission()
         store.saveSubmission(submission, "survey1", "Test Survey", "team1", "Team A")
 
@@ -176,7 +177,7 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun deleteEntry_withMultipleEntries_removesOnlySpecifiedEntry() = runTest {
+    fun deleteEntry_withMultipleEntries_removesOnlySpecifiedEntry() = runBlocking {
         val submission1 = createSubmission()
         val submission2 = createSubmission()
 
@@ -201,7 +202,7 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun deleteEntries_removesMultipleEntries() = runTest {
+    fun deleteEntries_removesMultipleEntries() = runBlocking {
         val submission1 = createSubmission()
         val submission2 = createSubmission()
         val submission3 = createSubmission()
@@ -223,7 +224,7 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun deleteEntries_benchmark() = runTest {
+    fun deleteEntries_benchmark() = runBlocking {
         val submission = createSubmission()
         for (i in 1..2000) {
             store.saveSubmission(submission, "survey$i", "Test Survey", "team1", "Team A")
@@ -239,7 +240,7 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun saveSubmission_handlesSerializationFailure() = runTest {
+    fun saveSubmission_handlesSerializationFailure() = runBlocking {
         // Just verify basic saving again, serialization failures would require a custom moshi or interceptor.
         val submission = createSubmission()
         val saved = store.saveSubmission(submission, null, null, null, null)
@@ -252,7 +253,7 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun saveSubmission_returnsFalseOnInsertFailure() = runTest {
+    fun saveSubmission_returnsFalseOnInsertFailure() = runBlocking {
         val submission = createSubmission()
         val spyDb = spy(store.writableDatabase)
         doReturn(-1L).`when`(spyDb).insert(any(), anyOrNull(), any())
