@@ -93,8 +93,16 @@ internal fun CreateVoiceActivity.showInsertLinkDialog(
 
     dialog.setOnShowListener {
         dialog.getButton(AlertDialog.BUTTON_POSITIVE)?.setOnClickListener {
-            val linkTitle = titleInput.text?.toString()?.trim().orEmpty()
-            val linkUrl = urlInput.text?.toString()?.trim().orEmpty()
+            val linkTitle =
+                titleInput.text
+                    ?.toString()
+                    ?.trim()
+                    .orEmpty()
+            val linkUrl =
+                urlInput.text
+                    ?.toString()
+                    ?.trim()
+                    .orEmpty()
             if (linkTitle.isBlank() || linkUrl.isBlank()) {
                 Toast
                     .makeText(

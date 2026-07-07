@@ -49,7 +49,10 @@ internal val CreateVoiceActivity.listContinuationWatcher: TextWatcher
             }
         }
 
-internal fun CreateVoiceActivity.handleListContinuation(editable: Editable, newlineIndex: Int) {
+internal fun CreateVoiceActivity.handleListContinuation(
+    editable: Editable,
+    newlineIndex: Int,
+) {
     if (newlineIndex <= 0 || newlineIndex > editable.length) {
         return
     }
