@@ -220,9 +220,16 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         private val downloadProgressByKey: Map<String, Int?>,
         private val onViewResource: (ResourceUi) -> Unit,
         private val onSecondaryAction: (ResourceUi) -> Unit
-    ) : RecyclerView.Adapter<ResourceExplorerAdapter.ResourceViewHolder>() {
+    ) : androidx.recyclerview.widget.ListAdapter<ResourceUi, ResourceExplorerAdapter.ResourceViewHolder>(
+        org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback(
+            areItemsTheSame = { old, new -> old.uniqueKey() == new.uniqueKey() },
+            getChangePayload = { _, _ -> Any() }
+        )
+    ) {
 
-        private val resources = initialResources.toMutableList()
+        init {
+            submitList(initialResources)
+        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ResourceViewHolder {
             val inflater = LayoutInflater.from(parent.context)
@@ -231,38 +238,29 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         }
 
         override fun onBindViewHolder(holder: ResourceViewHolder, position: Int) {
-            val item = resources[position]
+            val item = getItem(position)
             val key = item.uniqueKey()
             holder.bind(item, downloadProgressByKey[key], downloadProgressByKey.containsKey(key), onViewResource, onSecondaryAction)
         }
 
-        override fun getItemCount(): Int = resources.size
-
-        fun replaceResources(newResources: List<ResourceUi>) {
-            val oldSize = resources.size
-            resources.clear()
-            resources.addAll(newResources)
-            when {
-                oldSize == 0 && newResources.isNotEmpty() -> notifyItemRangeInserted(0, newResources.size)
-                newResources.isEmpty() && oldSize > 0 -> notifyItemRangeRemoved(0, oldSize)
-                else -> {
-                    val commonCount = minOf(oldSize, newResources.size)
-                    if (commonCount > 0) {
-                        notifyItemRangeChanged(0, commonCount)
-                    }
-                    if (oldSize > newResources.size) {
-                        notifyItemRangeRemoved(newResources.size, oldSize - newResources.size)
-                    } else if (newResources.size > oldSize) {
-                        notifyItemRangeInserted(oldSize, newResources.size - oldSize)
-                    }
-                }
+        override fun onBindViewHolder(holder: ResourceViewHolder, position: Int, payloads: MutableList<Any>) {
+            if (payloads.isNotEmpty()) {
+                val item = getItem(position)
+                val key = item.uniqueKey()
+                holder.bind(item, downloadProgressByKey[key], downloadProgressByKey.containsKey(key), onViewResource, onSecondaryAction)
+            } else {
+                super.onBindViewHolder(holder, position, payloads)
             }
         }
 
+        fun replaceResources(newResources: List<ResourceUi>) {
+            submitList(newResources.toList())
+        }
+
         fun notifyResourceChanged(item: ResourceUi) {
-            val index = resources.indexOfFirst { it.uniqueKey() == item.uniqueKey() }
+            val index = currentList.indexOfFirst { it.uniqueKey() == item.uniqueKey() }
             if (index >= 0) {
-                notifyItemChanged(index)
+                notifyItemChanged(index, Any())
             }
         }
 
