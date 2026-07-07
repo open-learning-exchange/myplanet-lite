@@ -25,6 +25,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies
 import org.ole.planet.myplanet.lite.profile.GenderTranslator
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
@@ -56,7 +57,7 @@ class DashboardTeamMemberProfileActivity : BaseActivity() {
     private var credentials: StoredCredentials? = null
     private var avatarLoader: DashboardAvatarLoader? = null
 
-    private val repository = DashboardTeamsRepository()
+    private val repository = DashboardTeamsDependencies.provideRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

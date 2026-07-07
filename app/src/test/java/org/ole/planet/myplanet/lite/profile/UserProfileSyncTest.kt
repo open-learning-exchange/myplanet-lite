@@ -7,6 +7,7 @@ import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.RecordedRequest
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -298,5 +299,64 @@ class UserProfileSyncTest {
     fun `clearProfile calls database clearProfile`() = runTest {
         userProfileSync.clearProfile()
         verify(mockDatabase).clearProfile()
+    }
+
+    @Test
+    fun `refreshProfile with server disconnect returns false`() = runTest {
+        mockWebServer.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
+        val baseUrl = mockWebServer.url("/").toString()
+        val result = userProfileSync.refreshProfile(baseUrl, "testuser", null)
+        assertFalse(result)
+    }
+
+    @Test
+    fun `refreshProfile with avatar server disconnect returns profile without avatar`() = runTest {
+        val jsonResponse = """
+            {
+                "name": "avataruser_disconnect",
+                "_attachments": {
+                    "img": {
+                        "content_type": "image/jpeg",
+                        "length": 100
+                    }
+                }
+            }
+        """.trimIndent()
+
+        val dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse {
+                return when (request.path) {
+                    "/db/_users/org.couchdb.user:avataruser_disconnect" -> {
+                        MockResponse().setResponseCode(200).setBody(jsonResponse)
+                    }
+                    "/db/_users/org.couchdb.user:avataruser_disconnect/img" -> {
+                        MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST)
+                    }
+                    else -> MockResponse().setResponseCode(404)
+                }
+            }
+        }
+        mockWebServer.dispatcher = dispatcher
+        val baseUrl = mockWebServer.url("/").toString()
+
+        val result = userProfileSync.refreshProfile(baseUrl, "avataruser_disconnect", null)
+
+        assertTrue(result)
+
+        val captor = argumentCaptor<UserProfile>()
+        verify(mockDatabase).saveProfile(captor.capture())
+
+        assertNull(captor.firstValue.avatarImage)
+    }
+
+    @Test
+    fun `refreshProfile with blank cookie does not add cookie header`() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
+        val baseUrl = mockWebServer.url("/").toString()
+
+        userProfileSync.refreshProfile(baseUrl, "testuser", "   ")
+
+        val request = mockWebServer.takeRequest()
+        assertNull(request.getHeader("Cookie"))
     }
 }

@@ -32,7 +32,6 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
 import java.util.ArrayList
 import java.util.Locale
-import kotlin.math.max
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -95,7 +94,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         client = OkHttpClient.Builder().build(),
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     )
-    private val actionsRepository = DashboardNewsActionsRepository()
+    private val actionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
     @androidx.annotation.VisibleForTesting
     internal val items = mutableListOf<DashboardNewsItem>()
     private val commentCounts = mutableMapOf<String, Int>()
