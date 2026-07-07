@@ -249,6 +249,10 @@ class CreateVoiceActivity : BaseActivity() {
         }
     }
 
+    private fun transformMarkdownForPreview(markdown: String): String {
+        return transformMarkdownForPreviewContent(markdown)
+    }
+
 
     private suspend fun initializeSession() {
         val context = applicationContext

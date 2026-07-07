@@ -40,11 +40,11 @@ internal fun CreateVoiceActivity.updatePreview(text: String) {
         createVoicePreviewText.alpha = 1f
         trimmed
     }
-    val previewSource = transformMarkdownForPreview(content)
+    val previewSource = transformMarkdownForPreviewContent(content)
     markwon.setMarkdown(createVoicePreviewText, previewSource)
 }
 
-internal fun CreateVoiceActivity.transformMarkdownForPreview(markdown: String): String {
+internal fun CreateVoiceActivity.transformMarkdownForPreviewContent(markdown: String): String {
     var processed = markdown.replace("\n", "  \n")
     if (pendingImages.isNotEmpty()) {
         val pendingByFileName = pendingImages.values.associateBy { it.fileName }
