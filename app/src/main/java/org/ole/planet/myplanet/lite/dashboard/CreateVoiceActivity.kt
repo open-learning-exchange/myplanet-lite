@@ -42,6 +42,7 @@ import java.util.ArrayList
 import java.util.LinkedHashMap
 import java.util.LinkedHashSet
 import java.util.Locale
+import java.io.File
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -87,7 +88,7 @@ class CreateVoiceActivity : BaseActivity() {
         client = OkHttpClient.Builder().build(),
         moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
     )
-    private val newsActionsRepository = DashboardNewsActionsRepository()
+    private val newsActionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
     private val httpClient = OkHttpClient.Builder().build()
     private val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
     private val decodedBitmaps = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
@@ -640,6 +641,8 @@ class CreateVoiceActivity : BaseActivity() {
             .filter { derivePendingNormalizedKey(it) == normalizedKey }
             .map { it.id }
 
+        val filesToDelete = mutableListOf<File>()
+
         idsToRemove.forEach { id ->
             val removed = pendingImages.remove(id) ?: return@forEach
             decodedBitmaps.remove(id)?.let { bitmap ->
@@ -648,8 +651,16 @@ class CreateVoiceActivity : BaseActivity() {
                 }
             }
             removeImageMarkdownReferences(removed)
-            if (removed.file.exists()) {
-                removed.file.delete()
+            filesToDelete.add(removed.file)
+        }
+
+        if (filesToDelete.isNotEmpty()) {
+            lifecycleScope.launch(Dispatchers.IO) {
+                filesToDelete.forEach {
+                    if (it.exists()) {
+                        it.delete()
+                    }
+                }
             }
         }
 
@@ -666,10 +677,14 @@ class CreateVoiceActivity : BaseActivity() {
             extractPathFromMarkdown(pending.uploadedMarkdown).takeIf { !it.isNullOrBlank() }
         ).distinct()
 
-        candidates.forEach { candidate ->
-            val escaped = Regex.escape(candidate.trim())
-            val pattern = Regex("(?:^|\\n)!\\[[^\\]]*\\]\\((?:https?://[^)]+/)?(?:/?db/)?/?$escaped\\)\\n?")
-            updated = pattern.replace(updated, "\n")
+        if (candidates.isNotEmpty()) {
+            val combinedEscaped = candidates.joinToString("|") { Regex.escape(it.trim()) }
+            val pattern = Regex("(?:^|\\n)!\\[[^\\]]*\\]\\((?:https?://[^)]+/)?(?:/?db/)?/?(?:$combinedEscaped)\\)\\n?")
+            var previous: String
+            do {
+                previous = updated
+                updated = pattern.replace(updated, "\n")
+            } while (updated != previous)
         }
 
         updated = updated
