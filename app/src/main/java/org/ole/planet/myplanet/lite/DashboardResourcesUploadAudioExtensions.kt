@@ -357,6 +357,7 @@ internal fun DashboardResourcesPageFragment.handleAudioUploadSave(
         )
     }
 
+    dialog.dismiss()
     performResourceCreateAndUpload(
         payload = payload,
         fileExtension = "mp3",
@@ -365,7 +366,12 @@ internal fun DashboardResourcesPageFragment.handleAudioUploadSave(
         bytesProvider = bytesProvider,
         onSuccess = {
             Toast.makeText(requireContext(), getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()
-            dialog.dismiss()
+        },
+        onComplete = {
+            if (state.uri.authority == "${requireContext().packageName}.fileprovider") {
+                currentAudioFile?.delete()
+                currentAudioFile = null
+            }
         }
     )
 }
