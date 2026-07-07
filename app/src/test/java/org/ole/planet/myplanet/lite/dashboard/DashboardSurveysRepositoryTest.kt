@@ -346,4 +346,25 @@ class DashboardSurveysRepositoryTest {
 
         assertTrue(job.isCancelled)
     }
+
+    @Test
+    fun await_onCancellation_ignoresGeneralException() = runTest {
+        val mockCall = mock<Call>()
+
+        doThrow(RuntimeException("Cancel failed")).`when`(mockCall).cancel()
+
+        doAnswer {
+            null
+        }.`when`(mockCall).enqueue(any())
+
+        val job = launch {
+            mockCall.await()
+        }
+
+        delay(10)
+        job.cancel()
+        job.join()
+
+        assertTrue(job.isCancelled)
+    }
 }

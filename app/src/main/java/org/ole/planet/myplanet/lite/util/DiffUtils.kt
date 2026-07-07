@@ -14,4 +14,16 @@ object DiffUtils {
             override fun getChangePayload(oldItem: T, newItem: T): Any? = getChangePayload(oldItem, newItem)
         }
     }
+    fun <T : Any> calculateDiff(oldList: List<T>, newList: List<T>, itemCallback: DiffUtil.ItemCallback<T>): DiffUtil.DiffResult {
+        return DiffUtil.calculateDiff(object : DiffUtil.Callback() {
+            override fun getOldListSize(): Int = oldList.size
+            override fun getNewListSize(): Int = newList.size
+            override fun areItemsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                itemCallback.areItemsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+            override fun areContentsTheSame(oldItemPosition: Int, newItemPosition: Int): Boolean =
+                itemCallback.areContentsTheSame(oldList[oldItemPosition], newList[newItemPosition])
+            override fun getChangePayload(oldItemPosition: Int, newItemPosition: Int): Any? =
+                itemCallback.getChangePayload(oldList[oldItemPosition], newList[newItemPosition])
+        })
+    }
 }

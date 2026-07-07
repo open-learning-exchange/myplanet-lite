@@ -7,6 +7,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.File
 import java.io.IOException
 import java.net.URLEncoder
+import java.util.regex.Pattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
@@ -54,7 +55,7 @@ class DashboardResourcesRepository {
                     .put("privateFor", JSONObject().put($$"$exists", false))
 
                 if (searchQuery.isNotBlank()) {
-                    selectorJson.put("title", JSONObject().put($$"$regex", "(?i)$searchQuery"))
+                    selectorJson.put("title", JSONObject().put($$"$regex", "(?i)" + Pattern.quote(searchQuery)))
                 }
 
                 mediaTypeFilter?.takeIf { it.isNotBlank() }?.let { type ->
@@ -415,7 +416,7 @@ class DashboardResourcesRepository {
         selectorJson.put($$"$or", orArray)
 
         if (searchQuery.isNotBlank()) {
-            selectorJson.put("title", JSONObject().put($$"$regex", "(?i)$searchQuery"))
+            selectorJson.put("title", JSONObject().put($$"$regex", "(?i)" + Pattern.quote(searchQuery)))
         }
 
         mediaTypeFilter?.takeIf { it.isNotBlank() }?.let { type ->

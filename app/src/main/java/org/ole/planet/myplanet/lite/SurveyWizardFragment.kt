@@ -6,77 +6,28 @@
 
 package org.ole.planet.myplanet.lite
 
-import android.app.Activity
 import android.content.Intent
-import android.content.res.ColorStateList
-import android.graphics.Color
-import android.graphics.Rect
 import android.os.Bundle
-import android.text.InputType
-import android.view.KeyEvent
 import android.view.View
-import android.view.ViewGroup
-import android.view.inputmethod.EditorInfo
-import android.widget.ArrayAdapter
-import android.widget.AutoCompleteTextView
 import android.widget.Button
-import android.widget.CheckBox
-import android.widget.GridLayout
 import android.widget.LinearLayout
 import android.widget.ProgressBar
-import android.widget.RadioButton
-import android.widget.RadioGroup
 import android.widget.ScrollView
 import android.widget.TextView
 import android.widget.Toast
-import androidx.annotation.StringRes
-import androidx.appcompat.app.AppCompatDelegate
-import androidx.core.content.ContextCompat
 import androidx.core.os.BundleCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import com.google.android.material.button.MaterialButton
-import com.google.android.material.datepicker.MaterialDatePicker
-import com.google.android.material.textfield.TextInputEditText
-import com.google.android.material.textfield.TextInputLayout
-import com.squareup.moshi.Json
-import java.text.ParseException
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
-import kotlin.math.roundToInt
+import io.noties.markwon.Markwon
 import kotlinx.coroutines.launch
-import org.json.JSONObject
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionAnswer
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionParent
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionTeam
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyChoice
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
-import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
-import org.ole.planet.myplanet.lite.profile.GENDER_MALE
-import org.ole.planet.myplanet.lite.profile.GENDER_OTHER
-import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import org.ole.planet.myplanet.lite.profile.UserProfile
-import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.TranslatedQuestion
-import org.ole.planet.myplanet.lite.util.NetworkUtils
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import androidx.core.graphics.toColorInt
 
 class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
 
@@ -111,6 +62,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     internal var translatedDescription: String? = null
     internal val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
 
+    internal lateinit var markwon: Markwon
     internal lateinit var titleView: TextView
     internal lateinit var descriptionView: TextView
     internal lateinit var counterView: TextView
@@ -148,6 +100,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         super.onViewCreated(view, savedInstanceState)
         bindViews(view)
         setupInsets(view)
+        markwon = Markwon.builder(requireContext()).build()
 
         translationNoticeView.setOnClickListener {
             startActivity(Intent(requireContext(), PrivacyPolicyActivity::class.java))
@@ -168,9 +121,9 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             return
         }
 
-        titleView.text = survey.name.orEmpty()
+        setSurveyTitle(survey.name.orEmpty())
         val description = survey.description?.takeIf { it.isNotBlank() }
-        descriptionView.text = description.orEmpty()
+        setSurveyDescription(description.orEmpty())
         descriptionView.isVisible = !description.isNullOrBlank()
 
         progressBar.max = steps.size
@@ -194,7 +147,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         progressBar.max = steps.size
         counterView.text = getString(R.string.dashboard_survey_wizard_step_counter, index + 1, steps.size)
         updateDescriptionVisibility(index)
-        questionBodyView.text = when (step) {
+        val questionBody = when (step) {
             WizardStep.Basics -> getString(R.string.dashboard_survey_wizard_participant_basics_title)
             WizardStep.Names -> getString(R.string.dashboard_survey_wizard_names_title)
             WizardStep.BirthDate -> getString(R.string.dashboard_survey_wizard_birthdate_title)
@@ -203,6 +156,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             is WizardStep.Question -> questionTranslations[step.questionIndex]?.body
                 ?: step.question.body.orEmpty()
         }
+        setQuestionBody(questionBody)
         questionContainer.removeAllViews()
         val (renderedView, collector) = renderStep(step)
         questionContainer.addView(renderedView)

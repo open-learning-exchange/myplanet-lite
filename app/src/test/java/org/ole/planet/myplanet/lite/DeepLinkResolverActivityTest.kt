@@ -2,7 +2,6 @@ package org.ole.planet.myplanet.lite
 
 import android.content.Intent
 import android.net.Uri
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
