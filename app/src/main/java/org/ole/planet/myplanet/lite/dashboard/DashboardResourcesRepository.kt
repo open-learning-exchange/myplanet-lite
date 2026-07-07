@@ -7,6 +7,7 @@ import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.File
 import java.io.IOException
 import java.net.URLEncoder
+import kotlinx.coroutines.CoroutineDispatcher
 import java.util.regex.Pattern
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -22,7 +23,7 @@ import org.json.JSONObject
 import org.ole.planet.myplanet.lite.util.BirthDateString
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
-class DashboardResourcesRepository {
+class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
 
     private val client: OkHttpClient = OkHttpClient.Builder().build()
     private val moshi: Moshi = Moshi.Builder()
@@ -42,7 +43,7 @@ class DashboardResourcesRepository {
         limit: Int = 1000,
         skip: Int = 0
     ): Result<List<ResourceDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -121,7 +122,7 @@ class DashboardResourcesRepository {
         password: String?,
         payload: JSONObject
     ): Result<JSONObject> {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -163,7 +164,7 @@ class DashboardResourcesRepository {
         resourceId: String,
         payload: JSONObject
     ): Result<JSONObject> {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -213,7 +214,7 @@ class DashboardResourcesRepository {
     suspend fun uploadResourceAttachment(
         request: UploadAttachmentRequest
     ): Result<JSONObject> {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             runCatching {
                 val normalizedBase = request.baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -254,7 +255,7 @@ class DashboardResourcesRepository {
         filename: String,
         onProgress: ((Int?) -> Unit)? = null
     ): Result<ByteArray> {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -319,7 +320,7 @@ class DashboardResourcesRepository {
     suspend fun fetchTeamResources(
         request: TeamResourcesRequest
     ): Result<List<ResourceDocument>> {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             runCatching {
                 val normalizedBase = request.baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {

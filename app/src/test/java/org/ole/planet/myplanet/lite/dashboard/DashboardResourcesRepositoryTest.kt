@@ -1,6 +1,8 @@
 package org.ole.planet.myplanet.lite.dashboard
 
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.json.JSONObject
@@ -17,11 +19,12 @@ class DashboardResourcesRepositoryTest {
     private lateinit var server: MockWebServer
     private lateinit var repository: DashboardResourcesRepository
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     @Before
     fun setup() {
         server = MockWebServer()
         server.start()
-        repository = DashboardResourcesRepository()
+        repository = DashboardResourcesRepository(UnconfinedTestDispatcher())
     }
 
     @After
@@ -30,7 +33,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun fetchCommunityResources_sendsCorrectSort() = runBlocking {
+    fun fetchCommunityResources_sendsCorrectSort() = runTest {
         server.enqueue(MockResponse().setBody("{\"docs\": []}"))
 
         repository.fetchCommunityResources(
@@ -54,7 +57,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun downloadResourceBytes_reportsProgress() = runBlocking {
+    fun downloadResourceBytes_reportsProgress() = runTest {
         server.enqueue(
             MockResponse()
                 .setBody("abcd")
@@ -77,7 +80,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun downloadPdfToCache_success_writesFile() = runBlocking<Unit> {
+    fun downloadPdfToCache_success_writesFile() = runTest {
         val pdfContent = "dummy pdf content"
         server.enqueue(MockResponse().setResponseCode(200).setBody(pdfContent))
 
@@ -98,7 +101,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun downloadPdfToCache_non2xx_returnsNull() = runBlocking<Unit> {
+    fun downloadPdfToCache_non2xx_returnsNull() = runTest {
         server.enqueue(MockResponse().setResponseCode(404))
 
         val cacheDir = File(System.getProperty("java.io.tmpdir")!!, "test-cache")
