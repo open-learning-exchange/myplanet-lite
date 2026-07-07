@@ -59,10 +59,11 @@ class CreateVoiceActivity : BaseActivity() {
     internal lateinit var createVoiceEditorLabel: TextView
     internal lateinit var markdownToolbar: LinearLayout
 
-    internal val repository = VoicesComposerRepository(
-        client = OkHttpClient.Builder().build(),
-        moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
-    )
+    internal val repository =
+        VoicesComposerRepository(
+            client = OkHttpClient.Builder().build(),
+            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+        )
     internal val newsActionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
     internal val httpClient = OkHttpClient.Builder().build()
     internal val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
@@ -253,7 +254,6 @@ class CreateVoiceActivity : BaseActivity() {
         return transformMarkdownForPreviewContent(markdown)
     }
 
-
     private suspend fun initializeSession() {
         val context = applicationContext
         baseUrl = getServerBaseUrl(context)
@@ -420,7 +420,6 @@ class CreateVoiceActivity : BaseActivity() {
         createVoiceSubmitButton.isEnabled = enabled
     }
 
-
     companion object {
         private const val PREVIEW_DEBOUNCE_MS = 150L
         internal const val MAX_HEADING_LEVEL = 6
@@ -438,6 +437,4 @@ class CreateVoiceActivity : BaseActivity() {
         const val EXTRA_TARGET_TEAM_ID = "extra_target_team_id"
         const val EXTRA_TARGET_TEAM_NAME = "extra_target_team_name"
     }
-
-
 }
