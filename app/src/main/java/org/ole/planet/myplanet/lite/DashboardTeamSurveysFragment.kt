@@ -21,19 +21,19 @@ import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.badge.BadgeDrawable
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
+import io.noties.markwon.Markwon
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.lite.SurveyWizardActivity
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardOutboxDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepositoryProvider
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.dashboard.SurveyStatus
@@ -65,7 +65,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
     private var savedSurveyRevisions: Map<String, String?> = emptyMap()
     private var outboxEntries: List<OutboxEntry> = emptyList()
 
-    private val repository = DashboardSurveysRepository()
+    private val repository = DashboardSurveysRepositoryProvider.getRepository()
     private var baseUrl: String? = null
     private var sessionCookie: String? = null
     private var credentials: StoredCredentials? = null
@@ -563,19 +563,20 @@ private class SurveyItemsAdapter(
         private val description: TextView = itemView.findViewById(R.id.dashboardSurveyDescription)
         private val statusIcon: android.widget.ImageView = itemView.findViewById(R.id.dashboardSurveyStatusIcon)
         private val metadata: TextView = itemView.findViewById(R.id.dashboardSurveyMetadata)
+        private val markwon: Markwon = Markwon.builder(itemView.context).build()
         private val downloadButton: com.google.android.material.button.MaterialButton =
             itemView.findViewById(R.id.dashboardSurveyDownloadButton)
 
         fun bind(uiModel: SurveyItemUiModel) {
             val document = uiModel.document
-            title.text = document.name.orEmpty()
+            markwon.setMarkdown(title, document.name.orEmpty().replace("\n", "  \n"))
             val detail = document.description?.takeIf { it.isNotBlank() }
             if (detail.isNullOrBlank()) {
                 description.isVisible = false
                 description.text = ""
             } else {
                 description.isVisible = true
-                description.text = detail
+                markwon.setMarkdown(description, detail.replace("\n", "  \n"))
             }
 
             val created = formatCreatedDate(document.createdDate)
@@ -608,7 +609,7 @@ private class SurveyItemsAdapter(
 
             var status = statusStore.getStatus(document.id) ?: SurveyStatus.NEW
             statusIcon.setImageResource(status.iconRes)
-            itemView.setOnClickListener {
+            val openSurvey = {
                 if (status != SurveyStatus.COMPLETED) {
                     statusStore.markViewed(document.id)
                     status = SurveyStatus.VIEWED
@@ -617,6 +618,9 @@ private class SurveyItemsAdapter(
                 }
                 onSurveySelected(document)
             }
+            itemView.setOnClickListener { openSurvey() }
+            title.setOnClickListener { openSurvey() }
+            description.setOnClickListener { openSurvey() }
             itemView.setOnLongClickListener {
                 statusStore.markCompleted(document.id)
                 status = SurveyStatus.COMPLETED
@@ -667,9 +671,6 @@ private class SurveyOutboxAdapter(
         holder.bind(getItem(position))
     }
 
-    fun submit(newItems: List<OutboxEntry>) {
-        submitList(newItems)
-    }
 
     class OutboxViewHolder(
         itemView: View,

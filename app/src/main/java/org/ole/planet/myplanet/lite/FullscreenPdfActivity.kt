@@ -40,8 +40,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 class FullscreenPdfActivity : AppCompatActivity() {
-
-    private val httpClient = OkHttpClient()
+    private val repository = org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository()
     private var pdfRenderer: PdfRenderer? = null
     private var fileDescriptor: ParcelFileDescriptor? = null
     private var pdfFile: File? = null
@@ -71,7 +70,7 @@ class FullscreenPdfActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             progressView.visibility = View.VISIBLE
-            val file = downloadPdf(pdfUrl, authHeader)
+            val file = repository.downloadPdfToCache(pdfUrl, authHeader, cacheDir)
             if (file == null) {
                 Toast.makeText(
                     this@FullscreenPdfActivity,
@@ -124,43 +123,6 @@ class FullscreenPdfActivity : AppCompatActivity() {
 
     private fun showSystemBars() {
         WindowInsetsControllerCompat(window, window.decorView).show(WindowInsetsCompat.Type.systemBars())
-    }
-
-    private fun saveToTempFile(response: Response): File? {
-        val body = response.body
-        val file = File.createTempFile("course_resource_", ".pdf", cacheDir)
-        body.byteStream().use { input ->
-            file.outputStream().use { output ->
-                input.copyTo(output)
-            }
-        }
-        return file
-    }
-
-    private suspend fun downloadPdf(url: String, authHeader: String?): File? {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val parsedUri = android.net.Uri.parse(url)
-                if (parsedUri.scheme == "file") {
-                    val localFile = File(parsedUri.path.orEmpty())
-                    if (localFile.exists()) {
-                        return@withContext localFile
-                    }
-                }
-                val request = Request.Builder()
-                    .url(url)
-                    .apply {
-                        if (!authHeader.isNullOrBlank() && url.startsWith("https://", ignoreCase = true)) {
-                            addHeader("Authorization", authHeader)
-                        }
-                    }
-                    .build()
-                httpClient.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext null
-                    saveToTempFile(response)
-                }
-            }.getOrNull()
-        }
     }
 
     private fun resolveAuthHeader(): String? {

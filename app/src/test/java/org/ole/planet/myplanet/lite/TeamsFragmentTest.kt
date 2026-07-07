@@ -3,8 +3,9 @@ package org.ole.planet.myplanet.lite
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.fragment.app.testing.launchFragmentInContainer
-import androidx.test.ext.junit.runners.AndroidJUnit4
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.annotation.Config
@@ -36,7 +37,6 @@ import org.mockito.Mockito.`when`
 import kotlinx.coroutines.runBlocking
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
 import org.ole.planet.myplanet.lite.dashboard.MembershipDocument
-import org.ole.planet.myplanet.lite.dashboard.TeamDocument
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [33], instrumentedPackages = ["androidx.loader.content"])
@@ -48,6 +48,7 @@ class TeamsFragmentTest {
 
     @Before
     fun setUp() {
+        org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies.resetForTesting()
         Dispatchers.setMain(testDispatcher)
         mockPrefs = FakeSharedPreferences()
         SecurePreferencesProvider.injectedPreferences = mockPrefs
@@ -62,6 +63,7 @@ class TeamsFragmentTest {
 
     @After
     fun tearDown() {
+        org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies.resetForTesting()
         SecurePreferencesProvider.injectedPreferences = null
         ProfileCredentialsStore.setSessionCredentials(null)
         AuthDependencies.resetForTesting()
@@ -124,9 +126,7 @@ class TeamsFragmentTest {
                     )).thenReturn(result)
                 }
 
-                val repoField = TeamsFragment::class.java.getDeclaredField("repository")
-                repoField.isAccessible = true
-                repoField.set(fragment, mockRepository)
+                org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies.overrideRepository(mockRepository)
 
                 // Set baseUrl properly in the preferences (it might be failing because we used KEY_SERVER_URL directly instead of what getServerBaseUrl uses)
                 val baseField = TeamsFragment::class.java.getDeclaredField("baseUrl")

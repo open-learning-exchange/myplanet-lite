@@ -1033,21 +1033,7 @@ class MyPlanetLite : BaseActivity() {
         val payload = buildLoginActivityPayload(username) ?: return
 
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    val mediaType = "application/json; charset=utf-8".toMediaType()
-                    val body = payload.toString().toRequestBody(mediaType)
-                    val requestBuilder = Request.Builder()
-                        .url(requestUrl)
-                        .post(body)
-                    sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                        requestBuilder.addHeader("Cookie", cookie)
-                    }
-                    connectivityClient.newCall(requestBuilder.build()).execute().use { _ ->
-                        // Intentionally ignoring response
-                    }
-                }
-            }
+            serverConnectivityRepository.recordLoginActivity(requestUrl, payload, sessionCookie)
         }
     }
 
