@@ -11,6 +11,7 @@ import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
@@ -22,12 +23,13 @@ class ServerConfigurationRepository(
     private val moshi: Moshi = Moshi.Builder()
         .addLast(KotlinJsonAdapterFactory())
         .build(),
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
 
     private val responseAdapter = moshi.adapter(ConfigurationResponse::class.java)
 
     suspend fun fetchConfiguration(baseUrl: String?): Result<ConfigurationDocument?> {
-        return withContext(Dispatchers.IO) {
+        return withContext(dispatcher) {
             runCatching {
                 val normalized = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() }
                     ?: throw IOException("Missing base url")

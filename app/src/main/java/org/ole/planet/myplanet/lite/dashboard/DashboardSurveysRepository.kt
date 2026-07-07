@@ -16,7 +16,6 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.IOException
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -35,7 +34,7 @@ import kotlin.coroutines.resumeWithException
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 class DashboardSurveysRepository(
-    private val client: OkHttpClient = OkHttpClient.Builder().build(),
+    private val client: OkHttpClient,
     private val moshi: Moshi = Moshi.Builder()
         .add(FlexibleSurveyJsonAdapter())
         .addLast(KotlinJsonAdapterFactory())
@@ -347,7 +346,7 @@ suspend fun Call.await(): Response {
         continuation.invokeOnCancellation {
             try {
                 cancel()
-            } catch (ex: CancellationException) {
+            } catch (ex: Exception) {
                 // Ignore cancel exception
             }
         }
