@@ -80,7 +80,7 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
-    fun createAndUploadResourceSequence_success() { runBlocking {
+    fun createAndUploadResourceSequence_success() = runTest {
         server.enqueue(MockResponse().setResponseCode(201).setBody("{\"id\": \"res1\", \"rev\": \"1-abc\"}")) // Create
         server.enqueue(MockResponse().setResponseCode(200).setBody("{\"id\": \"res1\", \"rev\": \"2-def\"}")) // Update
         server.enqueue(MockResponse().setResponseCode(201).setBody("{\"ok\": true}")) // Upload
@@ -93,6 +93,7 @@ class DashboardResourcesRepositoryTest {
             credentials = null,
             payload = payload,
             fileExtension = "pdf",
+            mediaType = "pdf",
             mimeType = "application/pdf",
             bytes = byteArrayOf(1, 2, 3),
             teamId = "team-abc",
@@ -113,7 +114,7 @@ class DashboardResourcesRepositoryTest {
         assertEquals("PUT", updateReq.method)
         val updateBody = JSONObject(updateReq.body.readUtf8())
         assertEquals("res1.pdf", updateBody.getString("filename"))
-        assertEquals("application/pdf", updateBody.getString("mediaType"))
+        assertEquals("pdf", updateBody.getString("mediaType"))
 
         // Verify Upload Request
         val uploadReq = server.takeRequest()
@@ -129,10 +130,10 @@ class DashboardResourcesRepositoryTest {
         assertEquals("resourceLink", teamBody.getString("docType"))
         assertEquals("res1", teamBody.getString("resourceId"))
         assertEquals("team-abc", teamBody.getString("teamId"))
-    } }
+    }
 
     @Test
-    fun createAndUploadResourceSequence_ignoresTeamLinkFailure() { runBlocking {
+    fun createAndUploadResourceSequence_ignoresTeamLinkFailure() = runTest {
         server.enqueue(MockResponse().setResponseCode(201).setBody("{\"id\": \"res1\", \"rev\": \"1-abc\"}")) // Create
         server.enqueue(MockResponse().setResponseCode(200).setBody("{\"id\": \"res1\", \"rev\": \"2-def\"}")) // Update
         server.enqueue(MockResponse().setResponseCode(201).setBody("{\"ok\": true}")) // Upload
@@ -145,6 +146,7 @@ class DashboardResourcesRepositoryTest {
             credentials = null,
             payload = payload,
             fileExtension = "pdf",
+            mediaType = "pdf",
             mimeType = "application/pdf",
             bytes = byteArrayOf(1, 2, 3),
             teamId = "team-abc",
@@ -158,7 +160,7 @@ class DashboardResourcesRepositoryTest {
         server.takeRequest() // Update
         server.takeRequest() // Upload
         server.takeRequest() // Team link
-    } }
+    }
     fun downloadPdfToCache_success_writesFile() = runTest {
         val pdfContent = "dummy pdf content"
         server.enqueue(MockResponse().setResponseCode(200).setBody(pdfContent))

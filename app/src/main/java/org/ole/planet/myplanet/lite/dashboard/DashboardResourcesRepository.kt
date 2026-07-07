@@ -210,6 +210,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
         val credentials: StoredCredentials?,
         val payload: JSONObject,
         val fileExtension: String,
+        val mediaType: String,
         val mimeType: String,
         val bytes: ByteArray,
         val teamId: String?,
@@ -240,7 +241,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
                     .put("_id", resourceId)
                     .put("_rev", creationRevision)
                     .put("filename", renamedFileName)
-                    .put("mediaType", request.mimeType)
+                    .put("mediaType", request.mediaType)
 
                 val updateResponse = updateResourceDocument(
                     baseUrl = request.baseUrl,

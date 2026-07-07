@@ -52,7 +52,15 @@ internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
         var selectedEndMs = sourceDurationMs
         var selectedHeightForEstimate = allowedHeights.getOrElse(defaultIndex) { defaultHeight }
         var selectedRotationDegrees = 0f
-        var isUploaded = false
+        var uploadInProgress = false
+        val isTemporaryFileProviderUri = uri.authority == "${context.packageName}.fileprovider"
+        val deleteTemporaryResourceFile = {
+            if (isTemporaryFileProviderUri) {
+                runCatching {
+                    File(context.cacheDir, "shared_images/${uri.lastPathSegment}").delete()
+                }
+            }
+        }
 
         val content = LinearLayout(context).apply {
             orientation = LinearLayout.VERTICAL
@@ -403,6 +411,8 @@ internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
                                 rotationDegrees = selectedRotationDegrees
                             )
                         }
+                        uploadInProgress = true
+                        dialog.dismiss()
                         performResourceCreateAndUpload(
                             payload = payload,
                             fileExtension = "mp4",
@@ -410,9 +420,11 @@ internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
                             credentials = credentials,
                             bytesProvider = bytesProvider,
                             onSuccess = {
-                                isUploaded = true
                                 Toast.makeText(context, getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()
-                                dialog.dismiss()
+                            },
+                            onComplete = {
+                                uploadInProgress = false
+                                deleteTemporaryResourceFile()
                             }
                         )
                     }
@@ -422,10 +434,8 @@ internal fun DashboardResourcesPageFragment.showVideoMetadataPopup(uri: Uri) {
                     previewHandler.removeCallbacks(previewMonitor)
                     previewPlayer.release()
                     showPreviewOverlayButton()
-                    if (uri.authority == "${context.packageName}.fileprovider" || isUploaded) {
-                        runCatching {
-                            File(context.cacheDir, "shared_images/${uri.lastPathSegment}").delete()
-                        }
+                    if (!uploadInProgress) {
+                        deleteTemporaryResourceFile()
                     }
                 }
             }

@@ -16,7 +16,8 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
     mimeType: String,
     credentials: org.ole.planet.myplanet.lite.profile.StoredCredentials?,
     bytesProvider: suspend () -> ByteArray?,
-    onSuccess: () -> Unit
+    onSuccess: () -> Unit,
+    onComplete: () -> Unit = {}
 ) {
     val context = requireContext()
     val planetCode = DashboardServerPreferences.getServerCode(context).orEmpty()
@@ -28,13 +29,15 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
         }
     }
     DashboardResourcesMediaUtils.applyWebCompatibleResourceDefaults(payload)
-    payload.put("mediaType", DashboardResourcesMediaUtils.normalizeResourceMediaType(mimeType))
+    val normalizedMediaType = DashboardResourcesMediaUtils.normalizeResourceMediaType(mimeType)
+    payload.put("mediaType", normalizedMediaType)
     val now = System.currentTimeMillis()
     payload.put("createdDate", now)
     payload.put("updatedDate", now)
     val resolvedBaseUrl = DashboardServerPreferences.getServerBaseUrl(context)
     if (resolvedBaseUrl.isNullOrBlank()) {
         Toast.makeText(context, getString(R.string.dashboard_voices_no_server), Toast.LENGTH_SHORT).show()
+        onComplete()
         return
     }
     setUploadLoadingVisible(true)
@@ -43,10 +46,10 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
         if (bytes == null) {
             setUploadLoadingVisible(false)
             Toast.makeText(context, getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT).show()
+            onComplete()
             return@launch
         }
         val teamId = if (isTeamResourcesTab) DashboardTeamSelectionPreferences.getSelectedTeamId(context) else null
-        val normalizedMediaType = DashboardResourcesMediaUtils.normalizeResourceMediaType(mimeType)
         val result = repository.createAndUploadResourceSequence(
             DashboardResourcesRepository.CreateAndUploadResourceRequest(
                 baseUrl = resolvedBaseUrl,
@@ -54,7 +57,8 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
                 credentials = credentials,
                 payload = payload,
                 fileExtension = fileExtension,
-                mimeType = normalizedMediaType,
+                mediaType = normalizedMediaType,
+                mimeType = mimeType,
                 bytes = bytes,
                 teamId = teamId,
                 planetCode = planetCode
@@ -63,6 +67,7 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
         result.onSuccess {
             setUploadLoadingVisible(false)
             onSuccess()
+            onComplete()
         }.onFailure { error ->
             setUploadLoadingVisible(false)
             val errorMessage = if (error is DashboardResourcesRepository.InvalidServerResponseException) {
@@ -71,6 +76,7 @@ internal fun DashboardResourcesPageFragment.performResourceCreateAndUpload(
                 error.message ?: getString(R.string.course_wizard_play_error)
             }
             Toast.makeText(context, errorMessage, Toast.LENGTH_SHORT).show()
+            onComplete()
         }
     }
 }
