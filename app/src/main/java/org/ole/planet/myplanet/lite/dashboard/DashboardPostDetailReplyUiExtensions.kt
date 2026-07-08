@@ -6,11 +6,7 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.content.Intent
 import android.net.Uri
-import android.text.Editable
-import android.text.TextUtils
-import android.text.TextWatcher
 import android.view.MotionEvent
 import android.view.inputmethod.InputMethodManager
 import android.widget.ImageView
@@ -24,31 +20,14 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.COLLAPSED_REPLY_MIN_LINES
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.EXPANDED_REPLY_MIN_LINES
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
-import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import java.util.ArrayList
-import java.util.LinkedHashMap
-import java.util.LinkedHashSet
-import java.util.Locale
 import kotlin.math.max
-import kotlin.math.min
 
 internal fun DashboardPostDetailActivity.setupBackNavigation() {
     backCallback =
@@ -110,7 +89,7 @@ internal fun DashboardPostDetailActivity.setupReplyInputListeners() {
     replyInputLayout.helperText = null
     replyInput.doAfterTextChanged { text ->
         updateReplyPreview(replyPreview, text?.toString())
-            updateReplyActionAvailabilityInternal(text)
+        updateReplyActionAvailabilityInternal(text)
     }
     replyInput.addTextChangedListener(replyListContinuationWatcher)
     replyInput.setOnFocusChangeListener { _, hasFocus ->
@@ -156,17 +135,17 @@ internal fun DashboardPostDetailActivity.setupReplyMarkdownToolbar() {
     val replyImage: MaterialButton = findViewById(R.id.dashboardReplyMarkdownImage)
 
     replyBold.setOnClickListener {
-            applyWrappedFormattingInternal("**", "**", "", placeCursorInsideWhenNoSelection = true)
+        applyWrappedFormattingInternal("**", "**", "", placeCursorInsideWhenNoSelection = true)
     }
     replyItalic.setOnClickListener {
-            applyWrappedFormattingInternal("*", "*", "", placeCursorInsideWhenNoSelection = true)
+        applyWrappedFormattingInternal("*", "*", "", placeCursorInsideWhenNoSelection = true)
     }
     replyHeading.setOnClickListener { applyReplyHeadingFormatting() }
     replyBullet.setOnClickListener { applyLinePrefix("- ") }
     replyNumbered.setOnClickListener { applyLinePrefix("1. ") }
     replyQuote.setOnClickListener { applyLinePrefix("> ") }
     replyLink.setOnClickListener {
-            applyWrappedFormattingInternal("[", "](https://)", "", true)
+        applyWrappedFormattingInternal("[", "](https://)", "", true)
     }
     replyImage.setOnClickListener {
         handleReplyInsertImageClick()

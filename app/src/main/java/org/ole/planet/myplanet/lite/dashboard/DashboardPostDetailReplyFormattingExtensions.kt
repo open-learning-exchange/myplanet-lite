@@ -6,48 +6,11 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.content.Intent
-import android.net.Uri
 import android.text.Editable
-import android.text.TextUtils
 import android.text.TextWatcher
-import android.view.MotionEvent
-import android.view.inputmethod.InputMethodManager
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
-import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.widget.AppCompatImageView
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.isVisible
-import androidx.core.widget.doAfterTextChanged
-import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.MAX_HEADING_LEVEL
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.NUMBERED_LIST_REGEX
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.RESOURCES_MARKDOWN_REGEX
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
-import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import java.util.ArrayList
-import java.util.LinkedHashMap
-import java.util.LinkedHashSet
-import java.util.Locale
 import kotlin.math.max
 import kotlin.math.min
 
@@ -132,43 +95,44 @@ internal fun DashboardPostDetailActivity.applyLinePrefix(prefix: String) {
 }
 
 internal val DashboardPostDetailActivity.replyListContinuationWatcher: TextWatcher
-    get() = object : TextWatcher {
-        override fun beforeTextChanged(
-            s: CharSequence?,
-            start: Int,
-            count: Int,
-            after: Int,
-        ) = Unit
+    get() =
+        object : TextWatcher {
+            override fun beforeTextChanged(
+                s: CharSequence?,
+                start: Int,
+                count: Int,
+                after: Int,
+            ) = Unit
 
-        override fun onTextChanged(
-            s: CharSequence?,
-            start: Int,
-            before: Int,
-            count: Int,
-        ) {
-            if (isHandlingReplyListContinuation) {
-                return
+            override fun onTextChanged(
+                s: CharSequence?,
+                start: Int,
+                before: Int,
+                count: Int,
+            ) {
+                if (isHandlingReplyListContinuation) {
+                    return
+                }
+                if (count <= 0 || s == null) {
+                    return
+                }
+                val inserted = s.subSequence(start, start + count)
+                val newlineOffset = inserted.lastIndexOf('\n')
+                if (newlineOffset >= 0) {
+                    replyPendingNewlineIndex = start + newlineOffset
+                }
             }
-            if (count <= 0 || s == null) {
-                return
-            }
-            val inserted = s.subSequence(start, start + count)
-            val newlineOffset = inserted.lastIndexOf('\n')
-            if (newlineOffset >= 0) {
-                replyPendingNewlineIndex = start + newlineOffset
+
+            override fun afterTextChanged(s: Editable?) {
+                if (isHandlingReplyListContinuation) {
+                    return
+                }
+                val newlineIndex = replyPendingNewlineIndex ?: return
+                replyPendingNewlineIndex = null
+                s ?: return
+                handleReplyListContinuation(s, newlineIndex)
             }
         }
-
-        override fun afterTextChanged(s: Editable?) {
-            if (isHandlingReplyListContinuation) {
-                return
-            }
-            val newlineIndex = replyPendingNewlineIndex ?: return
-            replyPendingNewlineIndex = null
-            s ?: return
-            handleReplyListContinuation(s, newlineIndex)
-        }
-    }
 
 internal fun DashboardPostDetailActivity.handleReplyListContinuation(
     editable: Editable,

@@ -7,33 +7,18 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.app.Activity
-import android.content.Intent
 import android.graphics.Rect
-import android.net.Uri
 import android.os.Bundle
-import android.text.Editable
-import android.text.TextUtils
-import android.text.TextWatcher
-import android.view.MotionEvent
 import android.view.TouchDelegate
 import android.view.View
-import android.view.inputmethod.InputMethodManager
 import android.widget.EditText
-import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
-import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.os.BundleCompat
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.children
-import androidx.core.view.isVisible
-import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
@@ -42,28 +27,15 @@ import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
-import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import java.util.ArrayList
 import java.util.LinkedHashMap
-import java.util.LinkedHashSet
-import java.util.Locale
-import kotlin.math.max
-import kotlin.math.min
 
 internal fun transformCommentMarkdownForDisplay(markdown: String): String = markdown.replace("\n", "  \n")
 

@@ -6,51 +6,23 @@
 
 package org.ole.planet.myplanet.lite.dashboard
 
-import android.content.Intent
 import android.net.Uri
-import android.text.Editable
-import android.text.TextUtils
-import android.text.TextWatcher
-import android.view.MotionEvent
-import android.view.inputmethod.InputMethodManager
-import android.widget.ImageView
-import android.widget.LinearLayout
-import android.widget.TextView
 import android.widget.Toast
-import androidx.activity.OnBackPressedCallback
-import androidx.appcompat.widget.AppCompatImageView
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.core.view.isVisible
-import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.KEY_DEVICE_ANDROID_ID
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.KEY_DEVICE_CUSTOM_DEVICE_NAME
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.KEY_SERVER_CODE
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.KEY_SERVER_PARENT_CODE
-import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
-import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
-import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import java.util.ArrayList
 import java.util.LinkedHashMap
-import java.util.LinkedHashSet
-import java.util.Locale
-import kotlin.math.max
-import kotlin.math.min
 
 internal fun DashboardPostDetailActivity.attemptReply(message: String) {
     if (message.isBlank() && pendingReplyImages.isEmpty()) {
@@ -100,7 +72,7 @@ internal fun DashboardPostDetailActivity.attemptReply(message: String) {
             )
         result
             .onSuccess {
-                    Toast.makeText(this@attemptReply, R.string.dashboard_post_reply_success, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@attemptReply, R.string.dashboard_post_reply_success, Toast.LENGTH_SHORT).show()
                 replyInput.setText("")
                 clearPendingReplyImages()
                 updateReplyPreview(replyPreview, "")
@@ -108,7 +80,7 @@ internal fun DashboardPostDetailActivity.attemptReply(message: String) {
                 collapseReplyComposerIfExpanded()
                 loadComments(postId)
             }.onFailure {
-                    Toast.makeText(this@attemptReply, R.string.dashboard_post_reply_error, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this@attemptReply, R.string.dashboard_post_reply_error, Toast.LENGTH_SHORT).show()
             }
         setReplyPosting(false)
     }
@@ -164,7 +136,7 @@ internal fun DashboardPostDetailActivity.attemptUpdateComment(message: String) {
         result
             .onSuccess {
                 Toast
-                        .makeText(this@attemptUpdateComment, R.string.dashboard_comment_edit_success, Toast.LENGTH_SHORT)
+                    .makeText(this@attemptUpdateComment, R.string.dashboard_comment_edit_success, Toast.LENGTH_SHORT)
                     .show()
                 exitCommentEditMode(clearFields = true)
                 hideReplyKeyboard()
@@ -172,7 +144,7 @@ internal fun DashboardPostDetailActivity.attemptUpdateComment(message: String) {
                 loadComments(headerItem.id)
             }.onFailure {
                 Toast
-                        .makeText(this@attemptUpdateComment, R.string.dashboard_comment_edit_error, Toast.LENGTH_SHORT)
+                    .makeText(this@attemptUpdateComment, R.string.dashboard_comment_edit_error, Toast.LENGTH_SHORT)
                     .show()
             }
         setReplyPosting(false)
