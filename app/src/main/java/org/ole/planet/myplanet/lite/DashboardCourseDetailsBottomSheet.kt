@@ -90,6 +90,9 @@ class DashboardCourseDetailsBottomSheet : BottomSheetDialogFragment() {
         progressBar.visibility = View.GONE
 
         bindDescription(courseId, courseDescription, descriptionView, imagesContainer)
+        if (courseDescription.isNotBlank()) {
+            recordCourseDescriptionVisit(courseId, courseTitle)
+        }
 
         bindSteps(steps, currentStep, stepsContainer)
 

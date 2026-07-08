@@ -48,6 +48,7 @@ class CourseWizardActivity : BaseActivity() {
     var baseUrl: String? = null
     var currentIndex: Int = 0
     var courseId: String? = null
+    var courseTitle: String = ""
     var credentials: StoredCredentials? = null
     private lateinit var stepPositionView: TextView
     private lateinit var stepTitleView: TextView
@@ -120,6 +121,7 @@ class CourseWizardActivity : BaseActivity() {
 
     private fun parseIntentData(savedInstanceState: Bundle?): Pair<String, Int> {
         val courseTitle = intent.getStringExtra(EXTRA_TITLE).orEmpty()
+        this.courseTitle = courseTitle
         courseId = intent.getStringExtra(EXTRA_COURSE_ID)
         val startIndex = intent.getIntExtra(EXTRA_START_STEP, 0)
         baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)

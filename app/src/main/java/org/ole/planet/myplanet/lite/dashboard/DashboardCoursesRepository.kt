@@ -750,7 +750,7 @@ class DashboardCoursesRepository(
         @param:Json(name = "_id") val id: String?,
         val courseTitle: String?,
         val description: String?,
-        val cover: String? = null,
+        @param:Json(name = "coverFileName") val cover: String? = null,
         val steps: List<CourseStep> = emptyList(),
     )
 

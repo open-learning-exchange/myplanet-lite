@@ -197,6 +197,36 @@ class ServerConnectivityRepositoryTest {
     }
 
     @Test
+    fun recordResourceActivity_postsPayloadWithBasicAuth() = runBlocking {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200))
+        val baseUrl = mockWebServer.url("/db/resource_activities").toString()
+        val payload = JSONObject().apply { put("resourceId", "resource-1") }
+
+        repository.recordResourceActivity(baseUrl, payload, "Basic abc123")
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/db/resource_activities", request.path)
+        assertEquals("Basic abc123", request.headers["Authorization"])
+        assertEquals("{\"resourceId\":\"resource-1\"}", request.body.readUtf8())
+    }
+
+    @Test
+    fun recordCourseActivity_postsPayloadWithCookie() = runBlocking {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200))
+        val baseUrl = mockWebServer.url("/db/course_activities").toString()
+        val payload = JSONObject().apply { put("courseId", "course-1") }
+
+        repository.recordCourseActivity(baseUrl, payload, "AuthSession=test-cookie")
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/db/course_activities", request.path)
+        assertEquals("AuthSession=test-cookie", request.headers["Cookie"])
+        assertEquals("{\"courseId\":\"course-1\"}", request.body.readUtf8())
+    }
+
+    @Test
     fun recordLoginActivity_ignoresServerError_doesNotThrow() = runBlocking {
         mockWebServer.enqueue(MockResponse().setResponseCode(500))
         val baseUrl = mockWebServer.url("/login_activities").toString()

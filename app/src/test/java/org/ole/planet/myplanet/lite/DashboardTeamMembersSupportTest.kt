@@ -19,7 +19,6 @@ import org.ole.planet.myplanet.lite.databinding.ItemTeamMemberBinding
 import org.ole.planet.myplanet.lite.dashboard.TeamMemberDetails
 import org.junit.Assert.assertNotNull
 import io.mockk.every
-import io.mockk.any as mockkAny
 import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkObject
@@ -66,15 +65,15 @@ class DashboardTeamMembersSupportTest {
 
     @Before
     fun setUp() {
-val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
-        every { mockSharedPreferences.getString(mockkAny(), mockkAny()) } returns "en"
-
-        mockkObject(SecurePreferencesProvider)
-        every { SecurePreferencesProvider.getServerPreferences(mockkAny()) } returns mockSharedPreferences
-
         context = ApplicationProvider.getApplicationContext<Context>().apply {
             setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight)
         }
+
+        val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
+        every { mockSharedPreferences.getString("language", "en") } returns "en"
+
+        mockkObject(SecurePreferencesProvider)
+        every { SecurePreferencesProvider.getServerPreferences(context) } returns mockSharedPreferences
 
         val lifecycleOwner = mock<LifecycleOwner>()
         val lifecycle = LifecycleRegistry(lifecycleOwner)

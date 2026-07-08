@@ -11,6 +11,7 @@ import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import org.json.JSONObject
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -22,12 +23,14 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.auth.AuthService
 import org.ole.planet.myplanet.lite.auth.UserCredentials
+import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows
 import org.robolectric.shadows.ShadowNetworkCapabilities
+import java.util.concurrent.TimeUnit
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
@@ -215,6 +218,63 @@ class SplashScreenTest {
             assertNotNull("Expected nextIntent to not be null for online", nextIntent)
             assertEquals(DashboardActivity::class.java.name, nextIntent?.component?.className)
             assertEquals(false, nextIntent?.getBooleanExtra(DashboardActivity.EXTRA_OFFLINE_MODE, false))
+            Shadows.shadowOf(Looper.getMainLooper()).idle()
+        }
+    }
+
+    @Test
+    fun `test splash screen records login activity when remembered session restores online`() {
+        val baseUrl = mockWebServer.url("/").toString()
+        val passwordKey = ProfileCredentialsStore.getPasswordKey("testuser")
+        mockPrefs
+            .edit()
+            .putString("server_url", baseUrl)
+            .putBoolean(MyPlanetLite.KEY_REMEMBER_CREDENTIALS, true)
+            .putString(MyPlanetLite.KEY_REMEMBERED_USERNAME, "testuser")
+            .putString(passwordKey, "secret")
+            .putString("server_code", "server-1")
+            .putString("server_parent_code", "parent-1")
+            .putString("device_android_id", "android-1")
+            .putString("device_custom_device_name", "Classroom Tablet")
+            .commit()
+        val mockAuth = MockAuthService()
+        mockAuth.storedToken = "AuthSession=test-cookie"
+        AuthDependencies.overrideAuthService(mockAuth)
+
+        UserProfileDatabase.getInstance(context).saveProfile(createTestUserProfile())
+        setNetworkState(true)
+
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
+        mockWebServer.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody("{\"_id\":\"org.couchdb.user:testuser\",\"name\":\"testuser\",\"roles\":[]}")
+        )
+        mockWebServer.enqueue(MockResponse().setResponseCode(201).setBody("{\"ok\":true}"))
+
+        ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
+            val nextIntent = waitForNextIntent(scenario)
+            assertNotNull("Expected nextIntent to not be null for online", nextIntent)
+            assertEquals(DashboardActivity::class.java.name, nextIntent?.component?.className)
+
+            assertEquals("/db/configurations/_all_docs", mockWebServer.takeRequest(1, TimeUnit.SECONDS)?.requestUrl?.encodedPath)
+            assertEquals("/db/_users/org.couchdb.user:testuser", mockWebServer.takeRequest(1, TimeUnit.SECONDS)?.requestUrl?.encodedPath)
+            val activityRequest = mockWebServer.takeRequest(1, TimeUnit.SECONDS)
+            assertNotNull("Expected login activity request", activityRequest)
+            assertEquals("POST", activityRequest?.method)
+            assertEquals("/db/login_activities", activityRequest?.requestUrl?.encodedPath)
+            assertEquals("AuthSession=test-cookie", activityRequest?.getHeader("Cookie"))
+
+            val payload = JSONObject(activityRequest?.body?.readUtf8().orEmpty())
+            assertEquals("testuser", payload.getString("user"))
+            assertEquals("login", payload.getString("type"))
+            assertEquals(0, payload.getInt("logoutTime"))
+            assertEquals("server-1", payload.getString("createdOn"))
+            assertEquals("parent-1", payload.getString("parentCode"))
+            assertEquals("android-1", payload.getString("androidId"))
+            assertTrue(payload.getString("customDeviceName").isNotBlank())
+            assertTrue(payload.get("loginTime") is Number)
+
             Shadows.shadowOf(Looper.getMainLooper()).idle()
         }
     }
