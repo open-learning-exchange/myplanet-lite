@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-19
@@ -11,9 +11,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import androidx.core.content.FileProvider
-import java.io.File
-import java.io.IOException
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -21,6 +18,9 @@ import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.ole.planet.myplanet.lite.R
+import java.io.File
+import java.io.IOException
+import java.util.concurrent.TimeUnit
 
 class PostShareHelper(
     private val context: Context,
@@ -28,7 +28,6 @@ class PostShareHelper(
     private val sessionCookieProvider: () -> String?,
     private val serverNameProvider: () -> String?,
 ) {
-
     private val client: OkHttpClient get() = Companion.client
 
     suspend fun sharePost(
@@ -42,14 +41,18 @@ class PostShareHelper(
         val shareText = buildShareText(author, sanitizedMessage)
         val serverName = serverNameProvider()?.takeIf { it.isNotBlank() }
         val title = buildShareTitle(serverName)
-        val combinedText = listOf(title, shareText)
-            .filter { it.isNotBlank() }
-            .joinToString(separator = "\n\n")
-        val combinedHtmlText = listOf(title, htmlMessage ?: shareText)
-            .filter { it.isNotBlank() }
-            .joinToString(separator = "\n\n")
-        val combinedHtml = combinedHtmlText.takeIf { it.isNotBlank() }
-            ?.let { toHtml(it) }
+        val combinedText =
+            listOf(title, shareText)
+                .filter { it.isNotBlank() }
+                .joinToString(separator = "\n\n")
+        val combinedHtmlText =
+            listOf(title, htmlMessage ?: shareText)
+                .filter { it.isNotBlank() }
+                .joinToString(separator = "\n\n")
+        val combinedHtml =
+            combinedHtmlText
+                .takeIf { it.isNotBlank() }
+                ?.let { toHtml(it) }
         val imageUris = downloadImages(imagePaths)
         withContext(Dispatchers.Main) {
             val hasImages = imageUris.isNotEmpty()
@@ -65,9 +68,10 @@ class PostShareHelper(
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     if (multipleImages) {
                         putParcelableArrayListExtra(Intent.EXTRA_STREAM, ArrayList(imageUris))
-                        clipData = ClipData.newUri(context.contentResolver, "shared_image", imageUris.first()).apply {
-                            imageUris.drop(1).forEach { addItem(ClipData.Item(it)) }
-                        }
+                        clipData =
+                            ClipData.newUri(context.contentResolver, "shared_image", imageUris.first()).apply {
+                                imageUris.drop(1).forEach { addItem(ClipData.Item(it)) }
+                            }
                     } else {
                         val first = imageUris.first()
                         putExtra(Intent.EXTRA_STREAM, first)
@@ -82,74 +86,87 @@ class PostShareHelper(
         }
     }
 
-    private fun buildShareText(author: String?, message: String?): String {
+    private fun buildShareText(
+        author: String?,
+        message: String?,
+    ): String {
         val trimmedMessage = message?.trim().orEmpty()
-        val combined = buildString {
-            if (!author.isNullOrBlank()) {
-                append(author.trim())
-                if (trimmedMessage.isNotEmpty()) {
-                    append("\n\n")
+        val combined =
+            buildString {
+                if (!author.isNullOrBlank()) {
+                    append(author.trim())
+                    if (trimmedMessage.isNotEmpty()) {
+                        append("\n\n")
+                    }
                 }
-            }
-            append(trimmedMessage)
-        }.trim()
+                append(trimmedMessage)
+            }.trim()
         return combined.ifBlank { context.getString(R.string.dashboard_share_post_fallback) }
     }
 
     private fun buildShareTitle(serverName: String?): String {
-        val resolvedServer = serverName?.trim().takeUnless { it.isNullOrEmpty() }
-            ?: context.getString(R.string.dashboard_share_post_server_fallback)
+        val resolvedServer =
+            serverName?.trim().takeUnless { it.isNullOrEmpty() }
+                ?: context.getString(R.string.dashboard_share_post_server_fallback)
         return context.getString(R.string.dashboard_share_post_title, resolvedServer)
     }
 
     private suspend fun downloadImages(imagePaths: List<String>): List<Uri> {
         val baseUrl = baseUrlProvider()
         val cookie = sessionCookieProvider()
-        val files = withContext(Dispatchers.IO) {
-            imagePaths.map { path ->
-                async {
-                    val url = resolveUrl(path, baseUrl) ?: return@async null
-                    downloadImageToCache(url, cookie)
-                }
-            }.awaitAll().filterNotNull()
-        }
+        val files =
+            withContext(Dispatchers.IO) {
+                imagePaths
+                    .map { path ->
+                        async {
+                            val url = resolveUrl(path, baseUrl) ?: return@async null
+                            downloadImageToCache(url, cookie)
+                        }
+                    }.awaitAll()
+                    .filterNotNull()
+            }
         return files.map { file ->
             FileProvider.getUriForFile(
                 context,
                 "${context.packageName}.fileprovider",
-                file
+                file,
             )
         }
     }
 
-    private suspend fun downloadImageToCache(url: String, cookie: String?): File? = withContext(Dispatchers.IO) {
-        try {
-            val requestBuilder = Request.Builder().url(url)
-            cookie?.takeIf { it.isNotBlank() }?.let { requestBuilder.addHeader("Cookie", it) }
-            client.newCall(requestBuilder.build()).execute().use { response ->
-                if (!response.isSuccessful) {
-                    return@withContext null
+    private suspend fun downloadImageToCache(
+        url: String,
+        cookie: String?,
+    ): File? =
+        withContext(Dispatchers.IO) {
+            try {
+                val requestBuilder = Request.Builder().url(url)
+                cookie?.takeIf { it.isNotBlank() }?.let { requestBuilder.addHeader("Cookie", it) }
+                client.newCall(requestBuilder.build()).execute().use { response ->
+                    if (!response.isSuccessful) {
+                        return@withContext null
+                    }
+                    val body = response.body
+                    val bytes = body.bytes()
+                    if (bytes.isEmpty()) {
+                        return@withContext null
+                    }
+                    val directory = File(context.cacheDir, "shared_images").apply { mkdirs() }
+                    val file = File.createTempFile("post_", ".jpg", directory)
+                    file.outputStream().use { stream ->
+                        stream.write(bytes)
+                    }
+                    file
                 }
-                val body = response.body
-                val bytes = body.bytes()
-                if (bytes.isEmpty()) {
-                    return@withContext null
-                }
-                val directory = File(context.cacheDir, "shared_images").apply { mkdirs() }
-                val file = File.createTempFile("post_", ".jpg", directory)
-                file.outputStream().use { stream ->
-                    stream.write(bytes)
-                }
-                file
+            } catch (error: IOException) {
+                null
             }
-        } catch (error: IOException) {
-            null
         }
-    }
 
     companion object {
         private val client by lazy {
-            OkHttpClient.Builder()
+            OkHttpClient
+                .Builder()
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(15, TimeUnit.SECONDS)
                 .build()
@@ -166,15 +183,26 @@ class PostShareHelper(
             }
             val withoutImages = IMAGE_MARKDOWN_REGEX.replace(raw, " ")
             val withoutImageUrls = IMAGE_URL_REGEX.replace(withoutImages, " ")
-            val withoutLinks = LINK_MARKDOWN_REGEX.replace(withoutImageUrls) { match ->
-                match.groupValues.getOrNull(1).orEmpty()
-            }
-            val withoutBold = BOLD_REGEX.replace(withoutLinks) { match ->
-                match.groups.filterNotNull().drop(1).firstOrNull()?.value ?: ""
-            }
-            val withoutItalics = ITALIC_REGEX.replace(withoutBold) { match ->
-                match.groups.filterNotNull().drop(1).firstOrNull()?.value ?: ""
-            }
+            val withoutLinks =
+                LINK_MARKDOWN_REGEX.replace(withoutImageUrls) { match ->
+                    match.groupValues.getOrNull(1).orEmpty()
+                }
+            val withoutBold =
+                BOLD_REGEX.replace(withoutLinks) { match ->
+                    match.groups
+                        .filterNotNull()
+                        .drop(1)
+                        .firstOrNull()
+                        ?.value ?: ""
+                }
+            val withoutItalics =
+                ITALIC_REGEX.replace(withoutBold) { match ->
+                    match.groups
+                        .filterNotNull()
+                        .drop(1)
+                        .firstOrNull()
+                        ?.value ?: ""
+                }
             val cleaned = withoutItalics.replace("\\s+".toRegex(), " ").trim()
             return cleaned.ifBlank { null }
         }
@@ -190,24 +218,52 @@ class PostShareHelper(
 
         fun toHtml(text: String): String {
             val escapedSource = android.text.Html.escapeHtml(text)
-            var html = LINK_MARKDOWN_REGEX.replace(escapedSource) { match ->
-                val label = android.text.Html.escapeHtml(match.groupValues.getOrNull(1)?.trim().orEmpty())
-                val url = android.text.Html.escapeHtml(match.groupValues.getOrNull(2)?.trim().orEmpty())
-                if (label.isEmpty()) return@replace url
-                "<a href=\"$url\">$label</a>"
-            }
-            html = BOLD_REGEX.replace(html) { matchResult ->
-                val boldText = matchResult.groups.filterNotNull().drop(1).firstOrNull()?.value ?: ""
-                "<b>$boldText</b>"
-            }
-            html = ITALIC_REGEX.replace(html) { matchResult ->
-                val italicText = matchResult.groups.filterNotNull().drop(1).firstOrNull()?.value ?: ""
-                "<i>$italicText</i>"
-            }
+            var html =
+                LINK_MARKDOWN_REGEX.replace(escapedSource) { match ->
+                    val label =
+                        android.text.Html.escapeHtml(
+                            match.groupValues
+                                .getOrNull(1)
+                                ?.trim()
+                                .orEmpty(),
+                        )
+                    val url =
+                        android.text.Html.escapeHtml(
+                            match.groupValues
+                                .getOrNull(2)
+                                ?.trim()
+                                .orEmpty(),
+                        )
+                    if (label.isEmpty()) return@replace url
+                    "<a href=\"$url\">$label</a>"
+                }
+            html =
+                BOLD_REGEX.replace(html) { matchResult ->
+                    val boldText =
+                        matchResult.groups
+                            .filterNotNull()
+                            .drop(1)
+                            .firstOrNull()
+                            ?.value ?: ""
+                    "<b>$boldText</b>"
+                }
+            html =
+                ITALIC_REGEX.replace(html) { matchResult ->
+                    val italicText =
+                        matchResult.groups
+                            .filterNotNull()
+                            .drop(1)
+                            .firstOrNull()
+                            ?.value ?: ""
+                    "<i>$italicText</i>"
+                }
             return html.replace("\n", "<br/>")
         }
 
-        private fun resolveUrl(path: String, baseUrl: String?): String? {
+        private fun resolveUrl(
+            path: String,
+            baseUrl: String?,
+        ): String? {
             val base = baseUrl?.trim()?.trimEnd('/') ?: return null
             if (base.isEmpty()) {
                 return null

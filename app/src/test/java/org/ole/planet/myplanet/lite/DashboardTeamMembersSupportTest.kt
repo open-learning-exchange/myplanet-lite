@@ -28,9 +28,12 @@ import org.junit.After
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.test.runTest
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
+import kotlinx.coroutines.test.runCurrent
 import org.junit.runner.RunWith
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -612,4 +615,85 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         assertNotNull(dialogBinding.inviteMembersList.adapter)
         assertNotNull(dialogBinding.inviteMembersList.layoutManager)
     }
+
+
+
+    @Test
+    fun testDashboardTeamMembersInviteDialogController_debounceSearch() = runTest {
+        val testDispatcher = StandardTestDispatcher(testScheduler)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+        context.setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight_NoActionBar)
+        val lifecycleOwner = mock<LifecycleOwner>()
+        val lifecycle = LifecycleRegistry(lifecycleOwner)
+        lifecycle.currentState = Lifecycle.State.RESUMED
+        whenever(lifecycleOwner.lifecycle).thenReturn(lifecycle)
+
+        val fragment = mock<Fragment> {
+            on { requireContext() } doReturn context
+            on { viewLifecycleOwner } doReturn lifecycleOwner
+            on { getString(any()) } doReturn "Mock Error"
+            on { getString(any(), any()) } doReturn "Mock Error with arg"
+        }
+
+        val dialogBinding = DialogInviteMembersBinding.inflate(LayoutInflater.from(context))
+
+        whenever(
+            repository.fetchAllUsers(any<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>())
+        ).thenReturn(Result.success(emptyList<UserDocument>()))
+
+        // Setup controller with custom lifecycleScope for the test
+            // Mock LifecycleCoroutineScope to provide our test dispatcher
+    val testScope = mock<androidx.lifecycle.LifecycleCoroutineScope> {
+        on { coroutineContext } doReturn testDispatcher
+    }
+        val controller = DashboardTeamMembersInviteDialogController(
+            fragment = fragment,
+            dialogBinding = dialogBinding,
+            repository = repository,
+            lifecycleScope = testScope,
+            avatarLoader = null,
+            base = "base",
+            creds = mock<StoredCredentials>(),
+            teamId = "teamId",
+            teamPlanetCode = "planet",
+            teamType = "type",
+            sessionCookie = "cookie",
+            serverPlanetCode = "server",
+            serverParentCode = "parent",
+            currentMembersProvider = { emptyList() },
+            onReload = {}
+        )
+
+        controller.show()
+
+        // Let the initial fetch run
+        runCurrent()
+        advanceTimeBy(100)
+
+        // Reset invocations so we can count the ones from searching
+        org.mockito.kotlin.clearInvocations(repository)
+        whenever(
+            repository.fetchAllUsers(any<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>())
+        ).thenReturn(Result.success(emptyList<UserDocument>()))
+
+        // Simulate typing
+        dialogBinding.inviteMembersSearchInput.setText("a")
+        runCurrent() // job launched, delay started
+        advanceTimeBy(100)
+
+        dialogBinding.inviteMembersSearchInput.setText("ab")
+        runCurrent() // job replaced, delay started
+        advanceTimeBy(100)
+
+        dialogBinding.inviteMembersSearchInput.setText("abc")
+        runCurrent() // job replaced, delay started
+
+        // Advance time to surpass debounce
+        advanceTimeBy(400)
+        runCurrent()
+
+        // Only one fetch should have happened (for "abc")
+        verify(repository, org.mockito.kotlin.times(1)).fetchAllUsers(any())
+    }
+
 }

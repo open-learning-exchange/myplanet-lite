@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-15
@@ -8,12 +8,10 @@ package org.ole.planet.myplanet.lite.dashboard
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.net.Uri
 import android.util.LruCache
 import android.view.View
 import android.widget.ImageView
-import java.io.File
-import java.io.IOException
+import androidx.core.net.toUri
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -21,49 +19,56 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import java.io.File
+import java.io.IOException
 
 class DashboardPostImageLoader(
     private val baseUrl: String,
     private val sessionCookie: String?,
     private val scope: CoroutineScope,
-    private val client: OkHttpClient = SharedBitmapDependencies.client
+    private val client: OkHttpClient = SharedBitmapDependencies.client,
 ) {
-
     private val cache = sharedCache
+    private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
 
-    fun bind(imageView: ImageView, imagePath: String, onResult: ((Boolean) -> Unit)? = null) {
+    fun bind(
+        imageView: ImageView,
+        imagePath: String,
+        onResult: ((Boolean) -> Unit)? = null,
+    ) {
         imageView.setImageDrawable(null)
-        val cacheKey = imagePath
-        val cached = cache.get(cacheKey)
+        val cached = cache.get(imagePath)
         if (cached != null) {
             imageView.setImageBitmap(cached)
             onResult?.invoke(true)
             return
         }
-        imageView.tag = cacheKey
+        imageView.tag = imagePath
         scope.launch {
-            val deferred = synchronized(inFlightRequests) {
-                inFlightRequests.getOrPut(cacheKey) {
-                    inFlightScope.async {
-                        runCatching { fetchImageBitmap(imagePath) }.getOrNull()
-                    }
-                }
-            }
-            val bitmap = try {
-                deferred.await()
-            } finally {
+            val deferred =
                 synchronized(inFlightRequests) {
-                    if (inFlightRequests[cacheKey] == deferred) {
-                        inFlightRequests.remove(cacheKey)
+                    inFlightRequests.getOrPut(imagePath) {
+                        scope.async(Dispatchers.IO) {
+                            runCatching { fetchImageBitmap(imagePath) }.getOrNull()
+                        }
                     }
                 }
-            }
-            if (imageView.tag != cacheKey) {
+            val bitmap =
+                try {
+                    deferred.await()
+                } finally {
+                    synchronized(inFlightRequests) {
+                        if (inFlightRequests[imagePath] == deferred) {
+                            inFlightRequests.remove(imagePath)
+                        }
+                    }
+                }
+            if (imageView.tag != imagePath) {
                 onResult?.invoke(bitmap != null)
                 return@launch
             }
             if (bitmap != null) {
-                cache.put(cacheKey, bitmap)
+                cache.put(imagePath, bitmap)
                 imageView.visibility = View.VISIBLE
                 imageView.setImageBitmap(bitmap)
                 onResult?.invoke(true)
@@ -77,15 +82,17 @@ class DashboardPostImageLoader(
 
     private fun fetchImageBitmap(imagePath: String): Bitmap? {
         val requestUrl = resolveUrl(imagePath) ?: return null
-        if (Uri.parse(requestUrl).scheme.equals("file", ignoreCase = true)) {
-            val path = Uri.parse(requestUrl).path ?: return null
+        if (requestUrl.toUri().scheme.equals("file", ignoreCase = true)) {
+            val path = requestUrl.toUri().path ?: return null
             val file = File(path)
             if (!file.exists()) return null
             return BitmapFactory.decodeFile(file.absolutePath)
         }
-        val requestBuilder = Request.Builder()
-            .url(requestUrl)
-            .get()
+        val requestBuilder =
+            Request
+                .Builder()
+                .url(requestUrl)
+                .get()
         sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
             requestBuilder.addHeader("Cookie", cookie)
         }
@@ -107,7 +114,7 @@ class DashboardPostImageLoader(
         if (trimmedPath.isEmpty()) {
             return null
         }
-        val uriScheme = Uri.parse(trimmedPath).scheme?.lowercase()
+        val uriScheme = trimmedPath.toUri().scheme?.lowercase()
         if (uriScheme == "http" || uriScheme == "https" || uriScheme == "file") {
             return trimmedPath
         }
@@ -116,21 +123,22 @@ class DashboardPostImageLoader(
             return null
         }
         val normalizedPath = trimmedPath.trimStart('/')
-        val finalPath = when {
-            normalizedPath.startsWith("db/") -> normalizedPath
-            else -> "db/$normalizedPath"
-        }
+        val finalPath =
+            when {
+                normalizedPath.startsWith("db/") -> normalizedPath
+                else -> "db/$normalizedPath"
+            }
         return "$normalizedBase/$finalPath"
     }
 
     private companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
-        private val inFlightScope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
-        private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
-        private val sharedCache = object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
-            override fun sizeOf(key: String, value: Bitmap): Int {
-                return value.byteCount
+        private val sharedCache =
+            object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
+                override fun sizeOf(
+                    key: String,
+                    value: Bitmap,
+                ): Int = value.byteCount
             }
-        }
     }
 }

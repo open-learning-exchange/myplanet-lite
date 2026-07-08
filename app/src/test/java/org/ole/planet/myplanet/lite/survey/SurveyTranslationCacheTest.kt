@@ -15,7 +15,6 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.spy
 import org.mockito.Mockito.verify
 import org.mockito.kotlin.any
-import org.mockito.kotlin.anyOrNull
 import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationCache
 import org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager
@@ -77,5 +76,28 @@ class SurveyTranslationCacheTest {
         }
 
         assert(optimizedTime <= originalTime) { "Optimization did not improve performance" }
+    }
+
+    @Test
+    fun `test saveTranslations compileStatement error path`() = runBlocking {
+        val mockDb = mock(SQLiteDatabase::class.java)
+        val context = ApplicationProvider.getApplicationContext<Context>()
+
+        val cache = spy(SurveyTranslationCache.getInstance(context))
+        doReturn(mockDb).whenever(cache).writableDatabase
+
+        whenever(mockDb.compileStatement(any())).thenThrow(RuntimeException("Compile Error"))
+
+        val translations = mapOf(1 to SurveyTranslationManager.TranslatedQuestion("body", listOf("a")))
+
+        assertThrows(RuntimeException::class.java) {
+            runBlocking {
+                cache.saveTranslations("survey1", "es", translations)
+            }
+        }
+
+        verify(mockDb).beginTransaction()
+        verify(mockDb).endTransaction()
+        verify(mockDb, never()).setTransactionSuccessful()
     }
 }

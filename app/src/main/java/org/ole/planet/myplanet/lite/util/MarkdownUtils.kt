@@ -5,6 +5,13 @@ import org.ole.planet.myplanet.lite.OfflineCourseStorage
 
 object MarkdownUtils {
 
+    private val EXTRACT_MARKDOWN_PATTERN = Regex("""!\[[^\]]*]\(([^)]+)\)""")
+    private val EXTRACT_HTML_PATTERN = Regex("""<img[^>]+src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+    private val RESOLVE_MARKDOWN_PATTERN = Regex("""!\[([^]]*)]\(([^)\s]+)(?:\s+"[^"]*")?\)""")
+    private val RESOLVE_HTML_PATTERN = Regex("""<img\b[^>]*>""", RegexOption.IGNORE_CASE)
+    private val SRC_ATTRIBUTE_PATTERN = Regex("""\bsrc\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
+    private val ALT_ATTRIBUTE_PATTERN = Regex("""\balt\s*=\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE)
+
     fun normalizeMarkdownImageSource(rawSource: String): String {
         var value = rawSource.trim()
         if (value.startsWith("<") && value.endsWith(">")) {
@@ -29,12 +36,10 @@ object MarkdownUtils {
     }
 
     fun extractImageSourcesFromText(text: String): List<String> {
-        val markdownPattern = Regex("""!\[[^\]]*]\(([^)]+)\)""")
-        val htmlPattern = Regex("""<img[^>]+src=["']([^"']+)["']""", RegexOption.IGNORE_CASE)
-        val fromMarkdown = markdownPattern.findAll(text)
+        val fromMarkdown = EXTRACT_MARKDOWN_PATTERN.findAll(text)
             .map { normalizeMarkdownImageSource(it.groupValues[1]) }
             .toList()
-        val fromHtml = htmlPattern.findAll(text)
+        val fromHtml = EXTRACT_HTML_PATTERN.findAll(text)
             .map { normalizeMarkdownImageSource(it.groupValues[1]) }
             .toList()
         return (fromMarkdown + fromHtml).filter { it.isNotBlank() }
@@ -92,26 +97,22 @@ object MarkdownUtils {
     ): String {
         val safeCourseId = courseId?.takeIf { it.isNotBlank() } ?: return markdown
         var resolved = markdown
-        val markdownPattern = Regex("""!\[([^]]*)]\(([^)\s]+)(?:\s+"[^"]*")?\)""")
-        resolved = markdownPattern.replace(resolved) { match ->
+        resolved = RESOLVE_MARKDOWN_PATTERN.replace(resolved) { match ->
             val alt = match.groupValues[1]
             val source = normalizeMarkdownImageSource(match.groupValues[2])
             val local = OfflineCourseStorage.localMarkdownImageUri(context, safeCourseId, source)
             val selected = local ?: resolveMarkdownSourceUrl(baseUrl, source) ?: source
             "![$alt]($selected)"
         }
-        val htmlPattern = Regex("""<img\b[^>]*>""", RegexOption.IGNORE_CASE)
-        val srcAttributePattern = Regex("""\bsrc\s*=\s*["']([^"']+)["']""", RegexOption.IGNORE_CASE)
-        val altAttributePattern = Regex("""\balt\s*=\s*["']([^"']*)["']""", RegexOption.IGNORE_CASE)
-        resolved = htmlPattern.replace(resolved) { match ->
+        resolved = RESOLVE_HTML_PATTERN.replace(resolved) { match ->
             val imageTag = match.value
             val source = normalizeMarkdownImageSource(
-                srcAttributePattern.find(imageTag)?.groupValues?.get(1).orEmpty()
+                SRC_ATTRIBUTE_PATTERN.find(imageTag)?.groupValues?.get(1).orEmpty()
             )
             if (source.isBlank()) {
                 return@replace imageTag
             }
-            val alt = altAttributePattern.find(imageTag)?.groupValues?.get(1).orEmpty()
+            val alt = ALT_ATTRIBUTE_PATTERN.find(imageTag)?.groupValues?.get(1).orEmpty()
             val local = OfflineCourseStorage.localMarkdownImageUri(context, safeCourseId, source)
             val selected = local ?: resolveMarkdownSourceUrl(baseUrl, source) ?: source
             "![$alt]($selected)"

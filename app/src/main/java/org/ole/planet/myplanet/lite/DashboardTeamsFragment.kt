@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-15
@@ -16,7 +16,6 @@ import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 
 class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) {
-
     private lateinit var emptyView: TextView
     private lateinit var teamContentContainer: FrameLayout
     private lateinit var voicesButton: ImageButton
@@ -26,7 +25,10 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
     private var selectedTeamName: String? = null
     private var currentSection: TeamSection = TeamSection.VOICES
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         emptyView = view.findViewById(R.id.teamsEmptyView)
         teamContentContainer = view.findViewById(R.id.teamContentContainer)
@@ -79,7 +81,8 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
             teamContentContainer.isVisible = false
             if (forceReload) {
                 childFragmentManager.findFragmentById(R.id.teamContentContainer)?.let { fragment ->
-                    childFragmentManager.beginTransaction()
+                    childFragmentManager
+                        .beginTransaction()
                         .remove(fragment)
                         .commit()
                 }
@@ -87,26 +90,34 @@ class DashboardTeamsFragment : Fragment(R.layout.fragment_dashboard_teams_feed) 
         }
     }
 
-    private fun loadTeamVoices(teamId: String, teamName: String) {
+    private fun loadTeamVoices(
+        teamId: String,
+        teamName: String,
+    ) {
         val existing = childFragmentManager.findFragmentById(R.id.teamContentContainer)
         if (existing is DashboardVoicesFragment && existing.isTeamFeedFor(teamId, teamName)) {
             return
         }
 
         val fragment = DashboardVoicesFragment.newInstanceForTeam(teamId, teamName)
-        childFragmentManager.beginTransaction()
+        childFragmentManager
+            .beginTransaction()
             .replace(R.id.teamContentContainer, fragment)
             .commit()
     }
 
-    private fun loadTeamSurveys(teamId: String, teamName: String) {
+    private fun loadTeamSurveys(
+        teamId: String,
+        teamName: String,
+    ) {
         val existing = childFragmentManager.findFragmentById(R.id.teamContentContainer)
         if (existing is DashboardTeamSurveysFragment && existing.isSurveyFeedFor(teamId, teamName)) {
             return
         }
 
         val fragment = DashboardTeamSurveysFragment.newInstanceForTeam(teamId, teamName)
-        childFragmentManager.beginTransaction()
+        childFragmentManager
+            .beginTransaction()
             .replace(R.id.teamContentContainer, fragment)
             .commit()
     }
