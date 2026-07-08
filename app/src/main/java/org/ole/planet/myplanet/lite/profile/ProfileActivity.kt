@@ -6,13 +6,10 @@
 
 package org.ole.planet.myplanet.lite.profile
 
-import android.content.pm.PackageManager
+import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.util.Base64
 import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.ImageView
@@ -20,6 +17,7 @@ import android.widget.RadioGroup
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -28,49 +26,27 @@ import androidx.core.view.updatePadding
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
-import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.google.android.material.textfield.TextInputEditText
 import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.BaseActivity
-import org.ole.planet.myplanet.lite.BuildConfig
 import org.ole.planet.myplanet.lite.R
-import org.ole.planet.myplanet.lite.auth.AuthDependencies
-import org.ole.planet.myplanet.lite.auth.AuthResult
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.model.LanguageOption
-import org.ole.planet.myplanet.lite.util.BirthDateConstraints
 import org.ole.planet.myplanet.lite.util.nullIfBlank
-import java.io.ByteArrayOutputStream
-import java.io.File
-import java.security.MessageDigest
-import java.text.SimpleDateFormat
-import java.time.Instant
-import java.time.LocalDate
-import java.time.Period
-import java.time.ZoneOffset
-import java.time.format.DateTimeFormatter
-import java.util.Calendar
-import java.util.Date
 import java.util.Locale
-import java.util.TimeZone
-import kotlin.math.min
 
 class ProfileActivity : BaseActivity() {
-    private val selectAvatarLauncher =
+    internal val selectAvatarLauncher: ActivityResultLauncher<String> =
         registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
             uri?.let { processAvatarSelection(it) }
         }
 
-    private val cropAvatarLauncher =
+    internal val cropAvatarLauncher: ActivityResultLauncher<Intent> =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
             when (result.resultCode) {
                 RESULT_OK -> {
@@ -99,11 +75,11 @@ class ProfileActivity : BaseActivity() {
             }
         }
 
-    private var selectedBirthDateIso: String? = null
-    private var pendingAvatarUpload: ByteArray? = null
+    internal var selectedBirthDateIso: String? = null
+    internal var pendingAvatarUpload: ByteArray? = null
 
-    private lateinit var avatarCircleView: ImageView
-    private lateinit var avatarSquareView: ImageView
+    internal lateinit var avatarCircleView: ImageView
+    internal lateinit var avatarSquareView: ImageView
     private lateinit var profileScrollView: View
     private lateinit var loadingContainer: View
     private lateinit var firstNameInput: TextInputEditText
@@ -115,29 +91,15 @@ class ProfileActivity : BaseActivity() {
     private lateinit var levelInput: MaterialAutoCompleteTextView
     private lateinit var genderGroup: RadioGroup
 
-    private val userProfileDatabase: UserProfileDatabase by lazy {
+    internal val userProfileDatabase: UserProfileDatabase by lazy {
         UserProfileDatabase.getInstance(applicationContext)
     }
 
-    private val httpClient: OkHttpClient by lazy { OkHttpClient() }
+    internal val httpClient: OkHttpClient by lazy { OkHttpClient() }
 
-    private val userProfileSync: UserProfileSync by lazy {
+    internal val userProfileSync: UserProfileSync by lazy {
         UserProfileSync(httpClient, userProfileDatabase)
     }
-
-    private data class ProfileFormValues(
-        val firstName: String?,
-        val middleName: String?,
-        val lastName: String?,
-        val email: String?,
-        val phoneNumber: String?,
-        val birthDateIso: String?,
-        val birthYear: String?,
-        val age: String?,
-        val gender: String?,
-        val language: String?,
-        val level: String?,
-    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -446,92 +408,7 @@ class ProfileActivity : BaseActivity() {
         )
     }
 
-    private suspend fun refreshProfileFromServer(): Boolean {
-        val storedBaseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
-        val sanitizedBase = (storedBaseUrl ?: BuildConfig.PLANET_BASE_URL).trim()
-        if (sanitizedBase.isEmpty()) {
-            return false
-        }
-        val normalizedBase = sanitizedBase.trimEnd('/')
-
-        val authService = AuthDependencies.provideAuthService(this, sanitizedBase)
-        val storedCredentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
-        var username = storedCredentials?.username
-        if (username.isNullOrBlank()) {
-            username =
-                withContext(Dispatchers.IO) {
-                    userProfileDatabase.getProfile()?.username
-                }
-        }
-
-        var sessionCookie = authService.getStoredToken()
-
-        if (storedCredentials != null) {
-            when (val loginResult = authService.login(storedCredentials.username, storedCredentials.password)) {
-                is AuthResult.Success -> {
-                    sessionCookie = loginResult.response.sessionCookie ?: sessionCookie
-                    if (username.isNullOrBlank()) {
-                        username = loginResult.response.name ?: storedCredentials.username
-                    }
-                }
-
-                is AuthResult.Error, is AuthResult.Failure -> {
-                    Unit
-                }
-            }
-        }
-
-        if (username.isNullOrBlank() || sessionCookie.isNullOrBlank()) {
-            return false
-        }
-
-        return userProfileSync.refreshProfile(normalizedBase, username.orEmpty(), sessionCookie)
-    }
-
-    private data class ProfileUpdateContext(
-        val storedProfile: UserProfile?,
-        val normalizedBase: String,
-        val username: String,
-        val sessionCookie: String,
-    )
-
-    private suspend fun resolveProfileUpdateContext(): ProfileUpdateContext? {
-        val storedProfile = withContext(Dispatchers.IO) { userProfileDatabase.getProfile() }
-        val storedBaseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
-        val sanitizedBase = (storedBaseUrl ?: BuildConfig.PLANET_BASE_URL).trim()
-        if (sanitizedBase.isEmpty()) {
-            return null
-        }
-        val normalizedBase = sanitizedBase.trimEnd('/')
-        var username = storedProfile?.username
-        val storedCredentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
-        if (username.isNullOrBlank()) {
-            username = storedCredentials?.username
-        }
-        if (username.isNullOrBlank()) {
-            return null
-        }
-
-        val authService = AuthDependencies.provideAuthService(this, sanitizedBase)
-        var sessionCookie = authService.getStoredToken()
-        if (storedCredentials != null) {
-            when (val loginResult = authService.login(storedCredentials.username, storedCredentials.password)) {
-                is AuthResult.Success -> {
-                    sessionCookie = loginResult.response.sessionCookie ?: sessionCookie
-                }
-
-                is AuthResult.Error, is AuthResult.Failure -> {
-                    if (sessionCookie.isNullOrBlank()) {
-                        return null
-                    }
-                }
-            }
-        }
-
-        val nonNullCookie = sessionCookie.nullIfBlank() ?: return null
-
-        return ProfileUpdateContext(storedProfile, normalizedBase, username, nonNullCookie)
-    }
+    private suspend fun refreshProfileFromServer(): Boolean = refreshProfileFromServerImpl()
 
     internal suspend fun executeProfileUpdateRequest(
         normalizedBase: String,
@@ -540,572 +417,45 @@ class ProfileActivity : BaseActivity() {
         document: JSONObject,
         avatarUploadBytes: ByteArray?,
         avatarBytesToPersist: ByteArray?,
-    ): Boolean {
-        return withContext(Dispatchers.IO) {
-            try {
-                val requestBody =
-                    document
-                        .toString()
-                        .toRequestBody("application/json; charset=utf-8".toMediaType())
-                val requestBuilder =
-                    Request
-                        .Builder()
-                        .url("$normalizedBase/db/_users/org.couchdb.user:$username")
-                        .put(requestBody)
-                        .addHeader("Cookie", nonNullCookie)
-                        .addHeader("Content-Type", "application/json")
-
-                httpClient.newCall(requestBuilder.build()).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        return@withContext false
-                    }
-                    val responseBody = response.body.string()
-                    val newRevision =
-                        responseBody
-                            .nullIfBlank()
-                            ?.let { JSONObject(it) }
-                            ?.optString("rev")
-                            .nullIfBlank()
-                    newRevision?.let { document.put("_rev", it) }
-                    if (avatarUploadBytes != null) {
-                        replaceAvatarAttachmentWithStub(document, avatarUploadBytes, newRevision)
-                    }
-                    saveUpdatedProfileLocally(document, avatarBytesToPersist, username)
-                    true
-                }
-            } catch (error: Exception) {
-                false
-            }
-        }
-    }
-
-    private suspend fun submitProfileUpdates(formValues: ProfileFormValues): Boolean {
-        val context = resolveProfileUpdateContext() ?: return false
-        val avatarUploadBytes = pendingAvatarUpload
-        val document =
-            buildUpdatedProfileDocument(
-                context.normalizedBase,
-                context.username,
-                context.sessionCookie,
-                formValues,
-                context.storedProfile,
-                avatarUploadBytes,
-            ) ?: return false
-
-        val avatarBytesToPersist = avatarUploadBytes ?: context.storedProfile?.avatarImage
-
-        val success =
-            executeProfileUpdateRequest(
-                context.normalizedBase,
-                context.username,
-                context.sessionCookie,
-                document,
-                avatarUploadBytes,
-                avatarBytesToPersist,
-            )
-
-        if (success && avatarUploadBytes != null) {
-            pendingAvatarUpload = null
-            AvatarUpdateNotifier.notifyAvatarUpdated(context.username)
-        }
-
-        return success
-    }
-
-    private suspend fun buildUpdatedProfileDocument(
-        serverBaseUrl: String,
-        username: String,
-        sessionCookie: String,
-        formValues: ProfileFormValues,
-        storedProfile: UserProfile?,
-        avatarUploadBytes: ByteArray?,
-    ): JSONObject? {
-        val baseDocument =
-            storedProfile?.rawDocument?.nullIfBlank()?.let { JSONObject(it) }
-                ?: fetchRemoteProfileDocument(serverBaseUrl, username, sessionCookie)
-                ?: return null
-
-        val latestRevision = storedProfile?.revision ?: baseDocument.optString("_rev").nullIfBlank()
-        latestRevision?.let { baseDocument.put("_rev", it) }
-        val derivedKey = storedProfile?.derivedKey ?: baseDocument.optString("derived_key").nullIfBlank()
-        derivedKey?.let { baseDocument.put("derived_key", it) }
-        baseDocument.put("_id", baseDocument.optString("_id").nullIfBlank() ?: "org.couchdb.user:$username")
-        baseDocument.put("name", username)
-        baseDocument.put("type", baseDocument.optString("type").nullIfBlank() ?: "user")
-
-        applyFormValuesToDocument(baseDocument, formValues)
-
-        if (avatarUploadBytes != null) {
-            val attachments = baseDocument.optJSONObject("_attachments") ?: JSONObject()
-            val avatarAttachment =
-                JSONObject().apply {
-                    put("content_type", AVATAR_CONTENT_TYPE)
-                    put("data", Base64.encodeToString(avatarUploadBytes, Base64.NO_WRAP))
-                }
-            attachments.put(AVATAR_ATTACHMENT_KEY, avatarAttachment)
-            baseDocument.put("_attachments", attachments)
-        }
-
-        return baseDocument
-    }
+    ): Boolean = executeProfileUpdateRequestImpl(
+        normalizedBase,
+        username,
+        nonNullCookie,
+        document,
+        avatarUploadBytes,
+        avatarBytesToPersist,
+    )
 
     private suspend fun fetchRemoteProfileDocument(
         serverBaseUrl: String,
         username: String,
         sessionCookie: String,
-    ): JSONObject? {
-        val profileUrl = "$serverBaseUrl/db/_users/org.couchdb.user:$username"
-        return withContext(Dispatchers.IO) {
-            try {
-                val request =
-                    Request
-                        .Builder()
-                        .url(profileUrl)
-                        .get()
-                        .addHeader("Cookie", sessionCookie)
-                        .build()
-                httpClient.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        return@withContext null
-                    }
-                    val body = response.body.string()
-                    if (body.isNullOrBlank()) {
-                        return@withContext null
-                    }
-                    JSONObject(body)
-                }
-            } catch (error: Exception) {
-                null
-            }
-        }
-    }
+    ): JSONObject? = fetchRemoteProfileDocumentImpl(serverBaseUrl, username, sessionCookie)
 
-    private fun applyFormValuesToDocument(
-        document: JSONObject,
-        values: ProfileFormValues,
-    ) {
-        document.put("middleName", values.middleName.orEmpty())
+    private suspend fun submitProfileUpdates(formValues: ProfileFormValues): Boolean = submitProfileUpdatesImpl(formValues)
 
-        val properties =
-            mapOf(
-                "firstName" to values.firstName,
-                "lastName" to values.lastName,
-                "email" to values.email,
-                "phoneNumber" to values.phoneNumber,
-                "gender" to values.gender,
-                "language" to values.language,
-                "level" to values.level,
-                "birthDate" to values.birthDateIso,
-                "birthYear" to values.birthYear,
-                "age" to values.age,
-            )
+    private fun formatBirthDate(raw: String?): String = formatBirthDateImpl(raw)
 
-        properties.forEach { (key, value) ->
-            document.putOrRemove(key, value)
-        }
-    }
+    private fun showBirthDatePicker(targetView: TextInputEditText) = showBirthDatePickerImpl(targetView)
 
-    private suspend fun saveUpdatedProfileLocally(
-        document: JSONObject,
-        avatarBytes: ByteArray?,
-        usernameFallback: String,
-    ) {
-        val resolvedUsername = document.optString("name").nullIfBlank() ?: usernameFallback
-        val updatedProfile =
-            UserProfile(
-                username = resolvedUsername,
-                firstName = document.optString("firstName").nullIfBlank(),
-                middleName = document.optString("middleName").nullIfBlank(),
-                lastName = document.optString("lastName").nullIfBlank(),
-                email = document.optString("email").nullIfBlank(),
-                language = document.optString("language").nullIfBlank(),
-                phoneNumber = document.optString("phoneNumber").nullIfBlank(),
-                birthDate = document.optString("birthDate").nullIfBlank(),
-                gender = document.optString("gender").nullIfBlank(),
-                level = document.optString("level").nullIfBlank(),
-                avatarImage = avatarBytes,
-                revision = document.optString("_rev").nullIfBlank(),
-                derivedKey = document.optString("derived_key").nullIfBlank(),
-                rawDocument = document.toString(),
-                isUserAdmin = document.optBoolean("isUserAdmin", false),
-            )
+    private fun normalizeBirthDateIso(raw: String?): String? = normalizeBirthDateIsoImpl(raw)
 
-        withContext(Dispatchers.IO) {
-            userProfileDatabase.saveProfile(updatedProfile)
-        }
-    }
+    private fun extractBirthYearFromIso(iso: String?): String? = extractBirthYearFromIsoImpl(iso)
 
-    private fun replaceAvatarAttachmentWithStub(
-        document: JSONObject,
-        avatarBytes: ByteArray,
-        revision: String?,
-    ) {
-        val attachments = document.optJSONObject("_attachments") ?: JSONObject()
-        val stubInfo =
-            JSONObject().apply {
-                put("content_type", AVATAR_CONTENT_TYPE)
-                put("length", avatarBytes.size)
-                put("digest", avatarBytes.toMd5DigestHeader())
-                put("stub", true)
-                revision?.substringBefore('-')?.toIntOrNull()?.let { put("revpos", it) }
-            }
-        attachments.put(AVATAR_ATTACHMENT_KEY, stubInfo)
-        document.put("_attachments", attachments)
-    }
+    private fun calculateAgeFromIso(iso: String?): String? = calculateAgeFromIsoImpl(iso)
 
-    private fun ByteArray.toMd5DigestHeader(): String {
-        val digest = MessageDigest.getInstance("MD5").digest(this)
-        val encoded = Base64.encodeToString(digest, Base64.NO_WRAP)
-        return "md5-$encoded"
-    }
+    private fun launchAvatarPicker() = launchAvatarPickerImpl()
 
-    private fun formatBirthDate(raw: String?): String {
-        if (raw.isNullOrBlank()) {
-            return ""
-        }
-        val targetPattern = "MMM d, yyyy"
+    private fun processAvatarSelection(uri: Uri) = processAvatarSelectionImpl(uri)
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val instant =
-                runCatching { Instant.parse(raw) }.getOrNull()
-                    ?: runCatching { LocalDate.parse(raw).atStartOfDay(ZoneOffset.UTC).toInstant() }.getOrNull()
-
-            if (instant != null) {
-                val zonedDate = instant.atZone(ZoneOffset.UTC).toLocalDate()
-                val formatter = DateTimeFormatter.ofPattern(targetPattern, Locale.getDefault())
-                zonedDate.format(formatter)
-            } else {
-                raw
-            }
-        } else {
-            val inputPatterns =
-                listOf(
-                    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                    "yyyy-MM-dd'T'HH:mm:ss'Z'",
-                    "yyyy-MM-dd",
-                )
-            val outputFormat =
-                SimpleDateFormat(targetPattern, Locale.getDefault()).apply {
-                    timeZone = TimeZone.getTimeZone("UTC")
-                }
-
-            inputPatterns.firstNotNullOfOrNull { pattern ->
-                runCatching {
-                    SimpleDateFormat(pattern, Locale.US)
-                        .apply {
-                            timeZone = TimeZone.getTimeZone("UTC")
-                        }.parse(raw)
-                }.getOrNull()?.let { date ->
-                    outputFormat.format(date)
-                }
-            } ?: raw
-        }
-    }
-
-    private fun showBirthDatePicker(targetView: TextInputEditText) {
-        val selection = BirthDateConstraints.coerceSelection(parseBirthDateToMillis(selectedBirthDateIso))
-        val picker =
-            MaterialDatePicker.Builder
-                .datePicker()
-                .setTitleText(R.string.profile_birth_date_picker_title)
-                .setSelection(selection)
-                .setCalendarConstraints(BirthDateConstraints.calendarConstraints())
-                .build()
-
-        picker.addOnPositiveButtonClickListener { selection ->
-            if (BirthDateConstraints.isFuture(selection)) {
-                return@addOnPositiveButtonClickListener
-            }
-            val iso =
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    Instant
-                        .ofEpochMilli(selection)
-                        .atZone(ZoneOffset.UTC)
-                        .toInstant()
-                        .toString()
-                } else {
-                    val format =
-                        SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-                            timeZone = TimeZone.getTimeZone("UTC")
-                        }
-                    format.format(Date(selection))
-                }
-            selectedBirthDateIso = iso
-            targetView.setText(formatBirthDate(iso))
-        }
-
-        picker.show(supportFragmentManager, "birthDatePicker")
-    }
-
-    private fun normalizeBirthDateIso(raw: String?): String? {
-        val millis = parseBirthDateToMillis(raw)
-        return raw?.takeIf { millis != null && !BirthDateConstraints.isFuture(millis) }
-    }
-
-    private fun parseBirthDateToMillis(raw: String?): Long? {
-        if (raw.isNullOrBlank()) {
-            return null
-        }
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            runCatching { Instant.parse(raw).toEpochMilli() }.getOrNull()
-                ?: runCatching {
-                    LocalDate
-                        .parse(raw)
-                        .atStartOfDay(ZoneOffset.UTC)
-                        .toInstant()
-                        .toEpochMilli()
-                }.getOrNull()
-        } else {
-            val patterns =
-                listOf(
-                    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-                    "yyyy-MM-dd'T'HH:mm:ss'Z'",
-                    "yyyy-MM-dd",
-                )
-            patterns.firstNotNullOfOrNull { pattern ->
-                runCatching {
-                    SimpleDateFormat(pattern, Locale.US)
-                        .apply {
-                            timeZone = TimeZone.getTimeZone("UTC")
-                        }.parse(raw)
-                        ?.time
-                }.getOrNull()
-            }
-        }
-    }
-
-    private fun extractBirthYearFromIso(iso: String?): String? {
-        if (iso.isNullOrBlank()) {
-            return null
-        }
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            runCatching {
-                Instant
-                    .parse(iso)
-                    .atZone(ZoneOffset.UTC)
-                    .year
-                    .toString()
-            }.getOrNull()
-        } else {
-            runCatching {
-                val format =
-                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-                        timeZone = TimeZone.getTimeZone("UTC")
-                    }
-                val date = format.parse(iso) ?: return@runCatching null
-                val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-                calendar.time = date
-                calendar.get(Calendar.YEAR).toString()
-            }.getOrNull()
-        }
-    }
-
-    private fun calculateAgeFromIso(iso: String?): String? {
-        if (iso.isNullOrBlank()) {
-            return null
-        }
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            runCatching {
-                val birthDate = Instant.parse(iso).atZone(ZoneOffset.UTC).toLocalDate()
-                val now = Instant.now().atZone(ZoneOffset.UTC).toLocalDate()
-                Period
-                    .between(birthDate, now)
-                    .years
-                    .takeIf { it >= 0 }
-                    ?.toString()
-            }.getOrNull()
-        } else {
-            runCatching {
-                val format =
-                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
-                        timeZone = TimeZone.getTimeZone("UTC")
-                    }
-                val date = format.parse(iso) ?: return@runCatching null
-                val birthCalendar = Calendar.getInstance().apply { time = date }
-                val today = Calendar.getInstance()
-                var age = today.get(Calendar.YEAR) - birthCalendar.get(Calendar.YEAR)
-                if (today.get(Calendar.DAY_OF_YEAR) < birthCalendar.get(Calendar.DAY_OF_YEAR)) {
-                    age -= 1
-                }
-                age.takeIf { it >= 0 }?.toString()
-            }.getOrNull()
-        }
-    }
-
-    private fun launchAvatarPicker() {
-        selectAvatarLauncher.launch("image/*")
-    }
-
-    private fun processAvatarSelection(uri: Uri) {
-        val destinationFile = runCatching { File.createTempFile("avatar_crop", ".jpg", cacheDir) }.getOrNull()
-        if (destinationFile == null) {
-            Toast.makeText(this, R.string.profile_avatar_picker_error, Toast.LENGTH_SHORT).show()
-            return
-        }
-        val destinationUri = Uri.fromFile(destinationFile)
-        val options =
-            UCrop.Options().apply {
-                setToolbarTitle(getString(R.string.profile_avatar_crop_title))
-                setHideBottomControls(true)
-                setFreeStyleCropEnabled(false)
-                val white = resources.getColor(R.color.white, theme)
-                val blue = resources.getColor(R.color.blueOle, theme)
-                setToolbarColor(white)
-                setStatusBarColor(white)
-                setToolbarWidgetColor(blue)
-                setActiveControlsWidgetColor(blue)
-            }
-        val targetSize = resources.getDimensionPixelSize(R.dimen.profile_avatar_max_image_size).takeIf { it > 0 } ?: 512
-        val intent =
-            UCrop
-                .of(uri, destinationUri)
-                .withAspectRatio(1f, 1f)
-                .withMaxResultSize(targetSize, targetSize)
-                .withOptions(options)
-                .getIntent(this)
-        val canHandleCrop =
-            packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY) != null
-        if (!canHandleCrop) {
-            destinationFile.delete()
-            Toast.makeText(this, R.string.profile_avatar_picker_error, Toast.LENGTH_SHORT).show()
-            return
-        }
-        cropAvatarLauncher.launch(intent)
-    }
-
-    private fun handleCroppedAvatar(uri: Uri) {
-        lifecycleScope.launch {
-            val bitmap =
-                withContext(Dispatchers.IO) {
-                    loadScaledAvatar(uri)
-                }
-            if (bitmap != null) {
-                applyAvatarBitmap(bitmap, markForUpload = true)
-            } else {
-                Toast
-                    .makeText(
-                        this@ProfileActivity,
-                        R.string.profile_avatar_picker_error,
-                        Toast.LENGTH_SHORT,
-                    ).show()
-            }
-        }
-    }
-
-    private fun loadScaledAvatar(uri: Uri): Bitmap? {
-        return try {
-            val resolver = contentResolver
-            val targetSize =
-                resources.getDimensionPixelSize(R.dimen.profile_avatar_max_image_size).takeIf { it > 0 }
-                    ?: 512
-            val boundsOptions =
-                BitmapFactory.Options().apply {
-                    inJustDecodeBounds = true
-                }
-            val decoded =
-                resolver.openInputStream(uri)?.use { input ->
-                    val bytes = input.readBytes()
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, boundsOptions)
-                    val decodeOptions =
-                        BitmapFactory.Options().apply {
-                            inSampleSize = calculateInSampleSize(boundsOptions, targetSize, targetSize)
-                        }
-                    BitmapFactory.decodeByteArray(bytes, 0, bytes.size, decodeOptions)
-                } ?: return null
-            val square = cropToSquare(decoded)
-            if (square !== decoded) {
-                decoded.recycle()
-            }
-            if (square.width > targetSize) {
-                Bitmap.createScaledBitmap(square, targetSize, targetSize, true).also { scaled ->
-                    if (scaled !== square) {
-                        square.recycle()
-                    }
-                }
-            } else {
-                square
-            }
-        } catch (ex: Exception) {
-            null
-        }
-    }
-
-    private fun calculateInSampleSize(
-        options: BitmapFactory.Options,
-        reqWidth: Int,
-        reqHeight: Int,
-    ): Int {
-        var inSampleSize = 1
-        val height = options.outHeight
-        val width = options.outWidth
-        if (height > reqHeight || width > reqWidth) {
-            var halfHeight = height / 2
-            var halfWidth = width / 2
-            while (halfHeight / inSampleSize >= reqHeight && halfWidth / inSampleSize >= reqWidth) {
-                inSampleSize *= 2
-            }
-        }
-        return inSampleSize
-    }
-
-    private fun cropToSquare(bitmap: Bitmap): Bitmap {
-        val size = min(bitmap.width, bitmap.height)
-        val xOffset = (bitmap.width - size) / 2
-        val yOffset = (bitmap.height - size) / 2
-        return Bitmap.createBitmap(bitmap, xOffset, yOffset, size, size)
-    }
+    private fun handleCroppedAvatar(uri: Uri) = handleCroppedAvatarImpl(uri)
 
     private fun applyAvatarBitmap(
         bitmap: Bitmap?,
         markForUpload: Boolean = false,
-    ) {
-        if (bitmap != null) {
-            if (markForUpload) {
-                pendingAvatarUpload = compressAvatar(bitmap)
-            }
-            avatarCircleView.setImageBitmap(bitmap)
-            avatarSquareView.setImageBitmap(bitmap)
-        } else {
-            if (markForUpload) {
-                pendingAvatarUpload = null
-            }
-            avatarCircleView.setImageDrawable(null)
-            avatarSquareView.setImageDrawable(null)
-        }
-    }
+    ) = applyAvatarBitmapImpl(bitmap, markForUpload)
 
-    private fun decodeAvatarBytes(bytes: ByteArray?): Bitmap? {
-        if (bytes == null || bytes.isEmpty()) {
-            return null
-        }
-        return try {
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-        } catch (ex: Exception) {
-            null
-        }
-    }
-
-    private fun compressAvatar(bitmap: Bitmap): ByteArray {
-        val stream = ByteArrayOutputStream()
-        bitmap.compress(Bitmap.CompressFormat.JPEG, 85, stream)
-        return stream.toByteArray()
-    }
-
-    private fun JSONObject.putOrRemove(
-        key: String,
-        value: String?,
-    ) {
-        if (value.isNullOrBlank()) {
-            remove(key)
-        } else {
-            put(key, value)
-        }
-    }
-
-    private companion object {
-        private const val AVATAR_ATTACHMENT_KEY = "img"
-        private const val AVATAR_CONTENT_TYPE = "image/jpeg"
-    }
+    private fun decodeAvatarBytes(bytes: ByteArray?): Bitmap? = decodeAvatarBytesImpl(bytes)
 
     private data class Padding(
         val left: Int,

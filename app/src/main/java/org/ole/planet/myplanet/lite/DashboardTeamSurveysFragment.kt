@@ -243,15 +243,10 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         team: String,
         documents: List<SurveyDocument>,
     ) {
-        withContext(Dispatchers.IO) {
-            completionCounts.clear()
-            val ids = documents.mapNotNull { it.id }
-            completionCounts.putAll(ids.associateWith { 0 })
-            if (ids.isNotEmpty()) {
-                val result = repository.fetchSurveyCompletionCountsBatched(base, credentials, sessionCookie, team, ids)
-                completionCounts.putAll(result.getOrDefault(emptyMap()))
-            }
-        }
+        completionCounts.clear()
+        val ids = documents.mapNotNull { it.id }
+        val counts = repository.getCompletionCountsWithDefaults(base, credentials, sessionCookie, team, ids)
+        completionCounts.putAll(counts)
     }
 
     private fun showLoading(loading: Boolean) {
