@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-25
@@ -20,7 +20,6 @@ class SurveyTranslationCache private constructor(
     context: Context,
     moshi: Moshi = Moshi.Builder().build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
-
     private val choicesAdapter = moshi.adapter<List<String?>>(TYPES_STRING_LIST)
 
     override fun onCreate(db: SQLiteDatabase) {
@@ -39,7 +38,11 @@ class SurveyTranslationCache private constructor(
         )
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+    override fun onUpgrade(
+        db: SQLiteDatabase,
+        oldVersion: Int,
+        newVersion: Int,
+    ) {
         if (oldVersion < DATABASE_VERSION) {
             db.execSQL("DROP TABLE IF EXISTS survey_translations")
             onCreate(db)
@@ -54,26 +57,27 @@ class SurveyTranslationCache private constructor(
         val normalizedLanguage = targetLanguage.lowercase()
         return withContext(Dispatchers.IO) {
             val db = readableDatabase
-            db.query(
-                TABLE_TRANSLATIONS,
-                arrayOf(COLUMN_BODY, COLUMN_CHOICES),
-                "$COLUMN_SURVEY_ID = ? AND $COLUMN_QUESTION_INDEX = ? AND $COLUMN_TARGET_LANGUAGE = ?",
-                arrayOf(surveyId, questionIndex.toString(), normalizedLanguage),
-                null,
-                null,
-                null,
-            ).use { c ->
-                if (c.moveToFirst()) {
-                    val indexBody = c.getColumnIndexOrThrow(COLUMN_BODY)
-                    val indexChoices = c.getColumnIndexOrThrow(COLUMN_CHOICES)
-                    val body = c.getStringOrNull(indexBody)
-                    val choicesJson = c.getStringOrNull(indexChoices)
-                    val choices = choicesJson?.let { choicesAdapter.fromJson(it) } ?: emptyList()
-                    SurveyTranslationManager.TranslatedQuestion(body, choices)
-                } else {
-                    null
+            db
+                .query(
+                    TABLE_TRANSLATIONS,
+                    arrayOf(COLUMN_BODY, COLUMN_CHOICES),
+                    "$COLUMN_SURVEY_ID = ? AND $COLUMN_QUESTION_INDEX = ? AND $COLUMN_TARGET_LANGUAGE = ?",
+                    arrayOf(surveyId, questionIndex.toString(), normalizedLanguage),
+                    null,
+                    null,
+                    null,
+                ).use { c ->
+                    if (c.moveToFirst()) {
+                        val indexBody = c.getColumnIndexOrThrow(COLUMN_BODY)
+                        val indexChoices = c.getColumnIndexOrThrow(COLUMN_CHOICES)
+                        val body = c.getStringOrNull(indexBody)
+                        val choicesJson = c.getStringOrNull(indexChoices)
+                        val choices = choicesJson?.let { choicesAdapter.fromJson(it) } ?: emptyList()
+                        SurveyTranslationManager.TranslatedQuestion(body, choices)
+                    } else {
+                        null
+                    }
                 }
-            }
         }
     }
 
@@ -85,27 +89,28 @@ class SurveyTranslationCache private constructor(
         return withContext(Dispatchers.IO) {
             val db = readableDatabase
             val result = HashMap<Int, SurveyTranslationManager.TranslatedQuestion>()
-            db.query(
-                TABLE_TRANSLATIONS,
-                arrayOf(COLUMN_QUESTION_INDEX, COLUMN_BODY, COLUMN_CHOICES),
-                "$COLUMN_SURVEY_ID = ? AND $COLUMN_TARGET_LANGUAGE = ?",
-                arrayOf(surveyId, normalizedLanguage),
-                null,
-                null,
-                null,
-            ).use { c ->
-                val indexQuestionIndex = c.getColumnIndexOrThrow(COLUMN_QUESTION_INDEX)
-                val indexBody = c.getColumnIndexOrThrow(COLUMN_BODY)
-                val indexChoices = c.getColumnIndexOrThrow(COLUMN_CHOICES)
+            db
+                .query(
+                    TABLE_TRANSLATIONS,
+                    arrayOf(COLUMN_QUESTION_INDEX, COLUMN_BODY, COLUMN_CHOICES),
+                    "$COLUMN_SURVEY_ID = ? AND $COLUMN_TARGET_LANGUAGE = ?",
+                    arrayOf(surveyId, normalizedLanguage),
+                    null,
+                    null,
+                    null,
+                ).use { c ->
+                    val indexQuestionIndex = c.getColumnIndexOrThrow(COLUMN_QUESTION_INDEX)
+                    val indexBody = c.getColumnIndexOrThrow(COLUMN_BODY)
+                    val indexChoices = c.getColumnIndexOrThrow(COLUMN_CHOICES)
 
-                while (c.moveToNext()) {
-                    val questionIndex = c.getInt(indexQuestionIndex)
-                    val body = c.getStringOrNull(indexBody)
-                    val choicesJson = c.getStringOrNull(indexChoices)
-                    val choices = choicesJson?.let { choicesAdapter.fromJson(it) } ?: emptyList()
-                    result[questionIndex] = SurveyTranslationManager.TranslatedQuestion(body, choices)
+                    while (c.moveToNext()) {
+                        val questionIndex = c.getInt(indexQuestionIndex)
+                        val body = c.getStringOrNull(indexBody)
+                        val choicesJson = c.getStringOrNull(indexChoices)
+                        val choices = choicesJson?.let { choicesAdapter.fromJson(it) } ?: emptyList()
+                        result[questionIndex] = SurveyTranslationManager.TranslatedQuestion(body, choices)
+                    }
                 }
-            }
             result
         }
     }
@@ -121,11 +126,12 @@ class SurveyTranslationCache private constructor(
             val db = writableDatabase
             db.beginTransaction()
             try {
-                val sql = """
+                val sql =
+                    """
                     INSERT OR REPLACE INTO $TABLE_TRANSLATIONS
                     ($COLUMN_SURVEY_ID, $COLUMN_QUESTION_INDEX, $COLUMN_TARGET_LANGUAGE, $COLUMN_BODY, $COLUMN_CHOICES)
                     VALUES (?, ?, ?, ?, ?)
-                """.trimIndent()
+                    """.trimIndent()
 
                 db.compileStatement(sql).use { statement ->
                     translations.forEach { (questionIndex, translation) ->
@@ -165,13 +171,14 @@ class SurveyTranslationCache private constructor(
     ) {
         val normalizedLanguage = targetLanguage.lowercase()
         withContext(Dispatchers.IO) {
-            val values = ContentValues().apply {
-                put(COLUMN_SURVEY_ID, surveyId)
-                put(COLUMN_QUESTION_INDEX, questionIndex)
-                put(COLUMN_TARGET_LANGUAGE, normalizedLanguage)
-                put(COLUMN_BODY, translation.body)
-                put(COLUMN_CHOICES, choicesAdapter.toJson(translation.choices))
-            }
+            val values =
+                ContentValues().apply {
+                    put(COLUMN_SURVEY_ID, surveyId)
+                    put(COLUMN_QUESTION_INDEX, questionIndex)
+                    put(COLUMN_TARGET_LANGUAGE, normalizedLanguage)
+                    put(COLUMN_BODY, translation.body)
+                    put(COLUMN_CHOICES, choicesAdapter.toJson(translation.choices))
+                }
             writableDatabase.insertWithOnConflict(
                 TABLE_TRANSLATIONS,
                 null,
@@ -196,11 +203,10 @@ class SurveyTranslationCache private constructor(
         @Volatile
         private var instance: SurveyTranslationCache? = null
 
-        fun getInstance(context: Context): SurveyTranslationCache {
-            return instance ?: synchronized(this) {
+        fun getInstance(context: Context): SurveyTranslationCache =
+            instance ?: synchronized(this) {
                 instance ?: SurveyTranslationCache(context.applicationContext).also { instance = it }
             }
-        }
 
         fun resetForTesting(context: Context) {
             instance?.close()

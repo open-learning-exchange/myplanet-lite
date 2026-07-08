@@ -23,8 +23,6 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 
 internal data class FormViews(
@@ -125,6 +123,7 @@ internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
                     val bytesProvider: suspend () -> ByteArray? = {
                         DashboardResourcesMediaUtils.readBytesFromUri(requireContext(), uri)
                     }
+                    dialog.dismiss()
                     performResourceCreateAndUpload(
                         payload = payload,
                         fileExtension = "pdf",
@@ -133,7 +132,6 @@ internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
                         bytesProvider = bytesProvider,
                         onSuccess = {
                             Toast.makeText(context, getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()
-                            dialog.dismiss()
                         }
                     )
                 }
@@ -167,7 +165,15 @@ internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
     val metadata = DashboardResourcesMediaUtils.extractResourceMetadata(this, uri, "image.jpg")
     val mimeType = context.contentResolver.getType(uri).orEmpty().ifBlank { "image/jpeg" }
     val imageSize = DashboardResourcesMediaUtils.resolveImageSize(requireContext(), uri) ?: (0 to 0)
-    var isUploaded = false
+    var uploadInProgress = false
+    val isTemporaryFileProviderUri = uri.authority == "${context.packageName}.fileprovider"
+    val deleteTemporaryResourceFile = {
+        if (isTemporaryFileProviderUri) {
+            runCatching {
+                File(context.cacheDir, "shared_images/${uri.lastPathSegment}").delete()
+            }
+        }
+    }
 
     val content = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
@@ -271,6 +277,8 @@ internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
                     val bytesProvider: suspend () -> ByteArray? = {
                         DashboardResourcesMediaUtils.buildResizedImageBytes(requireContext(), uri, resolutionSlider.value, mimeType)
                     }
+                    uploadInProgress = true
+                    dialog.dismiss()
                     performResourceCreateAndUpload(
                         payload = payload,
                         fileExtension = DashboardResourcesMediaUtils.extensionForImageMimeType(mimeType),
@@ -278,19 +286,19 @@ internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
                         credentials = metadata.credentials,
                         bytesProvider = bytesProvider,
                         onSuccess = {
-                            isUploaded = true
                             Toast.makeText(context, getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()
-                            dialog.dismiss()
+                        },
+                        onComplete = {
+                            uploadInProgress = false
+                            deleteTemporaryResourceFile()
                         }
                     )
                 }
             }
             dialog.show()
             dialog.setOnDismissListener {
-                if (uri.authority == "${context.packageName}.fileprovider" || isUploaded) {
-                    runCatching {
-                        File(context.cacheDir, "shared_images/${uri.lastPathSegment}").delete()
-                    }
+                if (!uploadInProgress) {
+                    deleteTemporaryResourceFile()
                 }
             }
         }

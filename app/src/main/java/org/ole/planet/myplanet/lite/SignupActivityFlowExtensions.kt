@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-06-10
@@ -32,23 +32,38 @@ internal fun SignupActivity.moveToNextStep() {
 
 internal fun SignupActivity.completeSignup() {
     val autoLogin = autoLoginCheck.isChecked
-    val resultIntent = Intent().apply {
+    val resultIntent =
+        Intent().apply {
             putExtra(SignupActivity.EXTRA_AUTO_LOGIN, autoLogin)
-        if (autoLogin) {
-            val username = usernameInput.text?.toString()?.trim().orEmpty()
-            val password = passwordInput.text?.toString().orEmpty()
-            putExtra(SignupActivity.EXTRA_USERNAME, username)
-            org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.saveTemporarySignUpPassword(this@completeSignup, password)
+            if (autoLogin) {
+                val username =
+                    usernameInput.text
+                        ?.toString()
+                        ?.trim()
+                        .orEmpty()
+                val password = passwordInput.text?.toString().orEmpty()
+                putExtra(SignupActivity.EXTRA_USERNAME, username)
+                org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+                    .saveTemporarySignUpPassword(this@completeSignup, password)
+            }
         }
-    }
     if (autoLogin) {
-        val username = usernameInput.text?.toString()?.trim().orEmpty()
+        val username =
+            usernameInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         val password = passwordInput.text?.toString().orEmpty()
-        SecurePreferencesProvider.getEncryptedPreferences(this, MyPlanetLite.SECURE_PREFS_NAME)
+        SecurePreferencesProvider
+            .getEncryptedPreferences(this, MyPlanetLite.SECURE_PREFS_NAME)
             .edit {
                 putBoolean(MyPlanetLite.KEY_REMEMBER_CREDENTIALS, true)
                 putString(MyPlanetLite.KEY_REMEMBERED_USERNAME, username)
-                putString(org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.getPasswordKey(username), password)
+                putString(
+                    org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+                        .getPasswordKey(username),
+                    password,
+                )
             }
     }
     setResult(android.app.Activity.RESULT_OK, resultIntent)
@@ -84,6 +99,7 @@ internal fun SignupActivity.updateStepVisibility() {
         SignupStep.USERNAME, SignupStep.LICENSE -> {
             verifyServerAvailability(currentStep, force = true)
         }
+
         else -> {
             serverCheckJob?.cancel()
             serverCheckJob = null
@@ -101,8 +117,14 @@ internal fun SignupActivity.updateStepVisibility() {
 internal fun SignupActivity.handleNextButtonClick() {
     val currentStep = steps[currentStepIndex]
     when (currentStep) {
-        SignupStep.USERNAME -> submitUsernameStep()
-        SignupStep.LICENSE -> submitLicenseStep()
+        SignupStep.USERNAME -> {
+            submitUsernameStep()
+        }
+
+        SignupStep.LICENSE -> {
+            submitLicenseStep()
+        }
+
         else -> {
             if (validateCurrentStep()) {
                 moveToNextStep()
@@ -112,7 +134,11 @@ internal fun SignupActivity.handleNextButtonClick() {
 }
 
 internal fun SignupActivity.submitUsernameStep() {
-    val username = usernameInput.text?.toString()?.trim().orEmpty()
+    val username =
+        usernameInput.text
+            ?.toString()
+            ?.trim()
+            .orEmpty()
     if (!canProceedWithUsernameStep(username)) {
         return
     }
@@ -161,9 +187,11 @@ internal fun SignupActivity.handleUsernameAvailabilityResult(availability: Usern
             }
             moveToNextStep()
         }
+
         UsernameAvailability.TAKEN -> {
             usernameLayout.error = getString(R.string.signup_username_error_taken)
         }
+
         UsernameAvailability.UNKNOWN -> {
             usernameLayout.error = null
             usernameLayout.helperText = getString(R.string.signup_connection_error_input)
@@ -207,17 +235,22 @@ internal fun SignupActivity.submitLicenseStep() {
         updateStepActionState()
 
         when (submissionResult) {
-            SignupSubmissionResult.SUCCESS -> completeSignup()
+            SignupSubmissionResult.SUCCESS -> {
+                completeSignup()
+            }
+
             SignupSubmissionResult.USERNAME_TAKEN -> {
                 usernameLayout.error = getString(R.string.signup_username_error_taken)
                 showStep(SignupStep.USERNAME.ordinal)
             }
+
             SignupSubmissionResult.FAILED -> {
-                Toast.makeText(
-                    this@submitLicenseStep,
-                    R.string.signup_connection_error_input,
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast
+                    .makeText(
+                        this@submitLicenseStep,
+                        R.string.signup_connection_error_input,
+                        Toast.LENGTH_SHORT,
+                    ).show()
             }
         }
     }
@@ -243,8 +276,8 @@ internal fun SignupActivity.validateBirthDate(): Boolean {
     }
 }
 
-internal fun SignupActivity.validateGender(): Boolean {
-    return if (genderGroup.checkedRadioButtonId != -1) {
+internal fun SignupActivity.validateGender(): Boolean =
+    if (genderGroup.checkedRadioButtonId != -1) {
         genderErrorView.visibility = View.GONE
         true
     } else {
@@ -252,11 +285,18 @@ internal fun SignupActivity.validateGender(): Boolean {
         genderErrorView.visibility = View.VISIBLE
         false
     }
-}
 
 internal fun SignupActivity.validateLanguage(): Boolean {
-    val language = languageInput.text?.toString()?.trim().orEmpty()
-    val level = levelInput.text?.toString()?.trim().orEmpty()
+    val language =
+        languageInput.text
+            ?.toString()
+            ?.trim()
+            .orEmpty()
+    val level =
+        levelInput.text
+            ?.toString()
+            ?.trim()
+            .orEmpty()
     var valid = true
 
     if (language.isEmpty()) {

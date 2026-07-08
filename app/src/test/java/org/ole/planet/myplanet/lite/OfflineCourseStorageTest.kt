@@ -45,7 +45,7 @@ class OfflineCourseStorageTest {
         return file.absolutePath.replace('\\', '/')
     }
 
-    private fun createDummyCourse(id: String = "test-course-1"): DashboardCoursePageFragment.CourseItem {
+    private fun createDummyCourse(id: String = "test-course-1"): CourseItem {
         val survey = SurveyDocument(
             id = "survey-1",
             rev = "1-rev",
@@ -70,7 +70,7 @@ class OfflineCourseStorageTest {
             totalMarks = 5
         )
 
-        return DashboardCoursePageFragment.CourseItem(
+        return CourseItem(
             id = id,
             title = "Test Course",
             description = "Test description",
@@ -79,12 +79,12 @@ class OfflineCourseStorageTest {
             progressPercent = 10,
             currentStep = 0,
             steps = listOf(
-                DashboardCoursePageFragment.CourseItem.LessonStep(
+                CourseItem.LessonStep(
                     title = "Step 1",
                     description = "First step",
                     mediaTypes = listOf("pdf", "video"),
                     resources = listOf(
-                        DashboardCoursePageFragment.CourseItem.LessonResource(
+                        CourseItem.LessonResource(
                             id = "res-1",
                             filename = "doc1.pdf",
                             mediaType = "pdf"

@@ -34,7 +34,7 @@ class DashboardSurveysRepositoryTest {
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        repository = DashboardSurveysRepository()
+        repository = DashboardSurveysRepository(client = okhttp3.OkHttpClient.Builder().build())
     }
 
     @After
@@ -343,6 +343,27 @@ class DashboardSurveysRepositoryTest {
         // Simulate OkHttp failing after cancellation has already occurred
         // The onFailure should just return and not throw or crash
         capturedCallback.onFailure(mockCall, IOException("Late failure"))
+
+        assertTrue(job.isCancelled)
+    }
+
+    @Test
+    fun await_onCancellation_ignoresGeneralException() = runTest {
+        val mockCall = mock<Call>()
+
+        doThrow(RuntimeException("Cancel failed")).`when`(mockCall).cancel()
+
+        doAnswer {
+            null
+        }.`when`(mockCall).enqueue(any())
+
+        val job = launch {
+            mockCall.await()
+        }
+
+        delay(10)
+        job.cancel()
+        job.join()
 
         assertTrue(job.isCancelled)
     }

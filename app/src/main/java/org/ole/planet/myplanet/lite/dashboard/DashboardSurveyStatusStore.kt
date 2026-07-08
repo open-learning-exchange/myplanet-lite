@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-24
@@ -13,7 +13,6 @@ class DashboardSurveyStatusStore(
     context: Context,
     private val username: String? = null,
 ) {
-
     private val prefs = SecurePreferencesProvider.getServerPreferences(context)
 
     fun getStatus(id: String?): SurveyStatus? {
