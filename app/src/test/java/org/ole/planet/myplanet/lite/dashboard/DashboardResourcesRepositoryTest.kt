@@ -80,6 +80,35 @@ class DashboardResourcesRepositoryTest {
     }
 
     @Test
+    fun buildResourcePayload_createsCorrectJson() {
+        val request = DashboardResourcesRepository.ResourceMetadataRequest(
+            title = "Test Title",
+            description = "Test Description",
+            language = "English",
+            username = "tester",
+            planetCode = "planetX",
+            isDownloadable = true
+        )
+
+        val payload = repository.buildResourcePayload(
+            request = request,
+            subject = "Science",
+            level = "Beginner"
+        )
+
+        assertEquals("Test Title", payload.getString("title"))
+        assertEquals("Test Description", payload.getString("description"))
+        assertEquals("Science", payload.getJSONArray("subject").getString(0))
+        assertEquals("Beginner", payload.getJSONArray("level").getString(0))
+        assertEquals("English", payload.getString("language"))
+        assertEquals("tester", payload.getString("addedBy"))
+        assertEquals("planetX", payload.getString("sourcePlanet"))
+        assertEquals("planetX", payload.getString("resideOn"))
+        assertEquals(true, payload.getBoolean("isDownloadable"))
+        assertEquals(false, payload.getBoolean("private"))
+    }
+
+    @Test
     fun createAndUploadResourceSequence_success() = runTest {
         server.enqueue(MockResponse().setResponseCode(201).setBody("{\"id\": \"res1\", \"rev\": \"1-abc\"}")) // Create
         server.enqueue(MockResponse().setResponseCode(200).setBody("{\"id\": \"res1\", \"rev\": \"2-def\"}")) // Update
@@ -161,6 +190,8 @@ class DashboardResourcesRepositoryTest {
         server.takeRequest() // Upload
         server.takeRequest() // Team link
     }
+
+    @Test
     fun downloadPdfToCache_success_writesFile() = runTest {
         val pdfContent = "dummy pdf content"
         server.enqueue(MockResponse().setResponseCode(200).setBody(pdfContent))
