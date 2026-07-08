@@ -8,15 +8,31 @@
 package org.ole.planet.myplanet.lite.profile
 
 import android.content.Context
+import java.security.MessageDigest
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.MyPlanetLite
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
-import java.security.MessageDigest
 
 /*
  * Reads the credentials that were persisted after login so the profile screen can refresh data.
  */
 
+data class CurrentUserSession(val credentials: StoredCredentials, val profile: UserProfile?)
+
 object ProfileCredentialsStore {
+    suspend fun getCurrentUserSession(
+        context: Context,
+        dispatcher: CoroutineDispatcher = Dispatchers.IO
+    ): CurrentUserSession? {
+        val credentials = getStoredCredentials(context) ?: return null
+        val profile = withContext(dispatcher) {
+            UserProfileDatabase.getInstance(context).getProfile()
+        }
+        return CurrentUserSession(credentials, profile)
+    }
+
     fun getPasswordKey(username: String): String {
         val digest = MessageDigest.getInstance("SHA-256").digest("pw_$username".toByteArray())
         return digest.joinToString("") { "%02x".format(it) }
