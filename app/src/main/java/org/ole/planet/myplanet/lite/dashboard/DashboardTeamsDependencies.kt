@@ -8,7 +8,7 @@ object DashboardTeamsDependencies {
 
     fun provideRepository(): DashboardTeamsRepository {
         return repositoryOverride ?: synchronized(this) {
-            cachedRepository ?: DashboardTeamsRepository().also { cachedRepository = it }
+            cachedRepository ?: DashboardTeamsRepository(SharedBitmapDependencies.client).also { cachedRepository = it }
         }
     }
 

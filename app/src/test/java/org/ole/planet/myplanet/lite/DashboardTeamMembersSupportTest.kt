@@ -33,7 +33,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import org.junit.runner.RunWith
-import org.mockito.kotlin.any
+import org.mockito.kotlin.any as mockitoAny
 import org.mockito.kotlin.doReturn
 import org.mockito.kotlin.eq
 import org.mockito.kotlin.mock
@@ -65,15 +65,15 @@ class DashboardTeamMembersSupportTest {
 
     @Before
     fun setUp() {
-val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
-        every { mockSharedPreferences.getString(any(), any()) } returns "en"
-
-        mockkObject(SecurePreferencesProvider)
-        every { SecurePreferencesProvider.getServerPreferences(any()) } returns mockSharedPreferences
-
         context = ApplicationProvider.getApplicationContext<Context>().apply {
             setTheme(com.google.android.material.R.style.Theme_MaterialComponents_DayNight)
         }
+
+        val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
+        every { mockSharedPreferences.getString("language", "en") } returns "en"
+
+        mockkObject(SecurePreferencesProvider)
+        every { SecurePreferencesProvider.getServerPreferences(context) } returns mockSharedPreferences
 
         val lifecycleOwner = mock<LifecycleOwner>()
         val lifecycle = LifecycleRegistry(lifecycleOwner)
@@ -82,8 +82,8 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
 
         fragment = mock {
             on { requireContext() } doReturn context
-            on { getString(any()) } doReturn "Mock Error"
-            on { getString(any(), any()) } doReturn "Mock Error with arg"
+            on { getString(mockitoAny()) } doReturn "Mock Error"
+            on { getString(mockitoAny(), mockitoAny()) } doReturn "Mock Error with arg"
             on { viewLifecycleOwner } doReturn lifecycleOwner
         }
         repository = mock()
@@ -339,7 +339,7 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
             val testActivity = controller.get()
             val mockFragment = mock<Fragment> {
                 on { requireContext() } doReturn testActivity
-                on { getString(any(), any()) } doReturn "Are you sure you want to accept user Name?"
+                on { getString(mockitoAny(), mockitoAny()) } doReturn "Are you sure you want to accept user Name?"
             }
 
             val request = TeamJoinRequestUiModel(
@@ -577,15 +577,15 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         val fragment = mock<Fragment> {
             on { requireContext() } doReturn context
             on { viewLifecycleOwner } doReturn lifecycleOwner
-            on { getString(any()) } doReturn "Mock Error"
-            on { getString(any(), any()) } doReturn "Mock Error with arg"
+            on { getString(mockitoAny()) } doReturn "Mock Error"
+            on { getString(mockitoAny(), mockitoAny()) } doReturn "Mock Error with arg"
         }
 
         val dialogBinding = DialogInviteMembersBinding.inflate(LayoutInflater.from(context))
         runBlocking {
             whenever(
                 repository.fetchAllUsers(
-                    any<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>()
+                    mockitoAny<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>()
                 )
             ).thenReturn(Result.success(emptyList<UserDocument>()))
         }
@@ -619,6 +619,7 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
 
 
     @Test
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun testDashboardTeamMembersInviteDialogController_debounceSearch() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         val context = ApplicationProvider.getApplicationContext<Context>()
@@ -631,14 +632,14 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         val fragment = mock<Fragment> {
             on { requireContext() } doReturn context
             on { viewLifecycleOwner } doReturn lifecycleOwner
-            on { getString(any()) } doReturn "Mock Error"
-            on { getString(any(), any()) } doReturn "Mock Error with arg"
+            on { getString(mockitoAny()) } doReturn "Mock Error"
+            on { getString(mockitoAny(), mockitoAny()) } doReturn "Mock Error with arg"
         }
 
         val dialogBinding = DialogInviteMembersBinding.inflate(LayoutInflater.from(context))
 
         whenever(
-            repository.fetchAllUsers(any<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>())
+            repository.fetchAllUsers(mockitoAny<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>())
         ).thenReturn(Result.success(emptyList<UserDocument>()))
 
         // Setup controller with custom lifecycleScope for the test
@@ -673,7 +674,7 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         // Reset invocations so we can count the ones from searching
         org.mockito.kotlin.clearInvocations(repository)
         whenever(
-            repository.fetchAllUsers(any<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>())
+            repository.fetchAllUsers(mockitoAny<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>())
         ).thenReturn(Result.success(emptyList<UserDocument>()))
 
         // Simulate typing
@@ -693,7 +694,9 @@ val mockSharedPreferences = mockk<SharedPreferences>(relaxed = true)
         runCurrent()
 
         // Only one fetch should have happened (for "abc")
-        verify(repository, org.mockito.kotlin.times(1)).fetchAllUsers(any())
+        verify(repository, org.mockito.kotlin.times(1)).fetchAllUsers(
+            mockitoAny<org.ole.planet.myplanet.lite.dashboard.FetchUsersRequest>()
+        )
     }
 
 }

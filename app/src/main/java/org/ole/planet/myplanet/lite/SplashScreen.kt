@@ -22,9 +22,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
+import org.json.JSONObject
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
+import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
@@ -191,11 +194,65 @@ class SplashScreen : BaseActivity() {
 
         val refreshed = userProfileSync.refreshProfile(baseUrl, cachedUsername, storedToken)
         return if (refreshed) {
+            recordRememberedLoginActivity(baseUrl, storedToken)
             DashboardLaunchMode.ONLINE
         } else {
             authService.logout()
             DashboardLaunchMode.NONE
         }
+    }
+
+    private suspend fun recordRememberedLoginActivity(
+        baseUrl: String,
+        sessionCookie: String,
+    ) {
+        val rememberedCredentials = ProfileCredentialsStore.getStoredCredentials(applicationContext) ?: return
+        if (!isRememberUserEnabled() || rememberedCredentials.password.isBlank()) {
+            return
+        }
+        val requestUrl = buildLoginActivityUrl(baseUrl) ?: return
+        val payload = buildLoginActivityPayload(rememberedCredentials.username) ?: return
+        serverConnectivityRepository.recordLoginActivity(requestUrl, payload, sessionCookie)
+    }
+
+    private fun isRememberUserEnabled(): Boolean {
+        val securePreferences =
+            SecurePreferencesProvider.getEncryptedPreferences(applicationContext, MyPlanetLite.SECURE_PREFS_NAME)
+        val serverPreferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
+        return securePreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false) ||
+            serverPreferences.getBoolean(KEY_REMEMBER_CREDENTIALS, false)
+    }
+
+    private fun buildLoginActivityUrl(baseUrl: String): String? =
+        baseUrl
+            .toHttpUrlOrNull()
+            ?.newBuilder()
+            ?.addPathSegments("db/login_activities")
+            ?.build()
+            ?.toString()
+
+    private fun buildLoginActivityPayload(username: String): JSONObject? {
+        val preferences = SecurePreferencesProvider.getServerPreferences(applicationContext)
+        val parentCode = preferences.getString(KEY_SERVER_PARENT_CODE, null)
+        val code = preferences.getString(KEY_SERVER_CODE, null)
+        val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)
+        val customDeviceName = preferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)
+        val deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName()
+        val loginTimeMillis = System.currentTimeMillis()
+
+        return runCatching {
+            JSONObject().apply {
+                put("user", username)
+                put("type", "login")
+                put("loginTime", loginTimeMillis)
+                put("logoutTime", 0)
+                put("createdOn", code?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+                put("parentCode", parentCode?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+                put("androidId", androidId?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+                put("deviceName", deviceName)
+                put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+            }
+        }.getOrNull()
     }
 
     @SuppressLint("HardwareIds")
@@ -252,6 +309,9 @@ class SplashScreen : BaseActivity() {
     companion object {
         private const val SPLASH_DELAY_MS = 2000L
         private const val KEY_SERVER_URL = "server_url"
+        private const val KEY_SERVER_PARENT_CODE = "server_parent_code"
+        private const val KEY_SERVER_CODE = "server_code"
+        private const val KEY_REMEMBER_CREDENTIALS = "remember_credentials"
         private const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         private const val KEY_DEVICE_UNIQUE_ANDROID_ID = "device_unique_android_id"
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"

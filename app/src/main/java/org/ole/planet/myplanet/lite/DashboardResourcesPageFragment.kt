@@ -25,17 +25,11 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
-import java.util.ArrayList
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.Credentials
-import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.databinding.ItemDashboardResourceExplorerBinding
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_resources_page) {
     companion object {
@@ -414,53 +408,6 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
             searchQuery = searchQuery,
             selectedMediaType = selectedMediaType
         )
-    }
-
-    internal fun openResource(item: ResourceUi) {
-        val mediaType = item.type.lowercase(Locale.ROOT)
-        val resourceUri = downloadService.resolveResourceUri(
-            baseUrl = DashboardServerPreferences.getServerBaseUrl(requireContext()),
-            item = item
-        )
-        if (resourceUri.isNullOrBlank()) {
-            Toast.makeText(requireContext(), getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT).show()
-            return
-        }
-        when {
-            mediaType.contains("image") -> {
-                val intent = Intent(requireContext(), DashboardImagePreviewActivity::class.java).apply {
-                    putStringArrayListExtra(
-                        DashboardImagePreviewActivity.EXTRA_IMAGE_PATHS,
-                        ArrayList(listOf(resourceUri))
-                    )
-                    putExtra(DashboardImagePreviewActivity.EXTRA_START_INDEX, 0)
-                }
-                startActivity(intent)
-            }
-            mediaType.contains("video") || mediaType.contains("audio") -> {
-                val intent = FullscreenPlayerActivity.createIntent(
-                    context = requireContext(),
-                    mediaUrls = arrayListOf(resourceUri),
-                    startIndex = 0,
-                    startPositionMs = 0L,
-                    authorizationHeader = resolveAuthHeader()
-                )
-                startActivity(intent)
-            }
-            else -> {
-                val intent = FullscreenPdfActivity.createIntent(
-                    requireContext(),
-                    resourceUri,
-                    resolveAuthHeader()
-                )
-                startActivity(intent)
-            }
-        }
-    }
-
-    private fun resolveAuthHeader(): String? {
-        val credentials = ProfileCredentialsStore.getStoredCredentials(requireContext().applicationContext)
-        return credentials?.let { Credentials.basic(it.username, it.password) }
     }
 
     internal fun handleResourceMenuAction(action: ResourceMenuAction) {

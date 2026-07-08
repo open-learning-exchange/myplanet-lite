@@ -1129,13 +1129,12 @@ class MyPlanetLite : BaseActivity() {
             org.ole.planet.myplanet.lite.util.DeviceUtils
                 .getDeviceName()
         val loginTimeMillis = System.currentTimeMillis()
-        val loginTimeString = loginTimeMillis.toString()
 
         return runCatching {
             JSONObject().apply {
                 put("user", username)
                 put("type", "login")
-                put("loginTime", loginTimeString)
+                put("loginTime", loginTimeMillis)
                 put("logoutTime", 0)
                 put("createdOn", code?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
                 put("parentCode", parentCode?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)

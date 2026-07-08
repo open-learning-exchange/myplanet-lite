@@ -49,6 +49,23 @@ class ServerConnectivityRepository(
     }
 
     suspend fun recordLoginActivity(requestUrl: String, payload: JSONObject, sessionCookie: String?) {
+        postActivity(requestUrl, payload, sessionCookie, authHeader = null)
+    }
+
+    suspend fun recordResourceActivity(requestUrl: String, payload: JSONObject, authHeader: String?) {
+        postActivity(requestUrl, payload, sessionCookie = null, authHeader = authHeader)
+    }
+
+    suspend fun recordCourseActivity(requestUrl: String, payload: JSONObject, sessionCookie: String?) {
+        postActivity(requestUrl, payload, sessionCookie, authHeader = null)
+    }
+
+    private suspend fun postActivity(
+        requestUrl: String,
+        payload: JSONObject,
+        sessionCookie: String?,
+        authHeader: String?,
+    ) {
         withContext(ioDispatcher) {
             runCatching {
                 val mediaType = "application/json; charset=utf-8".toMediaType()
@@ -58,6 +75,9 @@ class ServerConnectivityRepository(
                     .post(body)
                 sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
+                }
+                authHeader?.takeIf { it.isNotBlank() }?.let { authorization ->
+                    requestBuilder.addHeader("Authorization", authorization)
                 }
                 client.newCall(requestBuilder.build()).execute().use { _ ->
                     // Intentionally ignoring response
