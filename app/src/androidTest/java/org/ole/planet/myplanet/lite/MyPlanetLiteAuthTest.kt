@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-07
@@ -36,12 +36,12 @@ import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 @RunWith(AndroidJUnit4::class)
 class MyPlanetLiteAuthTest {
-
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val testPrefs = context.getSharedPreferences("auth_test_secure_prefs", android.content.Context.MODE_PRIVATE)
-        testPrefs.edit()
+        testPrefs
+            .edit()
             .clear()
             .putBoolean("survey_translation_consent_accepted", true)
             .putBoolean("survey_translations_enabled", false)
@@ -68,12 +68,20 @@ class MyPlanetLiteAuthTest {
             }
             onView(isRoot()).perform(waitFor(300))
 
-            onView(withId(R.id.usernameInputLayout)).check(matches(hasTextInputLayoutErrorText(
-                getStringResource(R.string.login_username_error)
-            )))
-            onView(withId(R.id.passwordInputLayout)).check(matches(hasTextInputLayoutErrorText(
-                getStringResource(R.string.login_password_error)
-            )))
+            onView(withId(R.id.usernameInputLayout)).check(
+                matches(
+                    hasTextInputLayoutErrorText(
+                        getStringResource(R.string.login_username_error),
+                    ),
+                ),
+            )
+            onView(withId(R.id.passwordInputLayout)).check(
+                matches(
+                    hasTextInputLayoutErrorText(
+                        getStringResource(R.string.login_password_error),
+                    ),
+                ),
+            )
         }
     }
 
@@ -100,35 +108,53 @@ class MyPlanetLiteAuthTest {
         }
     }
 
-    private fun waitFor(millis: Long): ViewAction {
-        return object : ViewAction {
+    private fun waitFor(millis: Long): ViewAction =
+        object : ViewAction {
             override fun getConstraints(): Matcher<View> = isRoot()
+
             override fun getDescription(): String = "Wait for $millis milliseconds."
-            override fun perform(uiController: UiController, view: View?) {
+
+            override fun perform(
+                uiController: UiController,
+                view: View?,
+            ) {
                 uiController.loopMainThreadForAtLeast(millis)
             }
         }
-    }
 
-    private fun getStringResource(resId: Int, vararg formatArgs: Any): String =
-        androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().targetContext.getString(resId, *formatArgs)
+    private fun getStringResource(
+        resId: Int,
+        vararg formatArgs: Any,
+    ): String =
+        androidx.test.platform.app.InstrumentationRegistry
+            .getInstrumentation()
+            .targetContext
+            .getString(resId, *formatArgs)
 
-    private fun hasTextInputLayoutErrorText(expectedError: String): Matcher<in View> {
-        return object : org.hamcrest.TypeSafeMatcher<View>() {
+    private fun hasTextInputLayoutErrorText(expectedError: String): Matcher<in View> =
+        object : org.hamcrest.TypeSafeMatcher<View>() {
             override fun describeTo(description: Description) {
                 description.appendText("with TextInputLayout error: $expectedError")
             }
 
-            override fun matchesSafely(item: View): Boolean {
-                return item is TextInputLayout && item.error == expectedError
-            }
+            override fun matchesSafely(item: View): Boolean = item is TextInputLayout && item.error == expectedError
         }
-    }
 
-    private class FakeService(private val result: AuthResult) : AuthService {
-        override suspend fun login(usernameOrEmail: String, password: String): AuthResult = result
+    private class FakeService(
+        private val result: AuthResult,
+    ) : AuthService {
+        override suspend fun login(
+            usernameOrEmail: String,
+            password: String,
+        ): AuthResult = result
+
         override suspend fun logout() {}
+
         override suspend fun getStoredToken(): String? = null
-        override suspend fun authenticate(baseUrl: String, credentials: UserCredentials): AuthResult = result
+
+        override suspend fun authenticate(
+            baseUrl: String,
+            credentials: UserCredentials,
+        ): AuthResult = result
     }
 }

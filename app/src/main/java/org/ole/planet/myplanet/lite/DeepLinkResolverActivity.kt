@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-01-20
@@ -14,11 +14,11 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerCatalog
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepositoryProvider
 import org.ole.planet.myplanet.lite.util.IntentUtils
 
 class DeepLinkResolverActivity : ComponentActivity() {
-    private val surveysRepository = DashboardSurveysRepository()
+    private val surveysRepository = DashboardSurveysRepositoryProvider.getRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -39,10 +39,11 @@ class DeepLinkResolverActivity : ComponentActivity() {
     }
 
     private fun openPost(postId: String) {
-        val nextIntent = Intent(this, SplashScreen::class.java).apply {
-            putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-        }
+        val nextIntent =
+            Intent(this, SplashScreen::class.java).apply {
+                putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
 
         startActivity(nextIntent)
         finish()
@@ -52,19 +53,21 @@ class DeepLinkResolverActivity : ComponentActivity() {
         lifecycleScope.launch {
             val storedBaseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
             val includeUserContext = IntentUtils.sameServer(storedBaseUrl, link.baseUrl)
-            val result = surveysRepository.fetchPublicSurvey(
-                baseUrl = link.baseUrl,
-                teamId = link.teamId,
-                surveyId = link.surveyId,
-            )
+            val result =
+                surveysRepository.fetchPublicSurvey(
+                    baseUrl = link.baseUrl,
+                    teamId = link.teamId,
+                    surveyId = link.surveyId,
+                )
             val publicSurvey = result.getOrNull()
             val document = publicSurvey?.survey
             if (document == null) {
-                Toast.makeText(
-                    this@DeepLinkResolverActivity,
-                    getString(R.string.dashboard_surveys_error_loading),
-                    Toast.LENGTH_SHORT,
-                ).show()
+                Toast
+                    .makeText(
+                        this@DeepLinkResolverActivity,
+                        getString(R.string.dashboard_surveys_error_loading),
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 finish()
                 return@launch
             }
@@ -73,16 +76,18 @@ class DeepLinkResolverActivity : ComponentActivity() {
                 baseUrl = link.baseUrl,
                 displayName = DashboardServerCatalog.displayNameFromBaseUrl(link.baseUrl),
             )
-            val nextIntent = SurveyWizardActivity.newIntent(
-                context = this@DeepLinkResolverActivity,
-                document = document,
-                teamId = link.teamId,
-                teamName = publicSurvey.team?.name,
-                baseUrl = link.baseUrl,
-                includeUserContext = includeUserContext,
-            ).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
+            val nextIntent =
+                SurveyWizardActivity
+                    .newIntent(
+                        context = this@DeepLinkResolverActivity,
+                        document = document,
+                        teamId = link.teamId,
+                        teamName = publicSurvey.team?.name,
+                        baseUrl = link.baseUrl,
+                        includeUserContext = includeUserContext,
+                    ).apply {
+                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                    }
             startActivity(nextIntent)
             finish()
         }

@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-15
@@ -9,8 +9,6 @@ package org.ole.planet.myplanet.lite.dashboard
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import java.io.IOException
-import java.io.Serializable
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -18,22 +16,23 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
+import java.io.Serializable
 
 class DashboardNewsRepository(
     private val client: OkHttpClient,
     private val moshi: Moshi,
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-
     private val requestAdapter = moshi.adapter(NewsFindRequest::class.java)
     private val responseAdapter = moshi.adapter(NewsFindResponse::class.java)
 
     suspend fun fetchNews(
         baseUrl: String,
         sessionCookie: String?,
-        query: NewsQuery
-    ): Result<NewsPage> {
-        return withContext(dispatcher) {
+        query: NewsQuery,
+    ): Result<NewsPage> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -43,36 +42,40 @@ class DashboardNewsRepository(
                 val selector = mutableMapOf<String, Any>()
                 query.createdOn?.takeIf { it.isNotBlank() }?.let { code ->
                     selector["createdOn"] = code
-                    val viewInClause = if (!query.teamName.isNullOrBlank()) {
-                        mapOf(
-                            "section" to "teams",
-                            "name" to query.teamName,
-                            "mode" to "team"
-                        )
-                    } else {
-                        query.parentCode?.takeIf { it.isNotBlank() }?.let { parent ->
+                    val viewInClause =
+                        if (!query.teamName.isNullOrBlank()) {
                             mapOf(
-                                "section" to "community",
-                                "_id" to "$code@$parent"
+                                "section" to "teams",
+                                "name" to query.teamName,
+                                "mode" to "team",
                             )
+                        } else {
+                            query.parentCode?.takeIf { it.isNotBlank() }?.let { parent ->
+                                mapOf(
+                                    "section" to "community",
+                                    "_id" to "$code@$parent",
+                                )
+                            }
                         }
-                    }
                     viewInClause?.let { clause ->
                         selector["viewIn"] = mapOf($$"$elemMatch" to clause)
                     }
                 }
-                val payload = NewsFindRequest(
-                    selector = selector,
-                    limit = query.limit,
-                    sort = listOf(mapOf("time" to "desc")),
-                    skip = query.skip,
-                    bookmark = query.bookmark
-                )
+                val payload =
+                    NewsFindRequest(
+                        selector = selector,
+                        limit = query.limit,
+                        sort = listOf(mapOf("time" to "desc")),
+                        skip = query.skip,
+                        bookmark = query.bookmark,
+                    )
                 val json = requestAdapter.toJson(payload)
                 val mediaType = "application/json; charset=utf-8".toMediaType()
-                val requestBuilder = Request.Builder()
-                    .url(requestUrl)
-                    .post(json.toRequestBody(mediaType))
+                val requestBuilder =
+                    Request
+                        .Builder()
+                        .url(requestUrl)
+                        .post(json.toRequestBody(mediaType))
                 sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
@@ -81,8 +84,9 @@ class DashboardNewsRepository(
                         throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
-                    val parsed = responseAdapter.fromJson(body)
-                        ?: throw IOException("Invalid response body")
+                    val parsed =
+                        responseAdapter.fromJson(body)
+                            ?: throw IOException("Invalid response body")
                     val docs = parsed.docs ?: emptyList()
                     val commentCounts = mutableMapOf<String, Int>()
                     docs.forEach { document ->
@@ -99,12 +103,11 @@ class DashboardNewsRepository(
                         consumed = consumed,
                         hasMore = docs.size == query.limit,
                         bookmark = parsed.bookmark,
-                        commentCounts = commentCounts
+                        commentCounts = commentCounts,
                     )
                 }
             }
         }
-    }
 
     suspend fun fetchComments(
         baseUrl: String,
@@ -113,9 +116,9 @@ class DashboardNewsRepository(
         limit: Int,
         createdOn: String?,
         parentCode: String?,
-        teamName: String? = null
-    ): Result<List<NewsDocument>> {
-        return withContext(dispatcher) {
+        teamName: String? = null,
+    ): Result<List<NewsDocument>> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -128,34 +131,38 @@ class DashboardNewsRepository(
                 val selector = mutableMapOf<String, Any>("replyTo" to postId)
                 createdOn?.takeIf { it.isNotBlank() }?.let { code ->
                     selector["createdOn"] = code
-                    val viewInClause = if (!teamName.isNullOrBlank()) {
-                        mapOf(
-                            "section" to "teams",
-                            "name" to teamName,
-                            "mode" to "team"
-                        )
-                    } else {
-                        parentCode?.takeIf { it.isNotBlank() }?.let { parent ->
+                    val viewInClause =
+                        if (!teamName.isNullOrBlank()) {
                             mapOf(
-                                "section" to "community",
-                                "_id" to "$code@$parent"
+                                "section" to "teams",
+                                "name" to teamName,
+                                "mode" to "team",
                             )
+                        } else {
+                            parentCode?.takeIf { it.isNotBlank() }?.let { parent ->
+                                mapOf(
+                                    "section" to "community",
+                                    "_id" to "$code@$parent",
+                                )
+                            }
                         }
-                    }
                     viewInClause?.let { clause ->
                         selector["viewIn"] = mapOf($$"$elemMatch" to clause)
                     }
                 }
-                val payload = NewsFindRequest(
-                    selector = selector,
-                    limit = limit,
-                    sort = listOf(mapOf("time" to "desc"))
-                )
+                val payload =
+                    NewsFindRequest(
+                        selector = selector,
+                        limit = limit,
+                        sort = listOf(mapOf("time" to "desc")),
+                    )
                 val json = requestAdapter.toJson(payload)
                 val mediaType = "application/json; charset=utf-8".toMediaType()
-                val requestBuilder = Request.Builder()
-                    .url(requestUrl)
-                    .post(json.toRequestBody(mediaType))
+                val requestBuilder =
+                    Request
+                        .Builder()
+                        .url(requestUrl)
+                        .post(json.toRequestBody(mediaType))
                 sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
@@ -164,14 +171,14 @@ class DashboardNewsRepository(
                         throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
-                    val parsed = responseAdapter.fromJson(body)
-                        ?: throw IOException("Invalid response body")
+                    val parsed =
+                        responseAdapter.fromJson(body)
+                            ?: throw IOException("Invalid response body")
                     val docs = parsed.docs ?: emptyList()
                     docs.filter { it.replyTo == postId }
                 }
             }
         }
-    }
 
     @JsonClass(generateAdapter = true)
     data class NewsFindRequest(
@@ -179,13 +186,13 @@ class DashboardNewsRepository(
         val limit: Int,
         val sort: List<Map<String, String>>,
         val skip: Int? = null,
-        val bookmark: String? = null
+        val bookmark: String? = null,
     )
 
     @JsonClass(generateAdapter = true)
     data class NewsFindResponse(
         val docs: List<NewsDocument>?,
-        val bookmark: String?
+        val bookmark: String?,
     )
 
     @JsonClass(generateAdapter = true)
@@ -204,7 +211,7 @@ class DashboardNewsRepository(
         val message: String?,
         val images: List<NewsImage>?,
         val updatedDate: Long?,
-        @param:Json(name = "_deleted") val isDeleted: Boolean?
+        @param:Json(name = "_deleted") val isDeleted: Boolean?,
     ) : Serializable
 
     @JsonClass(generateAdapter = true)
@@ -213,19 +220,19 @@ class DashboardNewsRepository(
         val firstName: String?,
         val middleName: String?,
         val lastName: String?,
-        @param:Json(name = "_attachments") val attachments: Map<String, NewsAttachment>?
+        @param:Json(name = "_attachments") val attachments: Map<String, NewsAttachment>?,
     ) : Serializable
 
     @JsonClass(generateAdapter = true)
     data class NewsAttachment(
-        @param:Json(name = "content_type") val contentType: String?
+        @param:Json(name = "content_type") val contentType: String?,
     ) : Serializable
 
     @JsonClass(generateAdapter = true)
     data class NewsImage(
         val resourceId: String?,
         val filename: String?,
-        val markdown: String?
+        val markdown: String?,
     ) : Serializable
 
     @JsonClass(generateAdapter = true)
@@ -234,7 +241,7 @@ class DashboardNewsRepository(
         @param:Json(name = "_id") val id: String?,
         @param:Json(name = "public") val isPublic: Boolean? = null,
         val name: String? = null,
-        val mode: String? = null
+        val mode: String? = null,
     ) : Serializable
 
     data class NewsPage(
@@ -242,7 +249,7 @@ class DashboardNewsRepository(
         val consumed: Int,
         val hasMore: Boolean,
         val bookmark: String?,
-        val commentCounts: Map<String, Int>
+        val commentCounts: Map<String, Int>,
     )
 
     data class NewsQuery(
@@ -251,6 +258,6 @@ class DashboardNewsRepository(
         val limit: Int,
         val createdOn: String?,
         val parentCode: String?,
-        val teamName: String? = null
+        val teamName: String? = null,
     )
 }

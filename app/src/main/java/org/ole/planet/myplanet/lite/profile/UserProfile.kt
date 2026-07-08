@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-17
@@ -6,7 +6,7 @@
 
 package org.ole.planet.myplanet.lite.profile
 
-/**
+/*
  * Represents the authenticated user profile that is cached locally after login.
  */
 data class UserProfile(
@@ -24,5 +24,5 @@ data class UserProfile(
     val revision: String?,
     val derivedKey: String?,
     val rawDocument: String?,
-    val isUserAdmin: Boolean
+    val isUserAdmin: Boolean,
 )

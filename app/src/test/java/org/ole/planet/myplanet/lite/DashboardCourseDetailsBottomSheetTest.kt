@@ -19,17 +19,17 @@ import org.robolectric.annotation.Config
 @Config(sdk = [33])
 class DashboardCourseDetailsBottomSheetTest {
 
-    private lateinit var course: DashboardCoursePageFragment.CourseItem
+    private lateinit var course: CourseItem
 
     @Before
     fun setup() {
-        course = DashboardCoursePageFragment.CourseItem(
+        course = CourseItem(
             id = "course1",
             title = "Test Course",
             description = "Test description",
             coverPath = null,
             steps = listOf(
-                DashboardCoursePageFragment.CourseItem.LessonStep(
+                CourseItem.LessonStep(
                     title = "Step 1",
                     description = "Step 1 desc",
                     mediaTypes = listOf("video", "pdf")

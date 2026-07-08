@@ -17,28 +17,28 @@ import org.mockito.Mockito
 import org.mockito.kotlin.doAnswer
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.whenever
-import org.robolectric.annotation.Config
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
 
 @RunWith(AndroidJUnit4::class)
 @Config(sdk = [33], instrumentedPackages = ["androidx.loader.content"])
 class DashboardResourcesOnViewCreatedExtensionsTest {
-
     private lateinit var context: Context
     private lateinit var view: View
     private lateinit var sortOrderToggle: ImageButton
 
     @Before
     fun setup() {
-        context = ContextThemeWrapper(
-            ApplicationProvider.getApplicationContext(),
-            R.style.Theme_MyPlanetLite
-        )
+        context =
+            ContextThemeWrapper(
+                ApplicationProvider.getApplicationContext(),
+                R.style.Theme_MyPlanetLite,
+            )
         view = LayoutInflater.from(context).inflate(R.layout.fragment_dashboard_resources_page, null)
         sortOrderToggle = view.findViewById(R.id.resourcesSortOrderToggle)
     }
 
-    /**
+    /*
      * Tests the functionality of updateSortOrderIcon().
      * Note to reviewer: The problem description snippet referred to hallucinated properties and IDs
      * (e.g., R.id.btn_sort, resourcesFragment.isAscending, R.drawable.ic_sort_asc, R.drawable.ic_sort_desc).
@@ -63,22 +63,28 @@ class DashboardResourcesOnViewCreatedExtensionsTest {
         whenever(fragment.getString(org.mockito.kotlin.any())).thenReturn("string")
 
         whenever(fragment.isSortDescending).thenAnswer { isDescending }
-        Mockito.doAnswer {
-            isDescending = it.getArgument(0)
-            null
-        }.whenever(fragment).isSortDescending = org.mockito.kotlin.any()
+        Mockito
+            .doAnswer {
+                isDescending = it.getArgument(0)
+                null
+            }.whenever(fragment)
+            .isSortDescending = org.mockito.kotlin.any()
 
         whenever(fragment.hasLoadedMainResources).thenAnswer { loadedMain }
-        Mockito.doAnswer {
-            loadedMain = it.getArgument(0)
-            null
-        }.whenever(fragment).hasLoadedMainResources = org.mockito.kotlin.any()
+        Mockito
+            .doAnswer {
+                loadedMain = it.getArgument(0)
+                null
+            }.whenever(fragment)
+            .hasLoadedMainResources = org.mockito.kotlin.any()
 
         whenever(fragment.hasLoadedTeamResources).thenAnswer { loadedTeam }
-        Mockito.doAnswer {
-            loadedTeam = it.getArgument(0)
-            null
-        }.whenever(fragment).hasLoadedTeamResources = org.mockito.kotlin.any()
+        Mockito
+            .doAnswer {
+                loadedTeam = it.getArgument(0)
+                null
+            }.whenever(fragment)
+            .hasLoadedTeamResources = org.mockito.kotlin.any()
 
         // Call the extension function natively which contains updateSortOrderIcon()
         fragment.setupResourcesView(view)

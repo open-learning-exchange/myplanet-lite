@@ -13,6 +13,8 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlinx.coroutines.runBlocking
+import org.json.JSONObject
 
 class ServerConnectivityRepositoryTest {
 
@@ -175,5 +177,66 @@ class ServerConnectivityRepositoryTest {
         assertTrue(result.reachable)
         assertNull(result.parentCode)
         assertEquals("mCode", result.code)
+    }
+
+
+    @Test
+    fun recordLoginActivity_postsPayloadWithCookie() = runBlocking {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200))
+        val baseUrl = mockWebServer.url("/login_activities").toString()
+        val payload = JSONObject().apply { put("testKey", "testValue") }
+
+        repository.recordLoginActivity(baseUrl, payload, "test-cookie")
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/login_activities", request.path)
+        assertEquals("test-cookie", request.headers["Cookie"])
+        val body = request.body.readUtf8()
+        assertEquals("{\"testKey\":\"testValue\"}", body)
+    }
+
+    @Test
+    fun recordResourceActivity_postsPayloadWithBasicAuth() = runBlocking {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200))
+        val baseUrl = mockWebServer.url("/db/resource_activities").toString()
+        val payload = JSONObject().apply { put("resourceId", "resource-1") }
+
+        repository.recordResourceActivity(baseUrl, payload, "Basic abc123")
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/db/resource_activities", request.path)
+        assertEquals("Basic abc123", request.headers["Authorization"])
+        assertEquals("{\"resourceId\":\"resource-1\"}", request.body.readUtf8())
+    }
+
+    @Test
+    fun recordCourseActivity_postsPayloadWithCookie() = runBlocking {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200))
+        val baseUrl = mockWebServer.url("/db/course_activities").toString()
+        val payload = JSONObject().apply { put("courseId", "course-1") }
+
+        repository.recordCourseActivity(baseUrl, payload, "AuthSession=test-cookie")
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/db/course_activities", request.path)
+        assertEquals("AuthSession=test-cookie", request.headers["Cookie"])
+        assertEquals("{\"courseId\":\"course-1\"}", request.body.readUtf8())
+    }
+
+    @Test
+    fun recordLoginActivity_ignoresServerError_doesNotThrow() = runBlocking {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+        val baseUrl = mockWebServer.url("/login_activities").toString()
+        val payload = JSONObject().apply { put("testKey", "testValue") }
+
+        // This should not throw an exception, fulfilling the "Intentionally ignoring response" contract
+        repository.recordLoginActivity(baseUrl, payload, "test-cookie")
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/login_activities", request.path)
     }
 }

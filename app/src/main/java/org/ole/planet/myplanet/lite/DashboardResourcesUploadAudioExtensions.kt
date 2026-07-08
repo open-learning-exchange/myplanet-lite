@@ -32,8 +32,6 @@ import kotlin.math.roundToInt
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.util.AudioWaveformView
 
 internal class AudioUploadState(
@@ -359,6 +357,7 @@ internal fun DashboardResourcesPageFragment.handleAudioUploadSave(
         )
     }
 
+    dialog.dismiss()
     performResourceCreateAndUpload(
         payload = payload,
         fileExtension = "mp3",
@@ -367,7 +366,12 @@ internal fun DashboardResourcesPageFragment.handleAudioUploadSave(
         bytesProvider = bytesProvider,
         onSuccess = {
             Toast.makeText(requireContext(), getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()
-            dialog.dismiss()
+        },
+        onComplete = {
+            if (state.uri.authority == "${requireContext().packageName}.fileprovider") {
+                currentAudioFile?.delete()
+                currentAudioFile = null
+            }
         }
     )
 }

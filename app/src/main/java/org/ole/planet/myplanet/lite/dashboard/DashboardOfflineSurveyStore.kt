@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-19
@@ -19,31 +19,41 @@ import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class DashboardOfflineSurveyStore(
     context: Context,
-    moshi: Moshi = Moshi.Builder()
-        .add(FlexibleSurveyJsonAdapter())
-        .addLast(KotlinJsonAdapterFactory())
-        .build(),
+    moshi: Moshi =
+        Moshi
+            .Builder()
+            .add(FlexibleSurveyJsonAdapter())
+            .addLast(KotlinJsonAdapterFactory())
+            .build(),
 ) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
-
-    private val documentAdapter = moshi.newBuilder()
-        .add(FlexibleSurveyJsonAdapter())
-        .addLast(KotlinJsonAdapterFactory())
-        .build()
-        .adapter(SurveyDocument::class.java)
+    private val documentAdapter =
+        moshi
+            .newBuilder()
+            .add(FlexibleSurveyJsonAdapter())
+            .addLast(KotlinJsonAdapterFactory())
+            .build()
+            .adapter(SurveyDocument::class.java)
 
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(CREATE_TABLE_QUERY)
         db.execSQL(CREATE_INDEX_QUERY)
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+    override fun onUpgrade(
+        db: SQLiteDatabase,
+        oldVersion: Int,
+        newVersion: Int,
+    ) {
         if (oldVersion < DATABASE_VERSION) {
             db.execSQL("DROP TABLE IF EXISTS surveys")
             onCreate(db)
         }
     }
 
-    suspend fun saveSurvey(document: SurveyDocument, fallbackTeamId: String?): Boolean {
+    suspend fun saveSurvey(
+        document: SurveyDocument,
+        fallbackTeamId: String?,
+    ): Boolean {
         val id = document.id?.trim().orEmpty()
         if (id.isEmpty()) {
             return false
@@ -52,12 +62,13 @@ class DashboardOfflineSurveyStore(
         val rev = document.rev
         val teamId = document.teamId ?: fallbackTeamId
         return withContext(Dispatchers.IO) {
-            val values = ContentValues().apply {
-                put(COLUMN_ID, id)
-                put(COLUMN_REV, rev)
-                put(COLUMN_TEAM_ID, teamId)
-                put(COLUMN_DOCUMENT, serialized)
-            }
+            val values =
+                ContentValues().apply {
+                    put(COLUMN_ID, id)
+                    put(COLUMN_REV, rev)
+                    put(COLUMN_TEAM_ID, teamId)
+                    put(COLUMN_DOCUMENT, serialized)
+                }
             writableDatabase.insertWithOnConflict(
                 TABLE_SURVEYS,
                 null,
@@ -67,66 +78,73 @@ class DashboardOfflineSurveyStore(
         }
     }
 
-    suspend fun getSavedSurveyIds(): Set<String> = withContext(Dispatchers.IO) {
-        readableDatabase.query(
-            TABLE_SURVEYS,
-            arrayOf(COLUMN_ID),
-            null,
-            null,
-            null,
-            null,
-            null,
-        ).use { cursor ->
-            buildSet {
-                val idIndex = cursor.getColumnIndexOrThrow(COLUMN_ID)
-                while (cursor.moveToNext()) {
-                    add(cursor.getString(idIndex))
-                }
-            }
-        }
-    }
-
-    suspend fun getSavedSurveysForTeam(teamId: String): List<SurveyDocument> = withContext(Dispatchers.IO) {
-        val jsons = readableDatabase.query(
-            TABLE_SURVEYS,
-            arrayOf(COLUMN_DOCUMENT),
-            "$COLUMN_TEAM_ID = ?",
-            arrayOf(teamId),
-            null,
-            null,
-            null,
-        ).use { cursor ->
-            val jsonIndex = cursor.getColumnIndexOrThrow(COLUMN_DOCUMENT)
-            buildList {
-                while (cursor.moveToNext()) {
-                    cursor.getString(jsonIndex)?.let { add(it) }
-                }
-            }
-        }
-
-        jsons.mapNotNull { json -> documentAdapter.fromJson(json) }
-    }
-
-    suspend fun getSavedSurveyRevisions(): Map<String, String?> = withContext(Dispatchers.IO) {
-        readableDatabase.query(
-            TABLE_SURVEYS,
-            arrayOf(COLUMN_ID, COLUMN_REV),
-            null,
-            null,
-            null,
-            null,
-            null,
-        ).use { cursor ->
-            buildMap {
-                while (cursor.moveToNext()) {
-                    val id = cursor.getStringOrNull(COLUMN_ID)?.trim().orEmpty()
-                    if (id.isNotEmpty()) {
-                        put(id, cursor.getStringOrNull(COLUMN_REV))
+    suspend fun getSavedSurveyIds(): Set<String> =
+        withContext(Dispatchers.IO) {
+            readableDatabase
+                .query(
+                    TABLE_SURVEYS,
+                    arrayOf(COLUMN_ID),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                ).use { cursor ->
+                    buildSet {
+                        val idIndex = cursor.getColumnIndexOrThrow(COLUMN_ID)
+                        while (cursor.moveToNext()) {
+                            add(cursor.getString(idIndex))
+                        }
                     }
                 }
-            }
         }
-    }
+
+    suspend fun getSavedSurveysForTeam(teamId: String): List<SurveyDocument> =
+        withContext(Dispatchers.IO) {
+            val jsons =
+                readableDatabase
+                    .query(
+                        TABLE_SURVEYS,
+                        arrayOf(COLUMN_DOCUMENT),
+                        "$COLUMN_TEAM_ID = ?",
+                        arrayOf(teamId),
+                        null,
+                        null,
+                        null,
+                    ).use { cursor ->
+                        val jsonIndex = cursor.getColumnIndexOrThrow(COLUMN_DOCUMENT)
+                        buildList {
+                            while (cursor.moveToNext()) {
+                                cursor.getString(jsonIndex)?.let { add(it) }
+                            }
+                        }
+                    }
+
+            jsons.mapNotNull { json -> documentAdapter.fromJson(json) }
+        }
+
+    suspend fun getSavedSurveyRevisions(): Map<String, String?> =
+        withContext(Dispatchers.IO) {
+            readableDatabase
+                .query(
+                    TABLE_SURVEYS,
+                    arrayOf(COLUMN_ID, COLUMN_REV),
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                ).use { cursor ->
+                    buildMap {
+                        while (cursor.moveToNext()) {
+                            val id = cursor.getStringOrNull(COLUMN_ID)?.trim().orEmpty()
+                            if (id.isNotEmpty()) {
+                                put(id, cursor.getStringOrNull(COLUMN_REV))
+                            }
+                        }
+                    }
+                }
+        }
 
     companion object {
         private const val DATABASE_NAME = "dashboard_offline_surveys.db"
@@ -150,11 +168,10 @@ class DashboardOfflineSurveyStore(
         @Volatile
         private var instance: DashboardOfflineSurveyStore? = null
 
-        fun getInstance(context: Context): DashboardOfflineSurveyStore {
-            return instance ?: synchronized(this) {
+        fun getInstance(context: Context): DashboardOfflineSurveyStore =
+            instance ?: synchronized(this) {
                 instance ?: DashboardOfflineSurveyStore(context.applicationContext).also { instance = it }
             }
-        }
 
         fun resetForTesting(context: Context) {
             instance?.close()

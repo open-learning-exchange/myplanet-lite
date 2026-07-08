@@ -7,10 +7,12 @@ import android.widget.EditText
 import androidx.test.core.app.ApplicationProvider
 import com.google.android.material.button.MaterialButton
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.PrintStream
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.junit.AfterClass
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -79,6 +81,26 @@ class DashboardPostDetailActivityRobolectricTest {
         assertEquals("*reply*", input.text.toString())
     }
 
+    @Test
+    fun `reply send button is enabled when composer only has a pending image`() {
+        val activity = buildReplyEnabledActivity()
+        val sendButton: MaterialButton = activity.findViewById(R.id.dashboardReplySendButton)
+        val tempImage = File.createTempFile("reply-image", ".jpg")
+
+        activity.setPrivateFieldForTest("isReplyComposerExpanded", true)
+        activity.addPendingReplyImageForTest(
+            PendingVoiceImage(
+                id = "reply-image",
+                fileName = "reply-image.jpg",
+                file = tempImage,
+                jpegBytes = byteArrayOf(1, 2, 3)
+            )
+        )
+        activity.updateReplyActionAvailabilityForTest("")
+
+        assertTrue(sendButton.isEnabled)
+    }
+
     private fun buildReplyEnabledActivity(): DashboardPostDetailActivity {
         val intent = Intent(context, DashboardPostDetailActivity::class.java)
             .putExtra(DashboardPostDetailActivity.EXTRA_POST_ID, "post-1")
@@ -116,5 +138,28 @@ class DashboardPostDetailActivityRobolectricTest {
         )
         method.isAccessible = true
         method.invoke(this, prefix, suffix, placeholder, placeCursorInsideWhenNoSelection)
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun DashboardPostDetailActivity.addPendingReplyImageForTest(pending: PendingVoiceImage) {
+        val field = DashboardPostDetailActivity::class.java.getDeclaredField("pendingReplyImages")
+        field.isAccessible = true
+        val pendingImages = field.get(this) as LinkedHashMap<String, PendingVoiceImage>
+        pendingImages[pending.id] = pending
+    }
+
+    private fun DashboardPostDetailActivity.setPrivateFieldForTest(name: String, value: Any) {
+        val field = DashboardPostDetailActivity::class.java.getDeclaredField(name)
+        field.isAccessible = true
+        field.set(this, value)
+    }
+
+    private fun DashboardPostDetailActivity.updateReplyActionAvailabilityForTest(text: CharSequence?) {
+        val method = DashboardPostDetailActivity::class.java.getDeclaredMethod(
+            "updateReplyActionAvailability",
+            CharSequence::class.java
+        )
+        method.isAccessible = true
+        method.invoke(this, text)
     }
 }

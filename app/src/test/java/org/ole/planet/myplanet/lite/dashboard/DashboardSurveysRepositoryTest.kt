@@ -34,7 +34,7 @@ class DashboardSurveysRepositoryTest {
     fun setUp() {
         mockWebServer = MockWebServer()
         mockWebServer.start()
-        repository = DashboardSurveysRepository()
+        repository = DashboardSurveysRepository(client = okhttp3.OkHttpClient.Builder().build())
     }
 
     @After
@@ -79,6 +79,59 @@ class DashboardSurveysRepositoryTest {
 
         val expectedRequestBody = """{"selector":{"type":"surveys","teamId":"team1","isArchived":{"${'$'}exists":false}}}"""
         assertEquals(expectedRequestBody, request.body.readUtf8())
+    }
+
+    @Test
+    fun getCompletionCountsWithDefaults_returnsMapWithZeros() = runTest {
+        val jsonResponse = """
+            {
+              "docs": [
+                {
+                  "parentId": "survey1@team1"
+                }
+              ]
+            }
+        """.trimIndent()
+
+        mockWebServer.enqueue(MockResponse().setBody(jsonResponse).setResponseCode(200))
+
+        val result = repository.getCompletionCountsWithDefaults(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = null,
+            sessionCookie = null,
+            teamId = "team1",
+            surveyIds = listOf("survey1", "survey2")
+        )
+
+        assertEquals(1, result["survey1"])
+        assertEquals(0, result["survey2"])
+    }
+
+    @Test
+    fun getCompletionCountsWithDefaults_emptyIdsReturnsEmptyMap() = runTest {
+        val result = repository.getCompletionCountsWithDefaults(
+            baseUrl = "http://localhost",
+            credentials = null,
+            sessionCookie = null,
+            teamId = "team1",
+            surveyIds = emptyList()
+        )
+        assertTrue(result.isEmpty())
+    }
+
+    @Test
+    fun getCompletionCountsWithDefaults_returnsDefaultsOnFailure() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        val result = repository.getCompletionCountsWithDefaults(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = null,
+            sessionCookie = null,
+            teamId = "team1",
+            surveyIds = listOf("survey1")
+        )
+
+        assertEquals(0, result["survey1"])
     }
 
     @Test
@@ -343,6 +396,27 @@ class DashboardSurveysRepositoryTest {
         // Simulate OkHttp failing after cancellation has already occurred
         // The onFailure should just return and not throw or crash
         capturedCallback.onFailure(mockCall, IOException("Late failure"))
+
+        assertTrue(job.isCancelled)
+    }
+
+    @Test
+    fun await_onCancellation_ignoresGeneralException() = runTest {
+        val mockCall = mock<Call>()
+
+        doThrow(RuntimeException("Cancel failed")).`when`(mockCall).cancel()
+
+        doAnswer {
+            null
+        }.`when`(mockCall).enqueue(any())
+
+        val job = launch {
+            mockCall.await()
+        }
+
+        delay(10)
+        job.cancel()
+        job.join()
 
         assertTrue(job.isCancelled)
     }

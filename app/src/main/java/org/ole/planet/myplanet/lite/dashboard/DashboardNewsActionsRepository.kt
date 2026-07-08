@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-19
@@ -9,24 +9,19 @@ package org.ole.planet.myplanet.lite.dashboard
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.IOException
 
 class DashboardNewsActionsRepository(
-    private val client: OkHttpClient = OkHttpClient.Builder().build(),
-    private val moshi: Moshi = Moshi.Builder()
-        .addLast(KotlinJsonAdapterFactory())
-        .build(),
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO
+    private val client: OkHttpClient,
+    private val moshi: Moshi,
+    private val dispatcher: CoroutineDispatcher,
 ) {
-
     private val deleteRequestAdapter = moshi.adapter(DeleteNewsRequest::class.java)
     private val updateRequestAdapter = moshi.adapter(UpdateNewsRequest::class.java)
     private val responseAdapter = moshi.adapter(DeleteNewsResponse::class.java)
@@ -36,39 +31,46 @@ class DashboardNewsActionsRepository(
         sessionCookie: String?,
         document: DashboardNewsRepository.NewsDocument,
         teamId: String? = null,
-        teamName: String? = null
-    ): Result<DeleteNewsResponse> {
-        return withContext(dispatcher) {
+        teamName: String? = null,
+    ): Result<DeleteNewsResponse> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
-                val id = document.id?.takeIf { it.isNotBlank() }
-                    ?: throw IOException("Missing document id")
-                val revision = document.revision?.takeIf { it.isNotBlank() }
-                    ?: throw IOException("Missing document revision")
-                val payload = DeleteNewsRequest(
-                    id = id,
-                    revision = revision,
-                    docType = document.docType,
-                    time = document.time,
-                    createdOn = document.createdOn,
-                    parentCode = document.parentCode,
-                    user = document.user,
-                    viewIn = resolveViewInEntries(document, teamId, teamName),
-                    messageType = document.messageType,
-                    messagePlanetCode = document.messagePlanetCode,
-                    message = document.message,
-                    images = document.images,
-                    updatedDate = System.currentTimeMillis(),
-                    deleted = true
-                )
-                val requestBody = deleteRequestAdapter.toJson(payload)
-                    .toRequestBody(JSON_MEDIA_TYPE)
-                val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/news/")
-                    .post(requestBody)
+                val id =
+                    document.id?.takeIf { it.isNotBlank() }
+                        ?: throw IOException("Missing document id")
+                val revision =
+                    document.revision?.takeIf { it.isNotBlank() }
+                        ?: throw IOException("Missing document revision")
+                val payload =
+                    DeleteNewsRequest(
+                        id = id,
+                        revision = revision,
+                        docType = document.docType,
+                        time = document.time,
+                        createdOn = document.createdOn,
+                        parentCode = document.parentCode,
+                        user = document.user,
+                        viewIn = resolveViewInEntries(document, teamId, teamName),
+                        messageType = document.messageType,
+                        messagePlanetCode = document.messagePlanetCode,
+                        message = document.message,
+                        images = document.images,
+                        updatedDate = System.currentTimeMillis(),
+                        deleted = true,
+                    )
+                val requestBody =
+                    deleteRequestAdapter
+                        .toJson(payload)
+                        .toRequestBody(JSON_MEDIA_TYPE)
+                val requestBuilder =
+                    Request
+                        .Builder()
+                        .url("$normalizedBase/db/news/")
+                        .post(requestBody)
                 sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
@@ -81,7 +83,6 @@ class DashboardNewsActionsRepository(
                 }
             }
         }
-    }
 
     suspend fun updateNews(
         baseUrl: String,
@@ -90,39 +91,46 @@ class DashboardNewsActionsRepository(
         message: String,
         images: List<DashboardNewsRepository.NewsImage>,
         teamId: String? = null,
-        teamName: String? = null
-    ): Result<DeleteNewsResponse> {
-        return withContext(dispatcher) {
+        teamName: String? = null,
+    ): Result<DeleteNewsResponse> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
                     throw IOException("Missing server base URL")
                 }
-                val id = document.id?.takeIf { it.isNotBlank() }
-                    ?: throw IOException("Missing document id")
-                val revision = document.revision?.takeIf { it.isNotBlank() }
-                    ?: throw IOException("Missing document revision")
-                val payload = UpdateNewsRequest(
-                    id = id,
-                    revision = revision,
-                    docType = document.docType,
-                    time = document.time,
-                    createdOn = document.createdOn,
-                    parentCode = document.parentCode,
-                    replyTo = document.replyTo,
-                    user = document.user,
-                    viewIn = resolveViewInEntries(document, teamId, teamName),
-                    messageType = document.messageType,
-                    messagePlanetCode = document.messagePlanetCode,
-                    message = message,
-                    images = images.takeUnless { it.isEmpty() },
-                    updatedDate = System.currentTimeMillis()
-                )
-                val requestBody = updateRequestAdapter.toJson(payload)
-                    .toRequestBody(JSON_MEDIA_TYPE)
-                val requestBuilder = Request.Builder()
-                    .url("$normalizedBase/db/news/")
-                    .post(requestBody)
+                val id =
+                    document.id?.takeIf { it.isNotBlank() }
+                        ?: throw IOException("Missing document id")
+                val revision =
+                    document.revision?.takeIf { it.isNotBlank() }
+                        ?: throw IOException("Missing document revision")
+                val payload =
+                    UpdateNewsRequest(
+                        id = id,
+                        revision = revision,
+                        docType = document.docType,
+                        time = document.time,
+                        createdOn = document.createdOn,
+                        parentCode = document.parentCode,
+                        replyTo = document.replyTo,
+                        user = document.user,
+                        viewIn = resolveViewInEntries(document, teamId, teamName),
+                        messageType = document.messageType,
+                        messagePlanetCode = document.messagePlanetCode,
+                        message = message,
+                        images = images.takeUnless { it.isEmpty() },
+                        updatedDate = System.currentTimeMillis(),
+                    )
+                val requestBody =
+                    updateRequestAdapter
+                        .toJson(payload)
+                        .toRequestBody(JSON_MEDIA_TYPE)
+                val requestBuilder =
+                    Request
+                        .Builder()
+                        .url("$normalizedBase/db/news/")
+                        .post(requestBody)
                 sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
                     requestBuilder.addHeader("Cookie", cookie)
                 }
@@ -135,7 +143,6 @@ class DashboardNewsActionsRepository(
                 }
             }
         }
-    }
 
     @JsonClass(generateAdapter = true)
     data class DeleteNewsRequest(
@@ -152,7 +159,7 @@ class DashboardNewsActionsRepository(
         val message: String?,
         val images: List<DashboardNewsRepository.NewsImage>?,
         val updatedDate: Long?,
-        @param:Json(name = "_deleted") val deleted: Boolean
+        @param:Json(name = "_deleted") val deleted: Boolean,
     )
 
     @JsonClass(generateAdapter = true)
@@ -170,14 +177,14 @@ class DashboardNewsActionsRepository(
         val messagePlanetCode: String?,
         val message: String?,
         val images: List<DashboardNewsRepository.NewsImage>?,
-        val updatedDate: Long?
+        val updatedDate: Long?,
     )
 
     @JsonClass(generateAdapter = true)
     data class DeleteNewsResponse(
         val ok: Boolean?,
         @param:Json(name = "id") val id: String?,
-        @param:Json(name = "rev") val revision: String?
+        @param:Json(name = "rev") val revision: String?,
     )
 
     companion object {
@@ -187,19 +194,20 @@ class DashboardNewsActionsRepository(
         internal fun resolveViewInEntries(
             document: DashboardNewsRepository.NewsDocument,
             teamId: String?,
-            teamName: String?
+            teamName: String?,
         ): List<DashboardNewsRepository.ViewInEntry> {
-            val existing = document.viewIn?.takeUnless { it.isEmpty() }?.map { entry ->
-                if (entry.section == "teams") {
-                    entry.copy(
-                        isPublic = entry.isPublic ?: false,
-                        name = entry.name ?: teamName,
-                        mode = entry.mode ?: "team"
-                    )
-                } else {
-                    entry
+            val existing =
+                document.viewIn?.takeUnless { it.isEmpty() }?.map { entry ->
+                    if (entry.section == "teams") {
+                        entry.copy(
+                            isPublic = entry.isPublic ?: false,
+                            name = entry.name ?: teamName,
+                            mode = entry.mode ?: "team",
+                        )
+                    } else {
+                        entry
+                    }
                 }
-            }
             if (!existing.isNullOrEmpty()) {
                 return existing
             }
@@ -211,7 +219,7 @@ class DashboardNewsActionsRepository(
             createdOn: String?,
             parentCode: String?,
             teamId: String?,
-            teamName: String?
+            teamName: String?,
         ): List<DashboardNewsRepository.ViewInEntry> {
             val targetTeamId = teamId?.takeIf { it.isNotBlank() }
             val targetTeamName = teamName?.takeIf { it.isNotBlank() }
@@ -222,8 +230,8 @@ class DashboardNewsActionsRepository(
                         id = targetTeamId,
                         isPublic = false,
                         name = targetTeamName,
-                        mode = "team"
-                    )
+                        mode = "team",
+                    ),
                 )
             }
 
@@ -235,8 +243,8 @@ class DashboardNewsActionsRepository(
             return listOf(
                 DashboardNewsRepository.ViewInEntry(
                     section = "community",
-                    id = "$planet@$parent"
-                )
+                    id = "$planet@$parent",
+                ),
             )
         }
     }
