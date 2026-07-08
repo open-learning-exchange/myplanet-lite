@@ -619,6 +619,7 @@ class DashboardTeamMembersSupportTest {
 
 
     @Test
+    @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
     fun testDashboardTeamMembersInviteDialogController_debounceSearch() = runTest {
         val testDispatcher = StandardTestDispatcher(testScheduler)
         val context = ApplicationProvider.getApplicationContext<Context>()
