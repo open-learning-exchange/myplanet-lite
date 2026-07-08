@@ -475,9 +475,7 @@ class ProfileActivity : BaseActivity() {
                     }
                 }
 
-                is AuthResult.Error, is AuthResult.Failure -> {
-                    Unit
-                }
+                is AuthResult.Error, is AuthResult.Failure -> {}
             }
         }
 
