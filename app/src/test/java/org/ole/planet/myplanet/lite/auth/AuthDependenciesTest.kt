@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-20
@@ -19,7 +19,6 @@ import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class AuthDependenciesTest {
-
     private lateinit var mockContext: Context
     private lateinit var mockPrefs: SharedPreferences
 

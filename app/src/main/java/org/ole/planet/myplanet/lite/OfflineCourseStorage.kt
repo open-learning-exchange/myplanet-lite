@@ -34,7 +34,7 @@ object OfflineCourseStorage {
     fun loadDownloadedCourses(
         context: Context,
         source: DownloadSource? = null
-    ): List<DashboardCoursePageFragment.CourseItem> {
+    ): List<CourseItem> {
         return downloadedCourseIds(context).mapNotNull { courseId ->
             runCatching {
                 val json = manifestFile(context, courseId).readText()
@@ -47,7 +47,7 @@ object OfflineCourseStorage {
 
     fun saveCourseManifest(
         context: Context,
-        course: DashboardCoursePageFragment.CourseItem,
+        course: CourseItem,
         source: DownloadSource
     ) {
         val file = manifestFile(context, course.id)
@@ -145,7 +145,7 @@ object OfflineCourseStorage {
     }
 
     private fun serializeCourse(
-        course: DashboardCoursePageFragment.CourseItem,
+        course: CourseItem,
         source: DownloadSource
     ): JSONObject {
         val steps = JSONArray().apply {
@@ -185,7 +185,7 @@ object OfflineCourseStorage {
             .put("steps", steps)
     }
 
-    private fun parseCourse(json: JSONObject): DashboardCoursePageFragment.CourseItem {
+    private fun parseCourse(json: JSONObject): CourseItem {
         val stepsArray = json.optJSONArray("steps") ?: JSONArray()
         val steps = (0 until stepsArray.length()).mapNotNull { i ->
             val step = stepsArray.optJSONObject(i) ?: return@mapNotNull null
@@ -199,13 +199,13 @@ object OfflineCourseStorage {
                 val id = resource.optString("id")
                 val filename = resource.optString("filename")
                 if (id.isBlank() || filename.isBlank()) return@mapNotNull null
-                DashboardCoursePageFragment.CourseItem.LessonResource(
+                CourseItem.LessonResource(
                     id = id,
                     filename = filename,
                     mediaType = resource.optString("mediaType")
                 )
             }
-            DashboardCoursePageFragment.CourseItem.LessonStep(
+            CourseItem.LessonStep(
                 title = step.optString("title"),
                 description = step.optString("description"),
                 mediaTypes = mediaTypes,
@@ -215,7 +215,7 @@ object OfflineCourseStorage {
             )
         }
 
-        return DashboardCoursePageFragment.CourseItem(
+        return CourseItem(
             id = json.optString("id"),
             title = json.optString("title"),
             description = json.optString("description"),

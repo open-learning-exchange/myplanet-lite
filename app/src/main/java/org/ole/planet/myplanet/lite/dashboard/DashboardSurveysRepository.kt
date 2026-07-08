@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-24
@@ -15,8 +15,6 @@ import com.squareup.moshi.JsonWriter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.ToJson
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import java.io.IOException
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -30,16 +28,19 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import java.io.IOException
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 class DashboardSurveysRepository(
-    private val client: OkHttpClient = OkHttpClient.Builder().build(),
-    private val moshi: Moshi = Moshi.Builder()
-        .add(FlexibleSurveyJsonAdapter())
-        .addLast(KotlinJsonAdapterFactory())
-        .build(),
+    private val client: OkHttpClient,
+    private val moshi: Moshi =
+        Moshi
+            .Builder()
+            .add(FlexibleSurveyJsonAdapter())
+            .addLast(KotlinJsonAdapterFactory())
+            .build(),
     private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
     private val findRequestAdapter = moshi.adapter(SurveysFindRequest::class.java)
@@ -54,8 +55,8 @@ class DashboardSurveysRepository(
         credentials: StoredCredentials?,
         sessionCookie: String?,
         teamId: String,
-    ): Result<List<SurveyDocument>> {
-        return withContext(dispatcher) {
+    ): Result<List<SurveyDocument>> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -64,16 +65,19 @@ class DashboardSurveysRepository(
                 if (teamId.isBlank()) {
                     throw IOException("Missing team id")
                 }
-                val selector = SurveySelector(
-                    type = "surveys",
-                    teamId = teamId,
-                    isArchived = mapOf($$"$exists" to false),
-                )
+                val selector =
+                    SurveySelector(
+                        type = "surveys",
+                        teamId = teamId,
+                        isArchived = mapOf($$"$exists" to false),
+                    )
                 val payload = findRequestAdapter.toJson(SurveysFindRequest(selector))
                 val endpoint = "$normalizedBase/db/exams/_find"
-                val requestBuilder = Request.Builder()
-                    .url(endpoint)
-                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                val requestBuilder =
+                    Request
+                        .Builder()
+                        .url(endpoint)
+                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
                 }
@@ -89,15 +93,14 @@ class DashboardSurveysRepository(
                 }
             }
         }
-    }
 
     suspend fun fetchSurveyById(
         baseUrl: String,
         credentials: StoredCredentials?,
         sessionCookie: String?,
         surveyId: String,
-    ): Result<SurveyDocument> {
-        return withContext(dispatcher) {
+    ): Result<SurveyDocument> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -106,13 +109,16 @@ class DashboardSurveysRepository(
                 if (surveyId.isBlank()) {
                     throw IOException("Missing survey id")
                 }
-                val base = normalizedBase.toHttpUrlOrNull()
-                    ?: throw IOException("Invalid server base URL")
-                val endpoint = base.newBuilder()
-                    .addPathSegment("db")
-                    .addPathSegment("exams")
-                    .addPathSegment(surveyId)
-                    .build()
+                val base =
+                    normalizedBase.toHttpUrlOrNull()
+                        ?: throw IOException("Invalid server base URL")
+                val endpoint =
+                    base
+                        .newBuilder()
+                        .addPathSegment("db")
+                        .addPathSegment("exams")
+                        .addPathSegment(surveyId)
+                        .build()
                 val requestBuilder = Request.Builder().url(endpoint)
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
@@ -130,14 +136,13 @@ class DashboardSurveysRepository(
                 }
             }
         }
-    }
 
     suspend fun fetchPublicSurvey(
         baseUrl: String,
         teamId: String,
         surveyId: String,
-    ): Result<PublicSurveyResponse> {
-        return withContext(dispatcher) {
+    ): Result<PublicSurveyResponse> =
+        withContext(dispatcher) {
             runCatching {
                 val normalizedBase = baseUrl.trim().trimEnd('/')
                 if (normalizedBase.isEmpty()) {
@@ -149,19 +154,24 @@ class DashboardSurveysRepository(
                 if (surveyId.isBlank()) {
                     throw IOException("Missing survey id")
                 }
-                val base = normalizedBase.toHttpUrlOrNull()
-                    ?: throw IOException("Invalid server base URL")
-                val endpoint = base.newBuilder()
-                    .addPathSegment("api")
-                    .addPathSegment("public")
-                    .addPathSegment("surveys")
-                    .addPathSegment(teamId)
-                    .addPathSegment(surveyId)
-                    .build()
-                val request = Request.Builder()
-                    .url(endpoint)
-                    .get()
-                    .build()
+                val base =
+                    normalizedBase.toHttpUrlOrNull()
+                        ?: throw IOException("Invalid server base URL")
+                val endpoint =
+                    base
+                        .newBuilder()
+                        .addPathSegment("api")
+                        .addPathSegment("public")
+                        .addPathSegment("surveys")
+                        .addPathSegment(teamId)
+                        .addPathSegment(surveyId)
+                        .build()
+                val request =
+                    Request
+                        .Builder()
+                        .url(endpoint)
+                        .get()
+                        .build()
                 client.newCall(request).await().use { response ->
                     if (!response.isSuccessful) {
                         throw IOException("Unexpected response ${response.code}")
@@ -172,7 +182,6 @@ class DashboardSurveysRepository(
                 }
             }
         }
-    }
 
     @JsonClass(generateAdapter = true)
     data class SurveysFindRequest(
@@ -235,7 +244,6 @@ class DashboardSurveysRepository(
         @param:Json(name = "id") val id: String? = null,
     ) : java.io.Serializable
 
-
     suspend fun getCompletionCountsWithDefaults(
         baseUrl: String,
         credentials: StoredCredentials?,
@@ -275,27 +283,31 @@ class DashboardSurveysRepository(
                     parentMatches.add(
                         java.util.Collections.singletonMap(
                             parentIdKey,
-                            java.util.Collections.singletonMap(regexKey, "^${surveyId}@")
-                        )
+                            java.util.Collections.singletonMap(regexKey, "^$surveyId@"),
+                        ),
                     )
                 }
 
-                val selector = SurveyCompletionsSelector(
-                    type = "survey",
-                    status = "complete",
-                    teamId = teamId,
-                    parentMatches = parentMatches,
-                )
-                val payload = completionsRequestAdapter.toJson(
-                    SurveyCompletionsRequest(
-                        selector = selector,
-                        limit = 50000,
-                    ),
-                )
+                val selector =
+                    SurveyCompletionsSelector(
+                        type = "survey",
+                        status = "complete",
+                        teamId = teamId,
+                        parentMatches = parentMatches,
+                    )
+                val payload =
+                    completionsRequestAdapter.toJson(
+                        SurveyCompletionsRequest(
+                            selector = selector,
+                            limit = 50000,
+                        ),
+                    )
                 val endpoint = "$normalizedBase/db/submissions/_find"
-                val requestBuilder = Request.Builder()
-                    .url(endpoint)
-                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
+                val requestBuilder =
+                    Request
+                        .Builder()
+                        .url(endpoint)
+                        .post(payload.toRequestBody(JSON_MEDIA_TYPE))
                 credentials?.let { creds ->
                     requestBuilder.addHeader("Authorization", Credentials.basic(creds.username, creds.password))
                 }
@@ -319,6 +331,7 @@ class DashboardSurveysRepository(
             }
         }
     }
+
     @JsonClass(generateAdapter = true)
     data class SurveyCompletionsRequest(
         @param:Json(name = "selector") val selector: SurveyCompletionsSelector,
@@ -346,21 +359,29 @@ class DashboardSurveysRepository(
 
 suspend fun Call.await(): Response {
     return suspendCancellableCoroutine { continuation ->
-        enqueue(object : Callback {
-            override fun onResponse(call: Call, response: Response) {
-                continuation.resume(response)
-            }
+        enqueue(
+            object : Callback {
+                override fun onResponse(
+                    call: Call,
+                    response: Response,
+                ) {
+                    continuation.resume(response)
+                }
 
-            override fun onFailure(call: Call, e: IOException) {
-                if (continuation.isCancelled) return
-                continuation.resumeWithException(e)
-            }
-        })
+                override fun onFailure(
+                    call: Call,
+                    e: IOException,
+                ) {
+                    if (continuation.isCancelled) return
+                    continuation.resumeWithException(e)
+                }
+            },
+        )
 
         continuation.invokeOnCancellation {
             try {
                 cancel()
-            } catch (ex: CancellationException) {
+            } catch (ex: Exception) {
                 // Ignore cancel exception
             }
         }
@@ -378,20 +399,31 @@ internal annotation class FlexibleString
 internal class FlexibleSurveyJsonAdapter {
     @FromJson
     @FlexibleInt
-    fun fromJsonFlexibleInt(reader: JsonReader): Int? {
-        return when (reader.peek()) {
-            JsonReader.Token.NULL -> reader.nextNull()
-            JsonReader.Token.NUMBER -> reader.nextInt()
-            JsonReader.Token.STRING -> reader.nextString().trim().toIntOrNull()
+    fun fromJsonFlexibleInt(reader: JsonReader): Int? =
+        when (reader.peek()) {
+            JsonReader.Token.NULL -> {
+                reader.nextNull()
+            }
+
+            JsonReader.Token.NUMBER -> {
+                reader.nextInt()
+            }
+
+            JsonReader.Token.STRING -> {
+                reader.nextString().trim().toIntOrNull()
+            }
+
             else -> {
                 reader.skipValue()
                 null
             }
         }
-    }
 
     @ToJson
-    fun toJsonFlexibleInt(writer: JsonWriter, @FlexibleInt value: Int?) {
+    fun toJsonFlexibleInt(
+        writer: JsonWriter,
+        @FlexibleInt value: Int?,
+    ) {
         if (value == null) {
             writer.nullValue()
         } else {
@@ -401,21 +433,35 @@ internal class FlexibleSurveyJsonAdapter {
 
     @FromJson
     @FlexibleString
-    fun fromJsonFlexibleString(reader: JsonReader): String? {
-        return when (reader.peek()) {
-            JsonReader.Token.NULL -> reader.nextNull()
-            JsonReader.Token.STRING -> reader.nextString()
-            JsonReader.Token.NUMBER -> reader.nextLong().toString()
-            JsonReader.Token.BOOLEAN -> reader.nextBoolean().toString()
+    fun fromJsonFlexibleString(reader: JsonReader): String? =
+        when (reader.peek()) {
+            JsonReader.Token.NULL -> {
+                reader.nextNull()
+            }
+
+            JsonReader.Token.STRING -> {
+                reader.nextString()
+            }
+
+            JsonReader.Token.NUMBER -> {
+                reader.nextLong().toString()
+            }
+
+            JsonReader.Token.BOOLEAN -> {
+                reader.nextBoolean().toString()
+            }
+
             else -> {
                 reader.skipValue()
                 null
             }
         }
-    }
 
     @ToJson
-    fun toJsonFlexibleString(writer: JsonWriter, @FlexibleString value: String?) {
+    fun toJsonFlexibleString(
+        writer: JsonWriter,
+        @FlexibleString value: String?,
+    ) {
         if (value == null) {
             writer.nullValue()
         } else {

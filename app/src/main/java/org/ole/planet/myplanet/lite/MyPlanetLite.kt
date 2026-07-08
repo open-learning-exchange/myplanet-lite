@@ -1,9 +1,10 @@
 @file:Suppress("DEPRECATION")
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
  */
+
 package org.ole.planet.myplanet.lite
 import android.content.Context
 import android.content.Intent
@@ -46,9 +47,6 @@ import com.squareup.moshi.JsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import java.util.ArrayList
-import java.util.Locale
-import kotlin.math.roundToInt
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.isActive
@@ -69,9 +67,11 @@ import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import java.util.ArrayList
+import java.util.Locale
+import kotlin.math.roundToInt
 
 class MyPlanetLite : BaseActivity() {
-
     private var originalLogoWidth = 0
     private var originalLogoHeight = 0
     private var shrunkLogoSizePx = 0
@@ -129,38 +129,43 @@ class MyPlanetLite : BaseActivity() {
         ServerConnectivityRepository(connectivityClient, moshi)
     }
 
-    private val signupLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-        if (result.resultCode == RESULT_OK) {
-            val data = result.data ?: run {
-                applyRememberedCredentials()
-                return@registerForActivityResult
-            }
-            val autoLogin = data.getBooleanExtra(SignupActivity.EXTRA_AUTO_LOGIN, false)
-            if (autoLogin) {
-                val username = data.getStringExtra(SignupActivity.EXTRA_USERNAME).orEmpty()
-                val password = org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.consumeTemporarySignUpPassword(this).orEmpty()
-                loginUsernameInput.setText(username)
-                loginPasswordInput.setText(password)
-                suppressRememberListener = true
-                rememberMeCheckBox.isChecked = true
-                suppressRememberListener = false
-            } else {
-                applyRememberedCredentials()
+    private val signupLauncher =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            if (result.resultCode == RESULT_OK) {
+                val data =
+                    result.data ?: run {
+                        applyRememberedCredentials()
+                        return@registerForActivityResult
+                    }
+                val autoLogin = data.getBooleanExtra(SignupActivity.EXTRA_AUTO_LOGIN, false)
+                if (autoLogin) {
+                    val username = data.getStringExtra(SignupActivity.EXTRA_USERNAME).orEmpty()
+                    val password =
+                        org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+                            .consumeTemporarySignUpPassword(this)
+                            .orEmpty()
+                    loginUsernameInput.setText(username)
+                    loginPasswordInput.setText(password)
+                    suppressRememberListener = true
+                    rememberMeCheckBox.isChecked = true
+                    suppressRememberListener = false
+                } else {
+                    applyRememberedCredentials()
+                }
             }
         }
-    }
 
     private var deepLinkPostId: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
-
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
         enableEdgeToEdge(
-            statusBarStyle = SystemBarStyle.light(
-                ContextCompat.getColor(this, R.color.white),
-                ContextCompat.getColor(this, R.color.white)
-            )
+            statusBarStyle =
+                SystemBarStyle.light(
+                    ContextCompat.getColor(this, R.color.white),
+                    ContextCompat.getColor(this, R.color.white),
+                ),
         )
         setContentView(R.layout.activity_main)
 
@@ -182,7 +187,8 @@ class MyPlanetLite : BaseActivity() {
         ProfileCredentialsStore.setSessionCredentials(null)
         clearStoredSessionIfNotRemembered()
         autoLoginEnabled = intent?.getBooleanExtra(EXTRA_ALLOW_AUTO_LOGIN, false) == true
-        deepLinkPostId = intent?.getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
+        deepLinkPostId = intent
+            ?.getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
             ?.takeIf { it.isNotBlank() }
             ?: IntentUtils.extractDeepLinkPostId(intent)
 
@@ -191,7 +197,8 @@ class MyPlanetLite : BaseActivity() {
             contentRoot?.let { root ->
                 root.alpha = 0f
                 root.doOnPreDraw {
-                    root.animate()
+                    root
+                        .animate()
                         .alpha(1f)
                         .setDuration(250L)
                         .setInterpolator(FastOutSlowInInterpolator())
@@ -204,7 +211,7 @@ class MyPlanetLite : BaseActivity() {
     private fun setupViews(
         logoImageView: ImageView,
         appVersionTextView: TextView,
-        loginScroll: ScrollView
+        loginScroll: ScrollView,
     ) {
         val languageSelectorIcon: ImageView = findViewById(R.id.languageSelectorIcon)
         serverInputLayoutView = findViewById(R.id.serverInputLayout)
@@ -219,10 +226,11 @@ class MyPlanetLite : BaseActivity() {
 
         appVersionTextView.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
 
-        poweredByTextView.text = HtmlCompat.fromHtml(
-            getString(R.string.powered_by_plataformas_informaticas),
-            HtmlCompat.FROM_HTML_MODE_LEGACY
-        )
+        poweredByTextView.text =
+            HtmlCompat.fromHtml(
+                getString(R.string.powered_by_plataformas_informaticas),
+                HtmlCompat.FROM_HTML_MODE_LEGACY,
+            )
         poweredByTextView.movementMethod = LinkMovementMethod.getInstance()
 
         signupPromptView.text = getString(R.string.login_signup_prompt)
@@ -231,16 +239,18 @@ class MyPlanetLite : BaseActivity() {
                 return@setOnClickListener
             }
             val serverBaseUrl = (serverAutoCompleteView.tag as? String).orEmpty()
-            val intent = Intent(this, SignupActivity::class.java).apply {
-                putExtra(SignupActivity.EXTRA_SERVER_BASE_URL, serverBaseUrl)
-            }
+            val intent =
+                Intent(this, SignupActivity::class.java).apply {
+                    putExtra(SignupActivity.EXTRA_SERVER_BASE_URL, serverBaseUrl)
+                }
             signupLauncher.launch(intent)
         }
 
-        privacyPolicyPromptView.text = HtmlCompat.fromHtml(
-            getString(R.string.login_privacy_policy_prompt),
-            HtmlCompat.FROM_HTML_MODE_LEGACY
-        )
+        privacyPolicyPromptView.text =
+            HtmlCompat.fromHtml(
+                getString(R.string.login_privacy_policy_prompt),
+                HtmlCompat.FROM_HTML_MODE_LEGACY,
+            )
         privacyPolicyPromptView.setOnClickListener {
             if (!privacyPolicyPromptView.isEnabled || isLoginInProgress) {
                 return@setOnClickListener
@@ -282,7 +292,7 @@ class MyPlanetLite : BaseActivity() {
     private fun setupWindowInsets(
         logoImageView: ImageView,
         appVersionTextView: TextView,
-        loginScroll: ScrollView
+        loginScroll: ScrollView,
     ) {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
@@ -318,8 +328,6 @@ class MyPlanetLite : BaseActivity() {
             refreshServerOptions(serverAutoCompleteView, serverInputLayoutView)
         }
     }
-
-
 
     private fun configureLogin() {
         initializeLoginViews()
@@ -392,11 +400,13 @@ class MyPlanetLite : BaseActivity() {
                         serverAutoCompleteView.dismissDropDown()
                         showServerConfigurationDialog(serverAutoCompleteView, serverInputLayoutView)
                     }
+
                     ServerAction.CLEAR -> {
                         clearCustomServers()
                         refreshServerOptions(serverAutoCompleteView, serverInputLayoutView)
                         serverAutoCompleteView.dismissDropDown()
                     }
+
                     null -> {
                         serverAutoCompleteView.dismissDropDown()
                     }
@@ -423,7 +433,11 @@ class MyPlanetLite : BaseActivity() {
             serverInputLayoutView.error = null
             loginErrorTextView.isVisible = false
 
-            val username = loginUsernameInput.text?.toString()?.trim().orEmpty()
+            val username =
+                loginUsernameInput.text
+                    ?.toString()
+                    ?.trim()
+                    .orEmpty()
             val password = loginPasswordInput.text?.toString().orEmpty()
             val serverBaseUrl = (serverAutoCompleteView.tag as? String).orEmpty().trim()
 
@@ -457,7 +471,7 @@ class MyPlanetLite : BaseActivity() {
                         username,
                         password,
                         rememberMeCheckBox,
-                        serverBaseUrl
+                        serverBaseUrl,
                     )
                 }
             }
@@ -474,29 +488,31 @@ class MyPlanetLite : BaseActivity() {
             setSurveyTranslationEnabled(DEFAULT_SURVEY_TRANSLATION_ENABLED)
         }
 
-        val dialogView = LayoutInflater.from(this)
-            .inflate(R.layout.dialog_survey_translation_consent, null, false)
+        val dialogView =
+            LayoutInflater
+                .from(this)
+                .inflate(R.layout.dialog_survey_translation_consent, null, false)
         val consentCheckBox = dialogView.findViewById<MaterialCheckBox>(R.id.surveyTranslationConsentCheckBox)
         val policyLink = dialogView.findViewById<TextView>(R.id.surveyTranslationPolicyLink)
 
         consentCheckBox.isChecked = isSurveyTranslationEnabled()
 
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.login_survey_translation_consent_title)
-            .setView(dialogView)
-            .setPositiveButton(R.string.dashboard_survey_translation_consent_accept) { alertDialog, _ ->
-                val translationsEnabled = consentCheckBox.isChecked
-                setSurveyTranslationEnabled(translationsEnabled)
-                setSurveyTranslationConsentAccepted(true)
-                alertDialog.dismiss()
-                onConsentGranted()
-            }
-            .setNegativeButton(R.string.dashboard_survey_translation_consent_cancel) { alertDialog, _ ->
-                setSurveyTranslationEnabled(false)
-                setSurveyTranslationConsentAccepted(false)
-                alertDialog.dismiss()
-            }
-            .create()
+        val dialog =
+            AlertDialog
+                .Builder(this)
+                .setTitle(R.string.login_survey_translation_consent_title)
+                .setView(dialogView)
+                .setPositiveButton(R.string.dashboard_survey_translation_consent_accept) { alertDialog, _ ->
+                    val translationsEnabled = consentCheckBox.isChecked
+                    setSurveyTranslationEnabled(translationsEnabled)
+                    setSurveyTranslationConsentAccepted(true)
+                    alertDialog.dismiss()
+                    onConsentGranted()
+                }.setNegativeButton(R.string.dashboard_survey_translation_consent_cancel) { alertDialog, _ ->
+                    setSurveyTranslationEnabled(false)
+                    setSurveyTranslationConsentAccepted(false)
+                    alertDialog.dismiss()
+                }.create()
 
         dialog.setOnCancelListener {
             setSurveyTranslationEnabled(false)
@@ -569,9 +585,10 @@ class MyPlanetLite : BaseActivity() {
                     maybeAutoLogin()
                     return@launch
                 }
-                val cachedUsername = withContext(Dispatchers.IO) {
-                    userProfileDatabase.getProfile()?.username
-                }
+                val cachedUsername =
+                    withContext(Dispatchers.IO) {
+                        userProfileDatabase.getProfile()?.username
+                    }
                 if (cachedUsername.isNullOrBlank()) {
                     maybeAutoLogin()
                     return@launch
@@ -595,6 +612,7 @@ class MyPlanetLite : BaseActivity() {
             }
         }
     }
+
     private fun maybeAutoLogin() {
         if (!shouldAutoLoginOnLaunch || credentialsAutoLoginAttempted) {
             return
@@ -630,7 +648,7 @@ class MyPlanetLite : BaseActivity() {
                 username,
                 password,
                 rememberMeCheckBox,
-                baseUrl
+                baseUrl,
             )
         }
     }
@@ -641,12 +659,12 @@ class MyPlanetLite : BaseActivity() {
         val serverNameLayout: TextInputLayout,
         val serverNameInput: TextInputEditText,
         val countryLayout: TextInputLayout,
-        val countryInput: MaterialAutoCompleteTextView
+        val countryInput: MaterialAutoCompleteTextView,
     )
 
     private fun showServerConfigurationDialog(
         serverInput: MaterialAutoCompleteTextView,
-        serverLayout: TextInputLayout
+        serverLayout: TextInputLayout,
     ) {
         serverLayout.error = null
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_server_configuration, null)
@@ -656,17 +674,24 @@ class MyPlanetLite : BaseActivity() {
         val currentConfig = loadServerConfiguration()
         val serverSuggestionsAdapter = setupCountryAndServerAdapters(views, countryList, currentConfig)
 
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.server_configuration_title)
-            .setView(dialogView)
-            .setNegativeButton(android.R.string.cancel, null)
-            .setPositiveButton(R.string.server_configuration_save, null)
-            .create()
+        val dialog =
+            AlertDialog
+                .Builder(this)
+                .setTitle(R.string.server_configuration_title)
+                .setView(dialogView)
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(R.string.server_configuration_save, null)
+                .create()
 
         dialog.setOnShowListener {
             dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 handleServerConfigurationSave(
-                    views, countryList, serverInput, serverLayout, serverSuggestionsAdapter, dialog
+                    views,
+                    countryList,
+                    serverInput,
+                    serverLayout,
+                    serverSuggestionsAdapter,
+                    dialog,
                 )
             }
         }
@@ -674,20 +699,20 @@ class MyPlanetLite : BaseActivity() {
         dialog.show()
     }
 
-    private fun setupServerConfigurationViews(dialogView: View): ServerDialogViews {
-        return ServerDialogViews(
+    private fun setupServerConfigurationViews(dialogView: View): ServerDialogViews =
+        ServerDialogViews(
             serverUrlLayout = dialogView.findViewById(R.id.serverUrlInputLayout),
             serverUrlInput = dialogView.findViewById(R.id.serverUrlInput),
             serverNameLayout = dialogView.findViewById(R.id.serverNameInputLayout),
             serverNameInput = dialogView.findViewById(R.id.serverNameInput),
             countryLayout = dialogView.findViewById(R.id.countryInputLayout),
-            countryInput = dialogView.findViewById(R.id.countryInput)
+            countryInput = dialogView.findViewById(R.id.countryInput),
         )
-    }
 
     private fun getFilteredCountries(): List<com.blongho.country_data.Country> {
         val excludedCountryCodes = setOf("CN", "HK", "TW", "IL", "PS")
-        return World.getAllCountries()
+        return World
+            .getAllCountries()
             .filterNot { excludedCountryCodes.contains(it.alpha2.uppercase(Locale.ROOT)) }
             .sortedBy { it.name }
     }
@@ -695,13 +720,14 @@ class MyPlanetLite : BaseActivity() {
     private fun setupCountryAndServerAdapters(
         views: ServerDialogViews,
         countryList: List<com.blongho.country_data.Country>,
-        currentConfig: ServerConfiguration
+        currentConfig: ServerConfiguration,
     ): ArrayAdapter<String> {
-        val serverSuggestionsAdapter = ArrayAdapter<String>(
-            this,
-            android.R.layout.simple_list_item_1,
-            buildServerSuggestions(currentConfig)
-        )
+        val serverSuggestionsAdapter =
+            ArrayAdapter<String>(
+                this,
+                android.R.layout.simple_list_item_1,
+                buildServerSuggestions(currentConfig),
+            )
         views.serverUrlInput.setAdapter(serverSuggestionsAdapter)
 
         val countryNames = countryList.map { it.name }
@@ -736,16 +762,28 @@ class MyPlanetLite : BaseActivity() {
         serverInput: MaterialAutoCompleteTextView,
         serverLayout: TextInputLayout,
         serverSuggestionsAdapter: ArrayAdapter<String>,
-        dialog: AlertDialog
+        dialog: AlertDialog,
     ) {
         views.serverUrlLayout.error = null
         views.serverNameLayout.error = null
         views.countryLayout.error = null
 
-        val url = views.serverUrlInput.text?.toString()?.trim().orEmpty()
+        val url =
+            views.serverUrlInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         val normalizedUrl = normalizeServerUrl(url)
-        val serverName = views.serverNameInput.text?.toString()?.trim().orEmpty()
-        val countryName = views.countryInput.text?.toString()?.trim().orEmpty()
+        val serverName =
+            views.serverNameInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val countryName =
+            views.countryInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         val selectedCountry = countryList.firstOrNull { it.name.equals(countryName, ignoreCase = true) }
 
         if (normalizedUrl.isEmpty()) {
@@ -756,10 +794,11 @@ class MyPlanetLite : BaseActivity() {
             views.serverNameLayout.error = getString(R.string.server_configuration_name_error)
             return
         }
-        val nonNullCountry = selectedCountry ?: run {
-            views.countryLayout.error = getString(R.string.server_configuration_country_error)
-            return
-        }
+        val nonNullCountry =
+            selectedCountry ?: run {
+                views.countryLayout.error = getString(R.string.server_configuration_country_error)
+                return
+            }
 
         val added = addCustomServer(serverName, normalizedUrl, nonNullCountry.alpha2)
         if (added) {
@@ -783,38 +822,49 @@ class MyPlanetLite : BaseActivity() {
         val storedCountry = serverPreferences.getString(KEY_COUNTRY_CODE, DEFAULT_COUNTRY_CODE).orEmpty().uppercase(Locale.ROOT)
         val storedDisplayName = serverPreferences.getString(KEY_SERVER_DISPLAY_NAME, null)
         val baseUrl = if (storedUrl.isNotEmpty()) storedUrl else builtInServers.firstOrNull()?.baseUrl.orEmpty()
-        val matchedServer = (builtInServers + customServers).firstOrNull {
-            baseUrlKey(it.baseUrl) == baseUrlKey(baseUrl)
-        }
-        val countryCode = when {
-            matchedServer != null -> matchedServer.countryCode
-            storedCountry.isNotEmpty() -> storedCountry
-            else -> DEFAULT_COUNTRY_CODE
-        }
-        val displayName = when {
-            matchedServer != null -> matchedServer.displayName
-            !storedDisplayName.isNullOrBlank() -> storedDisplayName
-            baseUrl.isNotEmpty() -> baseUrl
-            else -> builtInServers.firstOrNull()?.displayName ?: ""
-        }
+        val matchedServer =
+            (builtInServers + customServers).firstOrNull {
+                baseUrlKey(it.baseUrl) == baseUrlKey(baseUrl)
+            }
+        val countryCode =
+            when {
+                matchedServer != null -> matchedServer.countryCode
+                storedCountry.isNotEmpty() -> storedCountry
+                else -> DEFAULT_COUNTRY_CODE
+            }
+        val displayName =
+            when {
+                matchedServer != null -> matchedServer.displayName
+                !storedDisplayName.isNullOrBlank() -> storedDisplayName
+                baseUrl.isNotEmpty() -> baseUrl
+                else -> builtInServers.firstOrNull()?.displayName ?: ""
+            }
         return ServerConfiguration(
             baseUrl = baseUrl,
             countryCode = countryCode,
-            displayName = displayName
+            displayName = displayName,
         )
     }
 
-    private fun saveServerConfiguration(url: String, countryCode: String, displayName: String) {
+    private fun saveServerConfiguration(
+        url: String,
+        countryCode: String,
+        displayName: String,
+    ) {
         val sanitizedUrl = normalizeServerUrl(url)
         val resolvedDisplayName = displayName.ifBlank { sanitizedUrl }
-        serverPreferences.edit()
+        serverPreferences
+            .edit()
             .putString(KEY_SERVER_URL, sanitizedUrl)
             .putString(KEY_COUNTRY_CODE, countryCode.uppercase(Locale.ROOT))
             .putString(KEY_SERVER_DISPLAY_NAME, resolvedDisplayName)
             .apply()
     }
 
-    private fun updateServerFlag(serverLayout: TextInputLayout, countryCode: String) {
+    private fun updateServerFlag(
+        serverLayout: TextInputLayout,
+        countryCode: String,
+    ) {
         val flagRes = World.getFlagOf(countryCode)
         if (flagRes != 0) {
             val drawable = AppCompatResources.getDrawable(this, flagRes)
@@ -846,15 +896,16 @@ class MyPlanetLite : BaseActivity() {
 
     private fun refreshServerOptions(
         serverInput: MaterialAutoCompleteTextView,
-        serverLayout: TextInputLayout
+        serverLayout: TextInputLayout,
     ) {
         val currentConfig = loadServerConfiguration()
         val options = createServerOptions(currentConfig)
         serverAdapter.submitList(options)
 
-        val selectedOption = options.firstOrNull {
-            !it.isAction && baseUrlKey(it.baseUrl) == baseUrlKey(currentConfig.baseUrl)
-        }
+        val selectedOption =
+            options.firstOrNull {
+                !it.isAction && baseUrlKey(it.baseUrl) == baseUrlKey(currentConfig.baseUrl)
+            }
         val displayName = selectedOption?.displayName ?: currentConfig.displayName
         val countryCode = selectedOption?.countryCode ?: currentConfig.countryCode
         val resolvedBaseUrl = selectedOption?.baseUrl ?: currentConfig.baseUrl
@@ -869,20 +920,24 @@ class MyPlanetLite : BaseActivity() {
         val builtIns = builtInServerOptions()
         val customs = loadCustomServers().map { it.toServerOption() }
         val connectedKey = baseUrlKey(currentConfig.baseUrl)
-        val items = (customs + builtIns)
-            .distinctBy { baseUrlKey(it.baseUrl) }
-            .toMutableList()
+        val items =
+            (customs + builtIns)
+                .distinctBy { baseUrlKey(it.baseUrl) }
+                .toMutableList()
         if (currentConfig.baseUrl.isNotEmpty() && items.none { baseUrlKey(it.baseUrl) == connectedKey }) {
             items.add(0, ServerOption(currentConfig.displayName, currentConfig.baseUrl, currentConfig.countryCode))
         }
         items.add(ServerOption(getString(R.string.server_option_clear), "", currentConfig.countryCode, actionType = ServerAction.CLEAR))
-        items.add(ServerOption(getString(R.string.server_option_configure), "", currentConfig.countryCode, actionType = ServerAction.CONFIGURE))
+        items.add(
+            ServerOption(getString(R.string.server_option_configure), "", currentConfig.countryCode, actionType = ServerAction.CONFIGURE),
+        )
         return items
     }
 
-    private fun builtInServerOptions(): List<ServerOption> = BUILT_IN_SERVERS.map {
-        ServerOption(getString(it.nameRes), it.baseUrl, it.countryCode)
-    }
+    private fun builtInServerOptions(): List<ServerOption> =
+        BUILT_IN_SERVERS.map {
+            ServerOption(getString(it.nameRes), it.baseUrl, it.countryCode)
+        }
 
     private fun buildServerSuggestions(currentConfig: ServerConfiguration): MutableList<String> {
         val unique = linkedMapOf<String, String>()
@@ -907,7 +962,11 @@ class MyPlanetLite : BaseActivity() {
         return unique.values.toMutableList()
     }
 
-    private fun addCustomServer(displayName: String, baseUrl: String, countryCode: String): Boolean {
+    private fun addCustomServer(
+        displayName: String,
+        baseUrl: String,
+        countryCode: String,
+    ): Boolean {
         val sanitizedUrl = normalizeServerUrl(baseUrl)
         if (sanitizedUrl.isEmpty()) return false
         val key = baseUrlKey(sanitizedUrl)
@@ -925,15 +984,15 @@ class MyPlanetLite : BaseActivity() {
         val raw = serverPreferences.getString(KEY_CUSTOM_SERVERS, null) ?: return mutableListOf()
         return try {
             val decoded = customServerAdapter.fromJson(raw) ?: return mutableListOf()
-            decoded.filter { it.baseUrl.isNotBlank() && it.countryCode.isNotBlank() }
+            decoded
+                .filter { it.baseUrl.isNotBlank() && it.countryCode.isNotBlank() }
                 .map {
                     it.copy(
                         baseUrl = it.baseUrl.trim(),
                         countryCode = it.countryCode.uppercase(Locale.ROOT),
-                        displayName = it.displayName.ifBlank { it.baseUrl.trim() }
+                        displayName = it.displayName.ifBlank { it.baseUrl.trim() },
                     )
-                }
-                .toMutableList()
+                }.toMutableList()
         } catch (error: Exception) {
             mutableListOf()
         }
@@ -945,14 +1004,16 @@ class MyPlanetLite : BaseActivity() {
         if (fallback != null) {
             saveServerConfiguration(fallback.baseUrl, fallback.countryCode, fallback.displayName)
         }
-        serverPreferences.edit()
+        serverPreferences
+            .edit()
             .remove(KEY_CUSTOM_SERVERS)
             .apply()
     }
 
     private fun persistCustomServers(servers: List<CustomServer>) {
         val json = customServerAdapter.toJson(servers)
-        serverPreferences.edit()
+        serverPreferences
+            .edit()
             .putString(KEY_CUSTOM_SERVERS, json)
             .apply()
     }
@@ -968,7 +1029,11 @@ class MyPlanetLite : BaseActivity() {
         if (trimmed.isEmpty()) return ""
         val withScheme = if (trimmed.contains("://")) trimmed else "http://$trimmed"
         val normalized = withScheme.toHttpUrlOrNull() ?: return ""
-        return normalized.newBuilder().build().toString().trimEnd('/')
+        return normalized
+            .newBuilder()
+            .build()
+            .toString()
+            .trimEnd('/')
     }
 
     private suspend fun handleLoginResult(
@@ -979,7 +1044,7 @@ class MyPlanetLite : BaseActivity() {
         username: String,
         password: String,
         rememberCheckBox: MaterialCheckBox,
-        serverBaseUrl: String
+        serverBaseUrl: String,
     ) {
         setLoadingState(isLoading = false, loginButton = loginButton, progress = progress)
         when (result) {
@@ -998,25 +1063,30 @@ class MyPlanetLite : BaseActivity() {
                 recordLoginActivity(serverBaseUrl, username, result.response.sessionCookie)
                 val profileUsername = result.response.name?.takeIf { it.isNotBlank() } ?: username
                 userProfileSync.clearProfile()
-                val fetched = userProfileSync.refreshProfile(
-                    serverBaseUrl = serverBaseUrl,
-                    username = profileUsername,
-                    sessionCookie = result.response.sessionCookie
-                )
+                val fetched =
+                    userProfileSync.refreshProfile(
+                        serverBaseUrl = serverBaseUrl,
+                        username = profileUsername,
+                        sessionCookie = result.response.sessionCookie,
+                    )
                 launchDashboard()
             }
+
             is AuthResult.Error -> {
-                val errorMessage = when (result.code) {
-                    401, 403 -> getString(R.string.login_invalid_credentials)
-                    else -> result.message.takeIf { it.isNotBlank() } ?: getString(R.string.login_generic_error)
-                }
+                val errorMessage =
+                    when (result.code) {
+                        401, 403 -> getString(R.string.login_invalid_credentials)
+                        else -> result.message.takeIf { it.isNotBlank() } ?: getString(R.string.login_generic_error)
+                    }
                 errorText.text = errorMessage
                 errorText.isVisible = true
             }
+
             is AuthResult.Failure.InvalidCredentials -> {
                 errorText.text = getString(R.string.login_invalid_credentials)
                 errorText.isVisible = true
             }
+
             is AuthResult.Failure.NetworkError -> {
                 errorText.text = getString(R.string.login_generic_error)
                 errorText.isVisible = true
@@ -1024,7 +1094,11 @@ class MyPlanetLite : BaseActivity() {
         }
     }
 
-    private fun recordLoginActivity(serverBaseUrl: String, username: String, sessionCookie: String?) {
+    private fun recordLoginActivity(
+        serverBaseUrl: String,
+        username: String,
+        sessionCookie: String?,
+    ) {
         val sanitizedBaseUrl = serverBaseUrl.trim()
         if (sanitizedBaseUrl.isEmpty()) {
             return
@@ -1033,30 +1107,17 @@ class MyPlanetLite : BaseActivity() {
         val payload = buildLoginActivityPayload(username) ?: return
 
         lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                runCatching {
-                    val mediaType = "application/json; charset=utf-8".toMediaType()
-                    val body = payload.toString().toRequestBody(mediaType)
-                    val requestBuilder = Request.Builder()
-                        .url(requestUrl)
-                        .post(body)
-                    sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                        requestBuilder.addHeader("Cookie", cookie)
-                    }
-                    connectivityClient.newCall(requestBuilder.build()).execute().use { _ ->
-                        // Intentionally ignoring response
-                    }
-                }
-            }
+            serverConnectivityRepository.recordLoginActivity(requestUrl, payload, sessionCookie)
         }
     }
 
-    private fun buildLoginActivityUrl(baseUrl: String): String? {
-        return baseUrl.toHttpUrlOrNull()?.newBuilder()
+    private fun buildLoginActivityUrl(baseUrl: String): String? =
+        baseUrl
+            .toHttpUrlOrNull()
+            ?.newBuilder()
             ?.addPathSegments("db/login_activities")
             ?.build()
             ?.toString()
-    }
 
     private fun buildLoginActivityPayload(username: String): JSONObject? {
         val parentCode = serverPreferences.getString(KEY_SERVER_PARENT_CODE, null)
@@ -1064,15 +1125,16 @@ class MyPlanetLite : BaseActivity() {
         val androidId = serverPreferences.getString(KEY_DEVICE_ANDROID_ID, null)
         val customDeviceName = serverPreferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)
 
-        val deviceName = org.ole.planet.myplanet.lite.util.DeviceUtils.getDeviceName()
+        val deviceName =
+            org.ole.planet.myplanet.lite.util.DeviceUtils
+                .getDeviceName()
         val loginTimeMillis = System.currentTimeMillis()
-        val loginTimeString = loginTimeMillis.toString()
 
         return runCatching {
             JSONObject().apply {
                 put("user", username)
                 put("type", "login")
-                put("loginTime", loginTimeString)
+                put("loginTime", loginTimeMillis)
                 put("logoutTime", 0)
                 put("createdOn", code?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
                 put("parentCode", parentCode?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
@@ -1083,7 +1145,11 @@ class MyPlanetLite : BaseActivity() {
         }.getOrNull()
     }
 
-    private fun setLoadingState(isLoading: Boolean, loginButton: Button, progress: ProgressBar) {
+    private fun setLoadingState(
+        isLoading: Boolean,
+        loginButton: Button,
+        progress: ProgressBar,
+    ) {
         isLoginInProgress = isLoading
         if (isLoading) {
             loginButton.isEnabled = false
@@ -1092,12 +1158,19 @@ class MyPlanetLite : BaseActivity() {
         progress.isVisible = isLoading
     }
 
-    private fun saveRememberedCredentials(username: String, password: String) {
-        securePreferences.edit()
+    private fun saveRememberedCredentials(
+        username: String,
+        password: String,
+    ) {
+        securePreferences
+            .edit()
             .putBoolean(KEY_REMEMBER_CREDENTIALS, true)
             .putString(KEY_REMEMBERED_USERNAME, username)
-            .putString(org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.getPasswordKey(username), password)
-            .commit()
+            .putString(
+                org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+                    .getPasswordKey(username),
+                password,
+            ).commit()
     }
 
     private fun clearRememberedCredentials() {
@@ -1105,7 +1178,10 @@ class MyPlanetLite : BaseActivity() {
         editor.putBoolean(KEY_REMEMBER_CREDENTIALS, false)
         val username = securePreferences.getString(KEY_REMEMBERED_USERNAME, null)
         if (username != null) {
-            editor.remove(org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.getPasswordKey(username))
+            editor.remove(
+                org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+                    .getPasswordKey(username),
+            )
         }
         editor.remove(KEY_REMEMBERED_USERNAME)
         editor.remove(KEY_REMEMBERED_PASSWORD)
@@ -1138,7 +1214,8 @@ class MyPlanetLite : BaseActivity() {
                 saveRememberedCredentials(legacyUsername, legacyPassword)
             }
 
-            serverPreferences.edit()
+            serverPreferences
+                .edit()
                 .remove(KEY_REMEMBER_CREDENTIALS)
                 .remove(KEY_REMEMBERED_USERNAME)
                 .remove(KEY_REMEMBERED_PASSWORD)
@@ -1151,14 +1228,17 @@ class MyPlanetLite : BaseActivity() {
         val username = securePreferences.getString(KEY_REMEMBERED_USERNAME, null)
         var password: String? = null
         if (!username.isNullOrEmpty()) {
-            val dynamicKey = org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore.getPasswordKey(username)
+            val dynamicKey =
+                org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+                    .getPasswordKey(username)
             password = securePreferences.getString(dynamicKey, null)
 
             if (password.isNullOrEmpty()) {
                 val legacyPassword = securePreferences.getString(KEY_REMEMBERED_PASSWORD, null)
                 if (!legacyPassword.isNullOrEmpty()) {
                     password = legacyPassword
-                    securePreferences.edit()
+                    securePreferences
+                        .edit()
                         .putString(dynamicKey, legacyPassword)
                         .remove(KEY_REMEMBERED_PASSWORD)
                         .apply()
@@ -1171,22 +1251,21 @@ class MyPlanetLite : BaseActivity() {
         return RememberedCredentials(username.orEmpty(), password.orEmpty())
     }
 
-    private fun isSurveyTranslationEnabled(): Boolean {
-        return serverPreferences.getBoolean(KEY_SURVEY_TRANSLATIONS_ENABLED, DEFAULT_SURVEY_TRANSLATION_ENABLED)
-    }
+    private fun isSurveyTranslationEnabled(): Boolean =
+        serverPreferences.getBoolean(KEY_SURVEY_TRANSLATIONS_ENABLED, DEFAULT_SURVEY_TRANSLATION_ENABLED)
 
     private fun setSurveyTranslationEnabled(enabled: Boolean) {
-        serverPreferences.edit()
+        serverPreferences
+            .edit()
             .putBoolean(KEY_SURVEY_TRANSLATIONS_ENABLED, enabled)
             .apply()
     }
 
-    private fun isSurveyTranslationConsentAccepted(): Boolean {
-        return serverPreferences.getBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
-    }
+    private fun isSurveyTranslationConsentAccepted(): Boolean = serverPreferences.getBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
 
     private fun setSurveyTranslationConsentAccepted(accepted: Boolean) {
-        serverPreferences.edit()
+        serverPreferences
+            .edit()
             .putBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, accepted)
             .apply()
     }
@@ -1219,23 +1298,24 @@ class MyPlanetLite : BaseActivity() {
         private const val APP_VERSION_SHRUNK_BOTTOM_MARGIN_DP = 5f
         private const val LOGIN_SCROLL_SHRUNK_PADDING_TOP_DP = 5f
         private const val LOGIN_TIME_LENGTH = 13
-        private val BUILT_IN_SERVERS = listOf(
-            BuiltInServer(R.string.server_planet_xela, "http://10.82.1.30/", DEFAULT_COUNTRY_CODE),
-            BuiltInServer(R.string.server_planet_guatemala, "https://planet.gt/", DEFAULT_COUNTRY_CODE),
-            BuiltInServer(R.string.server_planet_san_pablo, "https://sanpablo.planet.gt/", DEFAULT_COUNTRY_CODE),
-            BuiltInServer(R.string.server_planet_somalia, "https://planet.somalia.ole.org", "SO"),
-            BuiltInServer(R.string.server_planet_learning, "https://planet.learning.ole.org/", "US"),
-            BuiltInServer(R.string.server_planet_earth, "https://planet.earth.ole.org/", "US"),
-            BuiltInServer(R.string.server_planet_vi, "https://planet.vi.ole.org/", "US"),
-            BuiltInServer(R.string.server_planet_uriur, "https://planet.uriur.ole.org/", "KE")
-        )
+        private val BUILT_IN_SERVERS =
+            listOf(
+                BuiltInServer(R.string.server_planet_xela, "http://10.82.1.30/", DEFAULT_COUNTRY_CODE),
+                BuiltInServer(R.string.server_planet_guatemala, "https://planet.gt/", DEFAULT_COUNTRY_CODE),
+                BuiltInServer(R.string.server_planet_san_pablo, "https://sanpablo.planet.gt/", DEFAULT_COUNTRY_CODE),
+                BuiltInServer(R.string.server_planet_somalia, "https://planet.somalia.ole.org", "SO"),
+                BuiltInServer(R.string.server_planet_learning, "https://planet.learning.ole.org/", "US"),
+                BuiltInServer(R.string.server_planet_earth, "https://planet.earth.ole.org/", "US"),
+                BuiltInServer(R.string.server_planet_vi, "https://planet.vi.ole.org/", "US"),
+                BuiltInServer(R.string.server_planet_uriur, "https://planet.uriur.ole.org/", "KE"),
+            )
     }
 
     private data class ServerOption(
         val displayName: String,
         val baseUrl: String,
         val countryCode: String,
-        val actionType: ServerAction? = null
+        val actionType: ServerAction? = null,
     ) {
         val isAction: Boolean
             get() = actionType != null
@@ -1245,21 +1325,37 @@ class MyPlanetLite : BaseActivity() {
 
     private enum class ServerAction {
         CONFIGURE,
-        CLEAR
+        CLEAR,
     }
 
-    private data class ServerConfiguration(val baseUrl: String, val countryCode: String, val displayName: String)
+    private data class ServerConfiguration(
+        val baseUrl: String,
+        val countryCode: String,
+        val displayName: String,
+    )
 
-    private data class BuiltInServer(val nameRes: Int, val baseUrl: String, val countryCode: String)
+    private data class BuiltInServer(
+        val nameRes: Int,
+        val baseUrl: String,
+        val countryCode: String,
+    )
 
-    private data class CustomServer(val displayName: String, val baseUrl: String, val countryCode: String) {
+    private data class CustomServer(
+        val displayName: String,
+        val baseUrl: String,
+        val countryCode: String,
+    ) {
         fun toServerOption(): ServerOption = ServerOption(displayName, baseUrl, countryCode)
     }
 
-    private data class RememberedCredentials(val username: String, val password: String)
+    private data class RememberedCredentials(
+        val username: String,
+        val password: String,
+    )
 
-    private inner class ServerOptionAdapter(context: Context) : ArrayAdapter<ServerOption>(context, 0, mutableListOf()) {
-
+    private inner class ServerOptionAdapter(
+        context: Context,
+    ) : ArrayAdapter<ServerOption>(context, 0, mutableListOf()) {
         private val allItems = mutableListOf<ServerOption>()
         private val visibleItems = mutableListOf<ServerOption>()
 
@@ -1275,41 +1371,52 @@ class MyPlanetLite : BaseActivity() {
 
         override fun getItem(position: Int): ServerOption? = visibleItems.getOrNull(position)
 
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
-            return createView(position, convertView, parent, isDropdown = false)
-        }
+        override fun getView(
+            position: Int,
+            convertView: View?,
+            parent: ViewGroup,
+        ): View = createView(position, convertView, parent, isDropdown = false)
 
-        override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
-            return createView(position, convertView, parent, isDropdown = true)
-        }
+        override fun getDropDownView(
+            position: Int,
+            convertView: View?,
+            parent: ViewGroup,
+        ): View = createView(position, convertView, parent, isDropdown = true)
 
-        override fun getFilter(): Filter = object : Filter() {
-            override fun performFiltering(constraint: CharSequence?): FilterResults {
-                return FilterResults().apply {
-                    values = ArrayList(allItems)
-                    count = allItems.size
+        override fun getFilter(): Filter =
+            object : Filter() {
+                override fun performFiltering(constraint: CharSequence?): FilterResults =
+                    FilterResults().apply {
+                        values = ArrayList(allItems)
+                        count = allItems.size
+                    }
+
+                override fun publishResults(
+                    constraint: CharSequence?,
+                    results: FilterResults?,
+                ) {
+                    visibleItems.clear()
+                    @Suppress("UNCHECKED_CAST")
+                    val values = results?.values as? List<ServerOption>
+                    if (!values.isNullOrEmpty()) {
+                        visibleItems.addAll(values)
+                    } else {
+                        visibleItems.addAll(allItems)
+                    }
+                    notifyDataSetChanged()
                 }
+
+                override fun convertResultToString(resultValue: Any?): CharSequence =
+                    (resultValue as? ServerOption)?.displayName
+                        ?: super.convertResultToString(resultValue)
             }
 
-            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
-                visibleItems.clear()
-                @Suppress("UNCHECKED_CAST")
-                val values = results?.values as? List<ServerOption>
-                if (!values.isNullOrEmpty()) {
-                    visibleItems.addAll(values)
-                } else {
-                    visibleItems.addAll(allItems)
-                }
-                notifyDataSetChanged()
-            }
-
-            override fun convertResultToString(resultValue: Any?): CharSequence {
-                return (resultValue as? ServerOption)?.displayName
-                    ?: super.convertResultToString(resultValue)
-            }
-        }
-
-        private fun createView(position: Int, convertView: View?, parent: ViewGroup, isDropdown: Boolean): View {
+        private fun createView(
+            position: Int,
+            convertView: View?,
+            parent: ViewGroup,
+            isDropdown: Boolean,
+        ): View {
             val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_server_option, parent, false)
             val option = getItem(position) ?: return view
 
@@ -1318,11 +1425,12 @@ class MyPlanetLite : BaseActivity() {
 
             nameView.text = option.displayName
 
-            val desiredMargin = if (isDropdown) {
-                context.resources.getDimensionPixelSize(R.dimen.server_option_flag_margin)
-            } else {
-                0
-            }
+            val desiredMargin =
+                if (isDropdown) {
+                    context.resources.getDimensionPixelSize(R.dimen.server_option_flag_margin)
+                } else {
+                    0
+                }
             val layoutParams = nameView.layoutParams
             if (layoutParams is ViewGroup.MarginLayoutParams && layoutParams.marginStart != desiredMargin) {
                 layoutParams.marginStart = desiredMargin
@@ -1369,35 +1477,42 @@ class MyPlanetLite : BaseActivity() {
         }
         serverStatusIconView.isVisible = true
         serverStatusIconView.setOnClickListener(null)
-        serverStatusJob = lifecycleScope.launch {
-            showServerStatusChecking()
-            val result = withContext(Dispatchers.IO) { serverConnectivityRepository.checkServerConnectivity(baseUrl) }
-            if (!isActive) {
-                return@launch
+        serverStatusJob =
+            lifecycleScope.launch {
+                showServerStatusChecking()
+                val result = withContext(Dispatchers.IO) { serverConnectivityRepository.checkServerConnectivity(baseUrl) }
+                if (!isActive) {
+                    return@launch
+                }
+                if (result.reachable) {
+                    persistServerMetadata(baseUrl, result.parentCode, result.code)
+                    showServerConnectedState()
+                } else {
+                    showServerDisconnectedState(allowRetry = true)
+                }
             }
-            if (result.reachable) {
-                persistServerMetadata(baseUrl, result.parentCode, result.code)
-                showServerConnectedState()
-            } else {
-                showServerDisconnectedState(allowRetry = true)
-            }
-        }
     }
 
-    private fun persistServerMetadata(baseUrl: String, parentCode: String?, code: String?) {
-        serverPreferences.edit().apply {
-            putString(KEY_SERVER_URL, baseUrl)
-            if (parentCode != null) {
-                putString(KEY_SERVER_PARENT_CODE, parentCode)
-            } else {
-                remove(KEY_SERVER_PARENT_CODE)
-            }
-            if (code != null) {
-                putString(KEY_SERVER_CODE, code)
-            } else {
-                remove(KEY_SERVER_CODE)
-            }
-        }.apply()
+    private fun persistServerMetadata(
+        baseUrl: String,
+        parentCode: String?,
+        code: String?,
+    ) {
+        serverPreferences
+            .edit()
+            .apply {
+                putString(KEY_SERVER_URL, baseUrl)
+                if (parentCode != null) {
+                    putString(KEY_SERVER_PARENT_CODE, parentCode)
+                } else {
+                    remove(KEY_SERVER_PARENT_CODE)
+                }
+                if (code != null) {
+                    putString(KEY_SERVER_CODE, code)
+                } else {
+                    remove(KEY_SERVER_CODE)
+                }
+            }.apply()
     }
 
     private fun showServerStatusChecking() {
@@ -1435,11 +1550,12 @@ class MyPlanetLite : BaseActivity() {
         } else {
             serverStatusIconView.setOnClickListener(null)
         }
-        val descriptionRes = if (canRetry) {
-            R.string.server_status_disconnected_retry
-        } else {
-            R.string.server_status_disconnected
-        }
+        val descriptionRes =
+            if (canRetry) {
+                R.string.server_status_disconnected_retry
+            } else {
+                R.string.server_status_disconnected
+            }
         serverStatusIconView.contentDescription = getString(descriptionRes)
         serverStatusIconView.isVisible = true
         isServerReachable = false
@@ -1479,7 +1595,10 @@ class MyPlanetLite : BaseActivity() {
         }
     }
 
-    private fun shrinkLogo(logo: ImageView, appVersion: TextView) {
+    private fun shrinkLogo(
+        logo: ImageView,
+        appVersion: TextView,
+    ) {
         if (isLogoShrunk || originalLogoWidth == 0 || originalLogoHeight == 0 || shrunkLogoSizePx == 0) {
             return
         }
@@ -1495,7 +1614,10 @@ class MyPlanetLite : BaseActivity() {
         isLogoShrunk = true
     }
 
-    private fun restoreLogo(logo: ImageView, appVersion: TextView) {
+    private fun restoreLogo(
+        logo: ImageView,
+        appVersion: TextView,
+    ) {
         if (!isLogoShrunk || originalLogoWidth == 0 || originalLogoHeight == 0) {
             return
         }
@@ -1521,7 +1643,7 @@ class MyPlanetLite : BaseActivity() {
             loginScroll.paddingLeft,
             shrunkLoginScrollPaddingTopPx,
             loginScroll.paddingRight,
-            loginScroll.paddingBottom
+            loginScroll.paddingBottom,
         )
         isLoginScrollPaddingShrunk = true
     }
@@ -1534,7 +1656,7 @@ class MyPlanetLite : BaseActivity() {
             loginScroll.paddingLeft,
             originalLoginScrollPaddingTop,
             loginScroll.paddingRight,
-            loginScroll.paddingBottom
+            loginScroll.paddingBottom,
         )
         isLoginScrollPaddingShrunk = false
     }

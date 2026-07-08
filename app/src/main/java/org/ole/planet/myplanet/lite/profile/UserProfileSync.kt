@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-28
@@ -6,23 +6,22 @@
 
 package org.ole.planet.myplanet.lite.profile
 
-import java.io.IOException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.util.nullIfBlank
+import java.io.IOException
 
 class UserProfileSync(
     private val client: OkHttpClient,
-    private val database: UserProfileDatabase
+    private val database: UserProfileDatabase,
 ) {
-
     suspend fun refreshProfile(
         serverBaseUrl: String,
         username: String,
-        sessionCookie: String?
+        sessionCookie: String?,
     ): Boolean {
         val normalizedBase = serverBaseUrl.trim().trimEnd('/')
         if (normalizedBase.isEmpty()) {
@@ -31,9 +30,11 @@ class UserProfileSync(
         val profileUrl = "$normalizedBase/db/_users/org.couchdb.user:$username"
         return withContext(Dispatchers.IO) {
             try {
-                val profileRequestBuilder = Request.Builder()
-                    .url(profileUrl)
-                    .get()
+                val profileRequestBuilder =
+                    Request
+                        .Builder()
+                        .url(profileUrl)
+                        .get()
                 sessionCookie.nullIfBlank()?.let { cookie ->
                     profileRequestBuilder.addHeader("Cookie", cookie)
                 }
@@ -50,29 +51,31 @@ class UserProfileSync(
 
                     val json = JSONObject(body)
                     val hasAvatar = json.optJSONObject("_attachments")?.optJSONObject("img") != null
-                    val avatarBytes = if (hasAvatar) {
-                        fetchAvatarBytes("${profileUrl}/img", sessionCookie)
-                    } else {
-                        null
-                    }
+                    val avatarBytes =
+                        if (hasAvatar) {
+                            fetchAvatarBytes("$profileUrl/img", sessionCookie)
+                        } else {
+                            null
+                        }
 
-                    val userProfile = UserProfile(
-                        username = json.optString("name").nullIfBlank() ?: username,
-                        firstName = json.optString("firstName").nullIfBlank(),
-                        middleName = json.optString("middleName").nullIfBlank(),
-                        lastName = json.optString("lastName").nullIfBlank(),
-                        email = json.optString("email").nullIfBlank(),
-                        language = json.optString("language").nullIfBlank(),
-                        phoneNumber = json.optString("phoneNumber").nullIfBlank(),
-                        birthDate = json.optString("birthDate").nullIfBlank(),
-                        gender = json.optString("gender").nullIfBlank(),
-                        level = json.optString("level").nullIfBlank(),
-                        avatarImage = avatarBytes,
-                        revision = json.optString("_rev").nullIfBlank(),
-                        derivedKey = json.optString("derived_key").nullIfBlank(),
-                        rawDocument = json.toString(),
-                        isUserAdmin = json.optBoolean("isUserAdmin", false)
-                    )
+                    val userProfile =
+                        UserProfile(
+                            username = json.optString("name").nullIfBlank() ?: username,
+                            firstName = json.optString("firstName").nullIfBlank(),
+                            middleName = json.optString("middleName").nullIfBlank(),
+                            lastName = json.optString("lastName").nullIfBlank(),
+                            email = json.optString("email").nullIfBlank(),
+                            language = json.optString("language").nullIfBlank(),
+                            phoneNumber = json.optString("phoneNumber").nullIfBlank(),
+                            birthDate = json.optString("birthDate").nullIfBlank(),
+                            gender = json.optString("gender").nullIfBlank(),
+                            level = json.optString("level").nullIfBlank(),
+                            avatarImage = avatarBytes,
+                            revision = json.optString("_rev").nullIfBlank(),
+                            derivedKey = json.optString("derived_key").nullIfBlank(),
+                            rawDocument = json.toString(),
+                            isUserAdmin = json.optBoolean("isUserAdmin", false),
+                        )
 
                     database.saveProfile(userProfile)
                     true
@@ -89,11 +92,16 @@ class UserProfileSync(
         }
     }
 
-    private fun fetchAvatarBytes(avatarUrl: String, sessionCookie: String?): ByteArray? {
+    private fun fetchAvatarBytes(
+        avatarUrl: String,
+        sessionCookie: String?,
+    ): ByteArray? {
         return try {
-            val avatarRequestBuilder = Request.Builder()
-                .url(avatarUrl)
-                .get()
+            val avatarRequestBuilder =
+                Request
+                    .Builder()
+                    .url(avatarUrl)
+                    .get()
             sessionCookie.nullIfBlank()?.let { cookie ->
                 avatarRequestBuilder.addHeader("Cookie", cookie)
             }
@@ -108,5 +116,4 @@ class UserProfileSync(
             null
         }
     }
-
 }

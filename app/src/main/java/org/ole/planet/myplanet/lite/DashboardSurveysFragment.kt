@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-24
@@ -15,13 +15,15 @@ import androidx.fragment.app.Fragment
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 
 class DashboardSurveysFragment : Fragment(R.layout.fragment_dashboard_surveys) {
-
     private lateinit var emptyView: TextView
     private lateinit var contentContainer: FrameLayout
     private var currentTeamId: String? = null
     private var currentTeamName: String? = null
 
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?,
+    ) {
         super.onViewCreated(view, savedInstanceState)
         emptyView = view.findViewById(R.id.dashboardSurveysEmptyView)
         contentContainer = view.findViewById(R.id.dashboardSurveysContentContainer)
@@ -56,20 +58,25 @@ class DashboardSurveysFragment : Fragment(R.layout.fragment_dashboard_surveys) {
             currentTeamId = null
             currentTeamName = null
             childFragmentManager.findFragmentById(R.id.dashboardSurveysContentContainer)?.let { fragment ->
-                childFragmentManager.beginTransaction()
+                childFragmentManager
+                    .beginTransaction()
                     .remove(fragment)
                     .commit()
             }
         }
     }
 
-    private fun loadSurveysFragment(teamId: String, teamName: String) {
+    private fun loadSurveysFragment(
+        teamId: String,
+        teamName: String,
+    ) {
         val existing = childFragmentManager.findFragmentById(R.id.dashboardSurveysContentContainer)
         if (existing is DashboardTeamSurveysFragment && existing.isSurveyFeedFor(teamId, teamName)) {
             return
         }
         val fragment = DashboardTeamSurveysFragment.newInstanceForTeam(teamId, teamName)
-        childFragmentManager.beginTransaction()
+        childFragmentManager
+            .beginTransaction()
             .replace(R.id.dashboardSurveysContentContainer, fragment)
             .commit()
     }

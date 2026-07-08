@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-15
@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewAdapter
 
 class DashboardImagePreviewActivity : AppCompatActivity() {
-
     private lateinit var viewPager: ViewPager2
     private lateinit var progressBar: ProgressBar
 
@@ -46,35 +45,45 @@ class DashboardImagePreviewActivity : AppCompatActivity() {
         lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.CREATED) {
                 val baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
-                val requiresServerBase = imagePaths.any { path ->
-                    val trimmed = path.trim()
-                    val scheme = android.net.Uri.parse(trimmed).scheme?.lowercase()
-                    trimmed.isNotEmpty() &&
-                        scheme != "http" &&
-                        scheme != "https" &&
-                        scheme != "file"
-                }
+                val requiresServerBase =
+                    imagePaths.any { path ->
+                        val trimmed = path.trim()
+                        val scheme =
+                            android.net.Uri
+                                .parse(trimmed)
+                                .scheme
+                                ?.lowercase()
+                        trimmed.isNotEmpty() &&
+                            scheme != "http" &&
+                            scheme != "https" &&
+                            scheme != "file"
+                    }
                 if (requiresServerBase && baseUrl.isNullOrEmpty()) {
                     finish()
                     return@repeatOnLifecycle
                 }
-                val sessionCookie = if (!baseUrl.isNullOrEmpty()) {
-                    val authService = AuthDependencies.provideAuthService(applicationContext, baseUrl)
-                    authService.getStoredToken()
-                } else {
-                    null
-                }
+                val sessionCookie =
+                    if (!baseUrl.isNullOrEmpty()) {
+                        val authService = AuthDependencies.provideAuthService(applicationContext, baseUrl)
+                        authService.getStoredToken()
+                    } else {
+                        null
+                    }
                 imageLoader = DashboardPostImageLoader(baseUrl.orEmpty(), sessionCookie, lifecycleScope)
                 setupPager(imagePaths, startIndex)
             }
         }
     }
 
-    private fun setupPager(imagePaths: List<String>, startIndex: Int) {
+    private fun setupPager(
+        imagePaths: List<String>,
+        startIndex: Int,
+    ) {
         val loader = imageLoader ?: return
-        adapter = DashboardImagePreviewAdapter(imagePaths, loader) {
-            finish()
-        }
+        adapter =
+            DashboardImagePreviewAdapter(imagePaths, loader) {
+                finish()
+            }
         viewPager.adapter = adapter
         viewPager.setCurrentItem(startIndex, false)
         viewPager.isUserInputEnabled = imagePaths.size > 1

@@ -5,6 +5,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.OkHttpClient
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -25,6 +26,7 @@ class DashboardTeamsRepositoryTest {
         mockWebServer.start()
         val dispatcher = UnconfinedTestDispatcher()
         repository = DashboardTeamsRepository(
+            client = OkHttpClient.Builder().build(),
             dispatcher = dispatcher
         )
     }

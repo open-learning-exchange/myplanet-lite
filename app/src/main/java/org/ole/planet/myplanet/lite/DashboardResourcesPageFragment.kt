@@ -25,17 +25,11 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import java.io.File
-import java.util.ArrayList
-import java.util.Locale
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import okhttp3.Credentials
-import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.databinding.ItemDashboardResourceExplorerBinding
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_resources_page) {
     companion object {
@@ -220,9 +214,16 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         private val downloadProgressByKey: Map<String, Int?>,
         private val onViewResource: (ResourceUi) -> Unit,
         private val onSecondaryAction: (ResourceUi) -> Unit
-    ) : RecyclerView.Adapter<ResourceExplorerAdapter.ResourceViewHolder>() {
+    ) : androidx.recyclerview.widget.ListAdapter<ResourceUi, ResourceExplorerAdapter.ResourceViewHolder>(
+        org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback(
+            areItemsTheSame = { old, new -> old.uniqueKey() == new.uniqueKey() },
+            getChangePayload = { _, _ -> Any() }
+        )
+    ) {
 
-        private val resources = initialResources.toMutableList()
+        init {
+            submitList(initialResources)
+        }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ResourceViewHolder {
             val inflater = LayoutInflater.from(parent.context)
@@ -231,38 +232,29 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         }
 
         override fun onBindViewHolder(holder: ResourceViewHolder, position: Int) {
-            val item = resources[position]
+            val item = getItem(position)
             val key = item.uniqueKey()
             holder.bind(item, downloadProgressByKey[key], downloadProgressByKey.containsKey(key), onViewResource, onSecondaryAction)
         }
 
-        override fun getItemCount(): Int = resources.size
-
-        fun replaceResources(newResources: List<ResourceUi>) {
-            val oldSize = resources.size
-            resources.clear()
-            resources.addAll(newResources)
-            when {
-                oldSize == 0 && newResources.isNotEmpty() -> notifyItemRangeInserted(0, newResources.size)
-                newResources.isEmpty() && oldSize > 0 -> notifyItemRangeRemoved(0, oldSize)
-                else -> {
-                    val commonCount = minOf(oldSize, newResources.size)
-                    if (commonCount > 0) {
-                        notifyItemRangeChanged(0, commonCount)
-                    }
-                    if (oldSize > newResources.size) {
-                        notifyItemRangeRemoved(newResources.size, oldSize - newResources.size)
-                    } else if (newResources.size > oldSize) {
-                        notifyItemRangeInserted(oldSize, newResources.size - oldSize)
-                    }
-                }
+        override fun onBindViewHolder(holder: ResourceViewHolder, position: Int, payloads: MutableList<Any>) {
+            if (payloads.isNotEmpty()) {
+                val item = getItem(position)
+                val key = item.uniqueKey()
+                holder.bind(item, downloadProgressByKey[key], downloadProgressByKey.containsKey(key), onViewResource, onSecondaryAction)
+            } else {
+                super.onBindViewHolder(holder, position, payloads)
             }
         }
 
+        fun replaceResources(newResources: List<ResourceUi>) {
+            submitList(newResources.toList())
+        }
+
         fun notifyResourceChanged(item: ResourceUi) {
-            val index = resources.indexOfFirst { it.uniqueKey() == item.uniqueKey() }
+            val index = currentList.indexOfFirst { it.uniqueKey() == item.uniqueKey() }
             if (index >= 0) {
-                notifyItemChanged(index)
+                notifyItemChanged(index, Any())
             }
         }
 
@@ -416,53 +408,6 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
             searchQuery = searchQuery,
             selectedMediaType = selectedMediaType
         )
-    }
-
-    internal fun openResource(item: ResourceUi) {
-        val mediaType = item.type.lowercase(Locale.ROOT)
-        val resourceUri = downloadService.resolveResourceUri(
-            baseUrl = DashboardServerPreferences.getServerBaseUrl(requireContext()),
-            item = item
-        )
-        if (resourceUri.isNullOrBlank()) {
-            Toast.makeText(requireContext(), getString(R.string.course_wizard_play_error), Toast.LENGTH_SHORT).show()
-            return
-        }
-        when {
-            mediaType.contains("image") -> {
-                val intent = Intent(requireContext(), DashboardImagePreviewActivity::class.java).apply {
-                    putStringArrayListExtra(
-                        DashboardImagePreviewActivity.EXTRA_IMAGE_PATHS,
-                        ArrayList(listOf(resourceUri))
-                    )
-                    putExtra(DashboardImagePreviewActivity.EXTRA_START_INDEX, 0)
-                }
-                startActivity(intent)
-            }
-            mediaType.contains("video") || mediaType.contains("audio") -> {
-                val intent = FullscreenPlayerActivity.createIntent(
-                    context = requireContext(),
-                    mediaUrls = arrayListOf(resourceUri),
-                    startIndex = 0,
-                    startPositionMs = 0L,
-                    authorizationHeader = resolveAuthHeader()
-                )
-                startActivity(intent)
-            }
-            else -> {
-                val intent = FullscreenPdfActivity.createIntent(
-                    requireContext(),
-                    resourceUri,
-                    resolveAuthHeader()
-                )
-                startActivity(intent)
-            }
-        }
-    }
-
-    private fun resolveAuthHeader(): String? {
-        val credentials = ProfileCredentialsStore.getStoredCredentials(requireContext().applicationContext)
-        return credentials?.let { Credentials.basic(it.username, it.password) }
     }
 
     internal fun handleResourceMenuAction(action: ResourceMenuAction) {
