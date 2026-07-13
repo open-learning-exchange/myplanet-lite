@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.lite
 import android.view.ContextThemeWrapper
 import android.view.View
 import android.view.animation.LinearInterpolator
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.content.FileProvider
 import androidx.core.view.MenuCompat
@@ -89,8 +91,12 @@ internal fun DashboardResourcesPageFragment.runFabSpinCycle(fab: View) {
 internal fun DashboardResourcesPageFragment.executeResourceMenuAction(action: ResourceMenuAction) {
     when (action) {
         ResourceMenuAction.AddPdf -> pickPdfLauncher.launch(arrayOf("application/pdf"))
-        ResourceMenuAction.AddImage -> pickImageLauncher.launch(arrayOf("image/*"))
-        ResourceMenuAction.AddVideo -> pickVideoLauncher.launch(arrayOf("video/*"))
+        ResourceMenuAction.AddImage -> pickImageLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
+        ResourceMenuAction.AddVideo -> pickVideoLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.VideoOnly)
+        )
         ResourceMenuAction.TakePhoto -> {
             val context = requireContext()
             val sharedImagesDir = File(context.cacheDir, "shared_images")

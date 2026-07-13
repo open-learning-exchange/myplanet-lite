@@ -14,6 +14,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts.PickVisualMedia
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
@@ -113,26 +114,18 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         showPdfMetadataPopup(uri)
     }
     internal val pickImageLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
+        PickVisualMedia()
     ) { uri ->
         if (uri == null) {
             return@registerForActivityResult
-        }
-        val resolver = requireContext().contentResolver
-        runCatching {
-            resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         showImageMetadataPopup(uri)
     }
     internal val pickVideoLauncher = registerForActivityResult(
-        ActivityResultContracts.OpenDocument()
+        PickVisualMedia()
     ) { uri ->
         if (uri == null) {
             return@registerForActivityResult
-        }
-        val resolver = requireContext().contentResolver
-        runCatching {
-            resolver.takePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION)
         }
         showVideoMetadataPopup(uri)
     }

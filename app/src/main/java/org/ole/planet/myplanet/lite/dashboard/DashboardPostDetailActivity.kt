@@ -77,7 +77,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     internal var replyPendingNewlineIndex: Int? = null
     internal var isHandlingReplyListContinuation = false
     internal val replyImagePickerLauncher =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             uri?.let {
                 lifecycleScope.launch {
                     handleReplyImageSelection(it)
