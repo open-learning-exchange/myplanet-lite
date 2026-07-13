@@ -11,6 +11,8 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.widget.Toast
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import com.yalantis.ucrop.UCrop
 import kotlinx.coroutines.Dispatchers
@@ -22,7 +24,9 @@ import java.io.File
 import kotlin.math.min
 
 internal fun ProfileActivity.launchAvatarPickerImpl() {
-    selectAvatarLauncher.launch("image/*")
+    selectAvatarLauncher.launch(
+        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+    )
 }
 
 internal fun ProfileActivity.processAvatarSelectionImpl(uri: Uri) {

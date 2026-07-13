@@ -14,6 +14,8 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.widget.AppCompatImageView
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -300,7 +302,9 @@ internal fun DashboardPostDetailActivity.handleReplyInsertImageClick() {
 }
 
 internal fun DashboardPostDetailActivity.launchReplyImagePicker() {
-    replyImagePickerLauncher.launch("image/*")
+    replyImagePickerLauncher.launch(
+        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+    )
 }
 
 internal fun DashboardPostDetailActivity.collapseReplyComposerIfExpanded(): Boolean {
