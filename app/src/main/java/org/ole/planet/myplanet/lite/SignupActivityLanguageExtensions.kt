@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2026-06-10
@@ -9,8 +9,8 @@ package org.ole.planet.myplanet.lite
 import android.widget.ArrayAdapter
 import android.widget.Filter
 import androidx.core.widget.doAfterTextChanged
-import java.util.Locale
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
+import java.util.Locale
 
 internal fun SignupActivity.setupLanguageOptions() {
     languageOptions = buildLanguageOptionsList()
@@ -19,50 +19,49 @@ internal fun SignupActivity.setupLanguageOptions() {
     initializeLanguageSelection()
 }
 
-internal fun SignupActivity.buildLanguageOptionsList(): List<SignupLanguageOption> {
-    return listOf(
+internal fun SignupActivity.buildLanguageOptionsList(): List<SignupLanguageOption> =
+    listOf(
         SignupLanguageOption(
             languageTag = "en",
             labelRes = R.string.language_name_english,
-            levelArrayRes = R.array.signup_level_options_language_en
+            levelArrayRes = R.array.signup_level_options_language_en,
         ),
         SignupLanguageOption(
             languageTag = "es",
             labelRes = R.string.language_name_spanish,
-            levelArrayRes = R.array.signup_level_options_language_es
+            levelArrayRes = R.array.signup_level_options_language_es,
         ),
         SignupLanguageOption(
             languageTag = "fr",
             labelRes = R.string.language_name_french,
-            levelArrayRes = R.array.signup_level_options_language_fr
+            levelArrayRes = R.array.signup_level_options_language_fr,
         ),
         SignupLanguageOption(
             languageTag = "pt",
             labelRes = R.string.language_name_portuguese,
-            levelArrayRes = R.array.signup_level_options_language_pt
+            levelArrayRes = R.array.signup_level_options_language_pt,
         ),
         SignupLanguageOption(
             languageTag = "ar",
             labelRes = R.string.language_name_arabic,
-            levelArrayRes = R.array.signup_level_options_language_ar
+            levelArrayRes = R.array.signup_level_options_language_ar,
         ),
         SignupLanguageOption(
             languageTag = "so",
             labelRes = R.string.language_name_somali,
-            levelArrayRes = R.array.signup_level_options_language_so
+            levelArrayRes = R.array.signup_level_options_language_so,
         ),
         SignupLanguageOption(
             languageTag = "ne",
             labelRes = R.string.language_name_nepali,
-            levelArrayRes = R.array.signup_level_options_language_ne
+            levelArrayRes = R.array.signup_level_options_language_ne,
         ),
         SignupLanguageOption(
             languageTag = "hi",
             labelRes = R.string.language_name_hindi,
-            levelArrayRes = R.array.signup_level_options_language_hi
-        )
+            levelArrayRes = R.array.signup_level_options_language_hi,
+        ),
     )
-}
 
 internal fun SignupActivity.setupLanguageInputAdapter() {
     val languageLabels = languageOptions.map { getString(it.labelRes) }
@@ -88,7 +87,11 @@ internal fun SignupActivity.setupLanguageInputListeners() {
 }
 
 internal fun SignupActivity.initializeLanguageSelection() {
-    val existingLabel = languageInput.text?.toString()?.trim().orEmpty()
+    val existingLabel =
+        languageInput.text
+            ?.toString()
+            ?.trim()
+            .orEmpty()
     val matchedOption = languageOptions.firstOrNull { getString(it.labelRes) == existingLabel }
 
     if (matchedOption != null) {
@@ -106,7 +109,10 @@ internal fun SignupActivity.findDefaultLanguageOption(): SignupLanguageOption {
     return languageOptions.firstOrNull { it.languageTag == systemLanguage } ?: languageOptions.first()
 }
 
-internal fun SignupActivity.applySelectedLanguage(option: SignupLanguageOption, resetLevel: Boolean) {
+internal fun SignupActivity.applySelectedLanguage(
+    option: SignupLanguageOption,
+    resetLevel: Boolean,
+) {
     if (selectedLanguageOption == option && !resetLevel) {
         return
     }
@@ -117,8 +123,9 @@ internal fun SignupActivity.applySelectedLanguage(option: SignupLanguageOption, 
     val levelAdapter = createNonFilteringAdapter(levelValues)
     levelInput.setAdapter(levelAdapter)
 
-    val localizedLevel = LearningLevelTranslator
-        .toLocalized(this, levelInput.text?.toString(), option.levelArrayRes)
+    val localizedLevel =
+        LearningLevelTranslator
+            .toLocalized(this, levelInput.text?.toString(), option.levelArrayRes)
     val shouldClearLevel = resetLevel || localizedLevel.isNullOrBlank()
     if (shouldClearLevel) {
         levelInput.setText("", false)
@@ -131,28 +138,31 @@ internal fun SignupActivity.applySelectedLanguage(option: SignupLanguageOption, 
 internal fun SignupActivity.getLocalizedLevelValues(option: SignupLanguageOption): List<String> {
     val locale = Locale.forLanguageTag(option.languageTag)
     val baseConfig = resources.configuration
-    val localizedConfig = android.content.res.Configuration(baseConfig).apply {
-        setLocale(locale)
-    }
+    val localizedConfig =
+        android.content.res.Configuration(baseConfig).apply {
+            setLocale(locale)
+        }
     val localizedContext = createConfigurationContext(localizedConfig)
     return localizedContext.resources.getStringArray(option.levelArrayRes).toList()
 }
 
-internal fun SignupActivity.createNonFilteringAdapter(items: List<String>): ArrayAdapter<String> {
-    return object : ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, items) {
-        internal val filter = object : Filter() {
-            override fun performFiltering(constraint: CharSequence?): FilterResults {
-                return FilterResults().apply {
-                    values = items
-                    count = items.size
+internal fun SignupActivity.createNonFilteringAdapter(items: List<String>): ArrayAdapter<String> =
+    object : ArrayAdapter<String>(this, android.R.layout.simple_list_item_1, items) {
+        internal val filter =
+            object : Filter() {
+                override fun performFiltering(constraint: CharSequence?): FilterResults =
+                    FilterResults().apply {
+                        values = items
+                        count = items.size
+                    }
+
+                override fun publishResults(
+                    constraint: CharSequence?,
+                    results: FilterResults?,
+                ) {
+                    notifyDataSetChanged()
                 }
             }
 
-            override fun publishResults(constraint: CharSequence?, results: FilterResults?) {
-                notifyDataSetChanged()
-            }
-        }
-
         override fun getFilter(): Filter = filter
     }
-}

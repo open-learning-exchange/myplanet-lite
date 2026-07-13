@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-17
@@ -36,9 +36,9 @@ private const val COLUMN_RAW_DOCUMENT = "raw_document"
 private const val COLUMN_IS_USER_ADMIN = "is_user_admin"
 private const val PROFILE_ROW_ID = 1
 
-class UserProfileDatabase private constructor(context: Context) :
-    SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
-
+class UserProfileDatabase private constructor(
+    context: Context,
+) : SQLiteOpenHelper(context.applicationContext, DATABASE_NAME, null, DATABASE_VERSION) {
     override fun onCreate(db: SQLiteDatabase) {
         db.execSQL(
             """
@@ -60,11 +60,15 @@ class UserProfileDatabase private constructor(context: Context) :
                 raw_document TEXT,
                 is_user_admin INTEGER NOT NULL DEFAULT 0
             )
-            """.trimIndent()
+            """.trimIndent(),
         )
     }
 
-    override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
+    override fun onUpgrade(
+        db: SQLiteDatabase,
+        oldVersion: Int,
+        newVersion: Int,
+    ) {
         if (oldVersion < 2) {
             db.execSQL("ALTER TABLE user_profile ADD COLUMN revision TEXT")
             db.execSQL("ALTER TABLE user_profile ADD COLUMN derived_key TEXT")
@@ -82,24 +86,25 @@ class UserProfileDatabase private constructor(context: Context) :
         db.beginTransaction()
         try {
             db.delete(TABLE_PROFILE, null, null)
-            val values = ContentValues().apply {
-                put(COLUMN_ID, PROFILE_ROW_ID)
-                put(COLUMN_USERNAME, profile.username)
-                put(COLUMN_FIRST_NAME, profile.firstName)
-                put(COLUMN_MIDDLE_NAME, profile.middleName)
-                put(COLUMN_LAST_NAME, profile.lastName)
-                put(COLUMN_EMAIL, profile.email)
-                put(COLUMN_LANGUAGE, profile.language)
-                put(COLUMN_PHONE_NUMBER, profile.phoneNumber)
-                put(COLUMN_BIRTH_DATE, profile.birthDate)
-                put(COLUMN_GENDER, profile.gender)
-                put(COLUMN_LEVEL, profile.level)
-                put(COLUMN_AVATAR, profile.avatarImage)
-                put(COLUMN_REVISION, profile.revision)
-                put(COLUMN_DERIVED_KEY, profile.derivedKey)
-                put(COLUMN_RAW_DOCUMENT, profile.rawDocument)
-                put(COLUMN_IS_USER_ADMIN, if (profile.isUserAdmin) 1 else 0)
-            }
+            val values =
+                ContentValues().apply {
+                    put(COLUMN_ID, PROFILE_ROW_ID)
+                    put(COLUMN_USERNAME, profile.username)
+                    put(COLUMN_FIRST_NAME, profile.firstName)
+                    put(COLUMN_MIDDLE_NAME, profile.middleName)
+                    put(COLUMN_LAST_NAME, profile.lastName)
+                    put(COLUMN_EMAIL, profile.email)
+                    put(COLUMN_LANGUAGE, profile.language)
+                    put(COLUMN_PHONE_NUMBER, profile.phoneNumber)
+                    put(COLUMN_BIRTH_DATE, profile.birthDate)
+                    put(COLUMN_GENDER, profile.gender)
+                    put(COLUMN_LEVEL, profile.level)
+                    put(COLUMN_AVATAR, profile.avatarImage)
+                    put(COLUMN_REVISION, profile.revision)
+                    put(COLUMN_DERIVED_KEY, profile.derivedKey)
+                    put(COLUMN_RAW_DOCUMENT, profile.rawDocument)
+                    put(COLUMN_IS_USER_ADMIN, if (profile.isUserAdmin) 1 else 0)
+                }
             db.insertOrThrow(TABLE_PROFILE, null, values)
             db.setTransactionSuccessful()
         } finally {
@@ -108,23 +113,25 @@ class UserProfileDatabase private constructor(context: Context) :
     }
 
     fun getProfile(): UserProfile? {
-        val db = try {
-            readableDatabase
-        } catch (e: IllegalStateException) {
-            return null
-        }
+        val db =
+            try {
+                readableDatabase
+            } catch (e: IllegalStateException) {
+                return null
+            }
         var cursor: Cursor? = null
         return try {
-            cursor = db.query(
-                TABLE_PROFILE,
-                null,
-                "$COLUMN_ID = ?",
-                arrayOf(PROFILE_ROW_ID.toString()),
-                null,
-                null,
-                null,
-                "1"
-            )
+            cursor =
+                db.query(
+                    TABLE_PROFILE,
+                    null,
+                    "$COLUMN_ID = ?",
+                    arrayOf(PROFILE_ROW_ID.toString()),
+                    null,
+                    null,
+                    null,
+                    "1",
+                )
             if (cursor.moveToFirst()) {
                 UserProfile(
                     username = cursor.getString(cursor.getColumnIndexOrThrow(COLUMN_USERNAME)),
@@ -141,7 +148,7 @@ class UserProfileDatabase private constructor(context: Context) :
                     revision = cursor.getStringOrNull(COLUMN_REVISION),
                     derivedKey = cursor.getStringOrNull(COLUMN_DERIVED_KEY),
                     rawDocument = cursor.getStringOrNull(COLUMN_RAW_DOCUMENT),
-                    isUserAdmin = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_USER_ADMIN)) != 0
+                    isUserAdmin = cursor.getInt(cursor.getColumnIndexOrThrow(COLUMN_IS_USER_ADMIN)) != 0,
                 )
             } else {
                 null
@@ -162,14 +169,13 @@ class UserProfileDatabase private constructor(context: Context) :
         @Volatile
         private var instance: UserProfileDatabase? = null
 
-        fun getInstance(context: Context): UserProfileDatabase {
-            return instance ?: synchronized(this) {
+        fun getInstance(context: Context): UserProfileDatabase =
+            instance ?: synchronized(this) {
                 if (instance == null) {
                     migrateLegacyDatabase(context)
                 }
                 instance ?: UserProfileDatabase(context).also { instance = it }
             }
-        }
 
         private fun migrateLegacyDatabase(context: Context) {
             val legacyDbFile = context.getDatabasePath(LEGACY_DATABASE_NAME)

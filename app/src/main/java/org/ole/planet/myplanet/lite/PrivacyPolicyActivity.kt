@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-12-09
@@ -17,7 +17,6 @@ import com.google.android.material.appbar.MaterialToolbar
 import io.noties.markwon.Markwon
 
 class PrivacyPolicyActivity : BaseActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
@@ -40,6 +39,4 @@ class PrivacyPolicyActivity : BaseActivity() {
             insets
         }
     }
-
-
 }

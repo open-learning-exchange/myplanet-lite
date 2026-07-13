@@ -1,9 +1,6 @@
 package org.ole.planet.myplanet.lite.profile
 
-import android.content.Context
-import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
-import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
@@ -20,7 +17,6 @@ import kotlin.coroutines.intrinsics.COROUTINE_SUSPENDED
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
-import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 class ProfileActivityRobolectricTest {

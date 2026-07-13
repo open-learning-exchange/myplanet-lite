@@ -8,6 +8,12 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
 import org.junit.Test
+import androidx.test.core.app.ApplicationProvider
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+import org.junit.Assert.assertNotNull
+
 import org.mockito.Mockito.mock
 import org.mockito.kotlin.any
 import org.mockito.kotlin.eq
@@ -16,6 +22,8 @@ import org.mockito.kotlin.verify
 import org.mockito.kotlin.whenever
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [33])
 class ProfileCredentialsStoreTest {
     private lateinit var mockContext: Context
     private lateinit var mockAppContext: Context
@@ -154,5 +162,95 @@ class ProfileCredentialsStoreTest {
         val result = ProfileCredentialsStore.consumeTemporarySignUpPassword(mockContext)
 
         assertNull(result)
+    }
+
+    @Test
+    fun `getCurrentUserSession returns null when no credentials stored`() = kotlinx.coroutines.test.runTest {
+        ProfileCredentialsStore.setSessionCredentials(null)
+        whenever(mockPrefs.getString("remembered_username", null)).thenReturn(null)
+        val dispatcher = kotlinx.coroutines.test.StandardTestDispatcher(testScheduler)
+        val result = ProfileCredentialsStore.getCurrentUserSession(mockContext, dispatcher)
+        assertNull(result)
+    }
+
+
+    @Test
+    fun `getCurrentUserSession returns credentials and null profile when profile missing`() = kotlinx.coroutines.test.runTest {
+        val appContext = ApplicationProvider.getApplicationContext<Context>()
+
+        ProfileCredentialsStore.setSessionCredentials(null)
+        val prefs = org.ole.planet.myplanet.lite.util.FakeSharedPreferences()
+        prefs.edit()
+            .putString("remembered_username", "user1")
+            .putString(ProfileCredentialsStore.getPasswordKey("user1"), "pass1")
+            .apply()
+
+        SecurePreferencesProvider.injectedPreferences = prefs
+
+        val db = UserProfileDatabase.getInstance(appContext)
+        db.clearProfile()
+
+        val dispatcher = kotlinx.coroutines.test.StandardTestDispatcher(testScheduler)
+        val result = ProfileCredentialsStore.getCurrentUserSession(appContext, dispatcher)
+
+        assertNotNull(result)
+        assertEquals("user1", result?.credentials?.username)
+        assertEquals("pass1", result?.credentials?.password)
+        assertNull(result?.profile)
+
+        SecurePreferencesProvider.injectedPreferences = null
+    }
+
+
+
+
+
+    @Test
+    fun `getCurrentUserSession returns credentials and profile when both exist`() = kotlinx.coroutines.test.runTest {
+        val appContext = ApplicationProvider.getApplicationContext<Context>()
+        ProfileCredentialsStore.setSessionCredentials(null)
+
+        val prefs = org.ole.planet.myplanet.lite.util.FakeSharedPreferences()
+        prefs.edit()
+            .putString("remembered_username", "user2")
+            .putString(ProfileCredentialsStore.getPasswordKey("user2"), "pass2")
+            .apply()
+
+        SecurePreferencesProvider.injectedPreferences = prefs
+
+        val db = UserProfileDatabase.getInstance(appContext)
+        db.clearProfile()
+        val profile = UserProfile(
+            username = "user2",
+            firstName = "Test",
+            middleName = "",
+            lastName = "",
+            email = "test@example.com",
+            language = "",
+            phoneNumber = "",
+            birthDate = "",
+            gender = "",
+            level = "",
+            avatarImage = null,
+            revision = "",
+            derivedKey = "",
+            rawDocument = "",
+            isUserAdmin = false
+        )
+        db.saveProfile(profile)
+
+        val dispatcher = kotlinx.coroutines.test.StandardTestDispatcher(testScheduler)
+        val result = ProfileCredentialsStore.getCurrentUserSession(appContext, dispatcher)
+
+        assertNotNull(result)
+        assertEquals("user2", result?.credentials?.username)
+        assertEquals("pass2", result?.credentials?.password)
+
+        assertNotNull(result?.profile)
+        assertEquals("user2", result?.profile?.username)
+        assertEquals("Test", result?.profile?.firstName)
+        assertEquals("test@example.com", result?.profile?.email)
+
+        SecurePreferencesProvider.injectedPreferences = null
     }
 }

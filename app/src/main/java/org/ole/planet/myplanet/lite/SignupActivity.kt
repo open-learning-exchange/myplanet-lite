@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-17
@@ -22,25 +22,18 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
-import org.ole.planet.myplanet.lite.signup.SignupRepository
 import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
+import org.ole.planet.myplanet.lite.signup.SignupRepository
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SignupActivity : BaseActivity() {
-
     internal var imeInsetBottom: Int = 0
     internal var birthDateSelection: Long? = null
 
@@ -139,11 +132,14 @@ class SignupActivity : BaseActivity() {
         setupClickListeners()
         setupServerConfiguration()
 
-        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                navigateBack()
-            }
-        })
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    navigateBack()
+                }
+            },
+        )
 
         updateStepVisibility()
     }
@@ -165,9 +161,8 @@ class SignupActivity : BaseActivity() {
         return signupRepository.checkUsernameAvailability(serverBaseUrl, username)
     }
 
-
-    internal fun validateCurrentStep(): Boolean {
-        return when (steps[currentStepIndex]) {
+    internal fun validateCurrentStep(): Boolean =
+        when (steps[currentStepIndex]) {
             SignupStep.USERNAME -> validateUsername()
             SignupStep.NAMES -> validateNames()
             SignupStep.BIRTH_DATE -> validateBirthDate()
@@ -177,10 +172,13 @@ class SignupActivity : BaseActivity() {
             SignupStep.LANGUAGE -> validateLanguage()
             SignupStep.LICENSE -> true
         }
-    }
 
     internal suspend fun submitSignupPayload(): SignupSubmissionResult {
-        val username = usernameInput.text?.toString()?.trim().orEmpty()
+        val username =
+            usernameInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         if (username.isEmpty()) {
             return SignupSubmissionResult.FAILED
         }
@@ -190,25 +188,58 @@ class SignupActivity : BaseActivity() {
     }
 
     private fun buildSignupPayload(username: String): JSONObject? {
-        val firstName = firstNameInput.text?.toString()?.trim().orEmpty()
-        val lastName = lastNameInput.text?.toString()?.trim().orEmpty()
-        val middleName = middleNameInput.text?.toString()?.trim().orEmpty()
+        val firstName =
+            firstNameInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val lastName =
+            lastNameInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val middleName =
+            middleNameInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         val password = passwordInput.text?.toString().orEmpty()
-        val email = emailInput.text?.toString()?.trim().orEmpty()
-        val phoneNumber = phoneInput.text?.toString()?.trim().orEmpty()
-        val birthDate = birthDateInput.text?.toString()?.trim().orEmpty()
-        val languageLabel = languageInput.text?.toString()?.trim().orEmpty()
-        val levelLabel = levelInput.text?.toString()?.trim().orEmpty()
+        val email =
+            emailInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val phoneNumber =
+            phoneInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val birthDate =
+            birthDateInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val languageLabel =
+            languageInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val levelLabel =
+            levelInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         val levelValue = LearningLevelTranslator.toEnglish(this, levelLabel)?.takeIf { it.isNotEmpty() }
         val androidId = serverPreferences.getString(KEY_DEVICE_ANDROID_ID, null)?.takeIf { it.isNotBlank() }
         val uniqueAndroidId = serverPreferences.getString(KEY_DEVICE_UNIQUE_ANDROID_ID, null)?.takeIf { it.isNotBlank() }
         val customDeviceName = serverPreferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)?.takeIf { it.isNotBlank() }
 
-        val genderValue = when (genderGroup.checkedRadioButtonId) {
-            R.id.signupGenderMale -> GENDER_MALE
-            R.id.signupGenderFemale -> GENDER_FEMALE
-            else -> null
-        } ?: return null
+        val genderValue =
+            when (genderGroup.checkedRadioButtonId) {
+                R.id.signupGenderMale -> GENDER_MALE
+                R.id.signupGenderFemale -> GENDER_FEMALE
+                else -> null
+            } ?: return null
 
         return JSONObject().apply {
             put("name", username)
@@ -236,7 +267,11 @@ class SignupActivity : BaseActivity() {
     }
 
     fun validateUsername(): Boolean {
-        val username = usernameInput.text?.toString()?.trim().orEmpty()
+        val username =
+            usernameInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         return if (username.isNotEmpty() && USERNAME_PATTERN.matches(username)) {
             usernameLayout.error = null
             true
@@ -247,8 +282,16 @@ class SignupActivity : BaseActivity() {
     }
 
     fun validateNames(): Boolean {
-        val firstName = firstNameInput.text?.toString()?.trim().orEmpty()
-        val lastName = lastNameInput.text?.toString()?.trim().orEmpty()
+        val firstName =
+            firstNameInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val lastName =
+            lastNameInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
 
         var valid = true
 
@@ -270,8 +313,16 @@ class SignupActivity : BaseActivity() {
     }
 
     fun validateContact(): Boolean {
-        val email = emailInput.text?.toString()?.trim().orEmpty()
-        val phone = phoneInput.text?.toString()?.trim().orEmpty()
+        val email =
+            emailInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
+        val phone =
+            phoneInput.text
+                ?.toString()
+                ?.trim()
+                .orEmpty()
         var valid = true
 
         if (Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
@@ -307,5 +358,4 @@ class SignupActivity : BaseActivity() {
             passwordsMatch
         }
     }
-
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Author: Walfre López Prado
  * Email: loppra@plataformasinformaticas.com
  * Creation date: 2025-11-23
@@ -15,7 +15,6 @@ import androidx.core.view.updatePadding
 import com.google.android.material.appbar.MaterialToolbar
 
 class TeamsActivity : BaseActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         applyDeviceOrientationLock()
@@ -33,6 +32,4 @@ class TeamsActivity : BaseActivity() {
             insets
         }
     }
-
-
 }

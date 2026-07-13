@@ -22,8 +22,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.json.JSONObject
-import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.dashboard.DashboardResourcesRepository
 
 
 internal data class FormViews(
@@ -70,27 +69,6 @@ internal fun DashboardResourcesPageFragment.addFormViewsToLayout(content: Linear
     content.addView(formViews.isDownloadableCheck)
 }
 
-internal fun DashboardResourcesPageFragment.createResourcePayload(
-    title: String,
-    description: String,
-    language: String,
-    username: String,
-    planetCode: String,
-    isDownloadable: Boolean
-): JSONObject {
-    return JSONObject()
-        .put("title", title)
-        .put("description", description)
-        .put("subject", JSONArray().put(getString(R.string.server_planet_learning)))
-        .put("level", JSONArray().put(getString(R.string.server_planet_early_education)))
-        .put("language", language)
-        .put("addedBy", username)
-        .put("sourcePlanet", planetCode)
-        .put("resideOn", planetCode)
-        .put("isDownloadable", isDownloadable)
-        .put("private", false)
-}
-
 internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
     val context = requireContext()
     val metadata = DashboardResourcesMediaUtils.extractResourceMetadata(this, uri, "document.pdf", isPdf = true)
@@ -129,17 +107,23 @@ internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
                         formViews.descriptionInput.error = getString(R.string.dashboard_resources_pdf_field_required)
                         return@setOnClickListener
                     }
-                    val payload = createResourcePayload(
-                        title,
-                        description,
-                        formViews.languageSpinner.selectedItem?.toString().orEmpty(),
-                        metadata.username,
-                        metadata.planetCode,
-                        formViews.isDownloadableCheck.isChecked
+                    val request = DashboardResourcesRepository.ResourceMetadataRequest(
+                        title = title,
+                        description = description,
+                        language = formViews.languageSpinner.selectedItem?.toString().orEmpty(),
+                        username = metadata.username,
+                        planetCode = metadata.planetCode,
+                        isDownloadable = formViews.isDownloadableCheck.isChecked
+                    )
+                    val payload = repository.buildResourcePayload(
+                        request = request,
+                        subject = getString(R.string.server_planet_learning),
+                        level = getString(R.string.server_planet_early_education)
                     )
                     val bytesProvider: suspend () -> ByteArray? = {
                         DashboardResourcesMediaUtils.readBytesFromUri(requireContext(), uri)
                     }
+                    dialog.dismiss()
                     performResourceCreateAndUpload(
                         payload = payload,
                         fileExtension = "pdf",
@@ -148,7 +132,6 @@ internal fun DashboardResourcesPageFragment.showPdfMetadataPopup(uri: Uri) {
                         bytesProvider = bytesProvider,
                         onSuccess = {
                             Toast.makeText(context, getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()
-                            dialog.dismiss()
                         }
                     )
                 }
@@ -182,7 +165,15 @@ internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
     val metadata = DashboardResourcesMediaUtils.extractResourceMetadata(this, uri, "image.jpg")
     val mimeType = context.contentResolver.getType(uri).orEmpty().ifBlank { "image/jpeg" }
     val imageSize = DashboardResourcesMediaUtils.resolveImageSize(requireContext(), uri) ?: (0 to 0)
-    var isUploaded = false
+    var uploadInProgress = false
+    val isTemporaryFileProviderUri = uri.authority == "${context.packageName}.fileprovider"
+    val deleteTemporaryResourceFile = {
+        if (isTemporaryFileProviderUri) {
+            runCatching {
+                File(context.cacheDir, "shared_images/${uri.lastPathSegment}").delete()
+            }
+        }
+    }
 
     val content = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
@@ -270,17 +261,24 @@ internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
                         formViews.descriptionInput.error = getString(R.string.dashboard_resources_pdf_field_required)
                         return@setOnClickListener
                     }
-                    val payload = createResourcePayload(
-                        title,
-                        description,
-                        formViews.languageSpinner.selectedItem?.toString().orEmpty(),
-                        metadata.username,
-                        metadata.planetCode,
-                        formViews.isDownloadableCheck.isChecked
+                    val request = DashboardResourcesRepository.ResourceMetadataRequest(
+                        title = title,
+                        description = description,
+                        language = formViews.languageSpinner.selectedItem?.toString().orEmpty(),
+                        username = metadata.username,
+                        planetCode = metadata.planetCode,
+                        isDownloadable = formViews.isDownloadableCheck.isChecked
+                    )
+                    val payload = repository.buildResourcePayload(
+                        request = request,
+                        subject = getString(R.string.server_planet_learning),
+                        level = getString(R.string.server_planet_early_education)
                     )
                     val bytesProvider: suspend () -> ByteArray? = {
                         DashboardResourcesMediaUtils.buildResizedImageBytes(requireContext(), uri, resolutionSlider.value, mimeType)
                     }
+                    uploadInProgress = true
+                    dialog.dismiss()
                     performResourceCreateAndUpload(
                         payload = payload,
                         fileExtension = DashboardResourcesMediaUtils.extensionForImageMimeType(mimeType),
@@ -288,19 +286,19 @@ internal fun DashboardResourcesPageFragment.showImageMetadataPopup(uri: Uri) {
                         credentials = metadata.credentials,
                         bytesProvider = bytesProvider,
                         onSuccess = {
-                            isUploaded = true
                             Toast.makeText(context, getString(R.string.dashboard_resources_upload_success), Toast.LENGTH_SHORT).show()
-                            dialog.dismiss()
+                        },
+                        onComplete = {
+                            uploadInProgress = false
+                            deleteTemporaryResourceFile()
                         }
                     )
                 }
             }
             dialog.show()
             dialog.setOnDismissListener {
-                if (uri.authority == "${context.packageName}.fileprovider" || isUploaded) {
-                    runCatching {
-                        File(context.cacheDir, "shared_images/${uri.lastPathSegment}").delete()
-                    }
+                if (!uploadInProgress) {
+                    deleteTemporaryResourceFile()
                 }
             }
         }
