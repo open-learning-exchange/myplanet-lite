@@ -82,6 +82,18 @@ object IntentUtils {
         )
     }
 
+    fun isAppSectionDeepLink(intent: Intent?): Boolean {
+        if (intent?.action != Intent.ACTION_VIEW) {
+            return false
+        }
+        val data = intent.data ?: return false
+        if (data.isOpaque) return false
+
+        val isWebScheme = data.scheme == "https" || data.scheme == "http"
+        return isWebScheme &&
+            data.pathSegments.firstOrNull()?.equals("app", ignoreCase = true) == true
+    }
+
     fun sameServer(left: String?, right: String?): Boolean {
         val normalizedLeft = normalizeServerKey(left)
         val normalizedRight = normalizeServerKey(right)

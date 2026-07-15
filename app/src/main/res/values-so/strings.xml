@@ -3,6 +3,9 @@
     <string name="app_name_prefix">myPlanet</string>
     <string name="app_name_suffix">Lite</string>
     <string name="app_version">Nooca %1$s</string>
+    <string name="open_link_with">Ku fur xiriirka adigoo isticmaalaya</string>
+    <string name="just_once">Hal mar kaliya</string>
+    <string name="always">Mar walba</string>
     <string name="login_username_label">Magaca isticmaale</string>
     <string name="login_password_label">Furaha sirta ah</string>
     <string name="login_action">Soo gal</string>

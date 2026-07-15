@@ -3,6 +3,9 @@
     <string name="app_name_prefix">myPlanet</string>
     <string name="app_name_suffix">Lite</string>
     <string name="app_version">الإصدار %1$s</string>
+    <string name="open_link_with">فتح الرابط باستخدام</string>
+    <string name="just_once">مرة واحدة فقط</string>
+    <string name="always">دائمًا</string>
     <string name="login_username_label">اسم المستخدم</string>
     <string name="login_password_label">كلمة المرور</string>
     <string name="login_action">تسجيل الدخول</string>
