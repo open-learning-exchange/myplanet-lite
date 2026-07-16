@@ -3,6 +3,9 @@
     <string name="app_name_prefix">myPlanet</string>
     <string name="app_name_suffix">Lite</string>
     <string name="app_version">संस्करण %1$s</string>
+    <string name="open_link_with">इसके साथ लिंक खोलें</string>
+    <string name="just_once">सिर्फ़ एक बार</string>
+    <string name="always">हमेशा</string>
     <string name="login_username_label">उपयोगकर्ता नाम</string>
     <string name="login_password_label">पासवर्ड</string>
     <string name="login_action">साइन इन</string>

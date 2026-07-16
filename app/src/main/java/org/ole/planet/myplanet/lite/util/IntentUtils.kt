@@ -5,6 +5,16 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerCatalog
 
 object IntentUtils {
     private val ID_PATTERN = Regex("^[a-zA-Z0-9_\\-:@.]+$")
+    private val APP_SECTION_HOSTS = setOf(
+        "planet.learning.ole.org",
+        "planet.earth.ole.org",
+        "planet.somalia.ole.org",
+        "planet.vi.ole.org",
+        "planet.gt",
+        "sanpablo.planet.gt",
+        "uriur.planet.gt",
+        "embakasi.planet.gt",
+    )
 
     fun extractDeepLinkPostId(intent: Intent?): String? {
         if (intent?.action != Intent.ACTION_VIEW) {
@@ -80,6 +90,20 @@ object IntentUtils {
             teamId = cleanTeamId,
             surveyId = cleanSurveyId,
         )
+    }
+
+    fun isAppSectionDeepLink(intent: Intent?): Boolean {
+        if (intent?.action != Intent.ACTION_VIEW) {
+            return false
+        }
+        val data = intent.data ?: return false
+        if (data.isOpaque) return false
+
+        val host = data.host?.lowercase()
+        val isKnownHttpsHost = data.scheme == "https" && host in APP_SECTION_HOSTS
+        val isLocalHttpHost = data.scheme == "http" && !host.isNullOrBlank()
+        return (isKnownHttpsHost || isLocalHttpHost) &&
+            data.pathSegments.firstOrNull()?.equals("app", ignoreCase = true) == true
     }
 
     fun sameServer(left: String?, right: String?): Boolean {

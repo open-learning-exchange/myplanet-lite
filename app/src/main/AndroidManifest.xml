@@ -19,6 +19,10 @@
         tools:node="remove" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
 
+    <queries>
+        <package android:name="org.ole.planet.myplanet" />
+    </queries>
+
     <application
         android:allowBackup="false"
         android:enableOnBackInvokedCallback="true"
@@ -48,6 +52,9 @@
         <activity
             android:name=".DeepLinkResolverActivity"
             android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:taskAffinity=""
             android:theme="@style/Theme.MyPlanetLite.DeepLinkResolver">
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
@@ -87,8 +94,52 @@
                     android:pathPrefix="/survey"
                     android:scheme="https" />
                 <data
-                    android:host="planet.uriur.ole.org"
+                    android:host="uriur.planet.gt"
                     android:pathPrefix="/survey"
+                    android:scheme="https" />
+                <data
+                    android:host="embakasi.planet.gt"
+                    android:pathPrefix="/survey"
+                    android:scheme="https" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="planet.learning.ole.org"
+                    android:pathPrefix="/app/"
+                    android:scheme="https" />
+                <data
+                    android:host="planet.earth.ole.org"
+                    android:pathPrefix="/app/"
+                    android:scheme="https" />
+                <data
+                    android:host="planet.somalia.ole.org"
+                    android:pathPrefix="/app/"
+                    android:scheme="https" />
+                <data
+                    android:host="planet.vi.ole.org"
+                    android:pathPrefix="/app/"
+                    android:scheme="https" />
+                <data
+                    android:host="planet.gt"
+                    android:pathPrefix="/app/"
+                    android:scheme="https" />
+                <data
+                    android:host="sanpablo.planet.gt"
+                    android:pathPrefix="/app/"
+                    android:scheme="https" />
+                <data
+                    android:host="uriur.planet.gt"
+                    android:pathPrefix="/app/"
+                    android:scheme="https" />
+                <data
+                    android:host="embakasi.planet.gt"
+                    android:pathPrefix="/app/"
                     android:scheme="https" />
             </intent-filter>
             <intent-filter>
@@ -105,6 +156,10 @@
                     android:host="*"
                     android:pathPrefix="/survey"
                     android:scheme="https" />
+                <data
+                    android:host="*"
+                    android:pathPrefix="/app/"
+                    android:scheme="http" />
             </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />

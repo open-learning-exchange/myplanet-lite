@@ -39,4 +39,41 @@ class DeepLinkResolverActivityTest {
         val shadowActivity = shadowOf(controller.get())
         assertNull(shadowActivity.nextStartedActivity)
     }
+
+    @Test
+    fun `test valid app section deep link starts SplashScreen`() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://planet.gt/app/dashboard"))
+
+        val controller = Robolectric.buildActivity(DeepLinkResolverActivity::class.java, intent)
+        controller.create()
+
+        val shadowActivity = shadowOf(controller.get())
+        val nextIntent = shadowActivity.nextStartedActivity
+
+        assertEquals(SplashScreen::class.java.name, nextIntent?.component?.className)
+    }
+
+    @Test
+    fun `test unknown app section deep link finishes without starting next`() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://example.com/app/dashboard"))
+
+        val controller = Robolectric.buildActivity(DeepLinkResolverActivity::class.java, intent)
+        controller.create()
+
+        val shadowActivity = shadowOf(controller.get())
+        assertNull(shadowActivity.nextStartedActivity)
+    }
+
+    @Test
+    fun `test local http app section deep link starts SplashScreen`() {
+        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("http://10.0.2.2/app/dashboard"))
+
+        val controller = Robolectric.buildActivity(DeepLinkResolverActivity::class.java, intent)
+        controller.create()
+
+        val shadowActivity = shadowOf(controller.get())
+        val nextIntent = shadowActivity.nextStartedActivity
+
+        assertEquals(SplashScreen::class.java.name, nextIntent?.component?.className)
+    }
 }

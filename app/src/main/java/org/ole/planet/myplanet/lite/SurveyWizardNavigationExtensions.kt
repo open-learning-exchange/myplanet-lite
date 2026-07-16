@@ -7,6 +7,7 @@
 package org.ole.planet.myplanet.lite
 
 import android.app.Activity
+import android.content.Intent
 import android.view.View
 import android.widget.Toast
 import androidx.annotation.StringRes
@@ -274,6 +275,15 @@ internal fun SurveyWizardFragment.buildSteps(includeDetails: Boolean): List<Wiza
 
 internal fun SurveyWizardFragment.finishWithResult() {
     requireActivity().setResult(Activity.RESULT_OK)
+    requireActivity().finish()
+}
+
+internal fun SurveyWizardFragment.navigateHomeAfterPublicSurvey() {
+    val intent =
+        Intent(requireContext().applicationContext, SplashScreen::class.java).apply {
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+        }
+    startActivity(intent)
     requireActivity().finish()
 }
 

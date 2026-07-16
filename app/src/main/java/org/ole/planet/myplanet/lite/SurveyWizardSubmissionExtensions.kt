@@ -181,7 +181,9 @@ internal fun SurveyWizardFragment.submitPublicSurvey(
                     getString(R.string.dashboard_survey_wizard_completed),
                     Toast.LENGTH_SHORT,
                 ).show()
-            finishWithResult()
+            // After a public (deep-link) survey, route home: SplashScreen sends a logged-in
+            // user to the dashboard and an anonymous respondent to the login screen.
+            navigateHomeAfterPublicSurvey()
         } else {
             showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
         }

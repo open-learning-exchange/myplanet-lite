@@ -3,6 +3,9 @@
     <string name="app_name_prefix">myPlanet</string>
     <string name="app_name_suffix">Lite</string>
     <string name="app_version">Versão %1$s</string>
+    <string name="open_link_with">Abrir link com</string>
+    <string name="just_once">Apenas uma vez</string>
+    <string name="always">Sempre</string>
     <string name="login_username_label">Nome de usuário</string>
     <string name="login_password_label">Senha</string>
     <string name="login_action">Entrar</string>
