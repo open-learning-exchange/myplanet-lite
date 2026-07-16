@@ -18,6 +18,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -41,8 +42,8 @@ import org.ole.planet.myplanet.lite.util.nullIfBlank
 import java.util.Locale
 
 class ProfileActivity : BaseActivity() {
-    internal val selectAvatarLauncher: ActivityResultLauncher<String> =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+    internal val selectAvatarLauncher: ActivityResultLauncher<PickVisualMediaRequest> =
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             uri?.let { processAvatarSelection(it) }
         }
 

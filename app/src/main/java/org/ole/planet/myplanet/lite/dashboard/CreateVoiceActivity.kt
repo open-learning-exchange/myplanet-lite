@@ -16,6 +16,7 @@ import android.view.ViewGroup
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.os.BundleCompat
 import androidx.core.view.ViewCompat
@@ -70,7 +71,7 @@ class CreateVoiceActivity : BaseActivity() {
     internal val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
     internal val decodedBitmaps = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
     private val imagePickerLauncher =
-        registerForActivityResult(ActivityResultContracts.GetContent()) { uri ->
+        registerForActivityResult(ActivityResultContracts.PickVisualMedia()) { uri ->
             uri?.let {
                 lifecycleScope.launch {
                     handleImageSelection(it)
@@ -242,7 +243,9 @@ class CreateVoiceActivity : BaseActivity() {
     }
 
     private fun launchImagePicker() {
-        imagePickerLauncher.launch("image/*")
+        imagePickerLauncher.launch(
+            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+        )
     }
 
     private fun handleTextChanged(text: Editable?) {

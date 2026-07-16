@@ -22,20 +22,15 @@ import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.withContext
-import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
-import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
 import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
 import org.ole.planet.myplanet.lite.profile.GENDER_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
+import org.ole.planet.myplanet.lite.signup.SignupRepository
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class SignupActivity : BaseActivity() {
@@ -95,6 +90,9 @@ class SignupActivity : BaseActivity() {
     internal val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
     internal val serverConnectivityRepository: ServerConnectivityRepository by lazy {
         ServerConnectivityRepository(connectivityClient, moshi)
+    }
+    internal val signupRepository: SignupRepository by lazy {
+        SignupRepository(connectivityClient)
     }
 
     internal val steps = SignupStep.entries
@@ -160,39 +158,7 @@ class SignupActivity : BaseActivity() {
     }
 
     suspend fun checkUsernameAvailability(username: String): UsernameAvailability {
-        val requestUrl = buildUsernameLookupUrl(username) ?: return UsernameAvailability.UNKNOWN
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .get()
-                        .build()
-                connectivityClient.newCall(request).execute().use { response ->
-                    if (response.code == 200) {
-                        UsernameAvailability.TAKEN
-                    } else {
-                        UsernameAvailability.AVAILABLE
-                    }
-                }
-            }.getOrElse {
-                UsernameAvailability.UNKNOWN
-            }
-        }
-    }
-
-    private fun buildUsernameLookupUrl(username: String): String? {
-        val baseUrl = serverBaseUrl.trim()
-        if (baseUrl.isEmpty()) {
-            return null
-        }
-        return baseUrl
-            .toHttpUrlOrNull()
-            ?.newBuilder()
-            ?.addPathSegments("db/_users/org.couchdb.user:$username")
-            ?.build()
-            ?.toString()
+        return signupRepository.checkUsernameAvailability(serverBaseUrl, username)
     }
 
     internal fun validateCurrentStep(): Boolean =
@@ -217,48 +183,9 @@ class SignupActivity : BaseActivity() {
             return SignupSubmissionResult.FAILED
         }
 
-        val requestUrl = buildUsernameLookupUrl(username) ?: return SignupSubmissionResult.FAILED
         val payload = buildSignupPayload(username) ?: return SignupSubmissionResult.FAILED
-        val mediaType = "application/json; charset=utf-8".toMediaType()
-
-        return executeSignupRequest(requestUrl, payload, mediaType)
+        return signupRepository.submitSignup(serverBaseUrl, username, payload)
     }
-
-    internal suspend fun executeSignupRequest(
-        requestUrl: String,
-        payload: JSONObject,
-        mediaType: okhttp3.MediaType,
-    ): SignupSubmissionResult =
-        withContext(Dispatchers.IO) {
-            try {
-                val body = payload.toString().toRequestBody(mediaType)
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .put(body)
-                        .build()
-                connectivityClient.newCall(request).execute().use { response ->
-                    when (response.code) {
-                        in 200..299 -> SignupSubmissionResult.SUCCESS
-                        409 -> SignupSubmissionResult.USERNAME_TAKEN
-                        else -> SignupSubmissionResult.FAILED
-                    }
-                }
-            } catch (e: kotlinx.coroutines.CancellationException) {
-                throw e
-            } catch (_: Exception) {
-                withContext(Dispatchers.Main) {
-                    android.widget.Toast
-                        .makeText(
-                            this@SignupActivity,
-                            "An unexpected error occurred.",
-                            android.widget.Toast.LENGTH_SHORT,
-                        ).show()
-                }
-                SignupSubmissionResult.FAILED
-            }
-        }
 
     private fun buildSignupPayload(username: String): JSONObject? {
         val firstName =

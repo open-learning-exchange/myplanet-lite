@@ -6,9 +6,11 @@ import android.widget.ImageButton
 import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
+import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DataSource
 import androidx.media3.datasource.DefaultDataSource
 import androidx.media3.datasource.DefaultHttpDataSource
@@ -253,6 +255,7 @@ fun CourseWizardActivity.bindResourceAttachment(
     listContainer.addView(itemView)
 }
 
+@OptIn(UnstableApi::class)
 fun CourseWizardActivity.bindAudioPlayer(itemView: View, resource: CourseItem.LessonResource) {
     val url = buildResourceUrl(resource)
     if (url.isNullOrBlank()) {
@@ -275,6 +278,7 @@ fun CourseWizardActivity.bindAudioPlayer(itemView: View, resource: CourseItem.Le
     audioPlayers.add(player)
 }
 
+@OptIn(UnstableApi::class)
 fun CourseWizardActivity.buildAudioDataSourceFactory(authorizationHeader: String?): DataSource.Factory {
     val httpFactory = DefaultHttpDataSource.Factory().setAllowCrossProtocolRedirects(true)
     authorizationHeader?.let { httpFactory.setDefaultRequestProperties(mapOf("Authorization" to it)) }
