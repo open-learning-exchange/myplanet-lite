@@ -3,7 +3,9 @@ package org.ole.planet.myplanet.lite.util
 import android.content.Intent
 import android.net.Uri
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -144,6 +146,42 @@ class IntentUtilsTest {
         assertEquals("https://planet.learning.ole.org", result?.baseUrl)
         assertEquals("team-1", result?.teamId)
         assertEquals("survey-1", result?.surveyId)
+    }
+
+    @Test
+    fun `isAppSectionDeepLink accepts known app hosts`() {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("https://planet.gt/app/dashboard")
+        }
+
+        assertTrue(IntentUtils.isAppSectionDeepLink(intent))
+    }
+
+    @Test
+    fun `isAppSectionDeepLink accepts app path case insensitive`() {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("https://uriur.planet.gt/App/dashboard")
+        }
+
+        assertTrue(IntentUtils.isAppSectionDeepLink(intent))
+    }
+
+    @Test
+    fun `isAppSectionDeepLink rejects unknown app hosts`() {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("https://example.com/app/dashboard")
+        }
+
+        assertFalse(IntentUtils.isAppSectionDeepLink(intent))
+    }
+
+    @Test
+    fun `isAppSectionDeepLink accepts http app links for local servers`() {
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            data = Uri.parse("http://10.0.2.2/app/dashboard")
+        }
+
+        assertTrue(IntentUtils.isAppSectionDeepLink(intent))
     }
 
     @Test

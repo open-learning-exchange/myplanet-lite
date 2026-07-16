@@ -19,6 +19,7 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Filter
 import android.widget.ImageView
+import android.widget.AbsListView
 import android.widget.ProgressBar
 import android.widget.ScrollView
 import android.widget.TextView
@@ -407,6 +408,10 @@ class MyPlanetLite : BaseActivity() {
                         serverAutoCompleteView.dismissDropDown()
                     }
 
+                    ServerAction.DIVIDER -> {
+                        serverAutoCompleteView.dismissDropDown()
+                    }
+
                     null -> {
                         serverAutoCompleteView.dismissDropDown()
                     }
@@ -746,11 +751,11 @@ class MyPlanetLite : BaseActivity() {
             }
         }
 
-        views.serverUrlInput.setText(currentConfig.baseUrl, false)
-        views.serverNameInput.setText(currentConfig.displayName)
-        val selectedCountryIndex = countryList.indexOfFirst { it.alpha2.equals(currentConfig.countryCode, ignoreCase = true) }
-        if (selectedCountryIndex >= 0) {
-            views.countryInput.setText(countryList[selectedCountryIndex].name, false)
+        views.serverUrlInput.setText(DEFAULT_SERVER_URL_PREFIX, false)
+        views.serverUrlInput.setSelection(views.serverUrlInput.text?.length ?: 0)
+        views.serverNameInput.text = null
+        countryList.firstOrNull()?.let { firstCountry ->
+            views.countryInput.setText(firstCountry.name, false)
         }
 
         return serverSuggestionsAdapter
@@ -920,12 +925,27 @@ class MyPlanetLite : BaseActivity() {
         val builtIns = builtInServerOptions()
         val customs = loadCustomServers().map { it.toServerOption() }
         val connectedKey = baseUrlKey(currentConfig.baseUrl)
-        val items =
-            (customs + builtIns)
+        val builtInItems =
+            builtIns
                 .distinctBy { baseUrlKey(it.baseUrl) }
                 .toMutableList()
-        if (currentConfig.baseUrl.isNotEmpty() && items.none { baseUrlKey(it.baseUrl) == connectedKey }) {
-            items.add(0, ServerOption(currentConfig.displayName, currentConfig.baseUrl, currentConfig.countryCode))
+        val customItems =
+            customs
+                .filter { custom -> builtInItems.none { baseUrlKey(it.baseUrl) == baseUrlKey(custom.baseUrl) } }
+                .distinctBy { baseUrlKey(it.baseUrl) }
+                .toMutableList()
+        if (
+            currentConfig.baseUrl.isNotEmpty() &&
+            builtInItems.none { baseUrlKey(it.baseUrl) == connectedKey } &&
+            customItems.none { baseUrlKey(it.baseUrl) == connectedKey }
+        ) {
+            customItems.add(ServerOption(currentConfig.displayName, currentConfig.baseUrl, currentConfig.countryCode))
+        }
+        val items = builtInItems.toMutableList()
+        if (customItems.isNotEmpty()) {
+            items.add(ServerOption.divider())
+            items.addAll(customItems)
+            items.add(ServerOption.divider())
         }
         items.add(ServerOption(getString(R.string.server_option_clear), "", currentConfig.countryCode, actionType = ServerAction.CLEAR))
         items.add(
@@ -1293,6 +1313,7 @@ class MyPlanetLite : BaseActivity() {
         private const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
         const val EXTRA_ALLOW_AUTO_LOGIN = "extra_allow_auto_login"
         private const val DEFAULT_COUNTRY_CODE = "GT"
+        private const val DEFAULT_SERVER_URL_PREFIX = "https://"
         private const val DEFAULT_SURVEY_TRANSLATION_ENABLED = true
         private const val LOGO_SHRUNK_DP = 50f
         private const val APP_VERSION_SHRUNK_BOTTOM_MARGIN_DP = 5f
@@ -1319,13 +1340,20 @@ class MyPlanetLite : BaseActivity() {
     ) {
         val isAction: Boolean
             get() = actionType != null
+        val isDivider: Boolean
+            get() = actionType == ServerAction.DIVIDER
 
         override fun toString(): String = displayName
+
+        companion object {
+            fun divider(): ServerOption = ServerOption("", "", "", ServerAction.DIVIDER)
+        }
     }
 
     private enum class ServerAction {
         CONFIGURE,
         CLEAR,
+        DIVIDER,
     }
 
     private data class ServerConfiguration(
@@ -1370,6 +1398,10 @@ class MyPlanetLite : BaseActivity() {
         override fun getCount(): Int = visibleItems.size
 
         override fun getItem(position: Int): ServerOption? = visibleItems.getOrNull(position)
+
+        override fun areAllItemsEnabled(): Boolean = false
+
+        override fun isEnabled(position: Int): Boolean = getItem(position)?.isDivider != true
 
         override fun getView(
             position: Int,
@@ -1417,8 +1449,15 @@ class MyPlanetLite : BaseActivity() {
             parent: ViewGroup,
             isDropdown: Boolean,
         ): View {
-            val view = convertView ?: LayoutInflater.from(context).inflate(R.layout.item_server_option, parent, false)
-            val option = getItem(position) ?: return view
+            val option = getItem(position)
+                ?: return convertView ?: LayoutInflater.from(context).inflate(R.layout.item_server_option, parent, false)
+            if (option.isDivider) {
+                return createDividerView()
+            }
+            val view =
+                convertView
+                    ?.takeIf { it.findViewById<TextView>(R.id.serverOptionName) != null }
+                    ?: LayoutInflater.from(context).inflate(R.layout.item_server_option, parent, false)
 
             val flagView: ImageView = view.findViewById(R.id.serverOptionFlag)
             val nameView: TextView = view.findViewById(R.id.serverOptionName)
@@ -1455,6 +1494,16 @@ class MyPlanetLite : BaseActivity() {
 
             return view
         }
+
+        private fun createDividerView(): View =
+            View(context).apply {
+                layoutParams =
+                    AbsListView.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        (1 * context.resources.displayMetrics.density).roundToInt().coerceAtLeast(1),
+                    )
+                setBackgroundColor(ContextCompat.getColor(context, R.color.dashboard_drawer_divider))
+            }
     }
 
     private fun updateServerStatusIcon(baseUrl: String?) {
