@@ -1074,4 +1074,37 @@ class DashboardResourcesMediaUtilsTest {
         SecurePreferencesProvider.injectedPreferences = null
     }
 
+
+    // Testing oversized file size for transcodeAudio and transcodeVideoToMp4 requires integration with Transformer
+    // which is hard to unit test thoroughly with robolectric without a proper mock of the static MediaItem / Transformer.
+    // However, we can test that copyUriToTempFile correctly cleans up on exception.
+
+
+    @Test
+    fun testIsTransformedFileOversized() {
+        val maxSize = DashboardResourcesMediaUtils.MAX_TRANSFORMED_FILE_SIZE_BYTES
+        assertTrue(DashboardResourcesMediaUtils.isTransformedFileOversized(maxSize + 1))
+        org.junit.Assert.assertFalse(DashboardResourcesMediaUtils.isTransformedFileOversized(maxSize))
+        org.junit.Assert.assertFalse(DashboardResourcesMediaUtils.isTransformedFileOversized(maxSize - 1))
+    }
+
+    @Test
+    fun copyUriToTempFile_cleansUpOnException() {
+        val context = mock(Context::class.java)
+        val contentResolver = mock(ContentResolver::class.java)
+        val uri = mock(Uri::class.java)
+
+        `when`(context.cacheDir).thenReturn(File(System.getProperty("java.io.tmpdir")))
+        `when`(context.contentResolver).thenReturn(contentResolver)
+        `when`(contentResolver.openInputStream(uri)).thenThrow(RuntimeException("Simulated read exception"))
+
+        val beforeFiles = File(System.getProperty("java.io.tmpdir")).listFiles()?.size ?: 0
+
+        assertThrows(RuntimeException::class.java) {
+            DashboardResourcesMediaUtils.copyUriToTempFile(context, "Error", uri)
+        }
+
+        val afterFiles = File(System.getProperty("java.io.tmpdir")).listFiles()?.size ?: 0
+        assertEquals(beforeFiles, afterFiles)
+    }
 }

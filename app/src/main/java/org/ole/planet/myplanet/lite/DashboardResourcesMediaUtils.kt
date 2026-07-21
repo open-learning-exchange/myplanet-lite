@@ -48,6 +48,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object DashboardResourcesMediaUtils {
+
+    const val MAX_TRANSFORMED_FILE_SIZE_BYTES = 50L * 1024 * 1024
+
+    internal fun isTransformedFileOversized(fileLength: Long): Boolean = fileLength > MAX_TRANSFORMED_FILE_SIZE_BYTES
+
     data class ResourceUploadMetadata(
         val fileName: String,
         val defaultTitle: String,
@@ -376,13 +381,15 @@ object DashboardResourcesMediaUtils {
         endMs: Long,
         sourceDurationMs: Long
     ): ByteArray? {
-        val inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
-        val outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_audio", ".mp3", context.cacheDir) }
+        var inputFile: File? = null
+        var outputFile: File? = null
         return try {
+            inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
+            outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_audio", ".mp3", context.cacheDir) }
             val exportSucceeded = suspendCancellableCoroutine { continuation ->
                 val clippingBuilder = MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs.coerceAtLeast(0L))
                 if (endMs in 1 until sourceDurationMs) clippingBuilder.setEndPositionMs(endMs)
-                val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile)).setClippingConfiguration(clippingBuilder.build()).build()
+                val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile!!)).setClippingConfiguration(clippingBuilder.build()).build()
                 val audioEncoderSettings = AudioEncoderSettings.Builder().setBitrate(bitrateKbps * 1000).build()
                 val editedMediaItem = EditedMediaItem.Builder(mediaItem).build()
                 val transformer = Transformer.Builder(context)
@@ -398,13 +405,18 @@ object DashboardResourcesMediaUtils {
                     })
                     .build()
                 continuation.invokeOnCancellation { transformer.cancel() }
-                transformer.start(editedMediaItem, outputFile.absolutePath)
+                transformer.start(editedMediaItem, outputFile!!.absolutePath)
             }
-            if (!exportSucceeded) null else withContext(Dispatchers.IO) { outputFile.readBytes() }
+            if (!exportSucceeded) null else withContext(Dispatchers.IO) {
+                if (isTransformedFileOversized(outputFile!!.length())) null else outputFile!!.readBytes()
+            }
         } catch (_: Throwable) {
             null
         } finally {
-            withContext(Dispatchers.IO) { inputFile.delete(); outputFile.delete() }
+            withContext(Dispatchers.IO) {
+                inputFile?.delete()
+                outputFile?.delete()
+            }
         }
     }
 
@@ -421,14 +433,16 @@ object DashboardResourcesMediaUtils {
         sourceDurationMs: Long,
         rotationDegrees: Float
     ): ByteArray? {
-        val inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
-        val outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_video", ".mp4", context.cacheDir) }
+        var inputFile: File? = null
+        var outputFile: File? = null
         val shouldScale = selectedHeight < sourceHeight
         return try {
+            inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
+            outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_video", ".mp4", context.cacheDir) }
             val exportSucceeded = suspendCancellableCoroutine { continuation ->
                 val clippingBuilder = MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs.coerceAtLeast(0L))
                 if (endMs in 1 until sourceDurationMs) clippingBuilder.setEndPositionMs(endMs)
-                val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile)).setClippingConfiguration(clippingBuilder.build()).build()
+                val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile!!)).setClippingConfiguration(clippingBuilder.build()).build()
                 val editedMediaBuilder = EditedMediaItem.Builder(mediaItem)
                 if (shouldScale || rotationDegrees != 0f) {
                     val videoEffects = mutableListOf<Effect>()
@@ -458,22 +472,32 @@ object DashboardResourcesMediaUtils {
                         }
                     }).build()
                 continuation.invokeOnCancellation { transformer.cancel() }
-                transformer.start(editedMediaItem, outputFile.absolutePath)
+                transformer.start(editedMediaItem, outputFile!!.absolutePath)
             }
-            if (!exportSucceeded) null else withContext(Dispatchers.IO) { outputFile.readBytes() }
+            if (!exportSucceeded) null else withContext(Dispatchers.IO) {
+                if (isTransformedFileOversized(outputFile!!.length())) null else outputFile!!.readBytes()
+            }
         } catch (_: Throwable) {
             null
         } finally {
-            withContext(Dispatchers.IO) { inputFile.delete(); outputFile.delete() }
+            withContext(Dispatchers.IO) {
+                inputFile?.delete()
+                outputFile?.delete()
+            }
         }
     }
 
     fun copyUriToTempFile(context: Context, readFileErrorMessage: String, uri: Uri): File {
         val tempFile = File.createTempFile("resource_input_video", ".tmp", context.cacheDir)
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            FileOutputStream(tempFile).use { output -> input.copyTo(output) }
-        } ?: throw IllegalStateException(readFileErrorMessage)
-        return tempFile
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(tempFile).use { output -> input.copyTo(output) }
+            } ?: throw IllegalStateException(readFileErrorMessage)
+            return tempFile
+        } catch (e: Exception) {
+            tempFile.delete()
+            throw e
+        }
     }
 
     fun resolveDefaultLanguageIndex(context: Context, resources: Resources, options: List<String>): Int {
