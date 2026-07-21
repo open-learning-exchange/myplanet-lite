@@ -90,10 +90,15 @@ class CourseAdapter(
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (payloads.contains(PROGRESS_UPDATE_PAYLOAD)) {
+        if (payloads.contains(PROGRESS_UPDATE_PAYLOAD) || payloads.contains(IMAGE_UPDATE_PAYLOAD)) {
             val item = getItem(position)
             if (holder is CourseViewHolder && item is CourseListItem.CourseItemWrapper) {
-                holder.bindDownloadState(item)
+                if (payloads.contains(PROGRESS_UPDATE_PAYLOAD)) {
+                    holder.bindDownloadState(item)
+                }
+                if (payloads.contains(IMAGE_UPDATE_PAYLOAD)) {
+                    holder.bindImage(item.course)
+                }
                 return
             }
         }
@@ -323,7 +328,7 @@ class CourseAdapter(
             }
         }
 
-        private fun bindImage(course: CourseItem) {
+        fun bindImage(course: CourseItem) {
             val coverPath = course.coverPath
             val loader = imageLoaderProvider()
             if (!coverPath.isNullOrBlank()) {
@@ -418,5 +423,6 @@ class CourseAdapter(
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_ITEM = 1
         private const val PROGRESS_UPDATE_PAYLOAD = "PROGRESS_UPDATE"
+        const val IMAGE_UPDATE_PAYLOAD = "IMAGE_UPDATE"
     }
 }
