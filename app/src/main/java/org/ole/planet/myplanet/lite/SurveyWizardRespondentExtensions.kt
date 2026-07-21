@@ -205,33 +205,40 @@ internal fun SurveyWizardFragment.renderBasicsStep(): Pair<View, () -> Boolean> 
     container.addView(additionalCheckBox)
 
     val collector = {
-        val checkedId = genderGroup.checkedRadioButtonId
-        val yearText =
-            birthYearInput.text
-                ?.toString()
-                ?.trim()
-                .orEmpty()
-        val year = yearText.toIntOrNull()
-        if (yearText.isNotEmpty() && year == null) {
-            showValidationMessage(R.string.dashboard_survey_wizard_birth_year_required)
-            false
-        } else if (year != null && year > Calendar.getInstance().get(Calendar.YEAR)) {
-            showValidationMessage(R.string.dashboard_survey_wizard_birth_year_future)
-            false
-        } else {
-            val nowYear = Calendar.getInstance().get(Calendar.YEAR)
-            respondent.gender = genderGroup.findViewById<RadioButton>(checkedId)?.tag as? String
-            respondent.birthYear = year
-            respondent.age = year?.let { nowYear - it }
-            respondent.additionalInfo = additionalCheckBox.isChecked
-            if (includeOptionalDetails != respondent.additionalInfo) {
-                includeOptionalDetails = respondent.additionalInfo
-                steps = buildSteps(includeOptionalDetails)
-            }
-            true
-        }
+        collectBasicsStepData(genderGroup, birthYearInput, additionalCheckBox)
     }
     return container to collector
+}
+
+internal fun SurveyWizardFragment.collectBasicsStepData(
+    genderGroup: RadioGroup,
+    birthYearInput: TextInputEditText,
+    additionalCheckBox: CheckBox,
+): Boolean {
+    val checkedId = genderGroup.checkedRadioButtonId
+    val yearText =
+        birthYearInput.text
+            ?.toString()
+            ?.trim()
+            .orEmpty()
+    val year = yearText.toIntOrNull()
+    if (yearText.isNotEmpty() && year == null) {
+        showValidationMessage(R.string.dashboard_survey_wizard_birth_year_required)
+        return false
+    } else if (year != null && year > Calendar.getInstance().get(Calendar.YEAR)) {
+        showValidationMessage(R.string.dashboard_survey_wizard_birth_year_future)
+        return false
+    }
+    val nowYear = Calendar.getInstance().get(Calendar.YEAR)
+    respondent.gender = genderGroup.findViewById<RadioButton>(checkedId)?.tag as? String
+    respondent.birthYear = year
+    respondent.age = year?.let { nowYear - it }
+    respondent.additionalInfo = additionalCheckBox.isChecked
+    if (includeOptionalDetails != respondent.additionalInfo) {
+        includeOptionalDetails = respondent.additionalInfo
+        steps = buildSteps(includeOptionalDetails)
+    }
+    return true
 }
 
 internal fun SurveyWizardFragment.renderNamesStep(): Pair<View, () -> Boolean> {
