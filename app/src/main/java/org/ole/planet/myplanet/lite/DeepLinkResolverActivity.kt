@@ -18,6 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerCatalog
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepositoryProvider
 import org.ole.planet.myplanet.lite.util.IntentUtils
 
@@ -158,26 +159,40 @@ class DeepLinkResolverActivity : ComponentActivity() {
                 finish()
                 return@launch
             }
-            DashboardServerCatalog.addObservedServer(
-                context = applicationContext,
-                baseUrl = link.baseUrl,
-                displayName = DashboardServerCatalog.displayNameFromBaseUrl(link.baseUrl),
+            launchSurveyWizard(
+                link = link,
+                document = document,
+                teamName = publicSurvey.team?.name,
+                includeUserContext = includeUserContext,
             )
-            val nextIntent =
-                SurveyWizardActivity
-                    .newIntent(
-                        context = this@DeepLinkResolverActivity,
-                        document = document,
-                        teamId = link.teamId,
-                        teamName = publicSurvey.team?.name,
-                        baseUrl = link.baseUrl,
-                        includeUserContext = includeUserContext,
-                    ).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }
-            startActivity(nextIntent)
-            finish()
         }
+    }
+
+    private fun launchSurveyWizard(
+        link: IntentUtils.DeepLinkSurvey,
+        document: DashboardSurveysRepository.SurveyDocument,
+        teamName: String?,
+        includeUserContext: Boolean,
+    ) {
+        DashboardServerCatalog.addObservedServer(
+            context = applicationContext,
+            baseUrl = link.baseUrl,
+            displayName = DashboardServerCatalog.displayNameFromBaseUrl(link.baseUrl),
+        )
+        val nextIntent =
+            SurveyWizardActivity
+                .newIntent(
+                    context = this@DeepLinkResolverActivity,
+                    document = document,
+                    teamId = link.teamId,
+                    teamName = teamName,
+                    baseUrl = link.baseUrl,
+                    includeUserContext = includeUserContext,
+                ).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
+        startActivity(nextIntent)
+        finish()
     }
 
     companion object {
