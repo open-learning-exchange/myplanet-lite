@@ -349,29 +349,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 var shouldContinue = true
                 val fetchLimit = maxOf(pageSize * 5, 100)
                 while (shouldContinue) {
-                    val result =
-                        repository.fetchNews(
-                            base,
-                            sessionCookie,
-                            DashboardNewsRepository.NewsQuery(
-                                skip = nextSkip,
-                                bookmark = nextBookmark,
-                                limit = fetchLimit,
-                                createdOn = serverCode,
-                                parentCode = serverParentCode,
-                                teamName = teamName,
-                            ),
-                        )
-                    val addedPosts =
-                        result.fold(
-                            onSuccess = { page ->
-                                handlePage(page)
-                            },
-                            onFailure = {
-                                handleLoadError()
-                                -1
-                            },
-                        )
+                    val addedPosts = fetchNextBatch(base, fetchLimit)
                     if (addedPosts < 0) {
                         break
                     }
@@ -381,6 +359,34 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 isLoading = false
                 updateLoadingVisibility()
             }
+    }
+
+    private suspend fun fetchNextBatch(
+        base: String,
+        fetchLimit: Int,
+    ): Int {
+        val result =
+            repository.fetchNews(
+                base,
+                sessionCookie,
+                DashboardNewsRepository.NewsQuery(
+                    skip = nextSkip,
+                    bookmark = nextBookmark,
+                    limit = fetchLimit,
+                    createdOn = serverCode,
+                    parentCode = serverParentCode,
+                    teamName = teamName,
+                ),
+            )
+        return result.fold(
+            onSuccess = { page ->
+                handlePage(page)
+            },
+            onFailure = {
+                handleLoadError()
+                -1
+            },
+        )
     }
 
     private fun handlePage(page: NewsPage): Int {
