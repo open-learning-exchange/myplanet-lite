@@ -383,12 +383,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             }
     }
 
-    private fun handlePage(page: NewsPage): Int {
-        nextSkip += page.consumed
-        nextBookmark = page.bookmark
-        hasMore = page.hasMore && (page.consumed > 0 || !nextBookmark.isNullOrEmpty())
+    private fun updateCommentCounts(page: NewsPage): Boolean {
         var shouldUpdateAdapter = false
-        var newPostsCount = 0
         if (page.commentCounts.isNotEmpty()) {
             page.commentCounts.forEach { (parentId, count) ->
                 if (!parentId.isNullOrEmpty()) {
@@ -405,6 +401,15 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                 }
             }
         }
+        return shouldUpdateAdapter
+    }
+
+    private fun handlePage(page: NewsPage): Int {
+        nextSkip += page.consumed
+        nextBookmark = page.bookmark
+        hasMore = page.hasMore && (page.consumed > 0 || !nextBookmark.isNullOrEmpty())
+        var shouldUpdateAdapter = updateCommentCounts(page)
+        var newPostsCount = 0
         val mapped =
             page.items.mapNotNull { document ->
                 val id = document.id ?: return@mapNotNull null
