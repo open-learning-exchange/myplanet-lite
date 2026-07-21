@@ -47,6 +47,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.AppNavigator
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
@@ -627,16 +628,8 @@ class DashboardActivity : BaseActivity() {
         if (deepLinkHandled) {
             return
         }
-        val postId =
-            intent
-                ?.getStringExtra(EXTRA_DEEP_LINK_POST_ID)
-                ?.takeIf { it.isNotBlank() }
-                ?: return
-        val detailIntent =
-            Intent(this, DashboardPostDetailActivity::class.java).apply {
-                putExtra(DashboardPostDetailActivity.EXTRA_POST_ID, postId)
-            }
-        startActivity(detailIntent)
+        val postId = intent?.getStringExtra(EXTRA_DEEP_LINK_POST_ID)?.takeIf { it.isNotBlank() } ?: return
+        AppNavigator.navigateToPostDetail(this, postId)
         deepLinkHandled = true
     }
 

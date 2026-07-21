@@ -66,6 +66,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
+import org.ole.planet.myplanet.lite.util.AppNavigator
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import java.util.ArrayList
@@ -191,7 +192,7 @@ class MyPlanetLite : BaseActivity() {
         deepLinkPostId = intent
             ?.getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
             ?.takeIf { it.isNotBlank() }
-            ?: IntentUtils.extractDeepLinkPostId(intent)
+            ?: AppNavigator.extractPostId(intent)
 
         if (savedInstanceState != null) {
             val contentRoot: View? = findViewById(android.R.id.content)
@@ -314,11 +315,7 @@ class MyPlanetLite : BaseActivity() {
     }
 
     private fun launchDashboard() {
-        val dashboardIntent = Intent(this, DashboardActivity::class.java)
-        deepLinkPostId?.let { postId ->
-            dashboardIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
-        }
-        startActivity(dashboardIntent)
+        AppNavigator.navigateToDashboard(this, deepLinkPostId, isOfflineMode = false)
         deepLinkPostId = null
         finish()
     }
