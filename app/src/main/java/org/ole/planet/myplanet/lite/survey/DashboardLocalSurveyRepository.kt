@@ -48,10 +48,15 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
     suspend fun deleteEntry(id: Long): Boolean = outboxStore.deleteEntry(id)
 
     suspend fun flushPendingSurveyOutbox(typeFilter: String? = null) {
-        if (!NetworkUtils.isDeviceOnline(context)) return
-        val baseUrl = DashboardServerPreferences.getServerBaseUrl(context)
-        val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
-        val creds = ProfileCredentialsStore.getStoredCredentials(context) ?: return
+        val (isOnline, base, creds) = withContext(Dispatchers.IO) {
+            val isOnline = NetworkUtils.isDeviceOnline(context)
+            if (!isOnline) return@withContext Triple(false, null, null)
+            val baseUrl = DashboardServerPreferences.getServerBaseUrl(context)
+            val base = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() }
+            val creds = ProfileCredentialsStore.getStoredCredentials(context)
+            Triple(isOnline, base, creds)
+        }
+        if (!isOnline || base == null || creds == null) return
 
         val authService = AuthDependencies.provideAuthService(context.applicationContext, base)
         val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
