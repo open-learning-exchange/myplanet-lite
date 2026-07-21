@@ -23,15 +23,14 @@ import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.util.BirthDateString
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
-class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
-
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
-    private val moshi: Moshi = Moshi.Builder()
-        .add(DateStringAdapter())
-        .addLast(KotlinJsonAdapterFactory())
-        .build()
+class DashboardResourcesRepository(
+    private val client: OkHttpClient = AuthDependencies.client,
+    private val moshi: Moshi = AuthDependencies.moshi.newBuilder().add(DateStringAdapter()).build(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
     private val responseAdapter = moshi.adapter(ResourcesFindResponse::class.java)
     private val teamLinksResponseAdapter = moshi.adapter(TeamLinksFindResponse::class.java)
 
@@ -247,7 +246,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
     suspend fun createAndUploadResourceSequence(
         request: CreateAndUploadResourceRequest
     ): Result<Unit> {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             runCatching {
                 val creationResponse = createResourceDocument(
                     baseUrl = request.baseUrl,
@@ -588,7 +587,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
     }
 
     suspend fun downloadPdfToCache(url: String, authHeader: String?, cacheDir: File): File? {
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             runCatching {
                 val parsedUri = android.net.Uri.parse(url)
                 if (parsedUri.scheme == "file") {

@@ -24,7 +24,7 @@ class DashboardResourcesRepositoryTest {
     fun setup() {
         server = MockWebServer()
         server.start()
-        repository = DashboardResourcesRepository(UnconfinedTestDispatcher())
+        repository = DashboardResourcesRepository(ioDispatcher = UnconfinedTestDispatcher())
     }
 
     @After
