@@ -313,18 +313,7 @@ internal fun SurveyWizardFragment.renderNamesStep(): Pair<View, () -> Boolean> {
     return container to collector
 }
 
-internal fun SurveyWizardFragment.renderBirthDateStep(): Pair<View, () -> Boolean> {
-    val context = requireContext()
-    val container =
-        LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                )
-        }
-
+internal fun SurveyWizardFragment.createBirthDateLayout(context: android.content.Context): Pair<TextInputLayout, TextInputEditText> {
     val birthDateLayout =
         TextInputLayout(context).apply {
             hint = getString(R.string.dashboard_survey_wizard_birth_date_label)
@@ -352,6 +341,22 @@ internal fun SurveyWizardFragment.renderBirthDateStep(): Pair<View, () -> Boolea
         }
     }
     birthDateLayout.addView(birthDateInput)
+    return birthDateLayout to birthDateInput
+}
+
+internal fun SurveyWizardFragment.renderBirthDateStep(): Pair<View, () -> Boolean> {
+    val context = requireContext()
+    val container =
+        LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
+
+    val (birthDateLayout, birthDateInput) = createBirthDateLayout(context)
     container.addView(birthDateLayout)
 
     val collector = {
