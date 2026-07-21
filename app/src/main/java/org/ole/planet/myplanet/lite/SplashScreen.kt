@@ -128,25 +128,37 @@ class SplashScreen : BaseActivity() {
 
     private suspend fun routeToNextActivity() {
         val launchMode = attemptDirectDashboardLaunch()
-        val nextIntent =
-            when (launchMode) {
-                DashboardLaunchMode.ONLINE -> {
-                    Intent(this@SplashScreen, DashboardActivity::class.java)
-                }
+        val nextIntent = createBaseIntent(launchMode)
+        applyDeepLinkData(nextIntent, launchMode)
 
-                DashboardLaunchMode.OFFLINE -> {
-                    Intent(this@SplashScreen, DashboardActivity::class.java).apply {
-                        putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
-                    }
-                }
+        startActivity(nextIntent)
+        finish()
+    }
 
-                DashboardLaunchMode.NONE -> {
-                    Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
-                        putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
-                    }
+    private fun createBaseIntent(launchMode: DashboardLaunchMode): Intent {
+        return when (launchMode) {
+            DashboardLaunchMode.ONLINE -> {
+                Intent(this@SplashScreen, DashboardActivity::class.java)
+            }
+
+            DashboardLaunchMode.OFFLINE -> {
+                Intent(this@SplashScreen, DashboardActivity::class.java).apply {
+                    putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
                 }
             }
 
+            DashboardLaunchMode.NONE -> {
+                Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
+                    putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
+                }
+            }
+        }
+    }
+
+    private fun applyDeepLinkData(
+        nextIntent: Intent,
+        launchMode: DashboardLaunchMode,
+    ) {
         val forwardedPostId =
             intent
                 .getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
@@ -165,9 +177,6 @@ class SplashScreen : BaseActivity() {
                 }
             }
         }
-
-        startActivity(nextIntent)
-        finish()
     }
 
     private suspend fun attemptDirectDashboardLaunch(): DashboardLaunchMode {
