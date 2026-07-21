@@ -214,7 +214,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                 teamSurveys = documents.filter { it.sourceSurveyId.isNullOrBlank() }
                 if (offlineMode) {
                     completionCounts.clear()
-                    documents.mapNotNull { it.id }.forEach { id -> completionCounts[id] = 0 }
+                    documents.forEach { doc -> doc.id?.let { completionCounts[it] = 0 } }
                 } else {
                     fetchCompletionCounts(base, team, documents)
                 }
@@ -244,7 +244,8 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         documents: List<SurveyDocument>,
     ) {
         completionCounts.clear()
-        val ids = documents.mapNotNull { it.id }
+        val ids = mutableListOf<String>()
+        documents.forEach { doc -> doc.id?.let { ids.add(it) } }
         val counts = repository.getCompletionCountsWithDefaults(base, credentials, sessionCookie, team, ids)
         completionCounts.putAll(counts)
     }
