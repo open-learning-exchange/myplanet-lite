@@ -33,6 +33,8 @@ import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
+import org.ole.planet.myplanet.lite.survey.ResendOutcome
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import java.text.DateFormat
 import java.util.Date
@@ -287,10 +289,6 @@ class DashboardOutboxDetailActivity : BaseActivity() {
     }
 
     private fun attemptSend(entry: DashboardSurveyOutboxStore.OutboxEntry) {
-        if (!NetworkUtils.isDeviceOnline(this@DashboardOutboxDetailActivity)) {
-            Toast.makeText(this, R.string.dashboard_outbox_offline_cannot_send, Toast.LENGTH_SHORT).show()
-            return
-        }
         lifecycleScope.launch {
             val baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
             val credentials = ProfileCredentialsStore.getStoredCredentials(applicationContext)
@@ -302,80 +300,35 @@ class DashboardOutboxDetailActivity : BaseActivity() {
                             it,
                         ).getStoredToken()
                 }
-            val serverRev =
-                fetchServerRevision(
-                    baseUrl,
-                    entry.submission.parent.id,
-                    entry.teamId,
-                    sessionCookie,
-                    credentials?.username,
-                    credentials?.password,
-                )
-            val localRev = entry.submission.parent.rev
-            if (serverRev == null) {
-                Toast
-                    .makeText(
-                        this@DashboardOutboxDetailActivity,
-                        R.string.dashboard_outbox_unable_to_verify_rev,
-                        Toast.LENGTH_SHORT,
-                    ).show()
-                return@launch
+            val localSurveyRepository = DashboardLocalSurveyRepository(this@DashboardOutboxDetailActivity)
+            val outcome = localSurveyRepository.resendOutboxEntry(
+                entry = entry,
+                baseUrl = baseUrl,
+                username = credentials?.username,
+                password = credentials?.password,
+                sessionCookie = sessionCookie
+            )
+            localSurveyRepository.close()
+
+            when (outcome) {
+                ResendOutcome.SUCCESS -> {
+                    Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_outbox_send_success, Toast.LENGTH_SHORT).show()
+                    finish()
+                }
+                ResendOutcome.REVISION_MISMATCH -> {
+                    showRevMismatchDialog(entry)
+                }
+                ResendOutcome.OFFLINE -> {
+                    Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_outbox_offline_cannot_send, Toast.LENGTH_SHORT).show()
+                }
+                ResendOutcome.FAILED -> {
+                    Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_outbox_send_failed, Toast.LENGTH_SHORT).show()
+                }
             }
-            if (localRev != null && localRev != serverRev) {
-                showRevMismatchDialog(entry)
-                return@launch
-            }
-            submitEntry(entry, baseUrl, credentials?.username, credentials?.password, sessionCookie)
         }
     }
 
-    private suspend fun fetchServerRevision(
-        baseUrl: String?,
-        surveyId: String?,
-        teamId: String?,
-        sessionCookie: String?,
-        username: String?,
-        password: String?,
-    ): String? =
-        withContext(Dispatchers.IO) {
-            val normalized = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return@withContext null
-            val id = surveyId?.takeIf { it.isNotBlank() } ?: return@withContext null
-            val selector =
-                JSONObject().apply {
-                    put("_id", id)
-                    put("type", "surveys")
-                    teamId?.takeIf { it.isNotBlank() }?.let { put("teamId", it) }
-                }
-            val payload =
-                JSONObject()
-                    .apply {
-                        put("selector", selector)
-                        put("limit", 1)
-                        put("fields", JSONArray().apply { put("_rev") })
-                    }.toString()
-            val url = "$normalized/db/exams/_find"
-            val requestBuilder =
-                Request
-                    .Builder()
-                    .url(url)
-                    .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-            if (!sessionCookie.isNullOrBlank()) {
-                requestBuilder.addHeader("Cookie", sessionCookie)
-            } else if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
-                val creds = okhttp3.Credentials.basic(username, password)
-                requestBuilder.addHeader("Authorization", creds)
-            }
-            runCatching {
-                httpClient.newCall(requestBuilder.build()).execute().use { response ->
-                    if (!response.isSuccessful) return@use null
-                    val body = response.body.string()
-                    if (body.isBlank()) return@use null
-                    val docs = JSONObject(body).optJSONArray("docs")
-                    val first = docs?.optJSONObject(0)
-                    first?.optString("_rev")?.takeIf { it.isNotBlank() }
-                }
-            }.getOrNull()
-        }
+
 
     private fun confirmDelete(entry: DashboardSurveyOutboxStore.OutboxEntry) {
         MaterialAlertDialogBuilder(this)
@@ -405,43 +358,7 @@ class DashboardOutboxDetailActivity : BaseActivity() {
             }.show()
     }
 
-    private suspend fun submitEntry(
-        entry: DashboardSurveyOutboxStore.OutboxEntry,
-        baseUrl: String?,
-        username: String?,
-        password: String?,
-        sessionCookie: String?,
-    ) {
-        val normalized = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() }
-        if (normalized == null) {
-            Toast.makeText(this, R.string.dashboard_surveys_missing_server, Toast.LENGTH_SHORT).show()
-            return
-        }
-        val authService = AuthDependencies.provideAuthService(this, normalized)
-        val token = sessionCookie ?: authService.getStoredToken()
-        val result =
-            withContext(Dispatchers.IO) {
-                DashboardSurveySubmissionsRepository().submitSurvey(
-                    normalized,
-                    credentials =
-                        username?.let { user ->
-                            password?.let { pass ->
-                                org.ole.planet.myplanet.lite.profile
-                                    .StoredCredentials(user, pass)
-                            }
-                        },
-                    sessionCookie = token,
-                    submission = entry.submission,
-                )
-            }
-        if (result.isSuccess) {
-            outboxStore.deleteEntry(entry.id)
-            Toast.makeText(this, R.string.dashboard_outbox_send_success, Toast.LENGTH_SHORT).show()
-            finish()
-        } else {
-            Toast.makeText(this, R.string.dashboard_outbox_send_failed, Toast.LENGTH_SHORT).show()
-        }
-    }
+
 
     private fun showRevMismatchDialog(entry: DashboardSurveyOutboxStore.OutboxEntry) {
         androidx.appcompat.app.AlertDialog

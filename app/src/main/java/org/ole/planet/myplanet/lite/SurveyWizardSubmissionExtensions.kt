@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
+import org.ole.planet.myplanet.lite.survey.SubmitOutcome
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
@@ -313,60 +314,41 @@ internal suspend fun SurveyWizardFragment.processSubmission(
     survey: SurveyDocument,
     username: String?,
 ) {
-    val isOnline = NetworkUtils.isDeviceOnline(requireContext())
-    if (!isOnline) {
-        setSubmitting(false)
-        if (baseUrlOverride != null) {
-            showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
-            return
-        }
-        queueSubmissionForOutbox(submission, survey)
-        return
-    }
+    val outcome = localSurveyRepository.submitOrQueueSubmission(
+        base = base,
+        credentials = credentials,
+        sessionCookie = sessionCookie,
+        submission = submission,
+        surveyId = survey.id ?: "",
+        surveyName = survey.name,
+        teamId = teamId,
+        teamName = teamName,
+        baseUrlOverride = baseUrlOverride
+    )
 
-    val result = submissionRepository.submitSurvey(base, credentials, sessionCookie, submission)
     setSubmitting(false)
-    if (result.isSuccess) {
-        DashboardSurveyStatusStore(
-            requireContext().applicationContext,
-            username,
-        ).markCompleted(survey.id)
-        Toast
-            .makeText(
-                requireContext(),
-                getString(
-                    if (isExam) {
-                        R.string.dashboard_exam_completed
-                    } else {
-                        R.string.dashboard_survey_wizard_completed
-                    },
-                ),
-                Toast.LENGTH_SHORT,
-            ).show()
-        finishWithResult()
-    } else {
-        if (baseUrlOverride != null) {
-            showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
-            return
-        }
-        queueSubmissionForOutbox(submission, survey)
-    }
-}
 
-internal fun SurveyWizardFragment.queueSubmissionForOutbox(
-    submission: SurveySubmission,
-    survey: SurveyDocument,
-) {
-    viewLifecycleOwner.lifecycleScope.launch {
-        val saved =
-            localSurveyRepository.saveSubmission(
-                submission = submission,
-                surveyId = survey.id,
-                surveyName = survey.name,
-                teamId = teamId,
-                teamName = teamName,
-            )
-        if (saved) {
+    when (outcome) {
+        SubmitOutcome.SUBMITTED_ONLINE -> {
+            DashboardSurveyStatusStore(
+                requireContext().applicationContext,
+                username,
+            ).markCompleted(survey.id)
+            Toast
+                .makeText(
+                    requireContext(),
+                    getString(
+                        if (isExam) {
+                            R.string.dashboard_exam_completed
+                        } else {
+                            R.string.dashboard_survey_wizard_completed
+                        },
+                    ),
+                    Toast.LENGTH_SHORT,
+                ).show()
+            finishWithResult()
+        }
+        SubmitOutcome.QUEUED_OFFLINE -> {
             Toast
                 .makeText(
                     requireContext(),
@@ -374,7 +356,8 @@ internal fun SurveyWizardFragment.queueSubmissionForOutbox(
                     Toast.LENGTH_SHORT,
                 ).show()
             finishWithResult()
-        } else {
+        }
+        SubmitOutcome.FAILED -> {
             showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
         }
     }
