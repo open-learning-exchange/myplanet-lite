@@ -231,39 +231,47 @@ fun DashboardCoursePageFragment.refreshTeamCourses(
     currentTeamId = selectedTeamId
 
     viewLifecycleOwner.lifecycleScope.launch {
-        val base = baseUrl
-        val creds = credentials
-        if (base.isNullOrBlank() || creds == null) {
-            handleMissingCredentials(adapter, refreshLayout)
-            return@launch
-        }
+        fetchAndSubmitTeamCourses(adapter, refreshLayout, selectedTeamId)
+    }
+}
 
-        ensureUserCourseIds()
+private suspend fun DashboardCoursePageFragment.fetchAndSubmitTeamCourses(
+    adapter: CourseAdapter,
+    refreshLayout: SwipeRefreshLayout,
+    selectedTeamId: String
+) {
+    val base = baseUrl
+    val creds = credentials
+    if (base.isNullOrBlank() || creds == null) {
+        handleMissingCredentials(adapter, refreshLayout)
+        return
+    }
 
-        val coursesResult = coursesRepository.fetchTeamCourses(base, creds, selectedTeamId)
-        val courses = coursesResult.getOrElse {
-            Toast.makeText(
-                requireContext(),
-                it.message ?: getString(R.string.dashboard_courses_loading_error),
-                Toast.LENGTH_SHORT
-            ).show()
-            refreshLayout.isRefreshing = false
-            showLoadingOverlay(false)
-            return@launch
-        }
-        val mapped = courses
-            .filter { !it.id.isNullOrBlank() }
-            .distinctBy { it.id }
-            .map {
-                it.toCourseItem(
-                    getString(R.string.dashboard_courses_title),
-                    null
-                )
-            }
-        adapter.submitCourses(mapped)
+    ensureUserCourseIds()
+
+    val coursesResult = coursesRepository.fetchTeamCourses(base, creds, selectedTeamId)
+    val courses = coursesResult.getOrElse {
+        Toast.makeText(
+            requireContext(),
+            it.message ?: getString(R.string.dashboard_courses_loading_error),
+            Toast.LENGTH_SHORT
+        ).show()
         refreshLayout.isRefreshing = false
         showLoadingOverlay(false)
+        return
     }
+    val mapped = courses
+        .filter { !it.id.isNullOrBlank() }
+        .distinctBy { it.id }
+        .map {
+            it.toCourseItem(
+                getString(R.string.dashboard_courses_title),
+                null
+            )
+        }
+    adapter.submitCourses(mapped)
+    refreshLayout.isRefreshing = false
+    showLoadingOverlay(false)
 }
 
 fun DashboardCoursePageFragment.handleJoinCourse(course: CourseItem) {
