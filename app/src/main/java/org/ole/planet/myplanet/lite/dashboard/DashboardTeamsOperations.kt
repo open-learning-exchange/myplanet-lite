@@ -280,6 +280,41 @@ internal class DashboardTeamsOperations(
         }
     }
 
+    fun fetchTeamJoinRequestDetails(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamId: String,
+        teamPlanetCode: String,
+    ): List<TeamJoinRequestDetails> {
+        val requests = fetchTeamJoinRequests(baseUrl, credentials, sessionCookie, teamId, teamPlanetCode)
+        if (requests.isEmpty()) return emptyList()
+
+        val normalizedBase = baseUrl.trim().trimEnd('/')
+        val userIds = requests.mapNotNull { it.userId?.takeIf(String::isNotBlank) }.distinct()
+        val profilesById = runCatching {
+            fetchUserProfiles(normalizedBase, credentials, sessionCookie, userIds)
+        }.getOrDefault(emptyList()).associateBy { it._id }
+
+        return requests.map { request ->
+            val userId = request.userId.orEmpty()
+            val profile = profilesById[userId]
+            val username = userId.substringAfter("org.couchdb.user:", userId)
+            val fullName = listOfNotNull(
+                profile?.firstName,
+                profile?.middleName,
+                profile?.lastName,
+            ).filter { it.isNotBlank() }.joinToString(" ").ifBlank { username }
+
+            TeamJoinRequestDetails(
+                username = username,
+                fullName = fullName,
+                hasAvatar = profile?.attachments?.image != null,
+                request = request,
+            )
+        }.sortedBy { it.fullName.lowercase() }
+    }
+
     fun fetchTeamJoinRequests(
         baseUrl: String,
         credentials: StoredCredentials?,
