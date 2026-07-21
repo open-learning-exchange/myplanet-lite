@@ -1190,7 +1190,7 @@ class MyPlanetLite : BaseActivity() {
                 org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
                     .getPasswordKey(username),
                 password,
-            ).commit()
+            ).apply()
     }
 
     private fun clearRememberedCredentials() {
@@ -1205,7 +1205,7 @@ class MyPlanetLite : BaseActivity() {
         }
         editor.remove(KEY_REMEMBERED_USERNAME)
         editor.remove(KEY_REMEMBERED_PASSWORD)
-        editor.commit()
+        editor.apply()
     }
 
     private fun clearStoredSessionIfNotRemembered() {
