@@ -252,7 +252,7 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
             val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
             courseImageLoader = DashboardPostImageLoader(base, sessionCookie, viewLifecycleOwner.lifecycleScope)
             isCourseImageLoaderLoading = false
-            adapter.notifyDataSetChanged()
+            adapter.notifyImageLoaderReady()
         }
     }
 

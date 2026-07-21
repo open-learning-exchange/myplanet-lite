@@ -156,6 +156,14 @@ class CourseAdapter(
         applyFilter()
     }
 
+    fun notifyImageLoaderReady() {
+        currentList.forEachIndexed { index, item ->
+            if (item is CourseListItem.CourseItemWrapper && !item.course.coverPath.isNullOrBlank()) {
+                notifyItemChanged(index)
+            }
+        }
+    }
+
     fun isHeader(position: Int) = getItem(position) is CourseListItem.Header
 
     private fun updateSearchQuery(query: String) {
