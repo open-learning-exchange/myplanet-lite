@@ -234,6 +234,26 @@ internal fun SurveyWizardFragment.renderBasicsStep(): Pair<View, () -> Boolean> 
     return container to collector
 }
 
+internal fun SurveyWizardFragment.createTextInputLayout(
+    context: android.content.Context,
+    hintText: String,
+    initialText: String?,
+): Pair<TextInputLayout, TextInputEditText> {
+    val layout =
+        TextInputLayout(context).apply {
+            hint = hintText
+            layoutParams =
+                LinearLayout.LayoutParams(
+                    ViewGroup.LayoutParams.MATCH_PARENT,
+                    ViewGroup.LayoutParams.WRAP_CONTENT,
+                )
+        }
+    val input = TextInputEditText(context)
+    input.setText(initialText.orEmpty())
+    layout.addView(input)
+    return layout to input
+}
+
 internal fun SurveyWizardFragment.renderNamesStep(): Pair<View, () -> Boolean> {
     val context = requireContext()
     val container =
@@ -246,68 +266,40 @@ internal fun SurveyWizardFragment.renderNamesStep(): Pair<View, () -> Boolean> {
                 )
         }
 
-    val firstLayout =
-        TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_first_name_label)
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                )
-        }
-    val firstInput = TextInputEditText(context)
-    firstInput.setText(respondent.firstName.orEmpty())
-    firstLayout.addView(firstInput)
-
-    val middleLayout =
-        TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_middle_name_label)
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                )
-        }
-    val middleInput = TextInputEditText(context)
-    middleInput.setText(respondent.middleName.orEmpty())
-    middleLayout.addView(middleInput)
-
-    val lastLayout =
-        TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_last_name_label)
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                )
-        }
-    val lastInput = TextInputEditText(context)
-    lastInput.setText(respondent.lastName.orEmpty())
-    lastLayout.addView(lastInput)
+    val (firstLayout, firstInput) =
+        createTextInputLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_first_name_label),
+            respondent.firstName,
+        )
+    val (middleLayout, middleInput) =
+        createTextInputLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_middle_name_label),
+            respondent.middleName,
+        )
+    val (lastLayout, lastInput) =
+        createTextInputLayout(
+            context,
+            getString(R.string.dashboard_survey_wizard_last_name_label),
+            respondent.lastName,
+        )
 
     container.addView(firstLayout)
     container.addView(middleLayout)
     container.addView(lastLayout)
 
     val collector = {
-        respondent.firstName =
-            firstInput.text
+        fun TextInputEditText.trimmedValue(): String? =
+            text
                 ?.toString()
                 ?.trim()
                 .orEmpty()
                 .takeIf { it.isNotBlank() }
-        respondent.middleName =
-            middleInput.text
-                ?.toString()
-                ?.trim()
-                .orEmpty()
-                .takeIf { it.isNotBlank() }
-        respondent.lastName =
-            lastInput.text
-                ?.toString()
-                ?.trim()
-                .orEmpty()
-                .takeIf { it.isNotBlank() }
+
+        respondent.firstName = firstInput.trimmedValue()
+        respondent.middleName = middleInput.trimmedValue()
+        respondent.lastName = lastInput.trimmedValue()
         true
     }
     return container to collector
