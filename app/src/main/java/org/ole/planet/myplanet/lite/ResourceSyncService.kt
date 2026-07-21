@@ -34,23 +34,7 @@ internal class ResourceSyncService(
         )
         val page = result.getOrDefault(emptyList())
         val mutableKeys = existingKeys.toMutableSet()
-        val items = page.map { resource ->
-            val id = resource.id?.trim().orEmpty()
-            val filename = resource.filename?.trim().orEmpty()
-            ResourceUi(
-                id = id,
-                filename = filename,
-                name = resource.title?.takeIf { it.isNotBlank() }
-                    ?: resource.filename?.takeIf { it.isNotBlank() }
-                    ?: "-",
-                type = resource.mediaType?.uppercase(Locale.ROOT) ?: "PDF",
-                date = DateUtils.toDisplayDate(resource.createdDate),
-                createdDate = resource.createdDate,
-                isDownloaded = downloadService.findLocalResourceFile(id, filename, isTeamResource = false)?.exists() == true,
-                isDownloadable = ResourceSearchEngine.parseIsDownloadable(resource.isDownloadable),
-                isTeamResource = false
-            )
-        }.filter { item ->
+        val items = page.map { mapToResourceUi(it, isTeamResource = false) }.filter { item ->
             val key = item.resourceIdentityKey()
             if (mutableKeys.contains(key)) false else {
                 mutableKeys.add(key)
@@ -87,23 +71,7 @@ internal class ResourceSyncService(
             )
         )
         val page = result.getOrDefault(emptyList())
-        val allRemoteItems = page.map { resource ->
-            val id = resource.id?.trim().orEmpty()
-            val filename = resource.filename?.trim().orEmpty()
-            ResourceUi(
-                id = id,
-                filename = filename,
-                name = resource.title?.takeIf { it.isNotBlank() }
-                    ?: resource.filename?.takeIf { it.isNotBlank() }
-                    ?: "-",
-                type = resource.mediaType?.uppercase(Locale.ROOT) ?: "PDF",
-                date = DateUtils.toDisplayDate(resource.createdDate),
-                createdDate = resource.createdDate,
-                isDownloaded = downloadService.findLocalResourceFile(id, filename, isTeamResource = true)?.exists() == true,
-                isDownloadable = ResourceSearchEngine.parseIsDownloadable(resource.isDownloadable),
-                isTeamResource = true
-            )
-        }
+        val allRemoteItems = page.map { mapToResourceUi(it, isTeamResource = true) }
         val remoteKeys = allRemoteItems.map { it.resourceIdentityKey() }.toSet()
         val downloaded = downloadedResources.filter { remoteKeys.contains(it.resourceIdentityKey()) }
         val existingKeys = downloaded.map { it.resourceIdentityKey() }.toMutableSet()
@@ -115,6 +83,27 @@ internal class ResourceSyncService(
             }
         }
         return downloaded + remoteItems
+    }
+
+    private fun mapToResourceUi(
+        resource: DashboardResourcesRepository.ResourceDocument,
+        isTeamResource: Boolean
+    ): ResourceUi {
+        val id = resource.id?.trim().orEmpty()
+        val filename = resource.filename?.trim().orEmpty()
+        return ResourceUi(
+            id = id,
+            filename = filename,
+            name = resource.title?.takeIf { it.isNotBlank() }
+                ?: resource.filename?.takeIf { it.isNotBlank() }
+                ?: "-",
+            type = resource.mediaType?.uppercase(Locale.ROOT) ?: "PDF",
+            date = DateUtils.toDisplayDate(resource.createdDate),
+            createdDate = resource.createdDate,
+            isDownloaded = downloadService.findLocalResourceFile(id, filename, isTeamResource)?.exists() == true,
+            isDownloadable = ResourceSearchEngine.parseIsDownloadable(resource.isDownloadable),
+            isTeamResource = isTeamResource
+        )
     }
 
     suspend fun downloadResource(
