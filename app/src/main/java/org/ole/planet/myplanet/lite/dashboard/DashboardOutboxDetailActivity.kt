@@ -18,16 +18,7 @@ import androidx.lifecycle.lifecycleScope
 import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
-import okhttp3.Credentials
-import okhttp3.MediaType.Companion.toMediaType
-import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
 import org.ole.planet.myplanet.lite.BaseActivity
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -50,8 +41,6 @@ class DashboardOutboxDetailActivity : BaseActivity() {
     private lateinit var deleteButton: MaterialButton
     private lateinit var emptyView: TextView
     private val outboxStore by lazy { DashboardSurveyOutboxStore.getInstance(applicationContext) }
-
-    private val httpClient by lazy { OkHttpClient.Builder().build() }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -284,7 +273,6 @@ class DashboardOutboxDetailActivity : BaseActivity() {
     }
 
     companion object {
-        private val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
         const val EXTRA_OUTBOX_ID = "extra_outbox_id"
     }
 
@@ -301,14 +289,17 @@ class DashboardOutboxDetailActivity : BaseActivity() {
                         ).getStoredToken()
                 }
             val localSurveyRepository = DashboardLocalSurveyRepository(this@DashboardOutboxDetailActivity)
-            val outcome = localSurveyRepository.resendOutboxEntry(
-                entry = entry,
-                baseUrl = baseUrl,
-                username = credentials?.username,
-                password = credentials?.password,
-                sessionCookie = sessionCookie
-            )
-            localSurveyRepository.close()
+            val outcome = try {
+                localSurveyRepository.resendOutboxEntry(
+                    entry = entry,
+                    baseUrl = baseUrl,
+                    username = credentials?.username,
+                    password = credentials?.password,
+                    sessionCookie = sessionCookie
+                )
+            } finally {
+                localSurveyRepository.close()
+            }
 
             when (outcome) {
                 ResendOutcome.SUCCESS -> {
@@ -317,6 +308,12 @@ class DashboardOutboxDetailActivity : BaseActivity() {
                 }
                 ResendOutcome.REVISION_MISMATCH -> {
                     showRevMismatchDialog(entry)
+                }
+                ResendOutcome.REVISION_UNVERIFIABLE -> {
+                    Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_outbox_unable_to_verify_rev, Toast.LENGTH_SHORT).show()
+                }
+                ResendOutcome.MISSING_SERVER -> {
+                    Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_surveys_missing_server, Toast.LENGTH_SHORT).show()
                 }
                 ResendOutcome.OFFLINE -> {
                     Toast.makeText(this@DashboardOutboxDetailActivity, R.string.dashboard_outbox_offline_cannot_send, Toast.LENGTH_SHORT).show()

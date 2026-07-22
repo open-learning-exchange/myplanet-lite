@@ -21,7 +21,6 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyD
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.survey.SubmitOutcome
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import kotlin.math.roundToInt
 
@@ -319,7 +318,7 @@ internal suspend fun SurveyWizardFragment.processSubmission(
         credentials = credentials,
         sessionCookie = sessionCookie,
         submission = submission,
-        surveyId = survey.id ?: "",
+        surveyId = survey.id,
         surveyName = survey.name,
         teamId = teamId,
         teamName = teamName,

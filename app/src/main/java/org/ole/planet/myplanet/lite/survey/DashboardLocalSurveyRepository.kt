@@ -38,6 +38,8 @@ enum class SubmitOutcome {
 enum class ResendOutcome {
     SUCCESS,
     REVISION_MISMATCH,
+    REVISION_UNVERIFIABLE,
+    MISSING_SERVER,
     FAILED,
     OFFLINE
 }
@@ -69,7 +71,7 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
         credentials: StoredCredentials?,
         sessionCookie: String?,
         submission: SurveySubmission,
-        surveyId: String,
+        surveyId: String?,
         surveyName: String?,
         teamId: String?,
         teamName: String?,
@@ -149,7 +151,7 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
             return ResendOutcome.OFFLINE
         }
 
-        val normalized = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return ResendOutcome.FAILED
+        val normalized = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return ResendOutcome.MISSING_SERVER
         val authService = AuthDependencies.provideAuthService(context, normalized)
         val token = sessionCookie ?: withContext(Dispatchers.IO) { authService.getStoredToken() }
 
@@ -160,7 +162,7 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
             token,
             username,
             password
-        ) ?: return ResendOutcome.FAILED
+        ) ?: return ResendOutcome.REVISION_UNVERIFIABLE
 
         val localRev = entry.submission.parent.rev
         if (localRev != null && localRev != serverRev) {
