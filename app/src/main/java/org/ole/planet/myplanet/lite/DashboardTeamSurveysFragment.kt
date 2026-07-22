@@ -244,8 +244,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         documents: List<SurveyDocument>,
     ) {
         completionCounts.clear()
-        val ids = mutableListOf<String>()
-        documents.forEach { doc -> doc.id?.let { ids.add(it) } }
+        val ids = documents.mapNotNull { it.id }
         val counts = repository.getCompletionCountsWithDefaults(base, credentials, sessionCookie, team, ids)
         completionCounts.putAll(counts)
     }
