@@ -234,12 +234,6 @@ internal suspend fun DashboardPostDetailActivity.ensureReplyImageUpload(
     pending: PendingVoiceImage,
 ): String {
     pending.uploadedMarkdown?.let { return it }
-    val existingResourceId = pending.resourceId
-    if (existingResourceId != null) {
-        val markdown = "![](resources/${existingResourceId.trim()}/${pending.fileName.trim()})"
-        pending.uploadedMarkdown = markdown
-        return markdown
-    }
 
     val result =
         composerRepository.ensureReplyImageUpload(
