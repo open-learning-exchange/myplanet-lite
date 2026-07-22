@@ -164,12 +164,12 @@ class PostShareHelper(
         }
 
     companion object {
-        private val client: OkHttpClient
-            get() = SharedBitmapDependencies.client.newBuilder()
+        private val client: OkHttpClient by lazy {
+            SharedBitmapDependencies.client.newBuilder()
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(15, TimeUnit.SECONDS)
                 .build()
-
+        }
         private val IMAGE_MARKDOWN_REGEX = Regex("!?\\[[^\\]]*\\]\\([^)]*\\.(?:jpe?g|png)\\)", RegexOption.IGNORE_CASE)
         private val IMAGE_URL_REGEX = Regex("\\b\\S+\\.(?:jpe?g|png)(?:\\?\\S*)?(?=\\s|$)", RegexOption.IGNORE_CASE)
         private val LINK_MARKDOWN_REGEX = Regex("\\[([^\\]]+)\\]\\(([^\\s)]+)\\)")
