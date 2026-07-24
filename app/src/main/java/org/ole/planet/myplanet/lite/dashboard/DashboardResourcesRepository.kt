@@ -3,37 +3,33 @@ package org.ole.planet.myplanet.lite.dashboard
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
-import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import java.io.File
 import java.io.IOException
-import java.net.URLEncoder
-import java.util.Locale
-import kotlinx.coroutines.CoroutineDispatcher
 import java.util.regex.Pattern
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
-import okhttp3.Response
 import okhttp3.RequestBody.Companion.toRequestBody
-import okio.Buffer
 import org.json.JSONArray
 import org.json.JSONObject
-import org.ole.planet.myplanet.lite.util.BirthDateString
+import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.BirthDateString
 import org.ole.planet.myplanet.lite.util.DateStringAdapter
 
-class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO) {
-
-    private val client: OkHttpClient = OkHttpClient.Builder().build()
-    private val moshi: Moshi = Moshi.Builder()
-        .add(DateStringAdapter())
-        .addLast(KotlinJsonAdapterFactory())
-        .build()
+class DashboardResourcesRepository(
+    private val client: OkHttpClient = AuthDependencies.client,
+    private val moshi: Moshi = AuthDependencies.moshi.newBuilder().add(DateStringAdapter()).build(),
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO
+) {
     private val responseAdapter = moshi.adapter(ResourcesFindResponse::class.java)
     private val teamLinksResponseAdapter = moshi.adapter(TeamLinksFindResponse::class.java)
+    private val persistence = DashboardResourcePersistence(client, ioDispatcher)
+    private val downloads = DashboardResourceDownloads(client, ioDispatcher)
 
     suspend fun fetchCommunityResources(
         baseUrl: String,
@@ -103,7 +99,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
         password: String?,
         payload: JSONObject
     ): Result<JSONObject> {
-        return createDatabaseDocument(baseUrl, "teams", sessionCookie, username, password, payload)
+        return persistence.createDatabaseDocument(baseUrl, "teams", sessionCookie, username, password, payload)
     }
 
     data class ResourceMetadataRequest(
@@ -140,49 +136,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
         password: String?,
         payload: JSONObject
     ): Result<JSONObject> {
-        return createDatabaseDocument(baseUrl, "resources", sessionCookie, username, password, payload)
-    }
-
-    private suspend fun createDatabaseDocument(
-        baseUrl: String,
-        dbName: String,
-        sessionCookie: String?,
-        username: String?,
-        password: String?,
-        payload: JSONObject
-    ): Result<JSONObject> {
-        return withContext(ioDispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val requestUrl = "$normalizedBase/db/$dbName"
-                val json = payload.toString()
-                val requestBuilder = Request.Builder()
-                    .url(requestUrl)
-                    .post(json.toRequestBody("application/json; charset=utf-8".toMediaType()))
-
-                if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
-                    requestBuilder.addHeader("Authorization", Credentials.basic(username, password))
-                }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                    requestBuilder.addHeader("Cookie", cookie.substringBefore(";"))
-                }
-
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    val body = response.body.string()
-                    if (!response.isSuccessful) {
-                        val reason = runCatching { JSONObject(body).optString("reason") }.getOrNull()
-                        val message = if (!reason.isNullOrBlank()) "Error ${response.code}: $reason" else "Unexpected response ${response.code}"
-                        throw IOException(message)
-                    }
-                    runCatching { JSONObject(body) }.getOrElse {
-                        JSONObject().put("raw", body)
-                    }
-                }
-            }.onFailure { }
-        }
+        return persistence.createDatabaseDocument(baseUrl, "resources", sessionCookie, username, password, payload)
     }
 
     suspend fun updateResourceDocument(
@@ -193,38 +147,9 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
         resourceId: String,
         payload: JSONObject
     ): Result<JSONObject> {
-        return withContext(ioDispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val requestUrl = "$normalizedBase/db/resources/${resourceId.trim()}"
-                val json = payload.toString()
-                val requestBuilder = Request.Builder()
-                    .url(requestUrl)
-                    .put(json.toRequestBody("application/json; charset=utf-8".toMediaType()))
-
-                if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
-                    requestBuilder.addHeader("Authorization", Credentials.basic(username, password))
-                }
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                    requestBuilder.addHeader("Cookie", cookie.substringBefore(";"))
-                }
-
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    val body = response.body.string()
-                    if (!response.isSuccessful) {
-                        val reason = runCatching { JSONObject(body).optString("reason") }.getOrNull()
-                        val message = if (!reason.isNullOrBlank()) "Error ${response.code}: $reason" else "Unexpected response ${response.code}"
-                        throw IOException(message)
-                    }
-                    runCatching { JSONObject(body) }.getOrElse {
-                        JSONObject().put("raw", body)
-                    }
-                }
-            }.onFailure { }
-        }
+        return persistence.updateResourceDocument(
+            baseUrl, sessionCookie, username, password, resourceId, payload
+        )
     }
 
 
@@ -247,74 +172,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
     suspend fun createAndUploadResourceSequence(
         request: CreateAndUploadResourceRequest
     ): Result<Unit> {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val creationResponse = createResourceDocument(
-                    baseUrl = request.baseUrl,
-                    sessionCookie = request.sessionCookie,
-                    username = request.credentials?.username,
-                    password = request.credentials?.password,
-                    payload = request.payload
-                ).getOrThrow()
-
-                val resourceId = creationResponse.optString("id").orEmpty()
-                val creationRevision = creationResponse.optString("rev").orEmpty()
-                if (resourceId.isBlank() || creationRevision.isBlank()) {
-                    throw InvalidServerResponseException("Invalid server response")
-                }
-
-                val renamedFileName = "${resourceId}.${request.fileExtension.lowercase(Locale.ROOT)}"
-                val updatePayload = JSONObject(request.payload.toString())
-                    .put("_id", resourceId)
-                    .put("_rev", creationRevision)
-                    .put("filename", renamedFileName)
-                    .put("mediaType", request.mediaType)
-
-                val updateResponse = updateResourceDocument(
-                    baseUrl = request.baseUrl,
-                    sessionCookie = request.sessionCookie,
-                    username = request.credentials?.username,
-                    password = request.credentials?.password,
-                    resourceId = resourceId,
-                    payload = updatePayload
-                ).getOrThrow()
-
-                val updateRevision = updateResponse.optString("rev").orEmpty().ifBlank { creationRevision }
-
-                uploadResourceAttachment(
-                    UploadAttachmentRequest(
-                        baseUrl = request.baseUrl,
-                        sessionCookie = request.sessionCookie,
-                        username = request.credentials?.username,
-                        password = request.credentials?.password,
-                        resourceId = resourceId,
-                        filename = renamedFileName,
-                        revision = updateRevision,
-                        mimeType = request.mimeType,
-                        bytes = request.bytes
-                    )
-                ).getOrThrow()
-
-                if (!request.teamId.isNullOrBlank() && !request.planetCode.isNullOrBlank()) {
-                    val linkPayload = JSONObject()
-                        .put("resourceId", resourceId)
-                        .put("sourcePlanet", request.planetCode)
-                        .put("title", request.payload.optString("title"))
-                        .put("teamId", request.teamId)
-                        .put("teamPlanetCode", request.planetCode)
-                        .put("teamType", "local")
-                        .put("docType", "resourceLink")
-
-                    createTeamDocument(
-                        baseUrl = request.baseUrl,
-                        sessionCookie = request.sessionCookie,
-                        username = request.credentials?.username,
-                        password = request.credentials?.password,
-                        payload = linkPayload
-                    ).getOrNull()
-                }
-            }
-        }
+        return persistence.createAndUploadResourceSequence(request)
     }
 
     data class UploadAttachmentRequest(
@@ -332,38 +190,7 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
     suspend fun uploadResourceAttachment(
         request: UploadAttachmentRequest
     ): Result<JSONObject> {
-        return withContext(ioDispatcher) {
-            runCatching {
-                val normalizedBase = request.baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val encodedRev = URLEncoder.encode(request.revision, Charsets.UTF_8.name())
-                val requestUrl = "$normalizedBase/db/resources/${request.resourceId.trim()}/${request.filename.trim()}?rev=$encodedRev"
-                val requestBuilder = Request.Builder()
-                    .url(requestUrl)
-                    .put(request.bytes.toRequestBody(request.mimeType.toMediaType()))
-
-                if (!request.username.isNullOrBlank() && !request.password.isNullOrBlank()) {
-                    requestBuilder.addHeader("Authorization", Credentials.basic(request.username, request.password))
-                }
-                request.sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                    requestBuilder.addHeader("Cookie", cookie.substringBefore(";"))
-                }
-
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    val body = response.body.string()
-                    if (!response.isSuccessful) {
-                        val reason = runCatching { JSONObject(body).optString("reason") }.getOrNull()
-                        val message = if (!reason.isNullOrBlank()) "Error ${response.code}: $reason" else "Unexpected response ${response.code}"
-                        throw IOException(message)
-                    }
-                    runCatching { JSONObject(body) }.getOrElse {
-                        JSONObject().put("raw", body)
-                    }
-                }
-            }.onFailure { }
-        }
+        return persistence.uploadResourceAttachment(request)
     }
 
     suspend fun downloadResourceBytes(
@@ -373,53 +200,9 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
         filename: String,
         onProgress: ((Int?) -> Unit)? = null
     ): Result<ByteArray> {
-        return withContext(ioDispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                if (resourceId.isBlank() || filename.isBlank()) {
-                    throw IOException("Missing resource id or filename")
-                }
-                val requestUrl = "$normalizedBase/db/resources/${resourceId.trim()}/${filename.trim()}"
-                val requestBuilder = Request.Builder()
-                    .url(requestUrl)
-                    .get()
-                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                    requestBuilder.addHeader("Cookie", cookie)
-                }
-                client.newCall(requestBuilder.build()).execute().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val body = response.body
-                    val totalBytes = body.contentLength()
-                    val source = body.source()
-                    val sink = Buffer()
-                    val chunkSize = 8_192L
-                    var downloadedBytes = 0L
-                    var lastProgress: Int? = null
-                    onProgress?.invoke(if (totalBytes > 0L) 0 else null)
-                    while (true) {
-                        val read = source.read(sink, chunkSize)
-                        if (read == -1L) break
-                        downloadedBytes += read
-                        if (totalBytes > 0L) {
-                            val progress = ((downloadedBytes * 100L) / totalBytes).toInt().coerceIn(0, 100)
-                            if (progress != lastProgress) {
-                                lastProgress = progress
-                                onProgress?.invoke(progress)
-                            }
-                        }
-                    }
-                    if (totalBytes > 0L && lastProgress != 100) {
-                        onProgress?.invoke(100)
-                    }
-                    sink.readByteArray()
-                }
-            }.onFailure { }
-        }
+        return downloads.downloadResourceBytes(
+            baseUrl, sessionCookie, resourceId, filename, onProgress
+        )
     }
 
     data class TeamResourcesRequest(
@@ -576,41 +359,8 @@ class DashboardResourcesRepository(private val ioDispatcher: CoroutineDispatcher
 
 
 
-    private fun saveToTempFile(response: Response, cacheDir: File): File? {
-        val body = response.body
-        val file = File.createTempFile("course_resource_", ".pdf", cacheDir)
-        body.byteStream().use { input ->
-            file.outputStream().use { output ->
-                input.copyTo(output)
-            }
-        }
-        return file
-    }
-
     suspend fun downloadPdfToCache(url: String, authHeader: String?, cacheDir: File): File? {
-        return withContext(Dispatchers.IO) {
-            runCatching {
-                val parsedUri = android.net.Uri.parse(url)
-                if (parsedUri.scheme == "file") {
-                    val localFile = File(parsedUri.path.orEmpty())
-                    if (localFile.exists()) {
-                        return@withContext localFile
-                    }
-                }
-                val request = Request.Builder()
-                    .url(url)
-                    .apply {
-                        if (!authHeader.isNullOrBlank() && url.startsWith("https://", ignoreCase = true)) {
-                            addHeader("Authorization", authHeader)
-                        }
-                    }
-                    .build()
-                client.newCall(request).execute().use { response ->
-                    if (!response.isSuccessful) return@withContext null
-                    saveToTempFile(response, cacheDir)
-                }
-            }.getOrNull()
-        }
+        return downloads.downloadPdfToCache(url, authHeader, cacheDir)
     }
 
     @JsonClass(generateAdapter = true)
