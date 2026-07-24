@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.lite.dashboard
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
@@ -17,6 +18,7 @@ import org.robolectric.annotation.Config
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardOfflineSurveyStoreTest {
 
     private lateinit var store: DashboardOfflineSurveyStore
