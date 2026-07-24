@@ -4,6 +4,7 @@ import android.content.ContentValues
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -34,7 +35,8 @@ class DashboardSurveyOutboxStoreTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardSurveyOutboxStore.getInstance(context)
+        val testDispatcher = UnconfinedTestDispatcher()
+        store = DashboardSurveyOutboxStore.getInstance(context, testDispatcher, testDispatcher)
         store.writableDatabase.delete("outbox_submissions", null, null)
     }
 

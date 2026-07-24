@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.lite.dashboard
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -28,7 +29,8 @@ class DashboardOfflineSurveyStoreTest {
         org.ole.planet.myplanet.lite.util.SecurePreferencesProvider.injectedPreferences = mockPrefs
 
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardOfflineSurveyStore.getInstance(context)
+        val testDispatcher = UnconfinedTestDispatcher()
+        store = DashboardOfflineSurveyStore.getInstance(context, testDispatcher)
         // Clear db before test
         store.writableDatabase.delete("surveys", null, null)
     }

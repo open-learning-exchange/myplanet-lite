@@ -5,7 +5,9 @@ import androidx.annotation.VisibleForTesting
 import java.text.SimpleDateFormat
 import java.time.Instant
 import java.time.LocalDate
+import java.time.Period
 import java.time.ZoneOffset
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
@@ -68,12 +70,10 @@ object DateUtils {
     @VisibleForTesting
     var sdkInt: Int = Build.VERSION.SDK_INT
 
-    fun formatBirthDate(value: String?, fallback: String): String {
+    fun formatBirthDate(value: String?, fallback: String, targetPattern: String = "yyyy-MM-dd"): String {
         if (value.isNullOrBlank()) {
             return fallback
         }
-
-        val targetPattern = "yyyy-MM-dd"
 
         return if (sdkInt >= Build.VERSION_CODES.O) {
             val date = runCatching { Instant.parse(value).atZone(ZoneOffset.UTC).toLocalDate() }.getOrNull()
@@ -107,5 +107,95 @@ object DateUtils {
         if (dateLong == null || dateLong <= 0L) return "-"
         val formatter = SimpleDateFormat("yyyy-MM-dd", Locale.ROOT)
         return formatter.format(Date(dateLong))
+    }
+
+    fun parseBirthDateToMillis(raw: String?): Long? {
+        if (raw.isNullOrBlank()) {
+            return null
+        }
+        return if (sdkInt >= Build.VERSION_CODES.O) {
+            runCatching { Instant.parse(raw).toEpochMilli() }.getOrNull()
+                ?: runCatching {
+                    LocalDate
+                        .parse(raw)
+                        .atStartOfDay(ZoneOffset.UTC)
+                        .toInstant()
+                        .toEpochMilli()
+                }.getOrNull()
+        } else {
+            val patterns =
+                listOf(
+                    "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
+                    "yyyy-MM-dd'T'HH:mm:ss'Z'",
+                    "yyyy-MM-dd",
+                )
+            patterns.firstNotNullOfOrNull { pattern ->
+                runCatching {
+                    SimpleDateFormat(pattern, Locale.US)
+                        .apply {
+                            timeZone = TimeZone.getTimeZone("UTC")
+                        }.parse(raw)
+                        ?.time
+                }.getOrNull()
+            }
+        }
+    }
+
+    fun extractBirthYearFromIso(iso: String?): String? {
+        if (iso.isNullOrBlank()) {
+            return null
+        }
+        return if (sdkInt >= Build.VERSION_CODES.O) {
+            runCatching {
+                Instant
+                    .parse(iso)
+                    .atZone(ZoneOffset.UTC)
+                    .year
+                    .toString()
+            }.getOrNull()
+        } else {
+            runCatching {
+                val format =
+                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                        timeZone = TimeZone.getTimeZone("UTC")
+                    }
+                val date = format.parse(iso) ?: return@runCatching null
+                val calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+                calendar.time = date
+                calendar.get(Calendar.YEAR).toString()
+            }.getOrNull()
+        }
+    }
+
+    fun calculateAgeFromIso(iso: String?): String? {
+        if (iso.isNullOrBlank()) {
+            return null
+        }
+        return if (sdkInt >= Build.VERSION_CODES.O) {
+            runCatching {
+                val birthDate = Instant.parse(iso).atZone(ZoneOffset.UTC).toLocalDate()
+                val now = Instant.now().atZone(ZoneOffset.UTC).toLocalDate()
+                Period
+                    .between(birthDate, now)
+                    .years
+                    .takeIf { it >= 0 }
+                    ?.toString()
+            }.getOrNull()
+        } else {
+            runCatching {
+                val format =
+                    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US).apply {
+                        timeZone = TimeZone.getTimeZone("UTC")
+                    }
+                val date = format.parse(iso) ?: return@runCatching null
+                val birthCalendar = Calendar.getInstance().apply { time = date }
+                val today = Calendar.getInstance()
+                var age = today.get(Calendar.YEAR) - birthCalendar.get(Calendar.YEAR)
+                if (today.get(Calendar.DAY_OF_YEAR) < birthCalendar.get(Calendar.DAY_OF_YEAR)) {
+                    age -= 1
+                }
+                age.takeIf { it >= 0 }?.toString()
+            }.getOrNull()
+        }
     }
 }
