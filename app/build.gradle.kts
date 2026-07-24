@@ -35,7 +35,7 @@ android {
         minSdk = 28
         targetSdk = 36
         versionCode = 494
-        versionName = "0.4.94
+        versionName = "0.4.94"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
