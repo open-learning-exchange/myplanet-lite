@@ -3,7 +3,9 @@ package org.ole.planet.myplanet.lite.dashboard
 import android.content.ContentValues
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,6 +29,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardSurveyOutboxStoreTest {
 
     private lateinit var store: DashboardSurveyOutboxStore
@@ -34,7 +37,8 @@ class DashboardSurveyOutboxStoreTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardSurveyOutboxStore.getInstance(context)
+        val testDispatcher = UnconfinedTestDispatcher()
+        store = DashboardSurveyOutboxStore.getInstance(context, testDispatcher, testDispatcher)
         store.writableDatabase.delete("outbox_submissions", null, null)
     }
 

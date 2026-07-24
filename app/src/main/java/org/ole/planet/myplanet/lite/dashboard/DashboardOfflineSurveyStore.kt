@@ -12,6 +12,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
@@ -19,6 +20,7 @@ import org.ole.planet.myplanet.lite.util.getStringOrNull
 
 class DashboardOfflineSurveyStore(
     context: Context,
+    private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
     moshi: Moshi =
         Moshi
             .Builder()
@@ -61,7 +63,7 @@ class DashboardOfflineSurveyStore(
         val serialized = documentAdapter.toJson(document) ?: return false
         val rev = document.rev
         val teamId = document.teamId ?: fallbackTeamId
-        return withContext(Dispatchers.IO) {
+        return withContext(ioDispatcher) {
             val values =
                 ContentValues().apply {
                     put(COLUMN_ID, id)
@@ -79,7 +81,7 @@ class DashboardOfflineSurveyStore(
     }
 
     suspend fun getSavedSurveyIds(): Set<String> =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             readableDatabase
                 .query(
                     TABLE_SURVEYS,
@@ -100,7 +102,7 @@ class DashboardOfflineSurveyStore(
         }
 
     suspend fun getSavedSurveysForTeam(teamId: String): List<SurveyDocument> =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             val jsons =
                 readableDatabase
                     .query(
@@ -124,7 +126,7 @@ class DashboardOfflineSurveyStore(
         }
 
     suspend fun getSavedSurveyRevisions(): Map<String, String?> =
-        withContext(Dispatchers.IO) {
+        withContext(ioDispatcher) {
             readableDatabase
                 .query(
                     TABLE_SURVEYS,
@@ -168,9 +170,15 @@ class DashboardOfflineSurveyStore(
         @Volatile
         private var instance: DashboardOfflineSurveyStore? = null
 
-        fun getInstance(context: Context): DashboardOfflineSurveyStore =
+        fun getInstance(
+            context: Context,
+            ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
+        ): DashboardOfflineSurveyStore =
             instance ?: synchronized(this) {
-                instance ?: DashboardOfflineSurveyStore(context.applicationContext).also { instance = it }
+                instance ?: DashboardOfflineSurveyStore(
+                    context.applicationContext,
+                    ioDispatcher,
+                ).also { instance = it }
             }
 
         fun resetForTesting(context: Context) {
