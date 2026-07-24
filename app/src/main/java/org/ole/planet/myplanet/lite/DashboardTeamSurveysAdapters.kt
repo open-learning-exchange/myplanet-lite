@@ -189,20 +189,14 @@ internal data class SurveyItemUiModel(
     val savedRevision: String?,
 )
 
-private class SurveyItemUiModelDiffCallback : DiffUtil.ItemCallback<SurveyItemUiModel>() {
-    override fun areItemsTheSame(oldItem: SurveyItemUiModel, newItem: SurveyItemUiModel): Boolean =
-        oldItem.document.id == newItem.document.id
-
-    override fun areContentsTheSame(oldItem: SurveyItemUiModel, newItem: SurveyItemUiModel): Boolean =
-        oldItem == newItem
-}
-
 private class SurveyItemsAdapter(
     private val statusStore: DashboardSurveyStatusStore,
     private val onStatusChanged: () -> Unit,
     private val onSurveySelected: (SurveyDocument) -> Unit,
     private val onDownloadRequested: (SurveyDocument) -> Unit,
-) : ListAdapter<SurveyItemUiModel, SurveyItemsAdapter.SurveyViewHolder>(SurveyItemUiModelDiffCallback()) {
+) : ListAdapter<SurveyItemUiModel, SurveyItemsAdapter.SurveyViewHolder>(
+    org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback({ oldItem, newItem -> oldItem.document.id == newItem.document.id })
+) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SurveyViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -326,14 +320,11 @@ private val SurveyStatus.iconRes: Int
         SurveyStatus.COMPLETED -> R.drawable.ic_survey_completed_24
     }
 
-private class OutboxEntryDiffCallback : DiffUtil.ItemCallback<OutboxEntry>() {
-    override fun areItemsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean = oldItem.id == newItem.id
-    override fun areContentsTheSame(oldItem: OutboxEntry, newItem: OutboxEntry): Boolean = oldItem == newItem
-}
-
 private class SurveyOutboxAdapter(
     private val onOutboxSelected: (OutboxEntry) -> Unit,
-) : ListAdapter<OutboxEntry, SurveyOutboxAdapter.OutboxViewHolder>(OutboxEntryDiffCallback()) {
+) : ListAdapter<OutboxEntry, SurveyOutboxAdapter.OutboxViewHolder>(
+    org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback({ oldItem, newItem -> oldItem.id == newItem.id })
+) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): OutboxViewHolder {
         val view = LayoutInflater.from(parent.context)
