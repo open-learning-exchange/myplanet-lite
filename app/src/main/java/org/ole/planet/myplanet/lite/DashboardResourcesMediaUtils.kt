@@ -389,7 +389,7 @@ object DashboardResourcesMediaUtils {
             val exportSucceeded = suspendCancellableCoroutine { continuation ->
                 val clippingBuilder = MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs.coerceAtLeast(0L))
                 if (endMs in 1 until sourceDurationMs) clippingBuilder.setEndPositionMs(endMs)
-                val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile!!)).setClippingConfiguration(clippingBuilder.build()).build()
+                val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile)).setClippingConfiguration(clippingBuilder.build()).build()
                 val audioEncoderSettings = AudioEncoderSettings.Builder().setBitrate(bitrateKbps * 1000).build()
                 val editedMediaItem = EditedMediaItem.Builder(mediaItem).build()
                 val transformer = Transformer.Builder(context)
@@ -408,7 +408,7 @@ object DashboardResourcesMediaUtils {
                 transformer.start(editedMediaItem, outputFile!!.absolutePath)
             }
             if (!exportSucceeded) null else withContext(Dispatchers.IO) {
-                if (isTransformedFileOversized(outputFile!!.length())) null else outputFile!!.readBytes()
+                if (isTransformedFileOversized(outputFile!!.length())) null else outputFile.readBytes()
             }
         } catch (_: Throwable) {
             null
@@ -442,7 +442,7 @@ object DashboardResourcesMediaUtils {
             val exportSucceeded = suspendCancellableCoroutine { continuation ->
                 val clippingBuilder = MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs.coerceAtLeast(0L))
                 if (endMs in 1 until sourceDurationMs) clippingBuilder.setEndPositionMs(endMs)
-                val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile!!)).setClippingConfiguration(clippingBuilder.build()).build()
+                val mediaItem = MediaItem.Builder().setUri(Uri.fromFile(inputFile)).setClippingConfiguration(clippingBuilder.build()).build()
                 val editedMediaBuilder = EditedMediaItem.Builder(mediaItem)
                 if (shouldScale || rotationDegrees != 0f) {
                     val videoEffects = mutableListOf<Effect>()
@@ -475,7 +475,7 @@ object DashboardResourcesMediaUtils {
                 transformer.start(editedMediaItem, outputFile!!.absolutePath)
             }
             if (!exportSucceeded) null else withContext(Dispatchers.IO) {
-                if (isTransformedFileOversized(outputFile!!.length())) null else outputFile!!.readBytes()
+                if (isTransformedFileOversized(outputFile!!.length())) null else outputFile.readBytes()
             }
         } catch (_: Throwable) {
             null

@@ -1093,18 +1093,19 @@ class DashboardResourcesMediaUtilsTest {
         val context = mock(Context::class.java)
         val contentResolver = mock(ContentResolver::class.java)
         val uri = mock(Uri::class.java)
+        val tempDir = File(requireNotNull(System.getProperty("java.io.tmpdir")))
 
-        `when`(context.cacheDir).thenReturn(File(System.getProperty("java.io.tmpdir")))
+        `when`(context.cacheDir).thenReturn(tempDir)
         `when`(context.contentResolver).thenReturn(contentResolver)
         `when`(contentResolver.openInputStream(uri)).thenThrow(RuntimeException("Simulated read exception"))
 
-        val beforeFiles = File(System.getProperty("java.io.tmpdir")).listFiles()?.size ?: 0
+        val beforeFiles = tempDir.listFiles()?.size ?: 0
 
         assertThrows(RuntimeException::class.java) {
             DashboardResourcesMediaUtils.copyUriToTempFile(context, "Error", uri)
         }
 
-        val afterFiles = File(System.getProperty("java.io.tmpdir")).listFiles()?.size ?: 0
+        val afterFiles = tempDir.listFiles()?.size ?: 0
         assertEquals(beforeFiles, afterFiles)
     }
 }
