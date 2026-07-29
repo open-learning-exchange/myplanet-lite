@@ -214,7 +214,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                 teamSurveys = documents.filter { it.sourceSurveyId.isNullOrBlank() }
                 if (offlineMode) {
                     completionCounts.clear()
-                    documents.mapNotNull { it.id }.forEach { id -> completionCounts[id] = 0 }
+                    documents.forEach { doc -> doc.id?.let { completionCounts[it] = 0 } }
                 } else {
                     fetchCompletionCounts(base, team, documents)
                 }
