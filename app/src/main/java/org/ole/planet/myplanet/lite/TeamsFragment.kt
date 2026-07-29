@@ -279,12 +279,12 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
 
                 val memberTeams = teamsDeferred.await().getOrThrow()
 
-                val memberCounts = mutableMapOf<String, Int>()
-                memberCountsDeferred.await().getOrNull()?.let { counts ->
-                    memberCounts.putAll(counts)
-                }
-                memberTeams.mapNotNull { it.id }.forEach { id ->
-                    memberCounts.putIfAbsent(id, 0)
+                val memberCounts = memberCountsDeferred.await().getOrNull()?.toMutableMap() ?: mutableMapOf()
+                for (team in memberTeams) {
+                    val id = team.id
+                    if (id != null && !memberCounts.containsKey(id)) {
+                        memberCounts[id] = 0
+                    }
                 }
 
                 val availableTeamsData = availableTeamsDeferred.await().getOrThrow()
