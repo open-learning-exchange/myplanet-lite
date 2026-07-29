@@ -180,6 +180,8 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         refreshLayout.setOnRefreshListener {
             refreshLayout.isRefreshing = false
             showLoadingOverlay(true)
+            coursesRepository.clearCourseCache()
+            DashboardPostImageLoader.evictCourseImages()
             when (tabPosition) {
                 0 -> {
                     refreshUserCourses(adapter, refreshLayout)

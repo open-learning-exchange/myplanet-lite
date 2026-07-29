@@ -64,6 +64,10 @@ class DashboardCoursesRepository(
     private val courseCache = mutableMapOf<String, CourseDocument>()
     private var shelfCache: ShelfDocument? = null
 
+    fun clearCourseCache() {
+        courseCache.clear()
+    }
+
     suspend fun fetchUserCourseIds(
         baseUrl: String,
         credentials: StoredCredentials,

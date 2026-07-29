@@ -93,6 +93,7 @@ class DashboardPostImageLoader(
                 .Builder()
                 .url(requestUrl)
                 .get()
+                .header("Cache-Control", "no-cache")
         sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
             requestBuilder.addHeader("Cookie", cookie)
         }
@@ -131,7 +132,7 @@ class DashboardPostImageLoader(
         return "$normalizedBase/$finalPath"
     }
 
-    private companion object {
+    companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
         private val sharedCache =
             object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
@@ -140,5 +141,11 @@ class DashboardPostImageLoader(
                     value: Bitmap,
                 ): Int = value.byteCount
             }
+
+        fun evictCourseImages() {
+            sharedCache.snapshot().keys
+                .filter { it.trimStart('/').startsWith("courses/") }
+                .forEach(sharedCache::remove)
+        }
     }
 }
