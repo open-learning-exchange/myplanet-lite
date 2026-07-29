@@ -17,13 +17,41 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+
+import okhttp3.Credentials
+import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
+import org.json.JSONObject
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.NetworkUtils
+
+
+enum class SubmitOutcome {
+    SUBMITTED_ONLINE,
+    QUEUED_OFFLINE,
+    FAILED
+}
+
+enum class ResendOutcome {
+    SUCCESS,
+    REVISION_MISMATCH,
+    REVISION_UNVERIFIABLE,
+    MISSING_SERVER,
+    FAILED,
+    OFFLINE
+}
 
 class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
     private val offlineStore get() = DashboardOfflineSurveyStore.getInstance(context)
     private val outboxStore get() = DashboardSurveyOutboxStore.getInstance(context)
     private val submissionsRepoDelegate = lazy { DashboardSurveySubmissionsRepository() }
     private val submissionsRepo get() = submissionsRepoDelegate.value
+
+    private val httpClient get() = AuthDependencies.client
+
 
     suspend fun getSavedSurveyIds(): Set<String> = offlineStore.getSavedSurveyIds()
 
@@ -36,6 +64,35 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
     suspend fun getPendingForTeam(teamId: String?): List<OutboxEntry> = outboxStore.getPendingForTeam(teamId)
 
     suspend fun getEntry(id: Long): OutboxEntry? = outboxStore.getEntry(id)
+
+
+    suspend fun submitOrQueueSubmission(
+        base: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        submission: SurveySubmission,
+        surveyId: String?,
+        surveyName: String?,
+        teamId: String?,
+        teamName: String?,
+        baseUrlOverride: String?
+    ): SubmitOutcome {
+        val isOnline = isDeviceOnline()
+        if (!isOnline) {
+            if (baseUrlOverride != null) return SubmitOutcome.FAILED
+            val saved = saveSubmission(submission, surveyId, surveyName, teamId, teamName)
+            return if (saved) SubmitOutcome.QUEUED_OFFLINE else SubmitOutcome.FAILED
+        }
+
+        val result = submissionsRepo.submitSurvey(base, credentials, sessionCookie, submission)
+        if (result.isSuccess) {
+            return SubmitOutcome.SUBMITTED_ONLINE
+        } else {
+            if (baseUrlOverride != null) return SubmitOutcome.FAILED
+            val saved = saveSubmission(submission, surveyId, surveyName, teamId, teamName)
+            return if (saved) SubmitOutcome.QUEUED_OFFLINE else SubmitOutcome.FAILED
+        }
+    }
 
     suspend fun saveSubmission(
         submission: SurveySubmission,
@@ -81,6 +138,96 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
             }
         }
     }
+
+
+    suspend fun resendOutboxEntry(
+        entry: OutboxEntry,
+        baseUrl: String?,
+        username: String?,
+        password: String?,
+        sessionCookie: String?
+    ): ResendOutcome {
+        if (!isDeviceOnline()) {
+            return ResendOutcome.OFFLINE
+        }
+
+        val normalized = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return ResendOutcome.MISSING_SERVER
+        val authService = AuthDependencies.provideAuthService(context, normalized)
+        val token = sessionCookie ?: withContext(Dispatchers.IO) { authService.getStoredToken() }
+
+        val serverRev = fetchServerRevision(
+            normalized,
+            entry.submission.parent.id,
+            entry.teamId,
+            token,
+            username,
+            password
+        ) ?: return ResendOutcome.REVISION_UNVERIFIABLE
+
+        val localRev = entry.submission.parent.rev
+        if (localRev != null && localRev != serverRev) {
+            return ResendOutcome.REVISION_MISMATCH
+        }
+
+        val creds = if (username != null && password != null) StoredCredentials(username, password) else null
+
+        val result = submissionsRepo.submitSurvey(
+            normalized,
+            credentials = creds,
+            sessionCookie = token,
+            submission = entry.submission
+        )
+
+        return if (result.isSuccess) {
+            deleteEntry(entry.id)
+            ResendOutcome.SUCCESS
+        } else {
+            ResendOutcome.FAILED
+        }
+    }
+
+    private suspend fun fetchServerRevision(
+        baseUrl: String,
+        surveyId: String?,
+        teamId: String?,
+        sessionCookie: String?,
+        username: String?,
+        password: String?,
+    ): String? =
+        withContext(Dispatchers.IO) {
+            val id = surveyId?.takeIf { it.isNotBlank() } ?: return@withContext null
+            val selector = JSONObject().apply {
+                put("_id", id)
+                put("type", "surveys")
+                teamId?.takeIf { it.isNotBlank() }?.let { put("teamId", it) }
+            }
+            val payload = JSONObject().apply {
+                put("selector", selector)
+                put("limit", 1)
+                put("fields", JSONArray().apply { put("_rev") })
+            }.toString()
+            val url = "$baseUrl/db/exams/_find"
+            val jsonMediaType = "application/json; charset=utf-8".toMediaType()
+            val requestBuilder = Request.Builder()
+                .url(url)
+                .post(payload.toRequestBody(jsonMediaType))
+            if (!sessionCookie.isNullOrBlank()) {
+                requestBuilder.addHeader("Cookie", sessionCookie)
+            } else if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
+                val creds = Credentials.basic(username, password)
+                requestBuilder.addHeader("Authorization", creds)
+            }
+            runCatching {
+                httpClient.newCall(requestBuilder.build()).execute().use { response ->
+                    if (!response.isSuccessful) return@use null
+                    val body = response.body.string()
+                    if (body.isBlank()) return@use null
+                    val docs = JSONObject(body).optJSONArray("docs")
+                    val first = docs?.optJSONObject(0)
+                    first?.optString("_rev")?.takeIf { it.isNotBlank() }
+                }
+            }.getOrNull()
+        }
 
     private fun isDeviceOnline(): Boolean {
         val manager = context.getSystemService(ConnectivityManager::class.java) ?: return false
