@@ -746,7 +746,8 @@ class DashboardCoursesRepository(
         @param:Json(name = "_id") val id: String?,
         val courseTitle: String?,
         val description: String?,
-        @param:Json(name = "coverFileName") val cover: String? = null,
+        val coverFileName: String? = null,
+        @param:Json(name = "_attachments") val attachments: Map<String, Attachment> = emptyMap(),
         val steps: List<CourseStep> = emptyList(),
     )
 
@@ -769,7 +770,7 @@ class DashboardCoursesRepository(
 
     @JsonClass(generateAdapter = true)
     data class Attachment(
-        val contentType: String? = null,
+        @param:Json(name = "content_type") val contentType: String? = null,
     )
 
     @JsonClass(generateAdapter = true)
