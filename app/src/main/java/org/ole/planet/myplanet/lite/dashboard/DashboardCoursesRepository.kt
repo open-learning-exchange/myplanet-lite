@@ -406,18 +406,16 @@ class DashboardCoursesRepository(
                         .build()
 
                 val docs =
-                    withContext(Dispatchers.IO) {
-                        client.newCall(request).await().use { response ->
-                            if (!response.isSuccessful) {
-                                response.body.string()
-                                throw IOException("Unexpected response ${response.code}")
-                            }
-                            val parsed =
-                                coursesProgressResponseAdapter.fromJson(response.body.string())
-                                    ?: throw IOException("Invalid response body")
-                            parsed.docs
-                                .filter { !it.courseId.isNullOrBlank() && it.stepNum != null }
+                    client.newCall(request).await().use { response ->
+                        if (!response.isSuccessful) {
+                            response.body.string()
+                            throw IOException("Unexpected response ${response.code}")
                         }
+                        val parsed =
+                            coursesProgressResponseAdapter.fromJson(response.body.string())
+                                ?: throw IOException("Invalid response body")
+                        parsed.docs
+                            .filter { !it.courseId.isNullOrBlank() && it.stepNum != null }
                     }
 
                 docs.forEach { doc ->
@@ -471,17 +469,15 @@ class DashboardCoursesRepository(
                         .build()
 
                 val docs =
-                    withContext(Dispatchers.IO) {
-                        client.newCall(request).await().use { response ->
-                            if (!response.isSuccessful) {
-                                response.body.string()
-                                throw IOException("Unexpected response ${response.code}")
-                            }
-                            val parsed =
-                                coursesProgressResponseAdapter.fromJson(response.body.string())
-                                    ?: throw IOException("Invalid response body")
-                            parsed.docs.filter { !it.courseId.isNullOrBlank() && it.stepNum != null }
+                    client.newCall(request).await().use { response ->
+                        if (!response.isSuccessful) {
+                            response.body.string()
+                            throw IOException("Unexpected response ${response.code}")
                         }
+                        val parsed =
+                            coursesProgressResponseAdapter.fromJson(response.body.string())
+                                ?: throw IOException("Invalid response body")
+                        parsed.docs.filter { !it.courseId.isNullOrBlank() && it.stepNum != null }
                     }
                 if (stepNum != null) {
                     docs.associateBy { it.courseId!! }
