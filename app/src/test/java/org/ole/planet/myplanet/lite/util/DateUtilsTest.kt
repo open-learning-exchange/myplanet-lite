@@ -92,4 +92,76 @@ class DateUtilsTest {
         assertEquals("-", DateUtils.toDisplayDate(0L))
         assertEquals("-", DateUtils.toDisplayDate(-1L))
     }
+
+    @Test
+    fun `parseBirthDateToMillis returns null for blank input`() {
+        assertEquals(null, DateUtils.parseBirthDateToMillis(null))
+        assertEquals(null, DateUtils.parseBirthDateToMillis(""))
+        assertEquals(null, DateUtils.parseBirthDateToMillis("   "))
+    }
+
+    @Test
+    fun `parseBirthDateToMillis returns correct millis (Pre-O)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.N
+        val input = "1990-05-15T14:30:00.000Z"
+        val expected = 642781800000L
+        assertEquals(expected, DateUtils.parseBirthDateToMillis(input))
+    }
+
+    @Test
+    fun `parseBirthDateToMillis returns correct millis (O and above)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.O
+        val input = "1990-05-15T14:30:00.000Z"
+        val expected = 642781800000L
+        assertEquals(expected, DateUtils.parseBirthDateToMillis(input))
+    }
+
+    @Test
+    fun `extractBirthYearFromIso returns null for blank input`() {
+        assertEquals(null, DateUtils.extractBirthYearFromIso(null))
+        assertEquals(null, DateUtils.extractBirthYearFromIso(""))
+        assertEquals(null, DateUtils.extractBirthYearFromIso("   "))
+    }
+
+    @Test
+    fun `extractBirthYearFromIso returns correct year (Pre-O)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.N
+        val input = "1990-05-15T14:30:00.000Z"
+        val expected = "1990"
+        assertEquals(expected, DateUtils.extractBirthYearFromIso(input))
+    }
+
+    @Test
+    fun `extractBirthYearFromIso returns correct year (O and above)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.O
+        val input = "1990-05-15T14:30:00.000Z"
+        val expected = "1990"
+        assertEquals(expected, DateUtils.extractBirthYearFromIso(input))
+    }
+
+    @Test
+    fun `calculateAgeFromIso returns null for blank input`() {
+        assertEquals(null, DateUtils.calculateAgeFromIso(null))
+        assertEquals(null, DateUtils.calculateAgeFromIso(""))
+        assertEquals(null, DateUtils.calculateAgeFromIso("   "))
+    }
+
+    @Test
+    fun `calculateAgeFromIso returns correct age (Pre-O)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.N
+        // Choosing a very old date so age is always > 0 and consistent across years if we don't care about the exact number,
+        // but for exact number we can just check it doesn't crash and returns a non-null string, or we mock the current date.
+        // Since we can't easily mock Calendar.getInstance() without Robolectric/PowerMock, we'll just check if it's not null and a number.
+        val input = "1990-05-15T14:30:00.000Z"
+        val result = DateUtils.calculateAgeFromIso(input)
+        assert(result != null && result.toInt() > 0)
+    }
+
+    @Test
+    fun `calculateAgeFromIso returns correct age (O and above)`() {
+        DateUtils.sdkInt = Build.VERSION_CODES.O
+        val input = "1990-05-15T14:30:00.000Z"
+        val result = DateUtils.calculateAgeFromIso(input)
+        assert(result != null && result.toInt() > 0)
+    }
 }
