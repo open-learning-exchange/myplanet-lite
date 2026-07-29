@@ -6,6 +6,7 @@ import android.net.NetworkCapabilities
 import java.io.Closeable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
@@ -133,8 +134,7 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
                 }
             }
             val successfulIds = mutableListOf<Long>()
-            deferredResults.forEach { deferred ->
-                val (entry, result) = deferred.await()
+            deferredResults.awaitAll().forEach { (entry, result) ->
                 if (result.isSuccess) {
                     successfulIds.add(entry.id)
                 }
