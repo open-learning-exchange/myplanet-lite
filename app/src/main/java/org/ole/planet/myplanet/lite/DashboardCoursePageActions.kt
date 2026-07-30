@@ -235,38 +235,47 @@ fun DashboardCoursePageFragment.refreshTeamCourses(
     currentTeamId = selectedTeamId
 
     viewLifecycleOwner.lifecycleScope.launch {
-        val base = baseUrl
-        val creds = credentials
-        if (base.isNullOrBlank() || creds == null) {
-            handleMissingCredentials(adapter, refreshLayout)
-            return@launch
-        }
-
-        ensureUserCourseIds()
-
-        val coursesResult = coursesRepository.fetchTeamCourses(
-            base,
-            creds,
-            selectedTeamId,
-            forceRefresh = forceReload,
-        )
-        val courses = coursesResult.getOrElse {
-            handleLoadingError(it, refreshLayout)
-            return@launch
-        }
-        val mapped = courses
-            .filter { !it.id.isNullOrBlank() }
-            .distinctBy { it.id }
-            .map {
-                it.toCourseItem(
-                    getString(R.string.dashboard_courses_title),
-                    null
-                )
-            }
-        adapter.submitCourses(mapped, forceImageRefresh = forceReload)
-        refreshLayout.isRefreshing = false
-        showLoadingOverlay(false)
+        fetchAndSubmitTeamCourses(adapter, refreshLayout, selectedTeamId, forceReload)
     }
+}
+
+private suspend fun DashboardCoursePageFragment.fetchAndSubmitTeamCourses(
+    adapter: CourseAdapter,
+    refreshLayout: SwipeRefreshLayout,
+    selectedTeamId: String,
+    forceReload: Boolean,
+) {
+    val base = baseUrl
+    val creds = credentials
+    if (base.isNullOrBlank() || creds == null) {
+        handleMissingCredentials(adapter, refreshLayout)
+        return
+    }
+
+    ensureUserCourseIds()
+
+    val coursesResult = coursesRepository.fetchTeamCourses(
+        base,
+        creds,
+        selectedTeamId,
+        forceRefresh = forceReload,
+    )
+    val courses = coursesResult.getOrElse {
+        handleLoadingError(it, refreshLayout)
+        return
+    }
+    val mapped = courses
+        .filter { !it.id.isNullOrBlank() }
+        .distinctBy { it.id }
+        .map {
+            it.toCourseItem(
+                getString(R.string.dashboard_courses_title),
+                null
+            )
+        }
+    adapter.submitCourses(mapped, forceImageRefresh = forceReload)
+    refreshLayout.isRefreshing = false
+    showLoadingOverlay(false)
 }
 
 fun DashboardCoursePageFragment.handleJoinCourse(course: CourseItem) {
