@@ -3,6 +3,8 @@ package org.ole.planet.myplanet.lite
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseStep
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import kotlin.random.asKotlinRandom
 
@@ -63,13 +65,22 @@ fun CourseDocument.toCourseItem(
         id = id.orEmpty(),
         title = courseTitle?.takeIf { it.isNotBlank() } ?: defaultTitle,
         description = description.orEmpty(),
-        coverPath = cover?.takeIf { it.isNotBlank() },
+        coverPath = courseCoverAttachmentPath(),
         steps = mappedSteps,
         rating = random.nextDouble(3.5, 5.0),
         progressPercent = progressPercent,
         currentStep = completedSteps?.minus(1)?.coerceIn(0, mappedSteps.lastIndex)
     )
 }
+
+private fun CourseDocument.courseCoverAttachmentPath(): String? {
+    val courseId = id?.takeIf { it.isNotBlank() } ?: return null
+    val fileName = coverFileName?.takeIf { it.isNotBlank() } ?: return null
+    return "courses/${courseId.encodePathSegment()}/${fileName.encodePathSegment()}"
+}
+
+private fun String.encodePathSegment(): String =
+    URLEncoder.encode(this, StandardCharsets.UTF_8.name()).replace("+", "%20")
 
 private fun CourseStep.toLessonStep(): CourseItem.LessonStep? {
     val title = stepTitle?.takeIf { it.isNotBlank() } ?: return null

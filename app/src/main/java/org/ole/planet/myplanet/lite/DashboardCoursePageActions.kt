@@ -115,7 +115,8 @@ fun DashboardCoursePageFragment.registerJoinListener() {
 
 fun DashboardCoursePageFragment.refreshUserCourses(
     adapter: CourseAdapter,
-    refreshLayout: SwipeRefreshLayout
+    refreshLayout: SwipeRefreshLayout,
+    forceRefresh: Boolean = false,
 ) {
     showLoadingOverlay(true)
     viewLifecycleOwner.lifecycleScope.launch {
@@ -148,7 +149,12 @@ fun DashboardCoursePageFragment.refreshUserCourses(
             showLoadingOverlay(false)
             return@launch
         }
-        val coursesResult = coursesRepository.fetchCourses(base, creds, courseIds)
+        val coursesResult = coursesRepository.fetchCourses(
+            base,
+            creds,
+            courseIds,
+            forceRefresh = forceRefresh,
+        )
         val courses = coursesResult.getOrElse {
             Toast.makeText(
                 requireContext(),
@@ -177,7 +183,7 @@ fun DashboardCoursePageFragment.refreshUserCourses(
                     courseProgress[it.id]
                 )
             }
-        adapter.submitCourses(mapped)
+        adapter.submitCourses(mapped, forceImageRefresh = forceRefresh)
         adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
         refreshLayout.isRefreshing = false
         showLoadingOverlay(false)
@@ -240,7 +246,12 @@ fun DashboardCoursePageFragment.refreshTeamCourses(
 
         ensureUserCourseIds()
 
-        val coursesResult = coursesRepository.fetchTeamCourses(base, creds, selectedTeamId)
+        val coursesResult = coursesRepository.fetchTeamCourses(
+            base,
+            creds,
+            selectedTeamId,
+            forceRefresh = forceReload,
+        )
         val courses = coursesResult.getOrElse {
             Toast.makeText(
                 requireContext(),
@@ -260,7 +271,7 @@ fun DashboardCoursePageFragment.refreshTeamCourses(
                     null
                 )
             }
-        adapter.submitCourses(mapped)
+        adapter.submitCourses(mapped, forceImageRefresh = forceReload)
         refreshLayout.isRefreshing = false
         showLoadingOverlay(false)
     }
