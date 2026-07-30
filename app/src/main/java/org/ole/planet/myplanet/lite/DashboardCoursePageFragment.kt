@@ -180,9 +180,12 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         refreshLayout.setOnRefreshListener {
             refreshLayout.isRefreshing = false
             showLoadingOverlay(true)
+            coursesRepository.clearCourseCache()
+            courseImageLoader?.invalidateCourseImages()
+                ?: DashboardPostImageLoader.evictCourseImages()
             when (tabPosition) {
                 0 -> {
-                    refreshUserCourses(adapter, refreshLayout)
+                    refreshUserCourses(adapter, refreshLayout, forceRefresh = true)
                 }
 
                 1 -> {
@@ -250,9 +253,17 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
         viewLifecycleOwner.lifecycleScope.launch {
             val authService = AuthDependencies.provideAuthService(requireContext(), base)
             val sessionCookie = withContext(Dispatchers.IO) { authService.getStoredToken() }
-            courseImageLoader = DashboardPostImageLoader(base, sessionCookie, viewLifecycleOwner.lifecycleScope)
+            val authorizationHeader = credentials?.let {
+                okhttp3.Credentials.basic(it.username, it.password)
+            }
+            courseImageLoader = DashboardPostImageLoader(
+                baseUrl = base,
+                sessionCookie = sessionCookie,
+                scope = viewLifecycleOwner.lifecycleScope,
+                authorizationHeader = authorizationHeader,
+            )
             isCourseImageLoaderLoading = false
-            adapter.notifyDataSetChanged()
+            adapter.notifyItemRangeChanged(1, (adapter.itemCount - 1).coerceAtLeast(0), CourseAdapter.IMAGE_UPDATE_PAYLOAD)
         }
     }
 
