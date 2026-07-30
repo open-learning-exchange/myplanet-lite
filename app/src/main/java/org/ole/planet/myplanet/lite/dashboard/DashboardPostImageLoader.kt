@@ -28,6 +28,7 @@ class DashboardPostImageLoader(
     private val sessionCookie: String?,
     private val scope: CoroutineScope,
     private val client: OkHttpClient = SharedBitmapDependencies.client,
+    private val authorizationHeader: String? = null,
 ) {
     private val cache = sharedCache
     private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
@@ -126,6 +127,9 @@ class DashboardPostImageLoader(
                 .header("Cache-Control", "no-cache")
         sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
             requestBuilder.addHeader("Cookie", cookie)
+        }
+        authorizationHeader?.takeIf { it.isNotBlank() }?.let { authorization ->
+            requestBuilder.header("Authorization", authorization)
         }
         return try {
             client.newCall(requestBuilder.build()).execute().use { response ->
