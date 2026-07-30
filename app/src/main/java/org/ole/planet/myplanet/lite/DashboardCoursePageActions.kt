@@ -113,9 +113,24 @@ fun DashboardCoursePageFragment.registerJoinListener() {
     }
 }
 
+fun DashboardCoursePageFragment.showErrorToast(error: Throwable?) {
+    Toast.makeText(
+        requireContext(),
+        error?.message ?: getString(R.string.dashboard_courses_loading_error),
+        Toast.LENGTH_SHORT
+    ).show()
+}
+
+fun DashboardCoursePageFragment.handleLoadingError(error: Throwable?, refreshLayout: SwipeRefreshLayout?) {
+    showErrorToast(error)
+    refreshLayout?.isRefreshing = false
+    showLoadingOverlay(false)
+}
+
 fun DashboardCoursePageFragment.refreshUserCourses(
     adapter: CourseAdapter,
-    refreshLayout: SwipeRefreshLayout
+    refreshLayout: SwipeRefreshLayout,
+    forceRefresh: Boolean = false,
 ) {
     showLoadingOverlay(true)
     viewLifecycleOwner.lifecycleScope.launch {
@@ -131,13 +146,7 @@ fun DashboardCoursePageFragment.refreshUserCourses(
         }
         val courseIdsResult = coursesRepository.fetchUserCourseIds(base, creds)
         val courseIds = courseIdsResult.getOrElse {
-            Toast.makeText(
-                requireContext(),
-                it.message ?: getString(R.string.dashboard_courses_loading_error),
-                Toast.LENGTH_SHORT
-            ).show()
-            refreshLayout.isRefreshing = false
-            showLoadingOverlay(false)
+            handleLoadingError(it, refreshLayout)
             return@launch
         }
         myCourseIds = courseIds
@@ -148,24 +157,19 @@ fun DashboardCoursePageFragment.refreshUserCourses(
             showLoadingOverlay(false)
             return@launch
         }
-        val coursesResult = coursesRepository.fetchCourses(base, creds, courseIds)
+        val coursesResult = coursesRepository.fetchCourses(
+            base,
+            creds,
+            courseIds,
+            forceRefresh = forceRefresh,
+        )
         val courses = coursesResult.getOrElse {
-            Toast.makeText(
-                requireContext(),
-                it.message ?: getString(R.string.dashboard_courses_loading_error),
-                Toast.LENGTH_SHORT
-            ).show()
-            refreshLayout.isRefreshing = false
-            showLoadingOverlay(false)
+            handleLoadingError(it, refreshLayout)
             return@launch
         }
         val courseProgress = coursesRepository.fetchCoursesProgress(base, creds, courseIds)
             .getOrElse {
-                Toast.makeText(
-                    requireContext(),
-                    it.message ?: getString(R.string.dashboard_courses_loading_error),
-                    Toast.LENGTH_SHORT
-                ).show()
+                showErrorToast(it)
                 emptyMap()
             }
         val mapped = courses
@@ -177,7 +181,7 @@ fun DashboardCoursePageFragment.refreshUserCourses(
                     courseProgress[it.id]
                 )
             }
-        adapter.submitCourses(mapped)
+        adapter.submitCourses(mapped, forceImageRefresh = forceRefresh)
         adapter.updateDownloadedCourses(OfflineCourseStorage.downloadedCourseIds(requireContext()))
         refreshLayout.isRefreshing = false
         showLoadingOverlay(false)
@@ -240,15 +244,14 @@ fun DashboardCoursePageFragment.refreshTeamCourses(
 
         ensureUserCourseIds()
 
-        val coursesResult = coursesRepository.fetchTeamCourses(base, creds, selectedTeamId)
+        val coursesResult = coursesRepository.fetchTeamCourses(
+            base,
+            creds,
+            selectedTeamId,
+            forceRefresh = forceReload,
+        )
         val courses = coursesResult.getOrElse {
-            Toast.makeText(
-                requireContext(),
-                it.message ?: getString(R.string.dashboard_courses_loading_error),
-                Toast.LENGTH_SHORT
-            ).show()
-            refreshLayout.isRefreshing = false
-            showLoadingOverlay(false)
+            handleLoadingError(it, refreshLayout)
             return@launch
         }
         val mapped = courses
@@ -260,7 +263,7 @@ fun DashboardCoursePageFragment.refreshTeamCourses(
                     null
                 )
             }
-        adapter.submitCourses(mapped)
+        adapter.submitCourses(mapped, forceImageRefresh = forceReload)
         refreshLayout.isRefreshing = false
         showLoadingOverlay(false)
     }
@@ -277,11 +280,7 @@ fun DashboardCoursePageFragment.handleJoinCourse(course: CourseItem) {
         }
 
         coursesRepository.joinCourse(base, creds, course.id).onFailure { error ->
-            Toast.makeText(
-                requireContext(),
-                error.message ?: getString(R.string.dashboard_courses_loading_error),
-                Toast.LENGTH_SHORT
-            ).show()
+            showErrorToast(error)
         }.onSuccess {
             myCourseIds = (myCourseIds + course.id).distinct()
             needsMyCourseIdsRefresh = true
@@ -317,11 +316,7 @@ fun DashboardCoursePageFragment.handleLeaveCourse(course: CourseItem) {
         }
 
         coursesRepository.leaveCourse(base, creds, course.id).onFailure { error ->
-            Toast.makeText(
-                requireContext(),
-                error.message ?: getString(R.string.dashboard_courses_loading_error),
-                Toast.LENGTH_SHORT
-            ).show()
+            showErrorToast(error)
         }.onSuccess {
             myCourseIds = myCourseIds.filterNot { it == course.id }
             needsMyCourseIdsRefresh = true
@@ -402,15 +397,9 @@ fun DashboardCoursePageFragment.loadNextCoursesPage(
             currentSkip,
             pageSize
         ).getOrElse {
-            Toast.makeText(
-                requireContext(),
-                it.message ?: getString(R.string.dashboard_courses_loading_error),
-                Toast.LENGTH_SHORT
-            ).show()
-            refreshLayout?.isRefreshing = false
+            handleLoadingError(it, refreshLayout)
             isPaging = false
             hasMorePages = false
-            showLoadingOverlay(false)
             return@launch
         }
         val mapped = pageResult.courses
@@ -450,11 +439,7 @@ suspend fun DashboardCoursePageFragment.ensureUserCourseIds(): List<String> {
 
     val result = coursesRepository.fetchUserCourseIds(base, creds)
     val ids = result.getOrElse {
-        Toast.makeText(
-            requireContext(),
-            it.message ?: getString(R.string.dashboard_courses_loading_error),
-            Toast.LENGTH_SHORT
-        ).show()
+        showErrorToast(it)
         emptyList()
     }
     myCourseIds = ids

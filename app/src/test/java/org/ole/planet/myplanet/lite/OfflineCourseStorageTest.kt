@@ -161,6 +161,24 @@ class OfflineCourseStorageTest {
     }
 
     @Test
+    fun `saved manifest uses private local cover when it was downloaded`() {
+        val course = createDummyCourse("course-with-cover")
+        val cover = OfflineCourseStorage.coverFile(context, course.id, course.coverPath!!)
+        cover.parentFile?.mkdirs()
+        cover.writeBytes(byteArrayOf(1, 2, 3))
+
+        OfflineCourseStorage.saveCourseManifest(
+            context,
+            course,
+            OfflineCourseStorage.DownloadSource.MY_COURSES,
+        )
+
+        val loadedCourse = OfflineCourseStorage.loadDownloadedCourses(context).first()
+        assertEquals(cover.toURI().toString(), loadedCourse.coverPath)
+        assertTrue(cover.absolutePath.startsWith(context.filesDir.absolutePath))
+    }
+
+    @Test
     fun testLoadDownloadedCourses_withCorruptedJson() {
         val dir = File(File(context.filesDir, ".offline_courses"), "corrupted-course")
         dir.mkdirs()
