@@ -406,30 +406,10 @@ fun DashboardCoursePageFragment.loadNextCoursesPage(
             currentSkip,
             pageSize
         ).getOrElse {
-            handleLoadingError(it, refreshLayout)
-            isPaging = false
-            hasMorePages = false
+            handleLoadCoursesError(it, refreshLayout)
             return@launch
         }
-        val mapped = pageResult.courses
-            .filter { !it.id.isNullOrBlank() }
-            .distinctBy { it.id }
-            .map {
-                it.toCourseItem(
-                    getString(R.string.dashboard_courses_title),
-                    null
-                )
-            }
-        if (currentSkip == 0) {
-            adapter.submitCourses(mapped)
-        } else {
-            adapter.appendCourses(mapped)
-        }
-        currentSkip += pageResult.fetchedCount
-        hasMorePages = pageResult.hasMore && pageResult.fetchedCount > 0
-        isPaging = false
-        refreshLayout?.isRefreshing = false
-        showLoadingOverlay(false)
+        handleLoadCoursesSuccess(pageResult, adapter, refreshLayout)
     }
 }
 
@@ -472,4 +452,39 @@ fun DashboardCoursePageFragment.maybeHandlePendingJoinRefresh() {
         1 -> refreshAllCourses(adapter, refreshLayout)
         else -> refreshTeamCourses(adapter, refreshLayout, forceReload = true)
     }
+}
+
+fun DashboardCoursePageFragment.handleLoadCoursesError(
+    error: Throwable,
+    refreshLayout: SwipeRefreshLayout?
+) {
+    handleLoadingError(error, refreshLayout)
+    isPaging = false
+    hasMorePages = false
+}
+
+fun DashboardCoursePageFragment.handleLoadCoursesSuccess(
+    pageResult: org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.PagedCourses,
+    adapter: CourseAdapter,
+    refreshLayout: SwipeRefreshLayout?
+) {
+    val mapped = pageResult.courses
+        .filter { !it.id.isNullOrBlank() }
+        .distinctBy { it.id }
+        .map {
+            it.toCourseItem(
+                getString(R.string.dashboard_courses_title),
+                null
+            )
+        }
+    if (currentSkip == 0) {
+        adapter.submitCourses(mapped)
+    } else {
+        adapter.appendCourses(mapped)
+    }
+    currentSkip += pageResult.fetchedCount
+    hasMorePages = pageResult.hasMore && pageResult.fetchedCount > 0
+    isPaging = false
+    refreshLayout?.isRefreshing = false
+    showLoadingOverlay(false)
 }
