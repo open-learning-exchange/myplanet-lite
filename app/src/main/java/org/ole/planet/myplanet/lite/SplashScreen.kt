@@ -77,6 +77,12 @@ class SplashScreen : BaseActivity() {
     }
 
     private fun startLogoAnimation() {
+        animateLogo()
+        animateAppName()
+        animateAppVersion()
+    }
+
+    private fun animateLogo() {
         val logo = findViewById<ImageView>(R.id.logoImageView)
         val startOffset = -resources.displayMetrics.heightPixels * 0.5f
         logo.translationY = startOffset
@@ -91,6 +97,9 @@ class SplashScreen : BaseActivity() {
                 .setInterpolator(OvershootInterpolator())
                 .start()
         }
+    }
+
+    private fun animateAppName() {
         val appName = findViewById<View>(R.id.appNameContainer)
         appName.scaleX = 1f
         appName.scaleY = 1f
@@ -111,6 +120,9 @@ class SplashScreen : BaseActivity() {
                         .start()
                 }.start()
         }
+    }
+
+    private fun animateAppVersion() {
         val appVersion = findViewById<TextView>(R.id.appVersionTextView)
         appVersion.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
         appVersion.translationY = resources.displayMetrics.density * 40

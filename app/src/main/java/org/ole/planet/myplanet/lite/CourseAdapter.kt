@@ -48,6 +48,7 @@ class CourseAdapter(
     private var searchQuery: String = ""
     private var selectedCategory = 0
     private var activeTagCourseIds: Set<String>? = null
+    private var pendingImageRefresh = false
     var onCourseClick: ((CourseItem) -> Unit)? = null
     var onCourseDownloadClick: ((CourseItem) -> Unit)? = null
     var onCourseDeleteClick: ((CourseItem) -> Unit)? = null
@@ -90,10 +91,15 @@ class CourseAdapter(
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (payloads.contains(PROGRESS_UPDATE_PAYLOAD)) {
+        if (payloads.contains(PROGRESS_UPDATE_PAYLOAD) || payloads.contains(IMAGE_UPDATE_PAYLOAD)) {
             val item = getItem(position)
             if (holder is CourseViewHolder && item is CourseListItem.CourseItemWrapper) {
-                holder.bindDownloadState(item)
+                if (payloads.contains(PROGRESS_UPDATE_PAYLOAD)) {
+                    holder.bindDownloadState(item)
+                }
+                if (payloads.contains(IMAGE_UPDATE_PAYLOAD)) {
+                    holder.bindImage(item.course)
+                }
                 return
             }
         }
@@ -141,9 +147,13 @@ class CourseAdapter(
         }
     }
 
-    fun submitCourses(newItems: List<CourseItem>) {
+    fun submitCourses(
+        newItems: List<CourseItem>,
+        forceImageRefresh: Boolean = false,
+    ) {
         items.clear()
         items.addAll(newItems.distinctBy { it.id })
+        pendingImageRefresh = pendingImageRefresh || forceImageRefresh
         applyFilter()
     }
 
@@ -184,7 +194,13 @@ class CourseAdapter(
                 downloadProgress = downloadProgressByCourse[it.id]
             )
         })
-        submitList(newList)
+        val shouldRefreshImages = pendingImageRefresh
+        submitList(newList) {
+            if (shouldRefreshImages && pendingImageRefresh) {
+                pendingImageRefresh = false
+                notifyItemRangeChanged(1, (itemCount - 1).coerceAtLeast(0), IMAGE_UPDATE_PAYLOAD)
+            }
+        }
     }
 
     class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -323,7 +339,7 @@ class CourseAdapter(
             }
         }
 
-        private fun bindImage(course: CourseItem) {
+        fun bindImage(course: CourseItem) {
             val coverPath = course.coverPath
             val loader = imageLoaderProvider()
             if (!coverPath.isNullOrBlank()) {
@@ -418,5 +434,6 @@ class CourseAdapter(
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_ITEM = 1
         private const val PROGRESS_UPDATE_PAYLOAD = "PROGRESS_UPDATE"
+        const val IMAGE_UPDATE_PAYLOAD = "IMAGE_UPDATE"
     }
 }
