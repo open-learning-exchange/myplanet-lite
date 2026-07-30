@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import okhttp3.OkHttpClient
 import okhttp3.Request
@@ -30,6 +31,7 @@ class DashboardPostImageLoader(
 ) {
     private val cache = sharedCache
     private val inFlightRequests = mutableMapOf<String, Deferred<Bitmap?>>()
+    private var courseImageGeneration = 0
 
     fun bind(
         imageView: ImageView,
@@ -37,19 +39,24 @@ class DashboardPostImageLoader(
         onResult: ((Boolean) -> Unit)? = null,
     ) {
         imageView.setImageDrawable(null)
-        val cached = cache.get(imagePath)
+        val requestKey = if (imagePath.trimStart('/').startsWith("courses/")) {
+            "$imagePath#courseGeneration=$courseImageGeneration"
+        } else {
+            imagePath
+        }
+        val cached = cache.get(requestKey)
         if (cached != null) {
             imageView.setImageBitmap(cached)
             onResult?.invoke(true)
             return
         }
-        imageView.tag = imagePath
+        imageView.tag = requestKey
         scope.launch {
             val deferred =
                 synchronized(inFlightRequests) {
-                    inFlightRequests.getOrPut(imagePath) {
+                    inFlightRequests.getOrPut(requestKey) {
                         scope.async(Dispatchers.IO) {
-                            runCatching { fetchImageBitmap(imagePath) }.getOrNull()
+                            fetchImageBitmapWithRetry(imagePath)
                         }
                     }
                 }
@@ -58,17 +65,17 @@ class DashboardPostImageLoader(
                     deferred.await()
                 } finally {
                     synchronized(inFlightRequests) {
-                        if (inFlightRequests[imagePath] == deferred) {
-                            inFlightRequests.remove(imagePath)
+                        if (inFlightRequests[requestKey] == deferred) {
+                            inFlightRequests.remove(requestKey)
                         }
                     }
                 }
-            if (imageView.tag != imagePath) {
+            if (imageView.tag != requestKey) {
                 onResult?.invoke(bitmap != null)
                 return@launch
             }
             if (bitmap != null) {
-                cache.put(imagePath, bitmap)
+                cache.put(requestKey, bitmap)
                 imageView.visibility = View.VISIBLE
                 imageView.setImageBitmap(bitmap)
                 onResult?.invoke(true)
@@ -78,6 +85,29 @@ class DashboardPostImageLoader(
                 onResult?.invoke(false)
             }
         }
+    }
+
+    fun invalidateCourseImages() {
+        courseImageGeneration++
+        val courseRequests = synchronized(inFlightRequests) {
+            inFlightRequests
+                .filterKeys { it.substringBefore("#courseGeneration=").trimStart('/').startsWith("courses/") }
+                .also { requests -> requests.keys.forEach(inFlightRequests::remove) }
+                .values
+        }
+        courseRequests.forEach { it.cancel() }
+        evictCourseImages()
+    }
+
+    private suspend fun fetchImageBitmapWithRetry(imagePath: String): Bitmap? {
+        val isCourseImage = imagePath.trimStart('/').startsWith("courses/")
+        val attempts = if (isCourseImage) COURSE_IMAGE_FETCH_ATTEMPTS else 1
+        repeat(attempts) { attempt ->
+            val bitmap = runCatching { fetchImageBitmap(imagePath) }.getOrNull()
+            if (bitmap != null) return bitmap
+            if (attempt < attempts - 1) delay(COURSE_IMAGE_RETRY_DELAY_MS)
+        }
+        return null
     }
 
     private fun fetchImageBitmap(imagePath: String): Bitmap? {
@@ -134,6 +164,8 @@ class DashboardPostImageLoader(
 
     companion object {
         private const val CACHE_SIZE_BYTES = 6 * 1024 * 1024 // 6MB cache for post images
+        private const val COURSE_IMAGE_FETCH_ATTEMPTS = 3
+        private const val COURSE_IMAGE_RETRY_DELAY_MS = 500L
         private val sharedCache =
             object : LruCache<String, Bitmap>(CACHE_SIZE_BYTES) {
                 override fun sizeOf(
@@ -144,7 +176,7 @@ class DashboardPostImageLoader(
 
         fun evictCourseImages() {
             sharedCache.snapshot().keys
-                .filter { it.trimStart('/').startsWith("courses/") }
+                .filter { it.substringBefore("#courseGeneration=").trimStart('/').startsWith("courses/") }
                 .forEach(sharedCache::remove)
         }
     }

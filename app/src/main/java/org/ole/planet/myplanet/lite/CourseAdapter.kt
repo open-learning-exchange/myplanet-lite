@@ -48,6 +48,7 @@ class CourseAdapter(
     private var searchQuery: String = ""
     private var selectedCategory = 0
     private var activeTagCourseIds: Set<String>? = null
+    private var pendingImageRefresh = false
     var onCourseClick: ((CourseItem) -> Unit)? = null
     var onCourseDownloadClick: ((CourseItem) -> Unit)? = null
     var onCourseDeleteClick: ((CourseItem) -> Unit)? = null
@@ -146,9 +147,13 @@ class CourseAdapter(
         }
     }
 
-    fun submitCourses(newItems: List<CourseItem>) {
+    fun submitCourses(
+        newItems: List<CourseItem>,
+        forceImageRefresh: Boolean = false,
+    ) {
         items.clear()
         items.addAll(newItems.distinctBy { it.id })
+        pendingImageRefresh = pendingImageRefresh || forceImageRefresh
         applyFilter()
     }
 
@@ -189,7 +194,13 @@ class CourseAdapter(
                 downloadProgress = downloadProgressByCourse[it.id]
             )
         })
-        submitList(newList)
+        val shouldRefreshImages = pendingImageRefresh
+        submitList(newList) {
+            if (shouldRefreshImages && pendingImageRefresh) {
+                pendingImageRefresh = false
+                notifyItemRangeChanged(1, (itemCount - 1).coerceAtLeast(0), IMAGE_UPDATE_PAYLOAD)
+            }
+        }
     }
 
     class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {

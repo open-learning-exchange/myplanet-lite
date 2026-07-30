@@ -318,6 +318,7 @@ class DashboardCoursesRepository(
         baseUrl: String,
         credentials: StoredCredentials,
         courseIds: List<String>,
+        forceRefresh: Boolean = false,
     ): Result<List<CourseDocument>> {
         return withContext(dispatcher) {
             runCatching {
@@ -330,8 +331,10 @@ class DashboardCoursesRepository(
 
                 val uniqueIds = sanitizedIds.distinct()
                 val cachedDocuments = mutableMapOf<String, CourseDocument>()
-                uniqueIds.forEach { id ->
-                    courseCache[id]?.let { cachedDocuments[id] = it }
+                if (!forceRefresh) {
+                    uniqueIds.forEach { id ->
+                        courseCache[id]?.let { cachedDocuments[id] = it }
+                    }
                 }
 
                 val remainingIds = uniqueIds.filterNot { cachedDocuments.containsKey(it) }
@@ -345,6 +348,9 @@ class DashboardCoursesRepository(
                             .url(requestUrl)
                             .post(payload.toRequestBody(mediaType))
                             .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
+                            .apply {
+                                if (forceRefresh) header("Cache-Control", "no-cache")
+                            }
                             .build()
 
                     client.newCall(request).await().use { response ->
@@ -593,6 +599,7 @@ class DashboardCoursesRepository(
         baseUrl: String,
         credentials: StoredCredentials,
         teamId: String,
+        forceRefresh: Boolean = false,
     ): Result<List<CourseDocument>> =
         withContext(dispatcher) {
             runCatching {
@@ -633,7 +640,18 @@ class DashboardCoursesRepository(
                     val parsed =
                         teamCoursesResponseAdapter.fromJson(response.body.string())
                             ?: throw IOException("Invalid response body")
-                    parsed.docs.flatMap { it.courses ?: emptyList() }
+                    val embeddedCourses = parsed.docs.flatMap { it.courses ?: emptyList() }
+                    val courseIds = embeddedCourses.mapNotNull { it.id }.distinct()
+                    if (courseIds.isEmpty()) {
+                        emptyList()
+                    } else {
+                        fetchCourses(
+                            normalizedBase,
+                            credentials,
+                            courseIds,
+                            forceRefresh = forceRefresh,
+                        ).getOrElse { throw it }
+                    }
                 }
             }
         }
@@ -1046,6 +1064,35 @@ class DashboardCoursesRepository(
             }
         }
 
+    suspend fun estimateCourseCoverSize(
+        base: String,
+        creds: StoredCredentials,
+        coverPath: String?,
+    ): Long = withContext(dispatcher) {
+        val url = buildCourseCoverUrl(base, coverPath) ?: return@withContext 0L
+        val request = Request.Builder()
+            .url(url)
+            .head()
+            .header("Authorization", Credentials.basic(creds.username, creds.password))
+            .build()
+        runCatching {
+            client.newCall(request).await().use { response ->
+                response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
+            }
+        }.getOrDefault(0L)
+    }
+
+    private fun buildCourseCoverUrl(base: String, coverPath: String?): String? {
+        val path = coverPath?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        if (path.startsWith("file:", ignoreCase = true)) return null
+        val parsed = base.trim().trimEnd('/').toHttpUrlOrNull() ?: return null
+        return parsed.newBuilder()
+            .addPathSegment("db")
+            .addEncodedPathSegments(path.trimStart('/'))
+            .build()
+            .toString()
+    }
+
     suspend fun downloadCourseResources(
         base: String,
         creds: StoredCredentials,
@@ -1053,10 +1100,13 @@ class DashboardCoursesRepository(
         markdownImageSources: List<String>,
         getResourceTarget: (String, String) -> File,
         getMarkdownTarget: (String) -> File,
+        coverPath: String? = null,
+        getCoverTarget: ((String) -> File)? = null,
         onProgress: (Pair<Int, Int>) -> Unit,
     ): Boolean =
         withContext(dispatcher) {
-            val totalItems = resources.size + markdownImageSources.size
+            val hasCover = !coverPath.isNullOrBlank() && getCoverTarget != null
+            val totalItems = resources.size + markdownImageSources.size + if (hasCover) 1 else 0
             if (totalItems == 0) {
                 onProgress(0 to 0)
                 return@withContext true
@@ -1135,12 +1185,44 @@ class DashboardCoursesRepository(
                         }
                     }
 
+                val coverJob = if (hasCover) {
+                    async {
+                        val source = requireNotNull(coverPath)
+                        val url = buildCourseCoverUrl(base, source) ?: return@async false
+                        val target = requireNotNull(getCoverTarget).invoke(source)
+                        target.parentFile?.mkdirs()
+                        val request = Request.Builder()
+                            .url(url)
+                            .header("Authorization", authHeader)
+                            .header("Cache-Control", "no-cache")
+                            .build()
+                        val success = runCatching {
+                            client.newCall(request).await().use { response ->
+                                if (!response.isSuccessful) return@use false
+                                response.body.byteStream().use { input ->
+                                    target.outputStream().use { output -> input.copyTo(output) }
+                                }
+                                true
+                            }
+                        }.getOrDefault(false)
+                        if (success) {
+                            progressMutex.withLock {
+                                downloaded += 1
+                                onProgress(downloaded to totalItems)
+                            }
+                        }
+                        success
+                    }
+                } else {
+                    null
+                }
+
                 val resourceResults = resourceJobs.awaitAll()
                 // Wait for markdown jobs to complete
                 markdownJobs.awaitAll()
 
                 // Return false if any resource download failed
-                !resourceResults.contains(false)
+                !resourceResults.contains(false) && coverJob?.await() != false
             }
         }
 }
