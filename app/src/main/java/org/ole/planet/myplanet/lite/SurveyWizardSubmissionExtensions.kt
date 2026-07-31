@@ -320,13 +320,15 @@ internal suspend fun SurveyWizardFragment.processSubmission(
         surveyName = survey.name,
         teamId = teamId,
         teamName = teamName,
-        baseUrlOverride = baseUrlOverride
+        baseUrlOverride = baseUrlOverride,
+        forceOfflineQueue = offlineMode,
     )
 
     setSubmitting(false)
 
     when (outcome) {
         SubmitOutcome.SUBMITTED_ONLINE -> {
+            deleteDraft()
             DashboardSurveyStatusStore(
                 requireContext().applicationContext,
                 username,
@@ -346,6 +348,7 @@ internal suspend fun SurveyWizardFragment.processSubmission(
             finishWithResult()
         }
         SubmitOutcome.QUEUED_OFFLINE -> {
+            deleteDraft()
             Toast
                 .makeText(
                     requireContext(),

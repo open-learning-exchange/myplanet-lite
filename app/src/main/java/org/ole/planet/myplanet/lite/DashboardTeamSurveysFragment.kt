@@ -25,6 +25,8 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardOutboxDetailActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyDraftStore
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyDraftStore.DraftEntry
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
@@ -56,6 +58,8 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
     private var savedSurveyIds: Set<String> = emptySet()
     private var savedSurveyRevisions: Map<String, String?> = emptyMap()
     private var outboxEntries: List<OutboxEntry> = emptyList()
+    private var draftEntries: List<DraftEntry> = emptyList()
+    private lateinit var draftStore: DashboardSurveyDraftStore
 
     private val repository = DashboardSurveysRepositoryProvider.getRepository()
     private var baseUrl: String? = null
@@ -88,6 +92,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         username = ProfileCredentialsStore.getStoredCredentials(appContext)?.username
         statusStore = DashboardSurveyStatusStore(appContext, username)
         localSurveyRepository = DashboardLocalSurveyRepository(appContext)
+        draftStore = DashboardSurveyDraftStore(appContext)
 
         titleView.text = getString(R.string.dashboard_surveys_header_title)
         descriptionView.text = getString(R.string.dashboard_surveys_header_description)
@@ -97,6 +102,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                 teamEmptyMessage = getString(R.string.dashboard_surveys_empty_team),
                 adoptedEmptyMessage = getString(R.string.dashboard_surveys_empty_adopted),
                 outboxEmptyMessage = getString(R.string.dashboard_surveys_outbox_empty),
+                draftsEmptyMessage = getString(R.string.dashboard_surveys_drafts_empty),
                 statusStore = statusStore,
                 onSurveySelected = { document ->
                     openSurveyWizard(document)
@@ -111,6 +117,8 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                         },
                     )
                 },
+                onDraftSelected = { entry -> openDraft(entry) },
+                onDraftDeleted = { entry -> confirmDeleteDraft(entry) },
             ) {
                 updateTabBadges()
             }
@@ -121,7 +129,8 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                     when (position) {
                         0 -> getString(R.string.dashboard_surveys_tab_team)
                         1 -> getString(R.string.dashboard_surveys_tab_adopted)
-                        else -> getString(R.string.dashboard_surveys_tab_outbox)
+                        2 -> getString(R.string.dashboard_surveys_tab_outbox)
+                        else -> getString(R.string.dashboard_surveys_tab_drafts)
                     }
             }.also { it.attach() }
 
@@ -221,6 +230,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                 savedSurveyIds = localSurveyRepository.getSavedSurveyIds()
                 savedSurveyRevisions = localSurveyRepository.getSavedSurveyRevisions()
                 outboxEntries = localSurveyRepository.getPendingForTeam(team)
+                draftEntries = withContext(Dispatchers.IO) { draftStore.getForTeam(team, username) }
                 pagerAdapter.submit(
                     teamSurveys,
                     adoptedSurveys,
@@ -228,6 +238,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                     savedSurveyIds,
                     savedSurveyRevisions,
                     outboxEntries,
+                    draftEntries,
                 )
                 updateTabBadges()
                 showLoading(false)
@@ -282,6 +293,20 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                 tab.removeBadge()
             }
         }
+        tabs.getTabAt(2)?.let { tab ->
+            if (outboxEntries.isNotEmpty()) {
+                tab.ensureOffsetBadge(outboxEntries.size)
+            } else {
+                tab.removeBadge()
+            }
+        }
+        tabs.getTabAt(3)?.let { tab ->
+            if (draftEntries.isNotEmpty()) {
+                tab.ensureOffsetBadge(draftEntries.size)
+            } else {
+                tab.removeBadge()
+            }
+        }
     }
 
     companion object {
@@ -323,8 +348,56 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                 document,
                 teamId,
                 teamName,
+                offlineMode = (activity as? DashboardActivity)?.isOfflineModeActive() == true,
             ),
         )
+    }
+
+    private fun openDraft(entry: DraftEntry) {
+        val offlineMode = (activity as? DashboardActivity)?.isOfflineModeActive() == true
+        val surveyId = entry.document.id
+        if (offlineMode && (surveyId.isNullOrBlank() || surveyId !in savedSurveyIds)) {
+            com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.dashboard_survey_draft_not_downloaded_title)
+                .setMessage(R.string.dashboard_survey_draft_not_downloaded_message)
+                .setPositiveButton(android.R.string.ok, null)
+                .show()
+            return
+        }
+        startActivity(
+            SurveyWizardActivity.newIntent(
+                requireContext(),
+                entry.document,
+                entry.teamId,
+                entry.teamName,
+                draftKey = entry.key,
+                offlineMode = offlineMode,
+            ),
+        )
+    }
+
+    private fun confirmDeleteDraft(entry: DraftEntry) {
+        com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            .setTitle(R.string.dashboard_survey_draft_delete)
+            .setMessage(R.string.dashboard_survey_draft_delete_confirm)
+            .setPositiveButton(R.string.dashboard_survey_draft_delete) { _, _ ->
+                viewLifecycleOwner.lifecycleScope.launch {
+                    withContext(Dispatchers.IO) { draftStore.delete(entry.key) }
+                    draftEntries = draftEntries.filterNot { it.key == entry.key }
+                    pagerAdapter.submit(
+                        teamSurveys,
+                        adoptedSurveys,
+                        completionCounts,
+                        savedSurveyIds,
+                        savedSurveyRevisions,
+                        outboxEntries,
+                        draftEntries,
+                    )
+                    updateTabBadges()
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
     }
 
     private fun downloadSurvey(document: SurveyDocument) {

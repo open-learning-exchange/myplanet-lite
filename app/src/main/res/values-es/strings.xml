@@ -100,6 +100,17 @@
     <string name="dashboard_survey_download_error">No se pudo guardar la encuesta para usarla sin conexión.</string>
     <string name="dashboard_surveys_tab_outbox">Pendientes</string>
     <string name="dashboard_surveys_outbox_empty">No hay envíos pendientes.</string>
+    <string name="dashboard_surveys_tab_drafts">Borradores</string>
+    <string name="dashboard_surveys_drafts_empty">No hay borradores de encuestas.</string>
+    <string name="dashboard_survey_draft_last_edited">Última edición: %1$s</string>
+    <string name="dashboard_survey_draft_delete">Eliminar</string>
+    <string name="dashboard_survey_draft_delete_confirm">¿Eliminar este borrador? Esta acción no se puede deshacer.</string>
+    <string name="dashboard_survey_draft_exit_title">¿Guardar el borrador?</string>
+    <string name="dashboard_survey_draft_exit_message">¿Quieres continuar editando esta encuesta más adelante o descartarla?</string>
+    <string name="dashboard_survey_draft_keep">Continuar después</string>
+    <string name="dashboard_survey_draft_discard">Descartar</string>
+    <string name="dashboard_survey_draft_not_downloaded_title">Encuesta no disponible sin conexión</string>
+    <string name="dashboard_survey_draft_not_downloaded_message">Esta encuesta no está descargada en el dispositivo. Para continuar editando el borrador, vuelve a conectar MyPlanet Lite y/o descarga la encuesta.</string>
     <string name="dashboard_survey_submission_saved_offline">Envío guardado en el buzón de salida para sincronizar.</string>
     <string name="dashboard_outbox_saved_at">Guardado sin conexión el %1$s</string>
     <string name="dashboard_outbox_unknown_survey">Encuesta</string>

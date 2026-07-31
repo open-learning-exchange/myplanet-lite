@@ -27,6 +27,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.survey.DashboardLocalSurveyRepository
 import org.ole.planet.myplanet.lite.survey.ResendOutcome
 import org.ole.planet.myplanet.lite.util.NetworkUtils
+import org.ole.planet.myplanet.lite.util.DateUtils
 import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
@@ -138,7 +139,12 @@ class DashboardOutboxDetailActivity : BaseActivity() {
         val details =
             listOfNotNull(
                 user.name.takeIf { it?.isNotBlank() == true },
-                user.birthDate.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_birthdate_format, it) },
+                user.birthDate.takeIf { it?.isNotBlank() == true }?.let { rawDate ->
+                    getString(
+                        R.string.dashboard_outbox_birthdate_format,
+                        DateUtils.formatBirthDate(rawDate, rawDate),
+                    )
+                },
                 user.age?.takeIf { it > 0 }?.let { getString(R.string.dashboard_outbox_age_format, it) },
                 user.gender.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_gender_format, it) },
                 user.language.takeIf { it?.isNotBlank() == true }?.let { getString(R.string.dashboard_outbox_language_format, it) },

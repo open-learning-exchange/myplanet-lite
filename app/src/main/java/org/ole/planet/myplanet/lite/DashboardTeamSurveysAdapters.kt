@@ -4,6 +4,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
+import android.widget.ImageButton
 import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
@@ -18,6 +19,7 @@ import java.text.DateFormat
 import java.util.Date
 import java.util.Locale
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyDraftStore.DraftEntry
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.SurveyStatus
@@ -26,17 +28,21 @@ internal class SurveysPagerAdapter(
     private val teamEmptyMessage: String,
     private val adoptedEmptyMessage: String,
     private val outboxEmptyMessage: String,
+    private val draftsEmptyMessage: String,
     private val statusStore: DashboardSurveyStatusStore,
     private val onSurveySelected: (SurveyDocument) -> Unit,
     private val onSurveyDownloadRequested: (SurveyDocument) -> Unit,
     private val onOutboxSelected: (OutboxEntry) -> Unit,
+    private val onDraftSelected: (DraftEntry) -> Unit,
+    private val onDraftDeleted: (DraftEntry) -> Unit,
     private val onStatusChanged: () -> Unit,
 ) : RecyclerView.Adapter<SurveysPagerAdapter.PageViewHolder>() {
 
-    private val pages = listOf(Page.TEAM, Page.ADOPTED, Page.OUTBOX)
+    private val pages = listOf(Page.TEAM, Page.ADOPTED, Page.OUTBOX, Page.DRAFTS)
     private var teamItems: List<SurveyItemUiModel> = emptyList()
     private var adoptedItems: List<SurveyItemUiModel> = emptyList()
     private var outboxItems: List<OutboxEntry> = emptyList()
+    private var draftItems: List<DraftEntry> = emptyList()
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): PageViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -69,6 +75,12 @@ internal class SurveysPagerAdapter(
                 emptyMessage = outboxEmptyMessage,
                 onOutboxSelected = onOutboxSelected,
             )
+            Page.DRAFTS -> holder.bindDrafts(
+                items = draftItems,
+                emptyMessage = draftsEmptyMessage,
+                onDraftSelected = onDraftSelected,
+                onDraftDeleted = onDraftDeleted,
+            )
         }
     }
 
@@ -79,13 +91,16 @@ internal class SurveysPagerAdapter(
         savedSurveys: Set<String>,
         savedRevisions: Map<String, String?>,
         outboxItems: List<OutboxEntry>,
+        draftItems: List<DraftEntry>,
     ) {
         teamItems = teamSurveys.map { it.toUiModel(completionCounts, savedSurveys, savedRevisions) }
         adoptedItems = adoptedSurveys.map { it.toUiModel(completionCounts, savedSurveys, savedRevisions) }
         this.outboxItems = outboxItems
+        this.draftItems = draftItems
         notifyItemChanged(0)
         notifyItemChanged(1)
         notifyItemChanged(2)
+        notifyItemChanged(3)
     }
 
     fun updateSavedSurveys(savedSurveys: Set<String>, savedRevisions: Map<String, String?>) {
@@ -119,13 +134,14 @@ internal class SurveysPagerAdapter(
         )
     }
 
-    private enum class Page { TEAM, ADOPTED, OUTBOX }
+    private enum class Page { TEAM, ADOPTED, OUTBOX, DRAFTS }
 
     class PageViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val emptyView: TextView = itemView.findViewById(R.id.dashboardSurveysListEmpty)
         private val recyclerView: RecyclerView = itemView.findViewById(R.id.dashboardSurveysList)
         private var teamAdapter: SurveyItemsAdapter? = null
         private var outboxAdapter: SurveyOutboxAdapter? = null
+        private var draftAdapter: SurveyDraftAdapter? = null
         private var currentPage: Page = Page.TEAM
 
         init {
@@ -157,6 +173,7 @@ internal class SurveysPagerAdapter(
             emptyView.isVisible = items.isEmpty()
             recyclerView.isVisible = items.isNotEmpty()
             outboxAdapter = null
+            draftAdapter = null
             currentPage = Page.TEAM
         }
 
@@ -178,6 +195,26 @@ internal class SurveysPagerAdapter(
             recyclerView.isVisible = items.isNotEmpty()
             teamAdapter = null
             currentPage = Page.OUTBOX
+        }
+
+        fun bindDrafts(
+            items: List<DraftEntry>,
+            emptyMessage: String,
+            onDraftSelected: (DraftEntry) -> Unit,
+            onDraftDeleted: (DraftEntry) -> Unit,
+        ) {
+            if (currentPage != Page.DRAFTS) recyclerView.adapter = null
+            if (recyclerView.adapter !is SurveyDraftAdapter) {
+                draftAdapter = SurveyDraftAdapter(onDraftSelected, onDraftDeleted)
+                recyclerView.adapter = draftAdapter
+            }
+            draftAdapter?.submitList(items)
+            emptyView.text = emptyMessage
+            emptyView.isVisible = items.isEmpty()
+            recyclerView.isVisible = items.isNotEmpty()
+            teamAdapter = null
+            outboxAdapter = null
+            currentPage = Page.DRAFTS
         }
     }
 }
@@ -363,6 +400,46 @@ private class SurveyOutboxAdapter(
             timestamp.text = itemView.context.getString(R.string.dashboard_outbox_saved_at, formattedDate)
             timestamp.isVisible = formattedDate.isNotBlank()
             itemView.setOnClickListener { onOutboxSelected(entry) }
+        }
+    }
+}
+
+private class SurveyDraftAdapter(
+    private val onSelected: (DraftEntry) -> Unit,
+    private val onDeleted: (DraftEntry) -> Unit,
+) : ListAdapter<DraftEntry, SurveyDraftAdapter.DraftViewHolder>(
+    org.ole.planet.myplanet.lite.util.DiffUtils.itemCallback({ oldItem, newItem -> oldItem.key == newItem.key }),
+) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): DraftViewHolder =
+        DraftViewHolder(
+            LayoutInflater.from(parent.context).inflate(R.layout.item_dashboard_survey_draft, parent, false),
+            onSelected,
+            onDeleted,
+        )
+
+    override fun onBindViewHolder(holder: DraftViewHolder, position: Int) = holder.bind(getItem(position))
+
+    class DraftViewHolder(
+        itemView: View,
+        private val onSelected: (DraftEntry) -> Unit,
+        private val onDeleted: (DraftEntry) -> Unit,
+    ) : RecyclerView.ViewHolder(itemView) {
+        private val title: TextView = itemView.findViewById(R.id.dashboardDraftTitle)
+        private val team: TextView = itemView.findViewById(R.id.dashboardDraftTeam)
+        private val updated: TextView = itemView.findViewById(R.id.dashboardDraftUpdatedAt)
+        private val delete: ImageButton = itemView.findViewById(R.id.dashboardDraftDelete)
+
+        fun bind(entry: DraftEntry) {
+            title.text = entry.document.name.orEmpty().ifBlank {
+                itemView.context.getString(R.string.dashboard_outbox_unknown_survey)
+            }
+            team.text = entry.teamName.orEmpty().ifBlank {
+                itemView.context.getString(R.string.dashboard_outbox_unknown_team)
+            }
+            val formatted = DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(entry.updatedAt))
+            updated.text = itemView.context.getString(R.string.dashboard_survey_draft_last_edited, formatted)
+            itemView.setOnClickListener { onSelected(entry) }
+            delete.setOnClickListener { onDeleted(entry) }
         }
     }
 }

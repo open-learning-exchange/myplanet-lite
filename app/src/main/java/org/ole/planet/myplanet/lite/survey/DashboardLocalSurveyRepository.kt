@@ -21,6 +21,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 
 import okhttp3.Credentials
 import okhttp3.MediaType.Companion.toMediaType
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -76,10 +77,11 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
         surveyName: String?,
         teamId: String?,
         teamName: String?,
-        baseUrlOverride: String?
+        baseUrlOverride: String?,
+        forceOfflineQueue: Boolean = false,
     ): SubmitOutcome {
         val isOnline = isDeviceOnline()
-        if (!isOnline) {
+        if (forceOfflineQueue || !isOnline) {
             if (baseUrlOverride != null) return SubmitOutcome.FAILED
             val saved = saveSubmission(submission, surveyId, surveyName, teamId, teamName)
             return if (saved) SubmitOutcome.QUEUED_OFFLINE else SubmitOutcome.FAILED
@@ -163,15 +165,15 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
 
         val serverRev = fetchServerRevision(
             normalized,
-            entry.submission.parent.id,
+            entry.surveyId ?: entry.submission.parent.id,
             entry.teamId,
             token,
             username,
             password
-        ) ?: return ResendOutcome.REVISION_UNVERIFIABLE
+        )
 
-        val localRev = entry.submission.parent.rev
-        if (localRev != null && localRev != serverRev) {
+        val localRev = entry.surveyRev ?: entry.submission.parent.rev
+        if (serverRev != null && localRev != null && localRev != serverRev) {
             return ResendOutcome.REVISION_MISMATCH
         }
 
@@ -202,6 +204,38 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
     ): String? =
         withContext(Dispatchers.IO) {
             val id = surveyId?.takeIf { it.isNotBlank() } ?: return@withContext null
+            fun Request.Builder.addSurveyAuthentication(): Request.Builder {
+                if (!sessionCookie.isNullOrBlank()) {
+                    addHeader("Cookie", sessionCookie)
+                } else if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
+                    addHeader("Authorization", Credentials.basic(username, password))
+                }
+                return this
+            }
+
+            val directUrl =
+                baseUrl.toHttpUrl()
+                    .newBuilder()
+                    .addPathSegments("db/exams")
+                    .addPathSegment(id)
+                    .build()
+            val directRevision =
+                runCatching {
+                    httpClient.newCall(
+                        Request.Builder()
+                            .url(directUrl)
+                            .get()
+                            .addSurveyAuthentication()
+                            .build(),
+                    ).execute().use { response ->
+                        if (!response.isSuccessful) return@use null
+                        JSONObject(response.body.string())
+                            .optString("_rev")
+                            .takeIf { it.isNotBlank() }
+                    }
+                }.getOrNull()
+            if (directRevision != null) return@withContext directRevision
+
             val selector = JSONObject().apply {
                 put("_id", id)
                 put("type", "surveys")
@@ -217,12 +251,7 @@ class DashboardLocalSurveyRepository(private val context: Context) : Closeable {
             val requestBuilder = Request.Builder()
                 .url(url)
                 .post(payload.toRequestBody(jsonMediaType))
-            if (!sessionCookie.isNullOrBlank()) {
-                requestBuilder.addHeader("Cookie", sessionCookie)
-            } else if (!username.isNullOrBlank() && !password.isNullOrBlank()) {
-                val creds = Credentials.basic(username, password)
-                requestBuilder.addHeader("Authorization", creds)
-            }
+            requestBuilder.addSurveyAuthentication()
             runCatching {
                 httpClient.newCall(requestBuilder.build()).execute().use { response ->
                     if (!response.isSuccessful) return@use null

@@ -37,6 +37,7 @@ class DashboardSurveyOutboxStore private constructor(
             CREATE TABLE outbox_submissions(
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 survey_id TEXT,
+                survey_rev TEXT,
                 team_id TEXT,
                 team_name TEXT,
                 survey_name TEXT,
@@ -53,9 +54,8 @@ class DashboardSurveyOutboxStore private constructor(
         oldVersion: Int,
         newVersion: Int,
     ) {
-        if (oldVersion < DATABASE_VERSION) {
-            db.execSQL("DROP TABLE IF EXISTS outbox_submissions")
-            onCreate(db)
+        if (oldVersion < 2) {
+            db.execSQL("ALTER TABLE outbox_submissions ADD COLUMN survey_rev TEXT")
         }
     }
 
@@ -71,6 +71,7 @@ class DashboardSurveyOutboxStore private constructor(
             val values =
                 ContentValues().apply {
                     put(COLUMN_SURVEY_ID, surveyId)
+                    put(COLUMN_SURVEY_REV, submission.parent.rev)
                     put(COLUMN_TEAM_ID, teamId)
                     put(COLUMN_TEAM_NAME, teamName)
                     put(COLUMN_SURVEY_NAME, surveyName)
@@ -90,6 +91,7 @@ class DashboardSurveyOutboxStore private constructor(
                         arrayOf(
                             COLUMN_ID,
                             COLUMN_SURVEY_ID,
+                            COLUMN_SURVEY_REV,
                             COLUMN_TEAM_ID,
                             COLUMN_TEAM_NAME,
                             COLUMN_SURVEY_NAME,
@@ -104,6 +106,7 @@ class DashboardSurveyOutboxStore private constructor(
                     ).use { cursor ->
                         val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
                         val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)
+                        val surveyRevIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_REV)
                         val teamIdIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_ID)
                         val teamNameIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_NAME)
                         val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
@@ -117,6 +120,7 @@ class DashboardSurveyOutboxStore private constructor(
                                     RawEntry(
                                         id = cursor.getLong(idIdx),
                                         surveyId = cursor.getStringOrNull(surveyIdIdx),
+                                        surveyRev = cursor.getStringOrNull(surveyRevIdx),
                                         teamId = cursor.getStringOrNull(teamIdIdx),
                                         teamName = cursor.getStringOrNull(teamNameIdx),
                                         surveyName = cursor.getStringOrNull(surveyNameIdx),
@@ -138,7 +142,8 @@ class DashboardSurveyOutboxStore private constructor(
                         } ?: return@mapNotNull null
                     OutboxEntry(
                         id = raw.id,
-                        surveyId = raw.surveyId,
+                        surveyId = raw.surveyId ?: parsed.parent.id,
+                        surveyRev = raw.surveyRev ?: parsed.parent.rev,
                         teamId = raw.teamId,
                         teamName = raw.teamName,
                         surveyName = raw.surveyName,
@@ -158,6 +163,7 @@ class DashboardSurveyOutboxStore private constructor(
                         arrayOf(
                             COLUMN_ID,
                             COLUMN_SURVEY_ID,
+                            COLUMN_SURVEY_REV,
                             COLUMN_TEAM_ID,
                             COLUMN_TEAM_NAME,
                             COLUMN_SURVEY_NAME,
@@ -173,6 +179,7 @@ class DashboardSurveyOutboxStore private constructor(
                     ).use { cursor ->
                         val idIdx = cursor.getColumnIndexOrThrow(COLUMN_ID)
                         val surveyIdIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_ID)
+                        val surveyRevIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_REV)
                         val teamIdIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_ID)
                         val teamNameIdx = cursor.getColumnIndexOrThrow(COLUMN_TEAM_NAME)
                         val surveyNameIdx = cursor.getColumnIndexOrThrow(COLUMN_SURVEY_NAME)
@@ -184,6 +191,7 @@ class DashboardSurveyOutboxStore private constructor(
                             RawEntry(
                                 id = cursor.getLong(idIdx),
                                 surveyId = cursor.getStringOrNull(surveyIdIdx),
+                                surveyRev = cursor.getStringOrNull(surveyRevIdx),
                                 teamId = cursor.getStringOrNull(teamIdIdx),
                                 teamName = cursor.getStringOrNull(teamNameIdx),
                                 surveyName = cursor.getStringOrNull(surveyNameIdx),
@@ -205,7 +213,8 @@ class DashboardSurveyOutboxStore private constructor(
                         } ?: return@withContext null
                     OutboxEntry(
                         id = rawEntry.id,
-                        surveyId = rawEntry.surveyId,
+                        surveyId = rawEntry.surveyId ?: parsed.parent.id,
+                        surveyRev = rawEntry.surveyRev ?: parsed.parent.rev,
                         teamId = rawEntry.teamId,
                         teamName = rawEntry.teamName,
                         surveyName = rawEntry.surveyName,
@@ -259,6 +268,7 @@ class DashboardSurveyOutboxStore private constructor(
     data class OutboxEntry(
         val id: Long,
         val surveyId: String?,
+        val surveyRev: String?,
         val teamId: String?,
         val teamName: String?,
         val surveyName: String?,
@@ -269,6 +279,7 @@ class DashboardSurveyOutboxStore private constructor(
     private class RawEntry(
         val id: Long,
         val surveyId: String?,
+        val surveyRev: String?,
         val teamId: String?,
         val teamName: String?,
         val surveyName: String?,
@@ -278,10 +289,11 @@ class DashboardSurveyOutboxStore private constructor(
 
     companion object {
         private const val DATABASE_NAME = "dashboard_survey_outbox.db"
-        private const val DATABASE_VERSION = 1
+        private const val DATABASE_VERSION = 2
         private const val TABLE_SUBMISSIONS = "outbox_submissions"
         private const val COLUMN_ID = "id"
         private const val COLUMN_SURVEY_ID = "survey_id"
+        private const val COLUMN_SURVEY_REV = "survey_rev"
         private const val COLUMN_TEAM_ID = "team_id"
         private const val COLUMN_TEAM_NAME = "team_name"
         private const val COLUMN_SURVEY_NAME = "survey_name"

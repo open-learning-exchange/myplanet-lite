@@ -98,6 +98,17 @@
     <string name="dashboard_survey_download_error">تعذر حفظ الاستبيان للاستخدام بدون اتصال.</string>
     <string name="dashboard_surveys_tab_outbox">قيد الانتظار</string>
     <string name="dashboard_surveys_outbox_empty">لا توجد عمليات إرسال معلقة.</string>
+    <string name="dashboard_surveys_tab_drafts">المسودات</string>
+    <string name="dashboard_surveys_drafts_empty">لا توجد مسودات استبيانات.</string>
+    <string name="dashboard_survey_draft_last_edited">آخر تعديل: %1$s</string>
+    <string name="dashboard_survey_draft_delete">حذف</string>
+    <string name="dashboard_survey_draft_delete_confirm">هل تريد حذف هذه المسودة؟ لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="dashboard_survey_draft_exit_title">حفظ المسودة؟</string>
+    <string name="dashboard_survey_draft_exit_message">هل تريد متابعة تحرير هذا الاستبيان لاحقًا أم تجاهله؟</string>
+    <string name="dashboard_survey_draft_keep">المتابعة لاحقًا</string>
+    <string name="dashboard_survey_draft_discard">تجاهل</string>
+    <string name="dashboard_survey_draft_not_downloaded_title">الاستبيان غير متاح دون اتصال</string>
+    <string name="dashboard_survey_draft_not_downloaded_message">لم يتم تنزيل هذا الاستبيان على الجهاز. لمتابعة تحرير المسودة، أعد اتصال MyPlanet Lite و/أو نزّل الاستبيان.</string>
     <string name="dashboard_survey_submission_saved_offline">تم حفظ الإرسال في صندوق الصادر للمزامنة.</string>
     <string name="dashboard_outbox_saved_at">تم الحفظ دون اتصال في %1$s</string>
     <string name="dashboard_outbox_unknown_survey">استبيان</string>
