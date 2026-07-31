@@ -516,6 +516,17 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="dashboard_survey_download_error">Lama kaydin sahan si loo isticmaalo offline.</string>
     <string name="dashboard_surveys_tab_outbox">Sugaya</string>
     <string name="dashboard_surveys_outbox_empty">Ma jiraan diritaan sugaya.</string>
+    <string name="dashboard_surveys_tab_drafts">Qabyo</string>
+    <string name="dashboard_surveys_drafts_empty">Ma jiraan sahanno qabyo ah.</string>
+    <string name="dashboard_survey_draft_last_edited">Wax ka beddelkii ugu dambeeyay: %1$s</string>
+    <string name="dashboard_survey_draft_delete">Tirtir</string>
+    <string name="dashboard_survey_draft_delete_confirm">Ma tirtirtaa qabyadan? Ficilkan lama soo celin karo.</string>
+    <string name="dashboard_survey_draft_exit_title">Ma kaydisaa qabyada?</string>
+    <string name="dashboard_survey_draft_exit_message">Ma rabtaa inaad mar dambe sii waddo mise iska tuurto?</string>
+    <string name="dashboard_survey_draft_keep">Mar dambe sii wad</string>
+    <string name="dashboard_survey_draft_discard">Iska tuur</string>
+    <string name="dashboard_survey_draft_not_downloaded_title">Sahanka lagama heli karo offline</string>
+    <string name="dashboard_survey_draft_not_downloaded_message">Sahankan laguma soo dejin qalabkan. Si aad u sii waddo qabyada, MyPlanet Lite dib ugu xidh internetka iyo/ama soo dejiso sahanka.</string>
     <string name="dashboard_survey_submission_saved_offline">Diritaanka waxa lagu kaydiyay sanduuqa soo dirid si loo waafajiyo.</string>
     <string name="dashboard_outbox_saved_at">Waxaa offline loogu kaydiyay %1$s</string>
     <string name="dashboard_outbox_unknown_survey">Sahan</string>

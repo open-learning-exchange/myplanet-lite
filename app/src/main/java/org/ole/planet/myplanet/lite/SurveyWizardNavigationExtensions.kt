@@ -25,6 +25,7 @@ internal fun SurveyWizardFragment.setupNavigationButtons() {
         activeCollector?.invoke()
         if (currentIndex > 0) {
             currentIndex -= 1
+            saveDraft()
             showStep(currentIndex)
         }
     }
@@ -34,8 +35,10 @@ internal fun SurveyWizardFragment.setupNavigationButtons() {
         if (collector()) {
             if (currentIndex < steps.lastIndex) {
                 currentIndex += 1
+                saveDraft()
                 showStep(currentIndex)
             } else {
+                saveDraft()
                 submitSurvey()
             }
         }

@@ -19,7 +19,6 @@ import android.widget.LinearLayout
 import android.widget.RadioButton
 import android.widget.RadioGroup
 import android.widget.TextView
-import com.google.android.material.datepicker.MaterialDatePicker
 import com.google.android.material.textfield.TextInputEditText
 import com.google.android.material.textfield.TextInputLayout
 import org.ole.planet.myplanet.lite.profile.GENDER_FEMALE
@@ -27,10 +26,7 @@ import org.ole.planet.myplanet.lite.profile.GENDER_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.util.BirthDateConstraints
-import java.text.ParseException
-import java.text.SimpleDateFormat
 import java.util.Calendar
-import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
@@ -303,114 +299,6 @@ internal fun SurveyWizardFragment.renderNamesStep(): Pair<View, () -> Boolean> {
         true
     }
     return container to collector
-}
-
-internal fun SurveyWizardFragment.renderBirthDateStep(): Pair<View, () -> Boolean> {
-    val context = requireContext()
-    val container =
-        LinearLayout(context).apply {
-            orientation = LinearLayout.VERTICAL
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                )
-        }
-
-    val birthDateLayout =
-        TextInputLayout(context).apply {
-            hint = getString(R.string.dashboard_survey_wizard_birth_date_label)
-            layoutParams =
-                LinearLayout.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.WRAP_CONTENT,
-                )
-        }
-    val birthDateInput = TextInputEditText(context)
-    birthDateInput.apply {
-        inputType = InputType.TYPE_CLASS_DATETIME or InputType.TYPE_DATETIME_VARIATION_DATE
-        keyListener = null
-        isFocusable = false
-        isClickable = true
-        setText(
-            respondent.birthDate?.let { formatBirthDateDisplay(it) }
-                ?: birthDateSelection?.let { formatBirthDateIso(it) }.orEmpty(),
-        )
-        setOnClickListener { showBirthDatePicker(this) }
-        setOnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) {
-                showBirthDatePicker(this)
-            }
-        }
-    }
-    birthDateLayout.addView(birthDateInput)
-    container.addView(birthDateLayout)
-
-    val collector = {
-        respondent.birthDate =
-            birthDateSelection
-                ?.takeUnless { BirthDateConstraints.isFuture(it) }
-                ?.let { formatBirthDateIso(it) }
-        true
-    }
-    return container to collector
-}
-
-internal fun SurveyWizardFragment.showBirthDatePicker(input: TextInputEditText) {
-    if (childFragmentManager.findFragmentByTag(BIRTH_DATE_PICKER_TAG) != null) {
-        return
-    }
-
-    val picker =
-        MaterialDatePicker.Builder
-            .datePicker()
-            .setTitleText(getString(R.string.signup_birth_date_picker_title))
-            .setCalendarConstraints(BirthDateConstraints.calendarConstraints())
-            .apply {
-                setSelection(BirthDateConstraints.coerceSelection(birthDateSelection))
-            }.build()
-
-    picker.addOnPositiveButtonClickListener { selection ->
-        if (BirthDateConstraints.isFuture(selection)) {
-            return@addOnPositiveButtonClickListener
-        }
-        birthDateSelection = selection
-        input.setText(formatBirthDateIso(selection))
-    }
-
-    picker.addOnDismissListener {
-        input.clearFocus()
-    }
-
-    picker.show(childFragmentManager, BIRTH_DATE_PICKER_TAG)
-}
-
-internal fun SurveyWizardFragment.parseBirthDateIso(value: String?): Long? {
-    if (value.isNullOrBlank()) {
-        return null
-    }
-    val formatter =
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-    return try {
-        formatter.parse(value)?.time
-    } catch (_: ParseException) {
-        null
-    }
-}
-
-internal fun SurveyWizardFragment.formatBirthDateIso(selection: Long): String {
-    val formatter =
-        SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).apply {
-            timeZone = TimeZone.getTimeZone("UTC")
-        }
-    return formatter.format(Date(selection))
-}
-
-internal fun SurveyWizardFragment.formatBirthDateDisplay(value: String): String {
-    val parsed = parseBirthDateIso(value)
-    return parsed?.let { formatBirthDateIso(it) } ?: value
 }
 
 internal fun SurveyWizardFragment.renderContactStep(): Pair<View, () -> Boolean> {

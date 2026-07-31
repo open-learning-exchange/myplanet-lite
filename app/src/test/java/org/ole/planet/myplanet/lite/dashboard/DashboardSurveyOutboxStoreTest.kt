@@ -69,10 +69,13 @@ class DashboardSurveyOutboxStoreTest {
         val pending = store.getPendingForTeam("team1")
         assertEquals(1, pending.size)
         assertEquals("survey1", pending[0].surveyId)
+        assertEquals("1", pending[0].surveyRev)
         assertEquals("team1", pending[0].teamId)
         assertEquals("Team A", pending[0].teamName)
         assertEquals("Test Survey", pending[0].surveyName)
         assertEquals("parent123", pending[0].submission.parentId)
+        assertEquals("parent123", pending[0].submission.parent.id)
+        assertEquals("1", pending[0].submission.parent.rev)
     }
 
     @Test
@@ -244,15 +247,15 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun saveSubmission_handlesSerializationFailure() = runBlocking {
-        // Just verify basic saving again, serialization failures would require a custom moshi or interceptor.
+    fun saveSubmission_recoversSurveyMetadataFromPayload() = runBlocking {
         val submission = createSubmission()
         val saved = store.saveSubmission(submission, null, null, null, null)
         assertTrue(saved)
 
         val pending = store.getPendingForTeam(null)
         assertEquals(1, pending.size)
-        assertNull(pending[0].surveyId)
+        assertEquals("parent123", pending[0].surveyId)
+        assertEquals("1", pending[0].surveyRev)
         assertNull(pending[0].teamId)
     }
 

@@ -98,6 +98,17 @@
     <string name="dashboard_survey_download_error">Não foi possível salvar a pesquisa para uso offline.</string>
     <string name="dashboard_surveys_tab_outbox">Pendentes</string>
     <string name="dashboard_surveys_outbox_empty">Nenhuma submissão pendente.</string>
+    <string name="dashboard_surveys_tab_drafts">Rascunhos</string>
+    <string name="dashboard_surveys_drafts_empty">Nenhum rascunho de pesquisa.</string>
+    <string name="dashboard_survey_draft_last_edited">Última edição: %1$s</string>
+    <string name="dashboard_survey_draft_delete">Excluir</string>
+    <string name="dashboard_survey_draft_delete_confirm">Excluir este rascunho? Esta ação não pode ser desfeita.</string>
+    <string name="dashboard_survey_draft_exit_title">Salvar rascunho?</string>
+    <string name="dashboard_survey_draft_exit_message">Deseja continuar editando mais tarde ou descartar?</string>
+    <string name="dashboard_survey_draft_keep">Continuar depois</string>
+    <string name="dashboard_survey_draft_discard">Descartar</string>
+    <string name="dashboard_survey_draft_not_downloaded_title">Pesquisa indisponível offline</string>
+    <string name="dashboard_survey_draft_not_downloaded_message">Esta pesquisa não está baixada neste dispositivo. Para continuar o rascunho, reconecte o MyPlanet Lite e/ou baixe a pesquisa.</string>
     <string name="dashboard_survey_submission_saved_offline">Envio salvo na caixa de saída para sincronização.</string>
     <string name="dashboard_outbox_saved_at">Salvo offline em %1$s</string>
     <string name="dashboard_outbox_unknown_survey">Pesquisa</string>
