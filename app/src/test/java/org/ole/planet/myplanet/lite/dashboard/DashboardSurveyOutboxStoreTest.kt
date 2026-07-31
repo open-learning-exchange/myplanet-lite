@@ -247,15 +247,15 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun saveSubmission_handlesSerializationFailure() = runBlocking {
-        // Just verify basic saving again, serialization failures would require a custom moshi or interceptor.
+    fun saveSubmission_recoversSurveyMetadataFromPayload() = runBlocking {
         val submission = createSubmission()
         val saved = store.saveSubmission(submission, null, null, null, null)
         assertTrue(saved)
 
         val pending = store.getPendingForTeam(null)
         assertEquals(1, pending.size)
-        assertNull(pending[0].surveyId)
+        assertEquals("parent123", pending[0].surveyId)
+        assertEquals("1", pending[0].surveyRev)
         assertNull(pending[0].teamId)
     }
 
