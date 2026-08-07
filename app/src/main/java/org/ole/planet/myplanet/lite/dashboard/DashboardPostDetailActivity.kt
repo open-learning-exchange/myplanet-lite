@@ -43,18 +43,20 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
     internal lateinit var recyclerView: RecyclerView
     internal lateinit var loadingView: View
 
+    private val reusedMoshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build()
+
     internal val repository =
         DashboardNewsRepository(
-            client = OkHttpClient.Builder().build(),
-            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+            client = SharedBitmapDependencies.client,
+            moshi = reusedMoshi,
         )
     internal val actionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
     internal val composerRepository =
         VoicesComposerRepository(
-            client = OkHttpClient.Builder().build(),
-            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+            client = SharedBitmapDependencies.client,
+            moshi = reusedMoshi,
         )
-    internal val httpClient = OkHttpClient.Builder().build()
+    internal val httpClient = SharedBitmapDependencies.client
     internal lateinit var adapter: PostDetailAdapter
     internal lateinit var markwon: Markwon
 
@@ -269,6 +271,7 @@ class DashboardPostDetailActivity : org.ole.planet.myplanet.lite.BaseActivity() 
 
         internal val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
         internal val IMAGE_MARKDOWN_REGEX = Regex("!\\[([^]]*)]\\(([^)]+)\\)")
+        internal val GLOBAL_PATTERN = Regex("(!\\[[^]]*]\\()(.*?)(\\))")
         internal val RESOURCES_MARKDOWN_REGEX = Regex("!\\[[^]]*]\\((resources/[^)]+)\\)")
         internal val RESOURCES_PATH_REGEX = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
     }

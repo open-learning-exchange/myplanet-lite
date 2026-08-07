@@ -52,7 +52,12 @@ object OfflineCourseStorage {
     ) {
         val file = manifestFile(context, course.id)
         file.parentFile?.mkdirs()
-        file.writeText(serializeCourse(course, source).toString())
+        val localCover = course.coverPath
+            ?.let { coverFile(context, course.id, it) }
+            ?.takeIf { it.exists() }
+            ?.toURI()
+            ?.toString()
+        file.writeText(serializeCourse(course.copy(coverPath = localCover ?: course.coverPath), source).toString())
     }
 
     fun resourceFile(
@@ -100,6 +105,14 @@ object OfflineCourseStorage {
             ?.lowercase()
             ?: "img"
         return File(courseDir(context, courseId), "markdown/$digest.$extension")
+    }
+
+    fun coverFile(context: Context, courseId: String, source: String): File {
+        val extension = source.substringBefore('?').substringAfterLast('.', "")
+            .takeIf { it.matches(Regex("[A-Za-z0-9]{1,5}")) }
+            ?.lowercase()
+            ?: "img"
+        return File(courseDir(context, courseId), "cover/${sha256(source)}.$extension")
     }
 
     private fun legacyMarkdownImageFile(context: Context, courseId: String, source: String): File {

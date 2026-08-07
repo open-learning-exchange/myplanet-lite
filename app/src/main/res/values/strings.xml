@@ -101,6 +101,17 @@
     <string name="dashboard_survey_download_error">Couldn\'t save the survey for offline use.</string>
     <string name="dashboard_surveys_tab_outbox">Pending</string>
     <string name="dashboard_surveys_outbox_empty">No pending submissions.</string>
+    <string name="dashboard_surveys_tab_drafts">Drafts</string>
+    <string name="dashboard_surveys_drafts_empty">No survey drafts.</string>
+    <string name="dashboard_survey_draft_last_edited">Last edited: %1$s</string>
+    <string name="dashboard_survey_draft_delete">Delete</string>
+    <string name="dashboard_survey_draft_delete_confirm">Delete this draft? This action cannot be undone.</string>
+    <string name="dashboard_survey_draft_exit_title">Save survey draft?</string>
+    <string name="dashboard_survey_draft_exit_message">Would you like to continue editing this survey later or discard it?</string>
+    <string name="dashboard_survey_draft_keep">Continue later</string>
+    <string name="dashboard_survey_draft_discard">Discard</string>
+    <string name="dashboard_survey_draft_not_downloaded_title">Survey not available offline</string>
+    <string name="dashboard_survey_draft_not_downloaded_message">This survey isn’t downloaded on this device. To continue editing the draft, reconnect MyPlanet Lite and/or download the survey.</string>
     <string name="dashboard_survey_submission_saved_offline">Submission saved to outbox for sync.</string>
     <string name="dashboard_outbox_saved_at">Saved offline on %1$s</string>
     <string name="dashboard_outbox_unknown_survey">Survey</string>
