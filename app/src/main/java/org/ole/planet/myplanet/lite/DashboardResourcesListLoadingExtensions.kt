@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 internal fun DashboardResourcesPageFragment.refreshContent(forceRefresh: Boolean = false) {
         val content = contentView ?: return
@@ -193,6 +194,15 @@ internal fun DashboardResourcesPageFragment.loadTeamResources() {
         }
         baseUrl = resolvedBaseUrl
         isLoadingTeamResources = true
+        fetchAndDisplayTeamResources(resolvedBaseUrl, teamId, credentials, list)
+    }
+
+    private fun DashboardResourcesPageFragment.fetchAndDisplayTeamResources(
+        resolvedBaseUrl: String,
+        teamId: String,
+        credentials: StoredCredentials?,
+        list: RecyclerView
+    ) {
         lifecycleScope.launch {
             sessionCookie = runCatching {
                 AuthDependencies.provideAuthService(requireContext().applicationContext, resolvedBaseUrl)
