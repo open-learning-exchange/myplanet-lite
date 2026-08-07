@@ -3,7 +3,9 @@ package org.ole.planet.myplanet.lite.dashboard
 import android.content.ContentValues
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,6 +29,7 @@ import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(RobolectricTestRunner::class)
 @Config(manifest = Config.NONE)
+@OptIn(ExperimentalCoroutinesApi::class)
 class DashboardSurveyOutboxStoreTest {
 
     private lateinit var store: DashboardSurveyOutboxStore
@@ -34,7 +37,8 @@ class DashboardSurveyOutboxStoreTest {
     @Before
     fun setup() {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        store = DashboardSurveyOutboxStore.getInstance(context)
+        val testDispatcher = UnconfinedTestDispatcher()
+        store = DashboardSurveyOutboxStore.getInstance(context, testDispatcher, testDispatcher)
         store.writableDatabase.delete("outbox_submissions", null, null)
     }
 
@@ -65,10 +69,13 @@ class DashboardSurveyOutboxStoreTest {
         val pending = store.getPendingForTeam("team1")
         assertEquals(1, pending.size)
         assertEquals("survey1", pending[0].surveyId)
+        assertEquals("1", pending[0].surveyRev)
         assertEquals("team1", pending[0].teamId)
         assertEquals("Team A", pending[0].teamName)
         assertEquals("Test Survey", pending[0].surveyName)
         assertEquals("parent123", pending[0].submission.parentId)
+        assertEquals("parent123", pending[0].submission.parent.id)
+        assertEquals("1", pending[0].submission.parent.rev)
     }
 
     @Test
@@ -240,15 +247,15 @@ class DashboardSurveyOutboxStoreTest {
     }
 
     @Test
-    fun saveSubmission_handlesSerializationFailure() = runBlocking {
-        // Just verify basic saving again, serialization failures would require a custom moshi or interceptor.
+    fun saveSubmission_recoversSurveyMetadataFromPayload() = runBlocking {
         val submission = createSubmission()
         val saved = store.saveSubmission(submission, null, null, null, null)
         assertTrue(saved)
 
         val pending = store.getPendingForTeam(null)
         assertEquals(1, pending.size)
-        assertNull(pending[0].surveyId)
+        assertEquals("parent123", pending[0].surveyId)
+        assertEquals("1", pending[0].surveyRev)
         assertNull(pending[0].teamId)
     }
 

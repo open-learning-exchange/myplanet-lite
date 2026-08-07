@@ -275,16 +275,10 @@ class DashboardSurveysRepository(
                 }
 
                 val counts = mutableMapOf<String, Int>()
-                val parentMatches = ArrayList<Map<String, Any>>(surveyIds.size * 2)
-                val parentIdKey = "parentId"
-                val regexKey = "\$regex"
-                for (surveyId in surveyIds) {
-                    parentMatches.add(java.util.Collections.singletonMap(parentIdKey, surveyId))
-                    parentMatches.add(
-                        java.util.Collections.singletonMap(
-                            parentIdKey,
-                            java.util.Collections.singletonMap(regexKey, "^$surveyId@"),
-                        ),
+                val parentMatches = surveyIds.flatMap { surveyId ->
+                    listOf(
+                        mapOf("parentId" to surveyId),
+                        mapOf("parentId" to mapOf("\$regex" to "^$surveyId@"))
                     )
                 }
 

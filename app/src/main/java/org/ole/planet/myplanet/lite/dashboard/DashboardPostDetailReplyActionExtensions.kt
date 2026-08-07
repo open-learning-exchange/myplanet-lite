@@ -14,6 +14,8 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Semaphore
+import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.KEY_DEVICE_ANDROID_ID
@@ -256,12 +258,15 @@ internal suspend fun DashboardPostDetailActivity.loadExistingCommentImages(comme
     }
     val loaded =
         coroutineScope {
+            val semaphore = Semaphore(10)
             comment.imagePaths
                 .map { path ->
                     async(Dispatchers.IO) {
-                        VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, {
-                            VoiceImageFactory.generateImageFileName()
-                        }, { generatePendingImageId(it) })
+                        semaphore.withPermit {
+                            VoiceImageFetcher.fetchExistingImage(httpClient, cacheDir, sessionCookie, base, path, {
+                                VoiceImageFactory.generateImageFileName()
+                            }, { generatePendingImageId(it) })
+                        }
                     }
                 }.awaitAll()
                 .filterNotNull()

@@ -104,6 +104,30 @@ class SurveyWizardRespondentExtensionsTest {
     }
 
     @Test
+    fun testInitialBirthDatePickerSelection_usesBirthYearWhenDateIsMissing() {
+        val fragment = SurveyWizardFragment()
+        fragment.respondent.birthYear = 1990
+
+        val selection = fragment.initialBirthDatePickerSelection()
+        val calendar = Calendar.getInstance(java.util.TimeZone.getTimeZone("UTC")).apply {
+            timeInMillis = selection!!
+        }
+
+        assertEquals(1990, calendar.get(Calendar.YEAR))
+        assertEquals(Calendar.JANUARY, calendar.get(Calendar.MONTH))
+        assertEquals(1, calendar.get(Calendar.DAY_OF_MONTH))
+    }
+
+    @Test
+    fun testInitialBirthDatePickerSelection_prefersExistingBirthDate() {
+        val fragment = SurveyWizardFragment()
+        fragment.respondent.birthYear = 1990
+        fragment.birthDateSelection = 946684800000L
+
+        assertEquals(946684800000L, fragment.initialBirthDatePickerSelection())
+    }
+
+    @Test
     fun testLevelArrayForLanguage() {
         com.google.mlkit.common.sdkinternal.MlKitContext.initializeIfNeeded(ApplicationProvider.getApplicationContext())
         val controller = org.robolectric.Robolectric.buildActivity(androidx.fragment.app.FragmentActivity::class.java)
