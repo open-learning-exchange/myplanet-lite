@@ -23,7 +23,7 @@ import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
-import kotlin.math.max
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.COLLAPSED_REPLY_MIN_LINES

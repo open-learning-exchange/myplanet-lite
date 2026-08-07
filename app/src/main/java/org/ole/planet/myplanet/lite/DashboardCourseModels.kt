@@ -1,7 +1,10 @@
 package org.ole.planet.myplanet.lite
 
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
+import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseStep
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
 import kotlin.random.asKotlinRandom
 
@@ -44,53 +47,15 @@ fun CourseDocument.toCourseItem(
     defaultTitle: String,
     stepNum: Int?
 ): CourseItem {
-    val steps = steps.mapNotNull { step ->
-        val title = step.stepTitle?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
-        val mediaTypes = buildList {
-            step.resources
-                ?.mapNotNull { resource -> mapCourseMediaType(resource.mediaType) }
-                ?.forEach { add(it) }
-            if (step.survey != null) {
-                add("survey")
-            }
-            if (step.exam != null) {
-                add("exam")
-            }
-        }
-        val resources = step.resources.orEmpty().flatMap { resource ->
-            val resourceId = resource.id?.takeIf { it.isNotBlank() } ?: return@flatMap emptyList()
-            val filenames = when {
-                resource.attachments.isNotEmpty() -> resource.attachments.keys
-                !resource.filename.isNullOrBlank() -> listOf(resource.filename)
-                else -> emptyList()
-            }
-            val mediaType = mapCourseMediaType(resource.mediaType)
-                ?: resource.mediaType?.lowercase()?.trim().orEmpty()
-            filenames.map { name ->
-                CourseItem.LessonResource(
-                    id = resourceId,
-                    filename = name,
-                    mediaType = mediaType
-                )
-            }
-        }
-        CourseItem.LessonStep(
-            title = title,
-            description = step.description.orEmpty(),
-            mediaTypes = mediaTypes,
-            resources = resources,
-            survey = step.survey,
-            exam = step.exam
-        )
-    }
+    val mappedSteps = steps.mapNotNull { it.toLessonStep() }
     val random = SecureRandom(id.orEmpty().toByteArray()).asKotlinRandom()
-    val completedSteps = if (steps.isNotEmpty() && stepNum != null) {
-        stepNum.coerceAtLeast(0).coerceAtMost(steps.size)
+    val completedSteps = if (mappedSteps.isNotEmpty() && stepNum != null) {
+        stepNum.coerceAtLeast(0).coerceAtMost(mappedSteps.size)
     } else {
         null
     }
-    val progressPercent = if (steps.isNotEmpty() && completedSteps != null) {
-        (completedSteps * 100.0 / steps.size)
+    val progressPercent = if (mappedSteps.isNotEmpty() && completedSteps != null) {
+        (completedSteps * 100.0 / mappedSteps.size)
             .toInt()
             .coerceIn(0, 100)
     } else {
@@ -100,11 +65,60 @@ fun CourseDocument.toCourseItem(
         id = id.orEmpty(),
         title = courseTitle?.takeIf { it.isNotBlank() } ?: defaultTitle,
         description = description.orEmpty(),
-        coverPath = cover?.takeIf { it.isNotBlank() },
-        steps = steps,
+        coverPath = courseCoverAttachmentPath(),
+        steps = mappedSteps,
         rating = random.nextDouble(3.5, 5.0),
         progressPercent = progressPercent,
-        currentStep = completedSteps?.minus(1)?.coerceIn(0, steps.lastIndex)
+        currentStep = completedSteps?.minus(1)?.coerceIn(0, mappedSteps.lastIndex)
+    )
+}
+
+private fun CourseDocument.courseCoverAttachmentPath(): String? {
+    val courseId = id?.takeIf { it.isNotBlank() } ?: return null
+    val fileName = coverFileName?.takeIf { it.isNotBlank() } ?: return null
+    return "courses/${courseId.encodePathSegment()}/${fileName.encodePathSegment()}"
+}
+
+private fun String.encodePathSegment(): String =
+    URLEncoder.encode(this, StandardCharsets.UTF_8.name()).replace("+", "%20")
+
+private fun CourseStep.toLessonStep(): CourseItem.LessonStep? {
+    val title = stepTitle?.takeIf { it.isNotBlank() } ?: return null
+    val mediaTypes = buildList {
+        resources
+            ?.mapNotNull { resource -> mapCourseMediaType(resource.mediaType) }
+            ?.forEach { add(it) }
+        if (survey != null) {
+            add("survey")
+        }
+        if (exam != null) {
+            add("exam")
+        }
+    }
+    val mappedResources = resources.orEmpty().flatMap { resource ->
+        val resourceId = resource.id?.takeIf { it.isNotBlank() } ?: return@flatMap emptyList()
+        val filenames = when {
+            resource.attachments.isNotEmpty() -> resource.attachments.keys
+            !resource.filename.isNullOrBlank() -> listOf(resource.filename)
+            else -> emptyList()
+        }
+        val mediaType = mapCourseMediaType(resource.mediaType)
+            ?: resource.mediaType?.lowercase()?.trim().orEmpty()
+        filenames.map { name ->
+            CourseItem.LessonResource(
+                id = resourceId,
+                filename = name,
+                mediaType = mediaType
+            )
+        }
+    }
+    return CourseItem.LessonStep(
+        title = title,
+        description = description.orEmpty(),
+        mediaTypes = mediaTypes,
+        resources = mappedResources,
+        survey = survey,
+        exam = exam
     )
 }
 

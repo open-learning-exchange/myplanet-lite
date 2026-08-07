@@ -62,7 +62,7 @@ internal data class SurveyRespondent(
     var phoneNumber: String? = null,
     var language: String? = null,
     var level: String? = null,
-)
+) : java.io.Serializable
 
 internal sealed class SurveyAnswer : java.io.Serializable {
     data class Text(
