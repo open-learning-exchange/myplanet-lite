@@ -24,7 +24,6 @@ import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.COLLAPSED_REPLY_MIN_LINES
@@ -273,8 +272,7 @@ internal fun DashboardPostDetailActivity.clearPendingReplyImages() {
     val filesToDelete = pendingReplyImages.values.map { it.file }.toList()
     pendingReplyImages.clear()
 
-    @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-    GlobalScope.launch(Dispatchers.IO) {
+    org.ole.planet.myplanet.lite.util.ApplicationScope.io.launch {
         filesToDelete.forEach { file ->
             if (file.exists()) {
                 file.delete()
