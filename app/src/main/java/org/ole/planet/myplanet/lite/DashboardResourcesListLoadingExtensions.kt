@@ -10,6 +10,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
+import org.ole.planet.myplanet.lite.profile.StoredCredentials
 
 internal fun DashboardResourcesPageFragment.refreshContent(forceRefresh: Boolean = false) {
         val content = contentView ?: return
@@ -148,21 +149,33 @@ internal fun DashboardResourcesPageFragment.loadMoreMainResources() {
             val items = fetchResult.page
             isLoadingMainResources = false
             if (isAdded) {
-                mainResourcesItems.addAll(items)
-                ResourceSearchEngine.sortResources(mainResourcesItems, selectedSortBy, isSortDescending)
-                val currentAdapter = list.adapter as? DashboardResourcesPageFragment.ResourceExplorerAdapter
-                if (currentAdapter == null || mainResourcesSkip == 0) {
-                    list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(mainResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
-                } else {
-                    currentAdapter.replaceResources(mainResourcesItems)
-                }
-                mainResourcesSkip += items.size
-                hasMoreMainResources = items.size >= DashboardResourcesPageFragment.MAIN_RESOURCES_PAGE_SIZE
-                hasLoadedMainResources = true
-                swipeRefreshLayout?.isRefreshing = false
+                processMainResourcesResult(list, items)
             }
         }
     }
+
+private fun DashboardResourcesPageFragment.processMainResourcesResult(
+    list: RecyclerView,
+    items: List<ResourceUi>
+) {
+    mainResourcesItems.addAll(items)
+    ResourceSearchEngine.sortResources(mainResourcesItems, selectedSortBy, isSortDescending)
+    val currentAdapter = list.adapter as? DashboardResourcesPageFragment.ResourceExplorerAdapter
+    if (currentAdapter == null || mainResourcesSkip == 0) {
+        list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(
+            mainResourcesItems.toList(),
+            resourceDownloadProgress,
+            ::openResource,
+            ::onSecondaryAction
+        )
+    } else {
+        currentAdapter.replaceResources(mainResourcesItems)
+    }
+    mainResourcesSkip += items.size
+    hasMoreMainResources = items.size >= DashboardResourcesPageFragment.MAIN_RESOURCES_PAGE_SIZE
+    hasLoadedMainResources = true
+    swipeRefreshLayout?.isRefreshing = false
+}
 
 internal fun DashboardResourcesPageFragment.loadTeamResources() {
         if (isLoadingTeamResources) {
@@ -181,6 +194,15 @@ internal fun DashboardResourcesPageFragment.loadTeamResources() {
         }
         baseUrl = resolvedBaseUrl
         isLoadingTeamResources = true
+        fetchAndDisplayTeamResources(resolvedBaseUrl, teamId, credentials, list)
+    }
+
+    private fun DashboardResourcesPageFragment.fetchAndDisplayTeamResources(
+        resolvedBaseUrl: String,
+        teamId: String,
+        credentials: StoredCredentials?,
+        list: RecyclerView
+    ) {
         lifecycleScope.launch {
             sessionCookie = runCatching {
                 AuthDependencies.provideAuthService(requireContext().applicationContext, resolvedBaseUrl)
@@ -201,12 +223,24 @@ internal fun DashboardResourcesPageFragment.loadTeamResources() {
             )
             isLoadingTeamResources = false
             if (isAdded) {
-                teamResourcesItems.clear()
-                teamResourcesItems.addAll(mergedResources)
-                ResourceSearchEngine.sortResources(teamResourcesItems, selectedSortBy, isSortDescending)
-                hasLoadedTeamResources = true
-                list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(teamResourcesItems.toList(), resourceDownloadProgress, ::openResource, ::onSecondaryAction)
-                swipeRefreshLayout?.isRefreshing = false
+                processTeamResourcesResult(list, mergedResources)
             }
         }
     }
+
+private fun DashboardResourcesPageFragment.processTeamResourcesResult(
+    list: RecyclerView,
+    mergedResources: List<ResourceUi>
+) {
+    teamResourcesItems.clear()
+    teamResourcesItems.addAll(mergedResources)
+    ResourceSearchEngine.sortResources(teamResourcesItems, selectedSortBy, isSortDescending)
+    hasLoadedTeamResources = true
+    list.adapter = DashboardResourcesPageFragment.ResourceExplorerAdapter(
+        teamResourcesItems.toList(),
+        resourceDownloadProgress,
+        ::openResource,
+        ::onSecondaryAction
+    )
+    swipeRefreshLayout?.isRefreshing = false
+}

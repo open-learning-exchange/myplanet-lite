@@ -44,7 +44,7 @@ suspend fun DashboardCoursePageFragment.performCourseDownload(
     resources: List<CourseItem.LessonResource>,
     markdownImageSources: List<String>
 ) {
-    val totalInventoryItems = resources.size + markdownImageSources.size
+    val totalInventoryItems = resources.size + markdownImageSources.size + if (course.coverPath != null) 1 else 0
     adapter.updateDownloadProgress(course.id, 0, totalInventoryItems)
 
     if (!hasSufficientStorage(course, base, creds, resources, markdownImageSources)) {
@@ -60,7 +60,9 @@ suspend fun DashboardCoursePageFragment.performCourseDownload(
             mappedResources,
             markdownImageSources,
             { resourceId, filename -> OfflineCourseStorage.resourceFile(requireContext(), course.id, resourceId, filename) },
-            { source -> OfflineCourseStorage.markdownImageFile(requireContext(), course.id, source) }
+            { source -> OfflineCourseStorage.markdownImageFile(requireContext(), course.id, source) },
+            course.coverPath,
+            { source -> OfflineCourseStorage.coverFile(requireContext(), course.id, source) },
         ) { progress ->
             viewLifecycleOwner.lifecycleScope.launch {
                 adapter.updateDownloadProgress(course.id, progress.first, progress.second)
@@ -81,7 +83,8 @@ suspend fun DashboardCoursePageFragment.hasSufficientStorage(
 ): Boolean {
     val mappedResources = resources.map { DashboardCoursesRepository.DownloadResource(it.id, it.filename) }
     val estimatedSize = coursesRepository.estimateResourcesSize(base, creds, mappedResources) +
-        coursesRepository.estimateMarkdownImagesSize(base, creds, markdownImageSources)
+        coursesRepository.estimateMarkdownImagesSize(base, creds, markdownImageSources) +
+        coursesRepository.estimateCourseCoverSize(base, creds, course.coverPath)
     val available = OfflineCourseStorage.availableStorageBytes(requireContext())
     val required = estimatedSize + MIN_DOWNLOAD_BUFFER_BYTES
     if (available <= required) {
