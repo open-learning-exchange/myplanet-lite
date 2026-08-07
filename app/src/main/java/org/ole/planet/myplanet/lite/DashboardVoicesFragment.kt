@@ -40,6 +40,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardImagePreviewActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsActionsRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository
+import org.ole.planet.myplanet.lite.dashboard.SharedBitmapDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardNewsRepository.NewsPage
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity
@@ -93,8 +94,8 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
 
     private val repository =
         DashboardNewsRepository(
-            client = OkHttpClient.Builder().build(),
-            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+            client = SharedBitmapDependencies.client,
+            moshi = AuthDependencies.moshi,
         )
     private val actionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
 

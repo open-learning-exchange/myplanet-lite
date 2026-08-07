@@ -195,6 +195,12 @@ class CourseWizardActivity : BaseActivity() {
 
     fun bindStep() {
         val step = steps[currentIndex]
+        bindStepContent(step)
+        bindPreviousButton()
+        bindNextButton(step)
+    }
+
+    private fun bindStepContent(step: StepDisplay) {
         stepPositionView.text =
             getString(
                 R.string.course_wizard_step_position,
@@ -214,6 +220,9 @@ class CourseWizardActivity : BaseActivity() {
             attachmentsTitle,
             attachmentsList,
         )
+    }
+
+    private fun bindPreviousButton() {
         previousButton.isEnabled = currentIndex > 0
         previousButton.setOnClickListener {
             if (currentIndex > 0) {
@@ -221,6 +230,9 @@ class CourseWizardActivity : BaseActivity() {
                 bindStep()
             }
         }
+    }
+
+    private fun bindNextButton(step: StepDisplay) {
         val requiredStepPending = isRequiredStepPending(step)
         if (currentIndex >= steps.lastIndex) {
             nextButton.isEnabled = true

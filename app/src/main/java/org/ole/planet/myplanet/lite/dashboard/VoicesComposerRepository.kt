@@ -98,6 +98,38 @@ class VoicesComposerRepository(
             }
         }
 
+    suspend fun ensureReplyImageUpload(
+        baseUrl: String,
+        credentials: StoredCredentials,
+        context: VoiceImageResourceContext,
+        fileName: String,
+        jpegBytes: ByteArray,
+    ): ReplyImageUploadResult =
+        withContext(dispatcher) {
+            val metadata = ResourceMetadataRequest.fromContext(context, fileName)
+            val creationResponse = createResourceDocument(baseUrl, credentials, metadata)
+            val uploadResponse =
+                uploadResourceBinary(
+                    baseUrl,
+                    credentials,
+                    creationResponse.id,
+                    fileName,
+                    creationResponse.revision,
+                    jpegBytes,
+                )
+            val resolvedResourceId = uploadResponse.resourceId ?: creationResponse.id
+            val resolvedFileName = uploadResponse.filename ?: fileName
+            val resolvedRevision = uploadResponse.revision ?: creationResponse.revision
+            val relativeMarkdown =
+                uploadResponse.markdown
+                    ?: "![](resources/${resolvedResourceId.trim()}/${resolvedFileName.trim()})"
+            ReplyImageUploadResult(
+                resourceId = resolvedResourceId,
+                revision = resolvedRevision,
+                markdown = relativeMarkdown,
+            )
+        }
+
     suspend fun createResourceDocument(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -237,6 +269,12 @@ class VoicesComposerRepository(
         val ok: Boolean?,
         @param:Json(name = "id") val id: String,
         @param:Json(name = "rev") val revision: String,
+    )
+
+    data class ReplyImageUploadResult(
+        val resourceId: String,
+        val revision: String,
+        val markdown: String,
     )
 
     @JsonClass(generateAdapter = true)

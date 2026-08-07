@@ -20,7 +20,7 @@ class MediaPickerPolicyTest {
     }
 
     @Test
-    fun manifestRemovesBroadMediaAndStoragePermissions() {
+    fun manifestDoesNotDeclareBroadMediaAndStoragePermissions() {
         val manifest = sourceRoot("src/main/AndroidManifest.xml").readText()
 
         listOf(
@@ -29,18 +29,12 @@ class MediaPickerPolicyTest {
             "android.permission.READ_EXTERNAL_STORAGE",
             "android.permission.WRITE_EXTERNAL_STORAGE",
         ).forEach { permission ->
-            val permissionIndex = manifest.indexOf(permission)
-            assertTrue("$permission should be explicitly removed", permissionIndex >= 0)
-            val followingManifest = manifest.substring(permissionIndex)
-            assertTrue(
-                "$permission should use tools:node=\"remove\"",
-                followingManifest.substringBefore("/>").contains("tools:node=\"remove\""),
-            )
+            assertFalse("$permission should not be declared", manifest.contains(permission))
         }
     }
 
     private fun sourceRoot(path: String): File {
-        val userDir = File(System.getProperty("user.dir"))
+        val userDir = File(requireNotNull(System.getProperty("user.dir")))
         return listOf(
             File(userDir, path),
             File(userDir, "app/$path"),
