@@ -236,35 +236,19 @@ internal suspend fun DashboardPostDetailActivity.ensureReplyImageUpload(
     pending: PendingVoiceImage,
 ): String {
     pending.uploadedMarkdown?.let { return it }
-    val existingResourceId = pending.resourceId
-    if (existingResourceId != null) {
-        val markdown = "![](resources/${existingResourceId.trim()}/${pending.fileName.trim()})"
-        pending.uploadedMarkdown = markdown
-        return markdown
-    }
 
-    val metadata = VoicesComposerRepository.ResourceMetadataRequest.fromContext(context, pending.fileName)
-    val creationResponse = composerRepository.createResourceDocument(baseUrl, credentials, metadata)
-    pending.resourceId = creationResponse.id
-    pending.resourceRevision = creationResponse.revision
-    val uploadResponse =
-        composerRepository.uploadResourceBinary(
+    val result =
+        composerRepository.ensureReplyImageUpload(
             baseUrl,
             credentials,
-            creationResponse.id,
+            context,
             pending.fileName,
-            creationResponse.revision,
             pending.jpegBytes,
         )
-    val resolvedResourceId = uploadResponse.resourceId ?: creationResponse.id
-    val resolvedFileName = uploadResponse.filename ?: pending.fileName
-    pending.resourceId = resolvedResourceId
-    pending.resourceRevision = uploadResponse.revision ?: creationResponse.revision
-    val relativeMarkdown =
-        uploadResponse.markdown
-            ?: "![](resources/${resolvedResourceId.trim()}/${resolvedFileName.trim()})"
-    pending.uploadedMarkdown = relativeMarkdown
-    return relativeMarkdown
+    pending.resourceId = result.resourceId
+    pending.resourceRevision = result.revision
+    pending.uploadedMarkdown = result.markdown
+    return result.markdown
 }
 
 internal suspend fun DashboardPostDetailActivity.loadExistingCommentImages(comment: PostDetailItem.Comment) {
