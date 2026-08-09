@@ -30,6 +30,7 @@ import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 import org.ole.planet.myplanet.lite.profile.UserProfileSync
+import org.ole.planet.myplanet.lite.util.AppNavigator
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import java.util.UUID
@@ -77,6 +78,12 @@ class SplashScreen : BaseActivity() {
     }
 
     private fun startLogoAnimation() {
+        animateLogo()
+        animateAppName()
+        animateAppVersion()
+    }
+
+    private fun animateLogo() {
         val logo = findViewById<ImageView>(R.id.logoImageView)
         val startOffset = -resources.displayMetrics.heightPixels * 0.5f
         logo.translationY = startOffset
@@ -91,6 +98,9 @@ class SplashScreen : BaseActivity() {
                 .setInterpolator(OvershootInterpolator())
                 .start()
         }
+    }
+
+    private fun animateAppName() {
         val appName = findViewById<View>(R.id.appNameContainer)
         appName.scaleX = 1f
         appName.scaleY = 1f
@@ -111,6 +121,9 @@ class SplashScreen : BaseActivity() {
                         .start()
                 }.start()
         }
+    }
+
+    private fun animateAppVersion() {
         val appVersion = findViewById<TextView>(R.id.appVersionTextView)
         appVersion.text = getString(R.string.app_version, BuildConfig.VERSION_NAME)
         appVersion.translationY = resources.displayMetrics.density * 40
@@ -128,45 +141,19 @@ class SplashScreen : BaseActivity() {
 
     private suspend fun routeToNextActivity() {
         val launchMode = attemptDirectDashboardLaunch()
-        val nextIntent =
-            when (launchMode) {
-                DashboardLaunchMode.ONLINE -> {
-                    Intent(this@SplashScreen, DashboardActivity::class.java)
-                }
+        val postId = AppNavigator.extractPostId(intent)
 
-                DashboardLaunchMode.OFFLINE -> {
-                    Intent(this@SplashScreen, DashboardActivity::class.java).apply {
-                        putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
-                    }
-                }
-
-                DashboardLaunchMode.NONE -> {
-                    Intent(this@SplashScreen, MyPlanetLite::class.java).apply {
-                        putExtra(MyPlanetLite.EXTRA_ALLOW_AUTO_LOGIN, true)
-                    }
-                }
+        when (launchMode) {
+            DashboardLaunchMode.ONLINE -> {
+                AppNavigator.navigateToDashboard(this@SplashScreen, postId, isOfflineMode = false)
             }
-
-        val forwardedPostId =
-            intent
-                .getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID)
-                ?.takeIf { it.isNotBlank() }
-
-        if (forwardedPostId != null) {
-            nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, forwardedPostId)
-        } else if (intent.action == Intent.ACTION_VIEW && intent.data != null) {
-            if (launchMode == DashboardLaunchMode.NONE) {
-                nextIntent.action = intent.action
-                nextIntent.data = intent.data
-            } else {
-                val postId = IntentUtils.extractDeepLinkPostId(intent)
-                if (postId != null) {
-                    nextIntent.putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
-                }
+            DashboardLaunchMode.OFFLINE -> {
+                AppNavigator.navigateToDashboard(this@SplashScreen, postId, isOfflineMode = true)
+            }
+            DashboardLaunchMode.NONE -> {
+                AppNavigator.navigateToLogin(this@SplashScreen, allowAutoLogin = true, originalIntent = intent)
             }
         }
-
-        startActivity(nextIntent)
         finish()
     }
 

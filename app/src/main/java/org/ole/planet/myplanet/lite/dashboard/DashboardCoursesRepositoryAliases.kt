@@ -1,0 +1,43 @@
+/*
+Author: Walfre López Prado
+Email: loppra@plataformasinformaticas.com
+Creation date: 2026-08-09
+ */
+
+package org.ole.planet.myplanet.lite.dashboard
+
+internal typealias ShelfFindRequest = DashboardCoursesRepository.ShelfFindRequest
+internal typealias ShelfFindResponse = DashboardCoursesRepository.ShelfFindResponse
+internal typealias ShelfDocument = DashboardCoursesRepository.ShelfDocument
+internal typealias CourseDocument = DashboardCoursesRepository.CourseDocument
+internal typealias CourseStep = DashboardCoursesRepository.CourseStep
+internal typealias CourseResource = DashboardCoursesRepository.CourseResource
+internal typealias CoursesProgressFindRequest = DashboardCoursesRepository.CoursesProgressFindRequest
+internal typealias CoursesProgressSelector = DashboardCoursesRepository.CoursesProgressSelector
+internal typealias CourseInSelector = DashboardCoursesRepository.CourseInSelector
+internal typealias CoursesProgressResponse = DashboardCoursesRepository.CoursesProgressResponse
+internal typealias CourseProgressDocument = DashboardCoursesRepository.CourseProgressDocument
+internal typealias CoursesProgressBulkRequest = DashboardCoursesRepository.CoursesProgressBulkRequest
+internal typealias CourseProgressUpdateDocument = DashboardCoursesRepository.CourseProgressUpdateDocument
+internal typealias BulkDocResult = DashboardCoursesRepository.BulkDocResult
+internal typealias CoursesFindRequest = DashboardCoursesRepository.CoursesFindRequest
+internal typealias CoursesSelector = DashboardCoursesRepository.CoursesSelector
+internal typealias CourseIdFilter = DashboardCoursesRepository.CourseIdFilter
+internal typealias CourseFindResponse = DashboardCoursesRepository.CourseFindResponse
+internal typealias TeamCoursesFindRequest = DashboardCoursesRepository.TeamCoursesFindRequest
+internal typealias TeamCoursesSelector = DashboardCoursesRepository.TeamCoursesSelector
+internal typealias TeamIdsSelector = DashboardCoursesRepository.TeamIdsSelector
+internal typealias TeamCoursesResponse = DashboardCoursesRepository.TeamCoursesResponse
+internal typealias TagsFindRequest = DashboardCoursesRepository.TagsFindRequest
+internal typealias TagsSelector = DashboardCoursesRepository.TagsSelector
+internal typealias TagsFindResponse = DashboardCoursesRepository.TagsFindResponse
+internal typealias TagDocument = DashboardCoursesRepository.TagDocument
+internal typealias TagLinksFindRequest = DashboardCoursesRepository.TagLinksFindRequest
+internal typealias TagLinksSelector = DashboardCoursesRepository.TagLinksSelector
+internal typealias TagLinksFindResponse = DashboardCoursesRepository.TagLinksFindResponse
+internal typealias TagLinkDocument = DashboardCoursesRepository.TagLinkDocument
+internal typealias PagedCourses = DashboardCoursesRepository.PagedCourses
+internal typealias AllDocsRequest = DashboardCoursesRepository.AllDocsRequest
+internal typealias AllDocsResponse = DashboardCoursesRepository.AllDocsResponse
+internal typealias AllDocsRow = DashboardCoursesRepository.AllDocsRow
+internal typealias DownloadResource = DashboardCoursesRepository.DownloadResource

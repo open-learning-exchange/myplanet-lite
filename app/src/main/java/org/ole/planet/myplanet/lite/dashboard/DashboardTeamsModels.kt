@@ -194,6 +194,13 @@ data class JoinRequestSelector(
 @JsonClass(generateAdapter = true)
 data class TeamJoinRequestFindRequest(val selector: TeamJoinRequestSelector)
 
+data class TeamJoinRequestDetails(
+    val username: String,
+    val fullName: String,
+    val hasAvatar: Boolean,
+    val request: JoinRequestDocument,
+)
+
 @JsonClass(generateAdapter = true)
 data class TeamJoinRequestSelector(
     val teamId: String,

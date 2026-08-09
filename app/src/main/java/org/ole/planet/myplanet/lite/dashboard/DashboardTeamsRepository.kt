@@ -119,6 +119,17 @@ class DashboardTeamsRepository(
             operations.fetchTeamJoinRequests(baseUrl, credentials, sessionCookie, teamId, teamPlanetCode)
         }
 
+    suspend fun fetchTeamJoinRequestDetails(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamId: String,
+        teamPlanetCode: String,
+    ): Result<List<TeamJoinRequestDetails>> =
+        runInDispatcher {
+            operations.fetchTeamJoinRequestDetails(baseUrl, credentials, sessionCookie, teamId, teamPlanetCode)
+        }
+
     suspend fun hasExistingJoinRequest(
         baseUrl: String,
         credentials: StoredCredentials?,

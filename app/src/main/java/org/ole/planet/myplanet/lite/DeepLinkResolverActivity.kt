@@ -19,6 +19,7 @@ import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerCatalog
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepositoryProvider
+import org.ole.planet.myplanet.lite.util.AppNavigator
 import org.ole.planet.myplanet.lite.util.IntentUtils
 
 class DeepLinkResolverActivity : ComponentActivity() {
@@ -116,23 +117,12 @@ class DeepLinkResolverActivity : ComponentActivity() {
     }
 
     private fun openApp() {
-        val nextIntent =
-            Intent(this, SplashScreen::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-
-        startActivity(nextIntent)
+        AppNavigator.navigateToSplash(this)
         finish()
     }
 
     private fun openPost(postId: String) {
-        val nextIntent =
-            Intent(this, SplashScreen::class.java).apply {
-                putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-            }
-
-        startActivity(nextIntent)
+        AppNavigator.navigateToSplash(this, postId)
         finish()
     }
 
@@ -163,19 +153,14 @@ class DeepLinkResolverActivity : ComponentActivity() {
                 baseUrl = link.baseUrl,
                 displayName = DashboardServerCatalog.displayNameFromBaseUrl(link.baseUrl),
             )
-            val nextIntent =
-                SurveyWizardActivity
-                    .newIntent(
-                        context = this@DeepLinkResolverActivity,
-                        document = document,
-                        teamId = link.teamId,
-                        teamName = publicSurvey.team?.name,
-                        baseUrl = link.baseUrl,
-                        includeUserContext = includeUserContext,
-                    ).apply {
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                    }
-            startActivity(nextIntent)
+            AppNavigator.navigateToSurvey(
+                context = this@DeepLinkResolverActivity,
+                document = document,
+                teamId = link.teamId,
+                teamName = publicSurvey.team?.name,
+                baseUrl = link.baseUrl,
+                includeUserContext = includeUserContext
+            )
             finish()
         }
     }

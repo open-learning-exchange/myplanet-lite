@@ -7,9 +7,11 @@ import java.util.concurrent.ConcurrentHashMap
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -38,6 +40,91 @@ class DashboardTeamsOperationsTest {
     @After
     fun tearDown() {
         mockWebServer.shutdown()
+    }
+
+    @Test
+    fun fetchTeamJoinRequestDetails_success() {
+        val requestsResponse = """
+            {
+                "docs": [
+                    {
+                        "_id": "req1",
+                        "userId": "org.couchdb.user:testuser",
+                        "teamId": "team1"
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setBody(requestsResponse).setResponseCode(200))
+
+        val profilesResponse = """
+            {
+                "docs": [
+                    {
+                        "_id": "org.couchdb.user:testuser",
+                        "firstName": "Test",
+                        "lastName": "User",
+                        "_attachments": {
+                            "img": {
+                                "content_type": "image/png"
+                            }
+                        }
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setBody(profilesResponse).setResponseCode(200))
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val details = operations.fetchTeamJoinRequestDetails(
+            baseUrl,
+            StoredCredentials("u", "p"),
+            "cookie",
+            "team1",
+            "code1",
+        )
+
+        assertEquals(1, details.size)
+        val detail = details[0]
+        assertEquals("testuser", detail.username)
+        assertEquals("Test User", detail.fullName)
+        assertTrue(detail.hasAvatar)
+        assertEquals("req1", detail.request.id)
+    }
+
+    @Test
+    fun fetchTeamJoinRequestDetails_profilesFailureGraceful() {
+        val requestsResponse = """
+            {
+                "docs": [
+                    {
+                        "_id": "req2",
+                        "userId": "org.couchdb.user:testuser2",
+                        "teamId": "team2"
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setBody(requestsResponse).setResponseCode(200))
+
+        // Profiles fetch fails
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val details = operations.fetchTeamJoinRequestDetails(
+            baseUrl,
+            StoredCredentials("u", "p"),
+            "cookie",
+            "team2",
+            "code2",
+        )
+
+        assertEquals(1, details.size)
+        val detail = details[0]
+        assertEquals("testuser2", detail.username)
+        assertEquals("testuser2", detail.fullName) // Falls back to username
+        assertFalse(detail.hasAvatar)
+        assertEquals("req2", detail.request.id)
     }
 
     @Test
@@ -180,5 +267,28 @@ class DashboardTeamsOperationsTest {
             )
         }
         assertTrue(exception.message?.startsWith("Unexpected response") == true)
+    }
+
+    @Test
+    fun fetchUserProfile_networkFailure() {
+        mockWebServer.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
+
+        val method = DashboardTeamsOperations::class.java.getDeclaredMethod(
+            "fetchUserProfile",
+            String::class.java,
+            String::class.java,
+            StoredCredentials::class.java,
+            String::class.java
+        )
+        method.isAccessible = true
+
+        val result = method.invoke(
+            operations,
+            mockWebServer.url("/").toString(),
+            "testuser",
+            StoredCredentials("testuser", "pass"),
+            "cookie"
+        )
+        assertNull(result)
     }
 }

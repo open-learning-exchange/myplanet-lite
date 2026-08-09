@@ -48,6 +48,11 @@ import org.json.JSONArray
 import org.json.JSONObject
 
 object DashboardResourcesMediaUtils {
+
+    const val MAX_TRANSFORMED_FILE_SIZE_BYTES = 50L * 1024 * 1024
+
+    internal fun isTransformedFileOversized(fileLength: Long): Boolean = fileLength > MAX_TRANSFORMED_FILE_SIZE_BYTES
+
     data class ResourceUploadMetadata(
         val fileName: String,
         val defaultTitle: String,
@@ -198,86 +203,8 @@ object DashboardResourcesMediaUtils {
         }
     }
 
-    private fun prepareAudioCodec(extractor: MediaExtractor): MediaCodec? {
-        var audioTrackIndex = -1
-        for (i in 0 until extractor.trackCount) {
-            val format = extractor.getTrackFormat(i)
-            val mime = format.getString(MediaFormat.KEY_MIME) ?: ""
-            if (mime.startsWith("audio/")) {
-                audioTrackIndex = i
-                break
-            }
-        }
-        if (audioTrackIndex == -1) return null
-        extractor.selectTrack(audioTrackIndex)
-        val format = extractor.getTrackFormat(audioTrackIndex)
-        val mime = format.getString(MediaFormat.KEY_MIME) ?: return null
-        val codec = MediaCodec.createDecoderByType(mime)
-        codec.configure(format, null, null, 0)
-        codec.start()
-        return codec
-    }
-
-    suspend fun extractWaveform(context: Context, uri: Uri): FloatArray {
-        return withContext(Dispatchers.IO) {
-            val retriever = MediaMetadataRetriever()
-            val extractor = MediaExtractor()
-            var codec: MediaCodec? = null
-            try {
-                retriever.setDataSource(context, uri)
-                val durationMs = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)?.toLong() ?: 0L
-                if (durationMs <= 0) return@withContext floatArrayOf()
-                extractor.setDataSource(context, uri, null)
-                codec = prepareAudioCodec(extractor)
-                if (codec == null) return@withContext floatArrayOf()
-                val info = MediaCodec.BufferInfo()
-                val amplitudes = mutableListOf<Float>()
-                var sawOutputEOS = false
-                val sampleTargetCount = 200
-                while (!sawOutputEOS && coroutineContext.isActive) {
-                    val inputBufferIndex = codec.dequeueInputBuffer(10000)
-                    if (inputBufferIndex >= 0) {
-                        val inputBuffer = codec.getInputBuffer(inputBufferIndex)!!
-                        val sampleSize = extractor.readSampleData(inputBuffer, 0)
-                        if (sampleSize < 0) {
-                            codec.queueInputBuffer(inputBufferIndex, 0, 0, 0, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                        } else {
-                            codec.queueInputBuffer(inputBufferIndex, 0, sampleSize, extractor.sampleTime, 0)
-                            extractor.advance()
-                        }
-                    }
-                    val outputBufferIndex = codec.dequeueOutputBuffer(info, 10000)
-                    if (outputBufferIndex >= 0) {
-                        val outputBuffer = codec.getOutputBuffer(outputBufferIndex)!!
-                        if (info.size > 0) {
-                            val pcmData = ShortArray(info.size / 2)
-                            outputBuffer.asShortBuffer().get(pcmData)
-                            var maxAbs = 0
-                            for (s in pcmData) {
-                                val abs = kotlin.math.abs(s.toInt())
-                                if (abs > maxAbs) maxAbs = abs
-                            }
-                            amplitudes.add(maxAbs.toFloat() / Short.MAX_VALUE)
-                        }
-                        codec.releaseOutputBuffer(outputBufferIndex, false)
-                        if ((info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) sawOutputEOS = true
-                    }
-                }
-                if (amplitudes.size > sampleTargetCount) {
-                    val step = amplitudes.size / sampleTargetCount
-                    FloatArray(sampleTargetCount) { i -> amplitudes.getOrNull(i * step) ?: 0f }
-                } else {
-                    amplitudes.toFloatArray()
-                }
-            } catch (_: Exception) {
-                floatArrayOf()
-            } finally {
-                runCatching { retriever.release() }
-                runCatching { extractor.release() }
-                runCatching { codec?.stop(); codec?.release() }
-            }
-        }
-    }
+    suspend fun extractWaveform(context: Context, uri: Uri): FloatArray =
+        DashboardResourcesWaveformExtractor.extract(context, uri)
 
     fun resolveVideoDurationMs(context: Context, uri: Uri): Long {
         return runCatching {
@@ -376,9 +303,11 @@ object DashboardResourcesMediaUtils {
         endMs: Long,
         sourceDurationMs: Long
     ): ByteArray? {
-        val inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
-        val outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_audio", ".mp3", context.cacheDir) }
+        var inputFile: File? = null
+        var outputFile: File? = null
         return try {
+            inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
+            outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_audio", ".mp3", context.cacheDir) }
             val exportSucceeded = suspendCancellableCoroutine { continuation ->
                 val clippingBuilder = MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs.coerceAtLeast(0L))
                 if (endMs in 1 until sourceDurationMs) clippingBuilder.setEndPositionMs(endMs)
@@ -398,13 +327,18 @@ object DashboardResourcesMediaUtils {
                     })
                     .build()
                 continuation.invokeOnCancellation { transformer.cancel() }
-                transformer.start(editedMediaItem, outputFile.absolutePath)
+                transformer.start(editedMediaItem, outputFile!!.absolutePath)
             }
-            if (!exportSucceeded) null else withContext(Dispatchers.IO) { outputFile.readBytes() }
+            if (!exportSucceeded) null else withContext(Dispatchers.IO) {
+                if (isTransformedFileOversized(outputFile!!.length())) null else outputFile.readBytes()
+            }
         } catch (_: Throwable) {
             null
         } finally {
-            withContext(Dispatchers.IO) { inputFile.delete(); outputFile.delete() }
+            withContext(Dispatchers.IO) {
+                inputFile?.delete()
+                outputFile?.delete()
+            }
         }
     }
 
@@ -421,10 +355,12 @@ object DashboardResourcesMediaUtils {
         sourceDurationMs: Long,
         rotationDegrees: Float
     ): ByteArray? {
-        val inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
-        val outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_video", ".mp4", context.cacheDir) }
+        var inputFile: File? = null
+        var outputFile: File? = null
         val shouldScale = selectedHeight < sourceHeight
         return try {
+            inputFile = withContext(Dispatchers.IO) { copyUriToTempFile(context, readFileErrorMessage, uri) }
+            outputFile = withContext(Dispatchers.IO) { File.createTempFile("resource_output_video", ".mp4", context.cacheDir) }
             val exportSucceeded = suspendCancellableCoroutine { continuation ->
                 val clippingBuilder = MediaItem.ClippingConfiguration.Builder().setStartPositionMs(startMs.coerceAtLeast(0L))
                 if (endMs in 1 until sourceDurationMs) clippingBuilder.setEndPositionMs(endMs)
@@ -458,22 +394,32 @@ object DashboardResourcesMediaUtils {
                         }
                     }).build()
                 continuation.invokeOnCancellation { transformer.cancel() }
-                transformer.start(editedMediaItem, outputFile.absolutePath)
+                transformer.start(editedMediaItem, outputFile!!.absolutePath)
             }
-            if (!exportSucceeded) null else withContext(Dispatchers.IO) { outputFile.readBytes() }
+            if (!exportSucceeded) null else withContext(Dispatchers.IO) {
+                if (isTransformedFileOversized(outputFile!!.length())) null else outputFile.readBytes()
+            }
         } catch (_: Throwable) {
             null
         } finally {
-            withContext(Dispatchers.IO) { inputFile.delete(); outputFile.delete() }
+            withContext(Dispatchers.IO) {
+                inputFile?.delete()
+                outputFile?.delete()
+            }
         }
     }
 
     fun copyUriToTempFile(context: Context, readFileErrorMessage: String, uri: Uri): File {
         val tempFile = File.createTempFile("resource_input_video", ".tmp", context.cacheDir)
-        context.contentResolver.openInputStream(uri)?.use { input ->
-            FileOutputStream(tempFile).use { output -> input.copyTo(output) }
-        } ?: throw IllegalStateException(readFileErrorMessage)
-        return tempFile
+        try {
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                FileOutputStream(tempFile).use { output -> input.copyTo(output) }
+            } ?: throw IllegalStateException(readFileErrorMessage)
+            return tempFile
+        } catch (e: Exception) {
+            tempFile.delete()
+            throw e
+        }
     }
 
     fun resolveDefaultLanguageIndex(context: Context, resources: Resources, options: List<String>): Int {
