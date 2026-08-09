@@ -11,6 +11,7 @@ import android.content.Intent
 import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.appcompat.app.AppCompatActivity
+import androidx.activity.OnBackPressedCallback
 import androidx.core.os.BundleCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import com.google.android.material.appbar.MaterialToolbar
@@ -39,6 +40,15 @@ class SurveyWizardActivity : AppCompatActivity() {
         val toolbar: MaterialToolbar = findViewById(R.id.surveyWizardToolbar)
         toolbar.setNavigationIcon(R.drawable.ic_arrow_back_24)
         toolbar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
+        onBackPressedDispatcher.addCallback(
+            this,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    val wizard = supportFragmentManager.findFragmentById(R.id.surveyWizardFragmentContainer) as? SurveyWizardFragment
+                    wizard?.handleExitRequest { finish() } ?: finish()
+                }
+            },
+        )
 
         if (savedInstanceState == null) {
             supportFragmentManager
@@ -53,6 +63,8 @@ class SurveyWizardActivity : AppCompatActivity() {
                         intent.getBooleanExtra(EXTRA_IS_EXAM, false),
                         intent.getStringExtra(EXTRA_BASE_URL),
                         intent.getBooleanExtra(EXTRA_INCLUDE_USER_CONTEXT, true),
+                        intent.getStringExtra(EXTRA_DRAFT_KEY),
+                        intent.getBooleanExtra(EXTRA_OFFLINE_MODE, false),
                     ),
                 ).commit()
         }
@@ -66,6 +78,8 @@ class SurveyWizardActivity : AppCompatActivity() {
         private const val EXTRA_IS_EXAM = "extra_is_exam"
         private const val EXTRA_BASE_URL = "extra_base_url"
         private const val EXTRA_INCLUDE_USER_CONTEXT = "extra_include_user_context"
+        private const val EXTRA_DRAFT_KEY = "extra_draft_key"
+        private const val EXTRA_OFFLINE_MODE = "extra_offline_mode"
 
         fun newIntent(
             context: Context,
@@ -76,6 +90,8 @@ class SurveyWizardActivity : AppCompatActivity() {
             isExam: Boolean = false,
             baseUrl: String? = null,
             includeUserContext: Boolean = true,
+            draftKey: String? = null,
+            offlineMode: Boolean = false,
         ): Intent =
             Intent(context, SurveyWizardActivity::class.java).apply {
                 putExtra(EXTRA_DOCUMENT, document)
@@ -85,6 +101,8 @@ class SurveyWizardActivity : AppCompatActivity() {
                 putExtra(EXTRA_IS_EXAM, isExam)
                 putExtra(EXTRA_BASE_URL, baseUrl)
                 putExtra(EXTRA_INCLUDE_USER_CONTEXT, includeUserContext)
+                putExtra(EXTRA_DRAFT_KEY, draftKey)
+                putExtra(EXTRA_OFFLINE_MODE, offlineMode)
             }
     }
 }

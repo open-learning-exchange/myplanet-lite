@@ -114,6 +114,25 @@ class DashboardLocalSurveyRepositoryTest {
     }
 
     @Test
+    fun `forced offline mode queues submission without contacting server`() = runBlocking {
+        val outcome = repository.submitOrQueueSubmission(
+            base = "https://server.example",
+            credentials = null,
+            sessionCookie = null,
+            submission = createSubmission(),
+            surveyId = "survey123",
+            surveyName = "Test Survey",
+            teamId = "team1",
+            teamName = "Team A",
+            baseUrlOverride = null,
+            forceOfflineQueue = true,
+        )
+
+        assertEquals(SubmitOutcome.QUEUED_OFFLINE, outcome)
+        assertEquals(1, repository.getPendingForTeam("team1").size)
+    }
+
+    @Test
     fun `deleteEntry removes from outbox store`() = runBlocking {
         val submission = createSubmission()
         repository.saveSubmission(

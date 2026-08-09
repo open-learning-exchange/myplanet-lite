@@ -235,7 +235,7 @@ class DashboardVoicesFragmentTest {
                 null, null, null, null, null, null, null
             )
 
-            val dummyItem = DashboardVoicesFragment.DashboardNewsItem(
+            val dummyItem = DashboardNewsItem(
                 "id",
                 "author",
                 null,
@@ -279,7 +279,7 @@ class DashboardVoicesFragmentTest {
                 null, null, null, null, null, null, null
             )
 
-            val dummyItem = DashboardVoicesFragment.DashboardNewsItem(
+            val dummyItem = DashboardNewsItem(
                 "id",
                 "author",
                 null,
@@ -307,7 +307,7 @@ class DashboardVoicesFragmentTest {
     fun `adapter getPositionsForUsername returns correct indices`() {
         val mockMarkwon = Mockito.mock(Markwon::class.java)
 
-        val adapter = DashboardVoicesFragment.DashboardNewsAdapter(
+        val adapter = DashboardNewsAdapter(
             markwon = mockMarkwon,
             avatarBinder = { _, _, _ -> },
             imageBinder = { _, _ -> },
@@ -320,7 +320,7 @@ class DashboardVoicesFragmentTest {
         )
 
         val createDummyItem = { id: String, username: String? ->
-            DashboardVoicesFragment.DashboardNewsItem(
+            DashboardNewsItem(
                 id = id,
                 author = "Author $id",
                 username = username,

@@ -516,6 +516,17 @@
     <string name="dashboard_survey_download_error">सर्वेक्षण अफलाइन प्रयोगका लागि सुरक्षित गर्न सकिएन।</string>
     <string name="dashboard_surveys_tab_outbox">पेन्डिङ</string>
     <string name="dashboard_surveys_outbox_empty">कुनै लंबित पठाइहरू छैनन्।</string>
+    <string name="dashboard_surveys_tab_drafts">मस्यौदाहरू</string>
+    <string name="dashboard_surveys_drafts_empty">कुनै सर्वेक्षण मस्यौदा छैन।</string>
+    <string name="dashboard_survey_draft_last_edited">अन्तिम सम्पादन: %1$s</string>
+    <string name="dashboard_survey_draft_delete">मेटाउनुहोस्</string>
+    <string name="dashboard_survey_draft_delete_confirm">यो मस्यौदा मेटाउने? यो कार्य पूर्ववत् गर्न सकिँदैन।</string>
+    <string name="dashboard_survey_draft_exit_title">मस्यौदा सुरक्षित गर्ने?</string>
+    <string name="dashboard_survey_draft_exit_message">पछि सम्पादन जारी राख्ने वा त्याग्ने?</string>
+    <string name="dashboard_survey_draft_keep">पछि जारी राख्नुहोस्</string>
+    <string name="dashboard_survey_draft_discard">त्याग्नुहोस्</string>
+    <string name="dashboard_survey_draft_not_downloaded_title">सर्वेक्षण अफलाइन उपलब्ध छैन</string>
+    <string name="dashboard_survey_draft_not_downloaded_message">यो सर्वेक्षण यस उपकरणमा डाउनलोड गरिएको छैन। मस्यौदा सम्पादन जारी राख्न MyPlanet Lite पुनः अनलाइन गर्नुहोस् र/वा सर्वेक्षण डाउनलोड गर्नुहोस्।</string>
     <string name="dashboard_survey_submission_saved_offline">पठाइ समिकरणका लागि पठाइ बाकसमा सुरक्षित गरियो।</string>
     <string name="dashboard_outbox_saved_at">%1$s मा अफलाइन सुरक्षित गरियो</string>
     <string name="dashboard_outbox_unknown_survey">सर्वेक्षण</string>

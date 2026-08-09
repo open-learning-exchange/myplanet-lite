@@ -164,9 +164,8 @@ class PostShareHelper(
         }
 
     companion object {
-        private val client by lazy {
-            OkHttpClient
-                .Builder()
+        private val client: OkHttpClient by lazy {
+            SharedBitmapDependencies.client.newBuilder()
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .readTimeout(15, TimeUnit.SECONDS)
                 .build()

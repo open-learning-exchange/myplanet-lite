@@ -49,6 +49,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.util.ApplicationScope
 import org.ole.planet.myplanet.lite.util.FileUtils.deleteFiles
 import java.util.LinkedHashMap
+import org.ole.planet.myplanet.lite.dashboard.SharedBitmapDependencies
 
 class CreateVoiceActivity : BaseActivity() {
     internal lateinit var toolbar: MaterialToolbar
@@ -63,11 +64,11 @@ class CreateVoiceActivity : BaseActivity() {
 
     internal val repository =
         VoicesComposerRepository(
-            client = OkHttpClient.Builder().build(),
-            moshi = Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build(),
+            client = SharedBitmapDependencies.client,
+            moshi = SharedBitmapDependencies.moshi,
         )
     internal val newsActionsRepository = DashboardNewsActionsRepository(AuthDependencies.client, AuthDependencies.moshi, Dispatchers.IO)
-    internal val httpClient = OkHttpClient.Builder().build()
+    internal val httpClient = SharedBitmapDependencies.client
     internal val pendingImages = LinkedHashMap<String, PendingVoiceImage>()
     internal val decodedBitmaps = java.util.concurrent.ConcurrentHashMap<String, Bitmap>()
     private val imagePickerLauncher =
@@ -452,6 +453,9 @@ class CreateVoiceActivity : BaseActivity() {
         internal const val MAX_HEADING_LEVEL = 6
         internal val NUMBERED_LIST_REGEX = Regex("^(\\d+)\\.\\s*(.*)$")
         internal val MARKDOWN_IMAGE_REGEX = Regex("!\\[[^\\]]*\\]\\(([^)]+)\\)")
+        internal val GLOBAL_PATTERN_REGEX = Regex("(!\\[[^]]*]\\()(.*?)(\\))")
+        internal val RESOURCES_PATTERN_REGEX = Regex("!\\[[^]]*]\\((?:/?db/)?/?resources/([^)]+)\\)")
+        internal val RESOURCES_PATH_REGEX = Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
         internal const val KEY_DEVICE_ANDROID_ID = "device_android_id"
         internal const val KEY_DEVICE_CUSTOM_DEVICE_NAME = "device_custom_device_name"
         internal const val KEY_SERVER_PARENT_CODE = "server_parent_code"

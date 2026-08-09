@@ -243,9 +243,8 @@ internal fun DashboardPostDetailActivity.transformReplyMarkdownForPreview(markdo
 
     val pendingByFileName = pendingReplyImages.values.associateBy { it.fileName }
     if (pendingByFileName.isNotEmpty()) {
-        val globalPattern = Regex("(!\\[[^]]*]\\()(.*?)(\\))")
         processed =
-            globalPattern.replace(processed) { matchResult ->
+            DashboardPostDetailActivity.GLOBAL_PATTERN.replace(processed) { matchResult ->
                 val path = matchResult.groupValues.getOrNull(2).orEmpty()
                 val pending = pendingByFileName[path]
                 if (pending != null) {

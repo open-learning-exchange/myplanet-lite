@@ -272,10 +272,10 @@ class DashboardTeamMembersFragment : Fragment() {
         val teamPlanetCodeForRequests = currentTeamPlanetCode ?: serverPlanetCode
         val joinRequests =
             if (teamPlanetCodeForRequests.isNullOrBlank()) {
-                emptyList<JoinRequestDocument>()
+                emptyList()
             } else {
                 repository
-                    .fetchTeamJoinRequests(
+                    .fetchTeamJoinRequestDetails(
                         baseUrl = base,
                         credentials = creds,
                         sessionCookie = sessionCookie,
@@ -287,7 +287,23 @@ class DashboardTeamMembersFragment : Fragment() {
                     }
             }
         if (joinRequests != null) {
-            loadJoinRequestsData(base, creds, joinRequests)
+            if (joinRequests.isEmpty()) {
+                currentJoinRequests = emptyList()
+                updateJoinRequestsAdapterList(emptyList())
+                showJoinRequestsEmptyState()
+            } else {
+                val requests = joinRequests.map { detail ->
+                    TeamJoinRequestUiModel(
+                        id = detail.request.id ?: detail.request.userId.orEmpty(),
+                        username = detail.username,
+                        fullName = detail.fullName,
+                        hasAvatar = detail.hasAvatar,
+                        request = detail.request,
+                    )
+                }
+                currentJoinRequests = requests
+                updateJoinRequestsAdapterList(requests)
+            }
         } else {
             hideJoinRequestsSection()
         }
@@ -334,49 +350,6 @@ class DashboardTeamMembersFragment : Fragment() {
                 binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
                 showLoading(false)
             }
-    }
-
-    private suspend fun loadJoinRequestsData(
-        base: String,
-        creds: StoredCredentials,
-        joinRequests: List<JoinRequestDocument>,
-    ) {
-        if (joinRequests.isEmpty()) {
-            currentJoinRequests = emptyList()
-            updateJoinRequestsAdapterList(emptyList())
-            showJoinRequestsEmptyState()
-            return
-        }
-
-        val userIds = joinRequests.mapNotNull { it.userId?.takeIf(String::isNotBlank) }.distinct()
-        val profilesById =
-            repository
-                .fetchUserProfiles(base, creds, sessionCookie, userIds)
-                .getOrDefault(emptyList())
-                .associateBy { it._id }
-        val requests =
-            joinRequests
-                .map { request ->
-                    val userId = request.userId.orEmpty()
-                    val profile = profilesById[userId]
-                    val username = userId.substringAfter("org.couchdb.user:", userId)
-                    val fullName =
-                        listOfNotNull(
-                            profile?.firstName,
-                            profile?.middleName,
-                            profile?.lastName,
-                        ).filter { it.isNotBlank() }.joinToString(" ").ifBlank { username }
-                    TeamJoinRequestUiModel(
-                        id = request.id ?: userId,
-                        username = username,
-                        fullName = fullName,
-                        hasAvatar = profile?.attachments?.image != null,
-                        request = request,
-                    )
-                }.sortedBy { it.fullName.lowercase() }
-
-        currentJoinRequests = requests
-        updateJoinRequestsAdapterList(requests)
     }
 
     private fun showLoading(loading: Boolean) {
