@@ -7,9 +7,11 @@ import java.util.concurrent.ConcurrentHashMap
 import okhttp3.OkHttpClient
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -265,5 +267,28 @@ class DashboardTeamsOperationsTest {
             )
         }
         assertTrue(exception.message?.startsWith("Unexpected response") == true)
+    }
+
+    @Test
+    fun fetchUserProfile_networkFailure() {
+        mockWebServer.enqueue(MockResponse().setSocketPolicy(SocketPolicy.DISCONNECT_AFTER_REQUEST))
+
+        val method = DashboardTeamsOperations::class.java.getDeclaredMethod(
+            "fetchUserProfile",
+            String::class.java,
+            String::class.java,
+            StoredCredentials::class.java,
+            String::class.java
+        )
+        method.isAccessible = true
+
+        val result = method.invoke(
+            operations,
+            mockWebServer.url("/").toString(),
+            "testuser",
+            StoredCredentials("testuser", "pass"),
+            "cookie"
+        )
+        assertNull(result)
     }
 }
