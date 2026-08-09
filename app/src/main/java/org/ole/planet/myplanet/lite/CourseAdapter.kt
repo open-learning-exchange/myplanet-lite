@@ -48,6 +48,7 @@ class CourseAdapter(
     private var searchQuery: String = ""
     private var selectedCategory = 0
     private var activeTagCourseIds: Set<String>? = null
+    private var pendingImageRefresh = false
     var onCourseClick: ((CourseItem) -> Unit)? = null
     var onCourseDownloadClick: ((CourseItem) -> Unit)? = null
     var onCourseDeleteClick: ((CourseItem) -> Unit)? = null
@@ -90,10 +91,27 @@ class CourseAdapter(
         position: Int,
         payloads: MutableList<Any>
     ) {
-        if (payloads.contains(PROGRESS_UPDATE_PAYLOAD)) {
-            val item = getItem(position)
+        val item = getItem(position)
+        if (payloads.contains(PROGRESS_UPDATE_PAYLOAD) || payloads.contains(IMAGE_UPDATE_PAYLOAD)) {
             if (holder is CourseViewHolder && item is CourseListItem.CourseItemWrapper) {
-                holder.bindDownloadState(item)
+                if (payloads.contains(PROGRESS_UPDATE_PAYLOAD)) {
+                    holder.bindDownloadState(item)
+                }
+                if (payloads.contains(IMAGE_UPDATE_PAYLOAD)) {
+                    holder.bindImage(item.course)
+                }
+                return
+            }
+        }
+        if (payloads.contains(HEADER_UPDATE_PAYLOAD)) {
+            if (holder is HeaderViewHolder && item is CourseListItem.Header) {
+                holder.onCategorySelected = onCategorySelected
+                holder.bind(item.selectedIndex, item.categories, item.searchQuery, { index ->
+                    selectedCategory = index
+                    applyFilter()
+                }) { query ->
+                    updateSearchQuery(query)
+                }
                 return
             }
         }
@@ -141,9 +159,13 @@ class CourseAdapter(
         }
     }
 
-    fun submitCourses(newItems: List<CourseItem>) {
+    fun submitCourses(
+        newItems: List<CourseItem>,
+        forceImageRefresh: Boolean = false,
+    ) {
         items.clear()
         items.addAll(newItems.distinctBy { it.id })
+        pendingImageRefresh = pendingImageRefresh || forceImageRefresh
         applyFilter()
     }
 
@@ -184,15 +206,59 @@ class CourseAdapter(
                 downloadProgress = downloadProgressByCourse[it.id]
             )
         })
-        submitList(newList)
+        val shouldRefreshImages = pendingImageRefresh
+        submitList(newList) {
+            if (shouldRefreshImages && pendingImageRefresh) {
+                pendingImageRefresh = false
+                notifyItemRangeChanged(1, (itemCount - 1).coerceAtLeast(0), IMAGE_UPDATE_PAYLOAD)
+            }
+        }
     }
 
     class HeaderViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val chipGroup: ChipGroup = itemView.findViewById(R.id.dashboardCoursesCategories)
         private val searchInput: TextInputEditText = itemView.findViewById(R.id.dashboardCoursesSearch)
-        private var watcher: android.text.TextWatcher? = null
-        private var chipListener: ChipGroup.OnCheckedStateChangeListener? = null
+        private var currentCategories: List<CourseCategory>? = null
+        private var currentSelectedIndex: Int = -1
+        private val chipIds = mutableListOf<Int>()
+        private var activeOnSelectionChanged: ((Int) -> Unit)? = null
+        private var activeOnSearchChanged: ((String) -> Unit)? = null
         var onCategorySelected: ((String?) -> Unit)? = null
+
+        private var isBinding = false
+
+        init {
+            searchInput.addTextChangedListener(object : android.text.TextWatcher {
+                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
+                override fun afterTextChanged(s: android.text.Editable?) {
+                    if (!isBinding && searchInput.hasFocus()) {
+                        activeOnSearchChanged?.invoke(s?.toString().orEmpty())
+                    }
+                }
+            })
+            searchInput.setOnEditorActionListener { _, actionId, event ->
+                val isEnterKey = event?.keyCode == KeyEvent.KEYCODE_ENTER &&
+                    event.action == KeyEvent.ACTION_UP
+                if (actionId == EditorInfo.IME_ACTION_SEARCH || isEnterKey) {
+                    activeOnSearchChanged?.invoke(searchInput.text?.toString().orEmpty())
+                    hideKeyboard()
+                    true
+                } else {
+                    false
+                }
+            }
+            chipGroup.setOnCheckedStateChangeListener { _, checkedIds ->
+                if (isBinding) return@setOnCheckedStateChangeListener
+                val checkedId = checkedIds.firstOrNull() ?: return@setOnCheckedStateChangeListener
+                val newIndex = chipIds.indexOf(checkedId)
+                if (newIndex >= 0 && newIndex != currentSelectedIndex) {
+                    currentSelectedIndex = newIndex
+                    activeOnSelectionChanged?.invoke(newIndex)
+                    onCategorySelected?.invoke(currentCategories?.getOrNull(newIndex)?.id)
+                }
+            }
+        }
 
         fun bind(
             selectedIndex: Int,
@@ -201,60 +267,48 @@ class CourseAdapter(
             onSelectionChanged: (Int) -> Unit,
             onSearchChanged: (String) -> Unit
         ) {
-            chipGroup.setOnCheckedStateChangeListener(null)
-            chipGroup.removeAllViews()
-            val chipIds = categories.mapIndexed { index, category ->
-                val chip = Chip(itemView.context).apply {
-                    id = View.generateViewId()
-                    text = category.name
-                    isCheckable = true
-                    isChecked = index == selectedIndex
-                    setEnsureMinTouchTargetSize(false)
-                    layoutParams = ChipGroup.LayoutParams(
-                        ChipGroup.LayoutParams.WRAP_CONTENT,
-                        ChipGroup.LayoutParams.WRAP_CONTENT
-                    ).apply {
-                        marginEnd = itemView.resources.getDimensionPixelSize(
-                            R.dimen.dashboard_courses_chip_spacing
-                        )
+            isBinding = true
+            activeOnSelectionChanged = onSelectionChanged
+            activeOnSearchChanged = onSearchChanged
+
+            if (currentCategories != categories) {
+                currentCategories = categories
+                chipGroup.removeAllViews()
+                chipIds.clear()
+                categories.forEachIndexed { index, category ->
+                    val chip = Chip(itemView.context).apply {
+                        id = View.generateViewId()
+                        text = category.name
+                        isCheckable = true
+                        isChecked = index == selectedIndex
+                        setEnsureMinTouchTargetSize(false)
+                        layoutParams = ChipGroup.LayoutParams(
+                            ChipGroup.LayoutParams.WRAP_CONTENT,
+                            ChipGroup.LayoutParams.WRAP_CONTENT
+                        ).apply {
+                            marginEnd = itemView.resources.getDimensionPixelSize(
+                                R.dimen.dashboard_courses_chip_spacing
+                            )
+                        }
                     }
+                    chipGroup.addView(chip)
+                    chipIds.add(chip.id)
                 }
-                chipGroup.addView(chip)
-                chip.id
-            }
-
-            watcher?.let { searchInput.removeTextChangedListener(it) }
-            searchInput.setText(searchText)
-            searchInput.setSelection(searchInput.text?.length ?: 0)
-            watcher = object : android.text.TextWatcher {
-                override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
-                override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) = Unit
-                override fun afterTextChanged(s: android.text.Editable?) {
-                    onSearchChanged(s?.toString().orEmpty())
-                }
-            }
-            searchInput.addTextChangedListener(watcher)
-            searchInput.setOnEditorActionListener { _, actionId, event ->
-                val isEnterKey = event?.keyCode == KeyEvent.KEYCODE_ENTER &&
-                    event.action == KeyEvent.ACTION_UP
-                if (actionId == EditorInfo.IME_ACTION_SEARCH || isEnterKey) {
-                    onSearchChanged(searchInput.text?.toString().orEmpty())
-                    hideKeyboard()
-                    true
-                } else {
-                    false
+                currentSelectedIndex = selectedIndex
+            } else if (currentSelectedIndex != selectedIndex) {
+                currentSelectedIndex = selectedIndex
+                for (i in 0 until chipGroup.childCount) {
+                    val chip = chipGroup.getChildAt(i) as? Chip
+                    chip?.isChecked = i == selectedIndex
                 }
             }
 
-            chipListener = ChipGroup.OnCheckedStateChangeListener { _, checkedIds ->
-                val checkedId = checkedIds.firstOrNull() ?: return@OnCheckedStateChangeListener
-                val newIndex = chipIds.indexOf(checkedId)
-                if (newIndex >= 0 && newIndex != selectedIndex) {
-                    onSelectionChanged(newIndex)
-                    onCategorySelected?.invoke(categories.getOrNull(newIndex)?.id)
-                }
+            if (searchInput.text?.toString() != searchText) {
+                searchInput.setText(searchText)
+                searchInput.setSelection(searchText.length)
             }
-            chipGroup.setOnCheckedStateChangeListener(chipListener)
+
+            isBinding = false
         }
 
         private fun hideKeyboard() {
@@ -323,7 +377,7 @@ class CourseAdapter(
             }
         }
 
-        private fun bindImage(course: CourseItem) {
+        fun bindImage(course: CourseItem) {
             val coverPath = course.coverPath
             val loader = imageLoaderProvider()
             if (!coverPath.isNullOrBlank()) {
@@ -405,6 +459,9 @@ class CourseAdapter(
         }
 
         override fun getChangePayload(oldItem: CourseListItem, newItem: CourseListItem): Any? {
+            if (oldItem is CourseListItem.Header && newItem is CourseListItem.Header) {
+                return HEADER_UPDATE_PAYLOAD
+            }
             if (oldItem is CourseListItem.CourseItemWrapper && newItem is CourseListItem.CourseItemWrapper) {
                 if (oldItem.course == newItem.course && oldItem.isDownloaded == newItem.isDownloaded) {
                     return PROGRESS_UPDATE_PAYLOAD
@@ -418,5 +475,7 @@ class CourseAdapter(
         private const val VIEW_TYPE_HEADER = 0
         private const val VIEW_TYPE_ITEM = 1
         private const val PROGRESS_UPDATE_PAYLOAD = "PROGRESS_UPDATE"
+        private const val HEADER_UPDATE_PAYLOAD = "HEADER_UPDATE"
+        const val IMAGE_UPDATE_PAYLOAD = "IMAGE_UPDATE"
     }
 }

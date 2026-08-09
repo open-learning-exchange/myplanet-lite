@@ -65,6 +65,7 @@ tasks.withType<Test>().configureEach {
     if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
         jvmArgs(
             "-XX:+EnableDynamicAgentLoading",
+            "--enable-native-access=ALL-UNNAMED",
             "--add-opens=java.base/java.lang=ALL-UNNAMED",
             "--add-opens=java.base/java.util=ALL-UNNAMED",
             "--add-opens=java.base/java.io=ALL-UNNAMED",
