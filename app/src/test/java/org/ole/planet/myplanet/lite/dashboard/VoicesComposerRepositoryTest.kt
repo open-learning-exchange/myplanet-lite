@@ -127,6 +127,65 @@ class VoicesComposerRepositoryTest {
     }
 
     @Test
+    fun `ensureReplyImageUpload correctly coordinates creation and upload`() = runTest {
+        val creationResponse = """
+            {
+                "ok": true,
+                "id": "new_res_456",
+                "rev": "rev_creation"
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(creationResponse))
+
+        val uploadResponse = """
+            {
+                "ok": true,
+                "id": "new_res_456",
+                "rev": "rev_upload",
+                "resourceId": "new_res_456",
+                "filename": "image.jpg",
+                "markdown": "![](resources/new_res_456/image.jpg)"
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(uploadResponse))
+
+        val credentials = StoredCredentials("testUser", "testPass")
+        val baseUrl = mockWebServer.url("/").toString()
+        val context = VoiceImageResourceContext(
+            username = "testUser",
+            resideOn = "planet",
+            sourcePlanet = "planet",
+            androidId = "android123",
+            deviceName = "device",
+            customDeviceName = "custom",
+        )
+        val fileName = "image.jpg"
+        val bytes = byteArrayOf(4, 5, 6)
+
+        val result = repository.ensureReplyImageUpload(
+            baseUrl = baseUrl,
+            credentials = credentials,
+            context = context,
+            fileName = fileName,
+            jpegBytes = bytes
+        )
+
+        assertNotNull(result)
+        assertEquals("new_res_456", result.resourceId)
+        assertEquals("rev_upload", result.revision)
+        assertEquals("![](resources/new_res_456/image.jpg)", result.markdown)
+
+        val createRequest = mockWebServer.takeRequest()
+        assertEquals("POST", createRequest.method)
+        assertEquals("/db/resources", createRequest.path)
+
+        val uploadRequest = mockWebServer.takeRequest()
+        assertEquals("PUT", uploadRequest.method)
+        assertEquals("/db/resources/new_res_456/image.jpg", uploadRequest.path)
+        assertEquals("rev_creation", uploadRequest.getHeader("If-Match"))
+    }
+
+    @Test
     fun `uploadResourceBinary throws IOException on invalid JSON response`() = runTest {
         mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("null"))
 

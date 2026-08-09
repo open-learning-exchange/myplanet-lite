@@ -6,6 +6,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,7 +33,8 @@ class DashboardOfflineSurveyStoreTest {
         context.getSharedPreferences("dashboard_offline_surveys", Context.MODE_PRIVATE).edit().clear().commit()
 
         // Pass both context and explicit moshi instance as mentioned in prompt
-        store = DashboardOfflineSurveyStore(context, moshi)
+        val testDispatcher = UnconfinedTestDispatcher()
+        store = DashboardOfflineSurveyStore(context, testDispatcher, moshi)
     }
 
     @After

@@ -50,7 +50,7 @@ internal fun CreateVoiceActivity.transformMarkdownForPreviewContent(markdown: St
     if (pendingImages.isNotEmpty()) {
         val pendingByFileName = pendingImages.values.associateBy { it.fileName }
         if (pendingByFileName.isNotEmpty()) {
-            val globalPattern = Regex("(!\\[[^]]*]\\()(.*?)(\\))")
+            val globalPattern = CreateVoiceActivity.GLOBAL_PATTERN_REGEX
             processed =
                 globalPattern.replace(processed) { matchResult ->
                     val path = matchResult.groupValues.getOrNull(2).orEmpty()
@@ -69,7 +69,7 @@ internal fun CreateVoiceActivity.transformMarkdownForPreviewContent(markdown: St
     if (base.isNullOrEmpty()) {
         return processed
     }
-    val resourcesPattern = Regex("!\\[[^]]*]\\((?:/?db/)?/?resources/([^)]+)\\)")
+    val resourcesPattern = CreateVoiceActivity.RESOURCES_PATTERN_REGEX
     return resourcesPattern.replace(processed) { matchResult ->
         val path = matchResult.groupValues.getOrNull(1).orEmpty()
         "![]($base/db/resources/$path)"
@@ -390,7 +390,7 @@ internal fun CreateVoiceActivity.normalizeImagePath(path: String): String {
     val extracted = extractPathFromMarkdown(path) ?: path
     val trimmed = extracted.trim()
     val resourcesMatch =
-        Regex("resources/[^/]+/[^/]+", RegexOption.IGNORE_CASE)
+        CreateVoiceActivity.RESOURCES_PATH_REGEX
             .find(trimmed)
     val reduced =
         if (resourcesMatch != null) {

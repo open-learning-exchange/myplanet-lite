@@ -1,18 +1,21 @@
 package org.ole.planet.myplanet.lite.dashboard
 
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import java.io.File
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.json.JSONObject
-import java.io.File
 import org.junit.After
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
 
 @RunWith(RobolectricTestRunner::class)
 class DashboardResourcesRepositoryTest {
@@ -24,7 +27,7 @@ class DashboardResourcesRepositoryTest {
     fun setup() {
         server = MockWebServer()
         server.start()
-        repository = DashboardResourcesRepository(UnconfinedTestDispatcher())
+        repository = DashboardResourcesRepository(ioDispatcher = UnconfinedTestDispatcher())
     }
 
     @After
@@ -201,12 +204,12 @@ class DashboardResourcesRepositoryTest {
 
         val result = repository.downloadPdfToCache(server.url("/test.pdf").toString(), "Basic auth", cacheDir)
 
-        org.junit.Assert.assertNotNull(result)
-        org.junit.Assert.assertTrue(result!!.exists())
-        org.junit.Assert.assertEquals(pdfContent, result.readText())
+        assertNotNull(result)
+        assertTrue(result!!.exists())
+        assertEquals(pdfContent, result.readText())
 
         val request = server.takeRequest()
-        org.junit.Assert.assertNull(request.getHeader("Authorization"))
+        assertNull(request.getHeader("Authorization"))
 
         result.delete()
         cacheDir.delete()
@@ -221,7 +224,7 @@ class DashboardResourcesRepositoryTest {
 
         val result = repository.downloadPdfToCache(server.url("/test.pdf").toString(), "Basic auth", cacheDir)
 
-        org.junit.Assert.assertNull(result)
+        assertNull(result)
 
         cacheDir.delete()
     }
