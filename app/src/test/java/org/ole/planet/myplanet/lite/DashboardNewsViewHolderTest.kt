@@ -25,16 +25,16 @@ import org.robolectric.annotation.Config
 class DashboardNewsViewHolderTest {
 
     private lateinit var view: View
-    private lateinit var viewHolder: DashboardVoicesFragment.DashboardNewsViewHolder
+    private lateinit var viewHolder: DashboardNewsViewHolder
     private lateinit var markwon: Markwon
     private lateinit var avatarBinder: (ImageView, String?, Boolean) -> Unit
     private lateinit var imageBinder: (ImageView, String) -> Unit
-    private lateinit var onImageClicked: (DashboardVoicesFragment.DashboardNewsItem, Int) -> Unit
-    private lateinit var onPostClicked: (DashboardVoicesFragment.DashboardNewsItem) -> Unit
-    private lateinit var onDeleteClicked: (DashboardVoicesFragment.DashboardNewsItem) -> Unit
-    private lateinit var onShareClicked: (DashboardVoicesFragment.DashboardNewsItem) -> Unit
-    private lateinit var onEditClicked: (DashboardVoicesFragment.DashboardNewsItem) -> Unit
-    private lateinit var onAuthorClicked: (DashboardVoicesFragment.DashboardNewsItem) -> Unit
+    private lateinit var onImageClicked: (DashboardNewsItem, Int) -> Unit
+    private lateinit var onPostClicked: (DashboardNewsItem) -> Unit
+    private lateinit var onDeleteClicked: (DashboardNewsItem) -> Unit
+    private lateinit var onShareClicked: (DashboardNewsItem) -> Unit
+    private lateinit var onEditClicked: (DashboardNewsItem) -> Unit
+    private lateinit var onAuthorClicked: (DashboardNewsItem) -> Unit
 
     private fun createDummyItem(
         message: String? = "Test Message",
@@ -43,8 +43,8 @@ class DashboardNewsViewHolderTest {
         canDelete: Boolean = false,
         canShare: Boolean = false,
         imagePaths: List<String> = emptyList()
-    ): DashboardVoicesFragment.DashboardNewsItem {
-        return DashboardVoicesFragment.DashboardNewsItem(
+    ): DashboardNewsItem {
+        return DashboardNewsItem(
             id = "1",
             author = "Test Author",
             username = "testuser",
@@ -77,7 +77,7 @@ class DashboardNewsViewHolderTest {
         onEditClicked = mock()
         onAuthorClicked = mock()
 
-        viewHolder = DashboardVoicesFragment.DashboardNewsViewHolder(
+        viewHolder = DashboardNewsViewHolder(
             view, markwon, avatarBinder, imageBinder, onImageClicked, onPostClicked,
             onDeleteClicked, onShareClicked, onEditClicked, onAuthorClicked
         )
