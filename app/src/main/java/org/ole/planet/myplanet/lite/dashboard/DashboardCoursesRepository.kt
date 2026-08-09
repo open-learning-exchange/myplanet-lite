@@ -31,512 +31,88 @@ import java.io.File
 import java.io.IOException
 
 class DashboardCoursesRepository(
-    private val client: OkHttpClient = OkHttpClient.Builder().build(),
-    private val moshi: Moshi =
+    internal val client: OkHttpClient = OkHttpClient.Builder().build(),
+    internal val moshi: Moshi =
         Moshi
             .Builder()
             .add(FlexibleSurveyJsonAdapter())
             .addLast(KotlinJsonAdapterFactory())
             .build(),
-    private val dispatcher: CoroutineDispatcher = Dispatchers.IO,
+    internal val dispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
-    private val findRequestAdapter = moshi.adapter(ShelfFindRequest::class.java)
-    private val findResponseAdapter = moshi.adapter(ShelfFindResponse::class.java)
-    private val shelfDocumentAdapter = moshi.adapter(ShelfDocument::class.java)
-    private val coursesProgressRequestAdapter = moshi.adapter(CoursesProgressFindRequest::class.java)
-    private val coursesProgressResponseAdapter = moshi.adapter(CoursesProgressResponse::class.java)
-    private val coursesProgressBulkAdapter = moshi.adapter(CoursesProgressBulkRequest::class.java)
-    private val bulkDocsResultAdapter =
+    internal val findRequestAdapter = moshi.adapter(ShelfFindRequest::class.java)
+    internal val findResponseAdapter = moshi.adapter(ShelfFindResponse::class.java)
+    internal val shelfDocumentAdapter = moshi.adapter(ShelfDocument::class.java)
+    internal val coursesProgressRequestAdapter = moshi.adapter(CoursesProgressFindRequest::class.java)
+    internal val coursesProgressResponseAdapter = moshi.adapter(CoursesProgressResponse::class.java)
+    internal val coursesProgressBulkAdapter = moshi.adapter(CoursesProgressBulkRequest::class.java)
+    internal val bulkDocsResultAdapter =
         moshi.adapter<List<BulkDocResult>>(
             com.squareup.moshi.Types
                 .newParameterizedType(List::class.java, BulkDocResult::class.java),
         )
-    private val allDocsRequestAdapter = moshi.adapter(AllDocsRequest::class.java)
-    private val allDocsResponseAdapter = moshi.adapter(AllDocsResponse::class.java)
-    private val coursesFindRequestAdapter = moshi.adapter(CoursesFindRequest::class.java)
-    private val coursesFindResponseAdapter = moshi.adapter(CourseFindResponse::class.java)
-    private val teamCoursesRequestAdapter = moshi.adapter(TeamCoursesFindRequest::class.java)
-    private val teamCoursesResponseAdapter = moshi.adapter(TeamCoursesResponse::class.java)
-    private val tagsFindRequestAdapter = moshi.adapter(TagsFindRequest::class.java)
-    private val tagsFindResponseAdapter = moshi.adapter(TagsFindResponse::class.java)
-    private val tagLinksFindRequestAdapter = moshi.adapter(TagLinksFindRequest::class.java)
-    private val tagLinksFindResponseAdapter = moshi.adapter(TagLinksFindResponse::class.java)
-    private val courseCache = mutableMapOf<String, CourseDocument>()
-    private var shelfCache: ShelfDocument? = null
+    internal val allDocsRequestAdapter = moshi.adapter(AllDocsRequest::class.java)
+    internal val allDocsResponseAdapter = moshi.adapter(AllDocsResponse::class.java)
+    internal val coursesFindRequestAdapter = moshi.adapter(CoursesFindRequest::class.java)
+    internal val coursesFindResponseAdapter = moshi.adapter(CourseFindResponse::class.java)
+    internal val teamCoursesRequestAdapter = moshi.adapter(TeamCoursesFindRequest::class.java)
+    internal val teamCoursesResponseAdapter = moshi.adapter(TeamCoursesResponse::class.java)
+    internal val tagsFindRequestAdapter = moshi.adapter(TagsFindRequest::class.java)
+    internal val tagsFindResponseAdapter = moshi.adapter(TagsFindResponse::class.java)
+    internal val tagLinksFindRequestAdapter = moshi.adapter(TagLinksFindRequest::class.java)
+    internal val tagLinksFindResponseAdapter = moshi.adapter(TagLinksFindResponse::class.java)
+    internal val courseCache = mutableMapOf<String, CourseDocument>()
+    internal var shelfCache: ShelfDocument? = null
 
-    fun clearCourseCache() {
-        courseCache.clear()
-    }
+    fun clearCourseCache() = clearCourseCacheImpl()
 
     suspend fun fetchUserCourseIds(
         baseUrl: String,
         credentials: StoredCredentials,
-    ): Result<List<String>> =
-        withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val requestUrl = "$normalizedBase/db/shelf/_find"
-                val payload =
-                    findRequestAdapter.toJson(
-                        ShelfFindRequest(
-                            selector = mapOf("_id" to "org.couchdb.user:${credentials.username}"),
-                        ),
-                    )
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .post(payload.toRequestBody(mediaType))
-                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                        .build()
-                client.newCall(request).await().use { response ->
-                    if (!response.isSuccessful) {
-                        response.body.string()
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val parsed =
-                        findResponseAdapter.fromJson(response.body.string())
-                            ?: throw IOException("Invalid response body")
-                    val document = parsed.docs.firstOrNull()
-                    if (document != null) {
-                        shelfCache = document
-                    }
-                    document?.courseIds ?: emptyList()
-                }
-            }
-        }
+    ): Result<List<String>> = fetchUserCourseIdsImpl(baseUrl, credentials)
 
     suspend fun fetchShelfDocument(
         baseUrl: String,
         credentials: StoredCredentials,
-    ): Result<ShelfDocument> {
-        return withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-
-                val requestUrl = "$normalizedBase/db/shelf/org.couchdb.user:${credentials.username}"
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .get()
-                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                        .build()
-
-                client.newCall(request).await().use { response ->
-                    if (!response.isSuccessful) {
-                        val responseBody = response.body.string()
-                        if (response.code == 404) {
-                            val reason =
-                                runCatching {
-                                    org.json.JSONObject(responseBody).optString("reason")
-                                }.getOrNull()
-                            if (reason == "missing") {
-                                val fallbackId = "org.couchdb.user:${credentials.username}"
-                                return@runCatching ShelfDocument(
-                                    id = fallbackId,
-                                    rev = null,
-                                )
-                            }
-                        }
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val document =
-                        shelfDocumentAdapter.fromJson(response.body.string())
-                            ?: throw IOException("Invalid shelf response")
-                    shelfCache = document
-                    document
-                }
-            }
-        }
-    }
+    ): Result<ShelfDocument> = fetchShelfDocumentImpl(baseUrl, credentials)
 
     suspend fun joinCourse(
         baseUrl: String,
         credentials: StoredCredentials,
         courseId: String,
-    ): Result<Unit> {
-        return withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val sanitizedCourseId =
-                    courseId.takeIf { it.isNotBlank() }
-                        ?: throw IOException("Missing course id")
-
-                var shelfDocument =
-                    shelfCache ?: fetchShelfDocument(baseUrl, credentials)
-                        .getOrElse { throw it }
-
-                repeat(2) { attempt ->
-                    val shelfId =
-                        shelfDocument.id
-                            ?: "org.couchdb.user:${credentials.username}"
-
-                    val updatedCourseIds =
-                        (shelfDocument.courseIds + sanitizedCourseId)
-                            .filter { it.isNotBlank() }
-                            .distinct()
-
-                    val updatedDocument =
-                        shelfDocument.copy(
-                            id = shelfId,
-                            rev = shelfDocument.rev,
-                            courseIds = updatedCourseIds,
-                        )
-
-                    val requestUrl = "$normalizedBase/db/shelf/$shelfId"
-                    val payload = shelfDocumentAdapter.toJson(updatedDocument)
-                    val mediaType = "application/json; charset=utf-8".toMediaType()
-                    val request =
-                        Request
-                            .Builder()
-                            .url(requestUrl)
-                            .put(payload.toRequestBody(mediaType))
-                            .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                            .build()
-
-                    client.newCall(request).await().use { response ->
-                        val responseBody = response.body.string()
-                        if (response.isSuccessful) {
-                            val updatedRev =
-                                runCatching {
-                                    org.json
-                                        .JSONObject(responseBody)
-                                        .optString("rev")
-                                        .takeIf { it.isNotBlank() }
-                                }.getOrNull()
-
-                            val cached = updatedDocument.copy(rev = updatedRev ?: shelfDocument.rev)
-                            shelfCache = cached
-                            return@runCatching
-                        }
-
-                        if (response.code == 409 && attempt == 0) {
-                            shelfDocument =
-                                fetchShelfDocument(baseUrl, credentials)
-                                    .getOrElse { throw it }
-                            return@use
-                        }
-
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                }
-            }
-        }
-    }
+    ): Result<Unit> = joinCourseImpl(baseUrl, credentials, courseId)
 
     suspend fun leaveCourse(
         baseUrl: String,
         credentials: StoredCredentials,
         courseId: String,
-    ): Result<Unit> {
-        return withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val sanitizedCourseId =
-                    courseId.takeIf { it.isNotBlank() }
-                        ?: throw IOException("Missing course id")
-
-                var shelfDocument =
-                    shelfCache ?: fetchShelfDocument(baseUrl, credentials)
-                        .getOrElse { throw it }
-
-                repeat(2) { attempt ->
-                    val shelfId =
-                        shelfDocument.id
-                            ?: "org.couchdb.user:${credentials.username}"
-                    val shelfRev =
-                        shelfDocument.rev
-                            ?: throw IOException("Missing shelf revision")
-
-                    val updatedCourseIds =
-                        shelfDocument.courseIds
-                            .filter { it.isNotBlank() && it != sanitizedCourseId }
-
-                    val updatedDocument =
-                        shelfDocument.copy(
-                            id = shelfId,
-                            rev = shelfRev,
-                            courseIds = updatedCourseIds,
-                        )
-
-                    val requestUrl = "$normalizedBase/db/shelf/$shelfId"
-                    val payload = shelfDocumentAdapter.toJson(updatedDocument)
-                    val mediaType = "application/json; charset=utf-8".toMediaType()
-                    val request =
-                        Request
-                            .Builder()
-                            .url(requestUrl)
-                            .put(payload.toRequestBody(mediaType))
-                            .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                            .build()
-
-                    client.newCall(request).await().use { response ->
-                        val responseBody = response.body.string()
-                        if (response.isSuccessful) {
-                            val updatedRev =
-                                runCatching {
-                                    org.json
-                                        .JSONObject(responseBody)
-                                        .optString("rev")
-                                        .takeIf { it.isNotBlank() }
-                                }.getOrNull()
-
-                            val cached = updatedDocument.copy(rev = updatedRev ?: shelfRev)
-                            shelfCache = cached
-                            return@runCatching
-                        }
-
-                        if (response.code == 409 && attempt == 0) {
-                            shelfDocument =
-                                fetchShelfDocument(baseUrl, credentials)
-                                    .getOrElse { throw it }
-                            return@use
-                        }
-
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                }
-            }
-        }
-    }
+    ): Result<Unit> = leaveCourseImpl(baseUrl, credentials, courseId)
 
     suspend fun fetchCourses(
         baseUrl: String,
         credentials: StoredCredentials,
         courseIds: List<String>,
         forceRefresh: Boolean = false,
-    ): Result<List<CourseDocument>> {
-        return withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val sanitizedIds = courseIds.filter { it.isNotBlank() }
-                if (sanitizedIds.isEmpty()) return@runCatching emptyList()
-
-                val uniqueIds = sanitizedIds.distinct()
-                val cachedDocuments = mutableMapOf<String, CourseDocument>()
-                if (!forceRefresh) {
-                    uniqueIds.forEach { id ->
-                        courseCache[id]?.let { cachedDocuments[id] = it }
-                    }
-                }
-
-                val remainingIds = uniqueIds.filterNot { cachedDocuments.containsKey(it) }
-                if (remainingIds.isNotEmpty()) {
-                    val requestUrl = "$normalizedBase/db/courses/_all_docs?include_docs=true"
-                    val payload = allDocsRequestAdapter.toJson(AllDocsRequest(keys = remainingIds))
-                    val mediaType = "application/json; charset=utf-8".toMediaType()
-                    val request =
-                        Request
-                            .Builder()
-                            .url(requestUrl)
-                            .post(payload.toRequestBody(mediaType))
-                            .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                            .apply {
-                                if (forceRefresh) header("Cache-Control", "no-cache")
-                            }
-                            .build()
-
-                    client.newCall(request).await().use { response ->
-                        if (!response.isSuccessful) {
-                            response.body.string()
-                            throw IOException("Unexpected response ${response.code}")
-                        }
-                        val parsed =
-                            allDocsResponseAdapter.fromJson(response.body.string())
-                                ?: throw IOException("Invalid response body")
-
-                        parsed.rows.mapNotNull { it.doc }.forEach { document ->
-                            val id = document.id ?: return@forEach
-                            courseCache[id] = document
-                            cachedDocuments[id] = document
-                        }
-                    }
-                }
-
-                val orderedResults =
-                    uniqueIds.mapNotNull { id ->
-                        cachedDocuments[id]
-                    }
-                orderedResults
-            }
-        }
-    }
+    ): Result<List<CourseDocument>> = fetchCoursesImpl(baseUrl, credentials, courseIds, forceRefresh)
 
     suspend fun fetchCoursesProgress(
         baseUrl: String,
         credentials: StoredCredentials,
         courseIds: List<String>,
-    ): Result<Map<String, Int>> {
-        return withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val sanitizedIds = courseIds.filter { it.isNotBlank() }
-                if (sanitizedIds.isEmpty()) return@runCatching emptyMap()
-
-                val progressByCourse = mutableMapOf<String, Int>()
-                val requestUrl = "$normalizedBase/db/courses_progress/_find"
-                val payload =
-                    coursesProgressRequestAdapter.toJson(
-                        CoursesProgressFindRequest(
-                            selector =
-                                CoursesProgressSelector(
-                                    userId = "org.couchdb.user:${credentials.username}",
-                                    courseId = CourseInSelector(included = sanitizedIds),
-                                ),
-                            limit = 50000,
-                        ),
-                    )
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .post(payload.toRequestBody(mediaType))
-                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                        .build()
-
-                val docs =
-                    client.newCall(request).await().use { response ->
-                        if (!response.isSuccessful) {
-                            response.body.string()
-                            throw IOException("Unexpected response ${response.code}")
-                        }
-                        val parsed =
-                            coursesProgressResponseAdapter.fromJson(response.body.string())
-                                ?: throw IOException("Invalid response body")
-                        parsed.docs
-                            .filter { !it.courseId.isNullOrBlank() && it.stepNum != null }
-                    }
-
-                docs.forEach { doc ->
-                    val courseId = doc.courseId ?: return@forEach
-                    val stepNum = doc.stepNum ?: return@forEach
-                    val currentMax = progressByCourse[courseId] ?: 0
-                    if (stepNum > currentMax) {
-                        progressByCourse[courseId] = stepNum
-                    }
-                }
-                progressByCourse
-            }
-        }
-    }
+    ): Result<Map<String, Int>> = fetchCoursesProgressImpl(baseUrl, credentials, courseIds)
 
     suspend fun fetchCoursesProgressDocuments(
         baseUrl: String,
         credentials: StoredCredentials,
         courseIds: List<String>,
         stepNum: Int? = null,
-    ): Result<Map<String, CourseProgressDocument>> {
-        return withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val sanitizedIds = courseIds.filter { it.isNotBlank() }
-                if (sanitizedIds.isEmpty()) return@runCatching emptyMap()
-
-                val requestUrl = "$normalizedBase/db/courses_progress/_find"
-                val payload =
-                    coursesProgressRequestAdapter.toJson(
-                        CoursesProgressFindRequest(
-                            selector =
-                                CoursesProgressSelector(
-                                    userId = "org.couchdb.user:${credentials.username}",
-                                    courseId = CourseInSelector(included = sanitizedIds),
-                                    stepNum = stepNum,
-                                ),
-                            limit = 50000,
-                        ),
-                    )
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .post(payload.toRequestBody(mediaType))
-                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                        .build()
-
-                val docs =
-                    client.newCall(request).await().use { response ->
-                        if (!response.isSuccessful) {
-                            response.body.string()
-                            throw IOException("Unexpected response ${response.code}")
-                        }
-                        val parsed =
-                            coursesProgressResponseAdapter.fromJson(response.body.string())
-                                ?: throw IOException("Invalid response body")
-                        parsed.docs.filter { !it.courseId.isNullOrBlank() && it.stepNum != null }
-                    }
-                if (stepNum != null) {
-                    docs.associateBy { it.courseId!! }
-                } else {
-                    docs
-                        .groupBy { it.courseId!! }
-                        .mapValues { entry ->
-                            entry.value.maxByOrNull { doc -> doc.stepNum ?: 0 }!!
-                        }
-                }
-            }
-        }
-    }
+    ): Result<Map<String, CourseProgressDocument>> = fetchCoursesProgressDocumentsImpl(baseUrl, credentials, courseIds, stepNum)
 
     suspend fun saveCourseProgress(
         baseUrl: String,
         credentials: StoredCredentials,
         documents: List<CourseProgressUpdateDocument>,
-    ): Result<List<BulkDocResult>> {
-        return withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                if (documents.isEmpty()) return@runCatching emptyList()
-
-                val requestUrl = "$normalizedBase/db/courses_progress/_bulk_docs"
-                val payload = coursesProgressBulkAdapter.toJson(CoursesProgressBulkRequest(docs = documents))
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .post(payload.toRequestBody(mediaType))
-                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                        .build()
-
-                client.newCall(request).await().use { response ->
-                    val responseBody = response.body.string()
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    bulkDocsResultAdapter.fromJson(responseBody)
-                        ?: throw IOException("Invalid response body")
-                }
-            }
-        }
-    }
+    ): Result<List<BulkDocResult>> = saveCourseProgressImpl(baseUrl, credentials, documents)
 
     suspend fun fetchCoursesByParent(
         baseUrl: String,
@@ -544,207 +120,27 @@ class DashboardCoursesRepository(
         excludedCourseIds: List<String>,
         skip: Int,
         limit: Int,
-    ): Result<PagedCourses> =
-        withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-
-                val courseIdFilter =
-                    excludedCourseIds
-                        .takeIf { it.isNotEmpty() }
-                        ?.let { CourseIdFilter(gt = null, notIn = it) }
-
-                val requestUrl = "$normalizedBase/db/courses/_find"
-                val payload =
-                    coursesFindRequestAdapter.toJson(
-                        CoursesFindRequest(
-                            selector = CoursesSelector(id = courseIdFilter),
-                            limit = limit,
-                            skip = skip,
-                        ),
-                    )
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .post(payload.toRequestBody(mediaType))
-                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                        .build()
-
-                client.newCall(request).await().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val parsed =
-                        coursesFindResponseAdapter.fromJson(response.body.string())
-                            ?: throw IOException("Invalid response body")
-                    val documents =
-                        parsed.docs
-                            .filter { !it.id.isNullOrBlank() }
-                            .distinctBy { it.id }
-                    PagedCourses(
-                        courses = documents,
-                        fetchedCount = documents.size,
-                        hasMore = parsed.docs.size >= limit,
-                    )
-                }
-            }
-        }
+    ): Result<PagedCourses> = fetchCoursesByParentImpl(baseUrl, credentials, excludedCourseIds, skip, limit)
 
     suspend fun fetchTeamCourses(
         baseUrl: String,
         credentials: StoredCredentials,
         teamId: String,
         forceRefresh: Boolean = false,
-    ): Result<List<CourseDocument>> =
-        withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val sanitizedId =
-                    teamId.takeIf { it.isNotBlank() }
-                        ?: throw IOException("Missing team id")
-
-                val requestUrl = "$normalizedBase/db/teams/_find"
-                val payload =
-                    teamCoursesRequestAdapter.toJson(
-                        TeamCoursesFindRequest(
-                            selector =
-                                TeamCoursesSelector(
-                                    status = "active",
-                                    type = "team",
-                                    teamType = "local",
-                                    id = TeamIdsSelector(listOf(sanitizedId)),
-                                ),
-                        ),
-                    )
-                val mediaType = "application/json; charset=utf-8".toMediaType()
-                val request =
-                    Request
-                        .Builder()
-                        .url(requestUrl)
-                        .post(payload.toRequestBody(mediaType))
-                        .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
-                        .build()
-
-                client.newCall(request).await().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val parsed =
-                        teamCoursesResponseAdapter.fromJson(response.body.string())
-                            ?: throw IOException("Invalid response body")
-                    val embeddedCourses = parsed.docs.flatMap { it.courses ?: emptyList() }
-                    val courseIds = embeddedCourses.mapNotNull { it.id }.distinct()
-                    if (courseIds.isEmpty()) {
-                        emptyList()
-                    } else {
-                        fetchCourses(
-                            normalizedBase,
-                            credentials,
-                            courseIds,
-                            forceRefresh = forceRefresh,
-                        ).getOrElse { throw it }
-                    }
-                }
-            }
-        }
+    ): Result<List<CourseDocument>> = fetchTeamCoursesImpl(baseUrl, credentials, teamId)
 
     suspend fun fetchCourseTags(
         baseUrl: String,
         credentials: StoredCredentials?,
         sessionCookie: String?,
-    ): Result<List<TagDocument>> =
-        withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val payload =
-                    tagsFindRequestAdapter.toJson(
-                        TagsFindRequest(
-                            selector =
-                                TagsSelector(
-                                    db = "courses",
-                                    docType = "definition",
-                                ),
-                        ),
-                    )
-                val request =
-                    Request
-                        .Builder()
-                        .url("$normalizedBase/db/tags/_find")
-                        .post(payload.toRequestBody("application/json; charset=utf-8".toMediaType()))
-                        .apply {
-                            credentials?.let {
-                                addHeader("Authorization", Credentials.basic(it.username, it.password))
-                            }
-                            sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                                addHeader("Cookie", cookie)
-                            }
-                        }.build()
-                client.newCall(request).await().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val body = response.body.string()
-                    tagsFindResponseAdapter.fromJson(body)?.docs ?: emptyList()
-                }
-            }
-        }
+    ): Result<List<TagDocument>> = fetchCourseTagsImpl(baseUrl, credentials, sessionCookie)
 
     suspend fun fetchTagLinks(
         baseUrl: String,
         credentials: StoredCredentials?,
         sessionCookie: String?,
         tagId: String,
-    ): Result<List<TagLinkDocument>> =
-        withContext(dispatcher) {
-            runCatching {
-                val normalizedBase = baseUrl.trim().trimEnd('/')
-                if (normalizedBase.isEmpty()) {
-                    throw IOException("Missing server base URL")
-                }
-                val payload =
-                    tagLinksFindRequestAdapter.toJson(
-                        TagLinksFindRequest(
-                            selector =
-                                TagLinksSelector(
-                                    db = "courses",
-                                    docType = "link",
-                                    tagId = tagId,
-                                ),
-                        ),
-                    )
-                val request =
-                    Request
-                        .Builder()
-                        .url("$normalizedBase/db/tags/_find")
-                        .post(payload.toRequestBody("application/json; charset=utf-8".toMediaType()))
-                        .apply {
-                            credentials?.let {
-                                addHeader("Authorization", Credentials.basic(it.username, it.password))
-                            }
-                            sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-                                addHeader("Cookie", cookie)
-                            }
-                        }.build()
-                client.newCall(request).await().use { response ->
-                    if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${response.code}")
-                    }
-                    val body = response.body.string()
-                    tagLinksFindResponseAdapter.fromJson(body)?.docs ?: emptyList()
-                }
-            }
-        }
+    ): Result<List<TagLinkDocument>> = fetchTagLinksImpl(baseUrl, credentials, sessionCookie, tagId)
 
     @JsonClass(generateAdapter = true)
     data class ShelfFindRequest(
@@ -984,114 +380,31 @@ class DashboardCoursesRepository(
         val filename: String,
     )
 
-    private fun buildServerResourceUrl(
+    internal fun buildServerResourceUrl(
         base: String,
         resourceId: String,
         filename: String,
-    ): String? {
-        val normalizedBase = base.trim().trimEnd('/').takeIf { it.isNotEmpty() } ?: return null
-        val parsed = normalizedBase.toHttpUrlOrNull() ?: return null
-        return parsed
-            .newBuilder()
-            .addPathSegment("db")
-            .addPathSegment("resources")
-            .addPathSegment(resourceId)
-            .addPathSegment(filename)
-            .build()
-            .toString()
-    }
+    ): String? = buildServerResourceUrlImpl(base, resourceId, filename)
 
     suspend fun estimateResourcesSize(
         base: String,
         creds: StoredCredentials,
         resources: List<DownloadResource>,
-    ): Long =
-        withContext(dispatcher) {
-            coroutineScope {
-                resources
-                    .map { resource ->
-                        async {
-                            val url = buildServerResourceUrl(base, resource.id, resource.filename) ?: return@async 0L
-                            val requestBuilder =
-                                Request
-                                    .Builder()
-                                    .url(url)
-                                    .head()
-                            if (url.startsWith("https://", ignoreCase = true)) {
-                                requestBuilder.header("Authorization", Credentials.basic(creds.username, creds.password))
-                            }
-                            val request = requestBuilder.build()
-                            runCatching {
-                                client.newCall(request).await().use { response ->
-                                    response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
-                                }
-                            }.getOrDefault(0L)
-                        }
-                    }.awaitAll()
-                    .sum()
-            }
-        }
+    ): Long = estimateResourcesSizeImpl(base, creds, resources)
 
     suspend fun estimateMarkdownImagesSize(
         base: String,
         creds: StoredCredentials,
         sources: List<String>,
-    ): Long =
-        withContext(dispatcher) {
-            val authHeader = Credentials.basic(creds.username, creds.password)
-            coroutineScope {
-                sources
-                    .map { source ->
-                        async {
-                            val url = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@async 0L
-                            val requestBuilder =
-                                Request
-                                    .Builder()
-                                    .url(url)
-                                    .head()
-                            if (url.startsWith("https://", ignoreCase = true)) {
-                                requestBuilder.header("Authorization", authHeader)
-                            }
-                            val request = requestBuilder.build()
-                            runCatching {
-                                client.newCall(request).await().use { response ->
-                                    response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
-                                }
-                            }.getOrDefault(0L)
-                        }
-                    }.awaitAll()
-                    .sum()
-            }
-        }
+    ): Long = estimateMarkdownImagesSizeImpl(base, creds, sources)
 
     suspend fun estimateCourseCoverSize(
         base: String,
         creds: StoredCredentials,
         coverPath: String?,
-    ): Long = withContext(dispatcher) {
-        val url = buildCourseCoverUrl(base, coverPath) ?: return@withContext 0L
-        val request = Request.Builder()
-            .url(url)
-            .head()
-            .header("Authorization", Credentials.basic(creds.username, creds.password))
-            .build()
-        runCatching {
-            client.newCall(request).await().use { response ->
-                response.header("Content-Length")?.toLongOrNull()?.coerceAtLeast(0L) ?: 0L
-            }
-        }.getOrDefault(0L)
-    }
+    ): Long = estimateCourseCoverSizeImpl(base, creds, coverPath)
 
-    private fun buildCourseCoverUrl(base: String, coverPath: String?): String? {
-        val path = coverPath?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-        if (path.startsWith("file:", ignoreCase = true)) return null
-        val parsed = base.trim().trimEnd('/').toHttpUrlOrNull() ?: return null
-        return parsed.newBuilder()
-            .addPathSegment("db")
-            .addEncodedPathSegments(path.trimStart('/'))
-            .build()
-            .toString()
-    }
+    internal fun buildCourseCoverUrl(base: String, coverPath: String?): String? = buildCourseCoverUrlImpl(base, coverPath)
 
     suspend fun downloadCourseResources(
         base: String,
@@ -1103,126 +416,16 @@ class DashboardCoursesRepository(
         coverPath: String? = null,
         getCoverTarget: ((String) -> File)? = null,
         onProgress: (Pair<Int, Int>) -> Unit,
-    ): Boolean =
-        withContext(dispatcher) {
-            val hasCover = !coverPath.isNullOrBlank() && getCoverTarget != null
-            val totalItems = resources.size + markdownImageSources.size + if (hasCover) 1 else 0
-            if (totalItems == 0) {
-                onProgress(0 to 0)
-                return@withContext true
-            }
-            var downloaded = 0
-            val progressMutex = Mutex()
-            val authHeader = Credentials.basic(creds.username, creds.password)
+    ): Boolean = downloadCourseResourcesImpl(
+        base,
+        creds,
+        resources,
+        markdownImageSources,
+        getResourceTarget,
+        getMarkdownTarget,
+        coverPath,
+        getCoverTarget,
+        onProgress,
+    )
 
-            coroutineScope {
-                val resourceJobs =
-                    resources.map { resource ->
-                        async {
-                            val url = buildServerResourceUrl(base, resource.id, resource.filename) ?: return@async false
-                            val target = getResourceTarget(resource.id, resource.filename)
-                            target.parentFile?.mkdirs()
-                            val requestBuilder =
-                                Request
-                                    .Builder()
-                                    .url(url)
-                            if (url.startsWith("https://", ignoreCase = true)) {
-                                requestBuilder.header("Authorization", authHeader)
-                            }
-                            val request = requestBuilder.build()
-                            val success =
-                                runCatching {
-                                    client.newCall(request).await().use { response ->
-                                        if (!response.isSuccessful) return@use false
-                                        val body = response.body
-                                        body.byteStream().use { input ->
-                                            target.outputStream().use { output ->
-                                                input.copyTo(output)
-                                            }
-                                        }
-                                        true
-                                    }
-                                }.getOrDefault(false)
-                            if (!success) return@async false
-                            progressMutex.withLock {
-                                downloaded += 1
-                                onProgress(downloaded to totalItems)
-                            }
-                            true
-                        }
-                    }
-
-                val markdownJobs =
-                    markdownImageSources.map { source ->
-                        async {
-                            val resolvedUrl = MarkdownUtils.resolveMarkdownSourceUrl(base, source) ?: return@async true
-                            val target = getMarkdownTarget(source)
-                            target.parentFile?.mkdirs()
-                            val requestBuilder =
-                                Request
-                                    .Builder()
-                                    .url(resolvedUrl)
-                            if (resolvedUrl.startsWith("https://", ignoreCase = true)) {
-                                requestBuilder.header("Authorization", authHeader)
-                            }
-                            val request = requestBuilder.build()
-                            runCatching {
-                                client.newCall(request).await().use { response ->
-                                    if (!response.isSuccessful) return@use false
-                                    response.body.byteStream().use { input ->
-                                        target.outputStream().use { output ->
-                                            input.copyTo(output)
-                                        }
-                                    }
-                                    true
-                                }
-                            }.getOrDefault(false)
-                            progressMutex.withLock {
-                                downloaded += 1
-                                onProgress(downloaded to totalItems)
-                            }
-                            true
-                        }
-                    }
-
-                val coverJob = if (hasCover) {
-                    async {
-                        val source = requireNotNull(coverPath)
-                        val url = buildCourseCoverUrl(base, source) ?: return@async false
-                        val target = requireNotNull(getCoverTarget).invoke(source)
-                        target.parentFile?.mkdirs()
-                        val request = Request.Builder()
-                            .url(url)
-                            .header("Authorization", authHeader)
-                            .header("Cache-Control", "no-cache")
-                            .build()
-                        val success = runCatching {
-                            client.newCall(request).await().use { response ->
-                                if (!response.isSuccessful) return@use false
-                                response.body.byteStream().use { input ->
-                                    target.outputStream().use { output -> input.copyTo(output) }
-                                }
-                                true
-                            }
-                        }.getOrDefault(false)
-                        if (success) {
-                            progressMutex.withLock {
-                                downloaded += 1
-                                onProgress(downloaded to totalItems)
-                            }
-                        }
-                        success
-                    }
-                } else {
-                    null
-                }
-
-                val resourceResults = resourceJobs.awaitAll()
-                // Wait for markdown jobs to complete
-                markdownJobs.awaitAll()
-
-                // Return false if any resource download failed
-                !resourceResults.contains(false) && coverJob?.await() != false
-            }
-        }
 }
