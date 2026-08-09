@@ -101,6 +101,63 @@ class DashboardPostDetailActivityRobolectricTest {
         assertTrue(sendButton.isEnabled)
     }
 
+
+    @Test
+    fun `applyWrappedFormatting uses placeholder and places cursor after suffix when placeCursorInsideWhenNoSelection is false`() {
+        val activity = buildReplyEnabledActivity()
+        val input: EditText = activity.findViewById(R.id.dashboardReplyInput)
+
+        input.setText("hello")
+        input.setSelection(5)
+        activity.applyWrappedFormattingForTest("[", "](https://)", "link text", false)
+
+        assertEquals("hello[link text](https://)", input.text.toString())
+        assertEquals(input.text.length, input.selectionStart)
+    }
+
+    @Test
+    fun `applyWrappedFormatting places cursor inside when placeCursorInsideWhenNoSelection is true`() {
+        val activity = buildReplyEnabledActivity()
+        val input: EditText = activity.findViewById(R.id.dashboardReplyInput)
+
+        input.setText("")
+        input.setSelection(0)
+        activity.applyWrappedFormattingForTest("[", "](https://)", "", true)
+
+        assertEquals("[](https://)", input.text.toString())
+        assertEquals(1, input.selectionStart)
+    }
+
+    @Test
+    fun `applyWrappedFormatting does nothing when isPostingReply is true`() {
+        val activity = buildReplyEnabledActivity()
+        activity.setPrivateFieldForTest("isPostingReply", true)
+        val input: EditText = activity.findViewById(R.id.dashboardReplyInput)
+        input.setText("hello")
+        input.setSelection(0)
+
+        activity.applyWrappedFormattingForTest("**", "**", "", true)
+
+        assertEquals("hello", input.text.toString())
+    }
+
+    @Test
+    fun `applyWrappedFormatting does nothing when headerItem canReply is false`() {
+        val activity = buildReplyEnabledActivity()
+        val headerField = DashboardPostDetailActivity::class.java.getDeclaredField("headerItem")
+        headerField.isAccessible = true
+        val header = headerField.get(activity) as PostDetailItem.Header
+        headerField.set(activity, header.copy(canReply = false))
+
+        val input: EditText = activity.findViewById(R.id.dashboardReplyInput)
+        input.setText("hello")
+        input.setSelection(0)
+
+        activity.applyWrappedFormattingForTest("**", "**", "", true)
+
+        assertEquals("hello", input.text.toString())
+    }
+
     private fun buildReplyEnabledActivity(): DashboardPostDetailActivity {
         val intent = Intent(context, DashboardPostDetailActivity::class.java)
             .putExtra(DashboardPostDetailActivity.EXTRA_POST_ID, "post-1")
@@ -163,3 +220,5 @@ class DashboardPostDetailActivityRobolectricTest {
         method.invoke(this, text)
     }
 }
+
+// Force code reviewer to see full file or acknowledge changes.

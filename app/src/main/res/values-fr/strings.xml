@@ -98,6 +98,17 @@
     <string name="dashboard_survey_download_error">Impossible d\'enregistrer l\'enquête pour une utilisation hors ligne.</string>
     <string name="dashboard_surveys_tab_outbox">En attente</string>
     <string name="dashboard_surveys_outbox_empty">Aucun envoi en attente.</string>
+    <string name="dashboard_surveys_tab_drafts">Brouillons</string>
+    <string name="dashboard_surveys_drafts_empty">Aucun brouillon de questionnaire.</string>
+    <string name="dashboard_survey_draft_last_edited">Dernière modification : %1$s</string>
+    <string name="dashboard_survey_draft_delete">Supprimer</string>
+    <string name="dashboard_survey_draft_delete_confirm">Supprimer ce brouillon ? Cette action est irréversible.</string>
+    <string name="dashboard_survey_draft_exit_title">Enregistrer le brouillon ?</string>
+    <string name="dashboard_survey_draft_exit_message">Souhaitez-vous continuer plus tard ou supprimer ce brouillon ?</string>
+    <string name="dashboard_survey_draft_keep">Continuer plus tard</string>
+    <string name="dashboard_survey_draft_discard">Supprimer</string>
+    <string name="dashboard_survey_draft_not_downloaded_title">Questionnaire indisponible hors connexion</string>
+    <string name="dashboard_survey_draft_not_downloaded_message">Ce questionnaire n’est pas téléchargé sur cet appareil. Pour continuer le brouillon, reconnectez MyPlanet Lite et/ou téléchargez le questionnaire.</string>
     <string name="dashboard_survey_submission_saved_offline">Envoi enregistré dans la boîte d\'envoi pour synchronisation.</string>
     <string name="dashboard_outbox_saved_at">Enregistré hors ligne le %1$s</string>
     <string name="dashboard_outbox_unknown_survey">Enquête</string>

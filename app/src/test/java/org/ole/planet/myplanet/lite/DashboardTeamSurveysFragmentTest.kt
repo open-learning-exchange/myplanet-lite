@@ -219,6 +219,7 @@ class DashboardTeamSurveysFragmentTest {
                         Map::class.java,
                         Set::class.java,
                         Map::class.java,
+                        List::class.java,
                         List::class.java
                     )
                     submitMethod.isAccessible = true
@@ -233,7 +234,8 @@ class DashboardTeamSurveysFragmentTest {
                         emptyMap<String, Int>(),
                         emptySet<String>(),
                         emptyMap<String, String?>(),
-                        emptyList<org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry>()
+                        emptyList<org.ole.planet.myplanet.lite.dashboard.DashboardSurveyOutboxStore.OutboxEntry>(),
+                        emptyList<org.ole.planet.myplanet.lite.dashboard.DashboardSurveyDraftStore.DraftEntry>()
                     )
 
                     // Now perform the update

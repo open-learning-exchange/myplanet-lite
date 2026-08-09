@@ -25,6 +25,7 @@ internal fun SurveyWizardFragment.setupNavigationButtons() {
         activeCollector?.invoke()
         if (currentIndex > 0) {
             currentIndex -= 1
+            saveDraft()
             showStep(currentIndex)
         }
     }
@@ -34,8 +35,10 @@ internal fun SurveyWizardFragment.setupNavigationButtons() {
         if (collector()) {
             if (currentIndex < steps.lastIndex) {
                 currentIndex += 1
+                saveDraft()
                 showStep(currentIndex)
             } else {
+                saveDraft()
                 submitSurvey()
             }
         }
@@ -97,31 +100,9 @@ internal suspend fun SurveyWizardFragment.initializeSession() {
 
 internal suspend fun SurveyWizardFragment.attemptSurveyTranslation() {
     val survey = document ?: return
-    val translationPreferenceEnabled = DashboardActivity.isSurveyTranslationEnabled(requireContext())
-    val translationConsentAccepted = DashboardActivity.isSurveyTranslationConsentAccepted(requireContext())
-    val translationAllowed = translationPreferenceEnabled && translationConsentAccepted
-    if (!translationAllowed) {
-        translatedTitle = null
-        translatedDescription = null
-        questionTranslations = emptyMap()
-        translationApplied = false
-        updateTranslationNotice(
-            showConsentNotice = translationPreferenceEnabled,
-            showAppliedNotice = false,
-        )
-        setTranslationInProgress(false)
-        return
-    }
-    val base =
-        baseUrl?.takeIf { it.isNotBlank() }
-            ?: DashboardServerPreferences.getServerBaseUrl(requireContext().applicationContext)
-            ?: return
-    val appLocales = AppCompatDelegate.getApplicationLocales()
-    val targetLanguage =
-        appLocales[0]
-            ?.language
-            ?.takeIf { it.isNotBlank() }
-            ?: Locale.getDefault().language
+    if (!checkTranslationAllowed()) return
+    val base = getTranslationBaseUrl() ?: return
+    val targetLanguage = determineTargetLanguage()
     targetSurveyLanguage = targetLanguage
     val detectedLanguage = translationManager.detectSurveyLanguage(survey)
     detectedSurveyLanguage = detectedLanguage
@@ -137,6 +118,42 @@ internal suspend fun SurveyWizardFragment.attemptSurveyTranslation() {
             detectedLanguage,
         )
     setTranslationInProgress(false)
+    handleTranslationResult(result)
+}
+
+private fun SurveyWizardFragment.checkTranslationAllowed(): Boolean {
+    val translationPreferenceEnabled = DashboardActivity.isSurveyTranslationEnabled(requireContext())
+    val translationConsentAccepted = DashboardActivity.isSurveyTranslationConsentAccepted(requireContext())
+    val translationAllowed = translationPreferenceEnabled && translationConsentAccepted
+    if (!translationAllowed) {
+        translatedTitle = null
+        translatedDescription = null
+        questionTranslations = emptyMap()
+        translationApplied = false
+        updateTranslationNotice(
+            showConsentNotice = translationPreferenceEnabled,
+            showAppliedNotice = false,
+        )
+        setTranslationInProgress(false)
+    }
+    return translationAllowed
+}
+
+private fun SurveyWizardFragment.getTranslationBaseUrl(): String? =
+    baseUrl?.takeIf { it.isNotBlank() }
+        ?: DashboardServerPreferences.getServerBaseUrl(requireContext().applicationContext)
+
+private fun SurveyWizardFragment.determineTargetLanguage(): String {
+    val appLocales = AppCompatDelegate.getApplicationLocales()
+    return appLocales[0]
+        ?.language
+        ?.takeIf { it.isNotBlank() }
+        ?: Locale.getDefault().language
+}
+
+private fun SurveyWizardFragment.handleTranslationResult(
+    result: org.ole.planet.myplanet.lite.surveys.SurveyTranslationManager.SurveyTranslationResult
+) {
     translatedTitle = result.titleTranslation?.takeIf { it.isNotBlank() }
     translatedDescription = result.descriptionTranslation?.takeIf { it.isNotBlank() }
     applySurveyTranslations()

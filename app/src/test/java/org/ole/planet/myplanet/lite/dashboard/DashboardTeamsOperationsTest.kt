@@ -43,6 +43,91 @@ class DashboardTeamsOperationsTest {
     }
 
     @Test
+    fun fetchTeamJoinRequestDetails_success() {
+        val requestsResponse = """
+            {
+                "docs": [
+                    {
+                        "_id": "req1",
+                        "userId": "org.couchdb.user:testuser",
+                        "teamId": "team1"
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setBody(requestsResponse).setResponseCode(200))
+
+        val profilesResponse = """
+            {
+                "docs": [
+                    {
+                        "_id": "org.couchdb.user:testuser",
+                        "firstName": "Test",
+                        "lastName": "User",
+                        "_attachments": {
+                            "img": {
+                                "content_type": "image/png"
+                            }
+                        }
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setBody(profilesResponse).setResponseCode(200))
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val details = operations.fetchTeamJoinRequestDetails(
+            baseUrl,
+            StoredCredentials("u", "p"),
+            "cookie",
+            "team1",
+            "code1",
+        )
+
+        assertEquals(1, details.size)
+        val detail = details[0]
+        assertEquals("testuser", detail.username)
+        assertEquals("Test User", detail.fullName)
+        assertTrue(detail.hasAvatar)
+        assertEquals("req1", detail.request.id)
+    }
+
+    @Test
+    fun fetchTeamJoinRequestDetails_profilesFailureGraceful() {
+        val requestsResponse = """
+            {
+                "docs": [
+                    {
+                        "_id": "req2",
+                        "userId": "org.couchdb.user:testuser2",
+                        "teamId": "team2"
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setBody(requestsResponse).setResponseCode(200))
+
+        // Profiles fetch fails
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val details = operations.fetchTeamJoinRequestDetails(
+            baseUrl,
+            StoredCredentials("u", "p"),
+            "cookie",
+            "team2",
+            "code2",
+        )
+
+        assertEquals(1, details.size)
+        val detail = details[0]
+        assertEquals("testuser2", detail.username)
+        assertEquals("testuser2", detail.fullName) // Falls back to username
+        assertFalse(detail.hasAvatar)
+        assertEquals("req2", detail.request.id)
+    }
+
+    @Test
     fun addTeamMember_success() {
         val putResponse = "{\"ok\": true}"
         mockWebServer.enqueue(MockResponse().setBody(putResponse).setResponseCode(201))
