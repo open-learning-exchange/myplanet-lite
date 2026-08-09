@@ -22,6 +22,7 @@ import androidx.lifecycle.lifecycleScope
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyDraftStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
@@ -37,6 +38,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     internal var courseId: String? = null
     internal var baseUrlOverride: String? = null
     internal var includeUserContext: Boolean = true
+    internal var offlineMode: Boolean = false
     internal var steps: List<WizardStep> = emptyList()
     internal var currentIndex = 0
     internal val answers: MutableMap<Int, SurveyAnswer> = mutableMapOf()
@@ -53,6 +55,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     internal var isExam: Boolean = false
     internal var startTimeMillis: Long = System.currentTimeMillis()
     internal var isSubmitting = false
+    internal var draftKey: String? = null
+    internal var draftPersistenceDisabled = false
     internal lateinit var translationManager: SurveyTranslationManager
     internal var questionTranslations: Map<Int, TranslatedQuestion> = emptyMap()
     internal var targetSurveyLanguage: String? = null
@@ -60,6 +64,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
     internal var translatedTitle: String? = null
     internal var translatedDescription: String? = null
     internal val localSurveyRepository by lazy { DashboardLocalSurveyRepository(requireContext()) }
+    internal val draftStore by lazy { DashboardSurveyDraftStore(requireContext()) }
 
     internal lateinit var markwon: Markwon
     internal lateinit var titleView: TextView
@@ -93,11 +98,14 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                 ?.trimEnd('/')
                 ?.takeIf { it.isNotBlank() }
         includeUserContext = arguments?.getBoolean(ARG_INCLUDE_USER_CONTEXT, true) != false
+        offlineMode = arguments?.getBoolean(ARG_OFFLINE_MODE, false) == true
+        draftKey = arguments?.getString(ARG_DRAFT_KEY)
         questions = document?.questions.orEmpty()
         applyProfileDefaultsForCourseContent()
         birthDateSelection = respondent.birthDate?.let { parseBirthDateIso(it) } ?: birthDateSelection
         includeOptionalDetails = respondent.additionalInfo
         steps = buildSteps(includeOptionalDetails)
+        restoreDraftIfAvailable()
         translationManager = SurveyTranslationManager(requireContext().applicationContext)
     }
 
@@ -117,7 +125,7 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         lifecycleScope.launch {
             initializeSession()
             attemptSurveyTranslation()
-            if (baseUrlOverride == null) {
+            if (baseUrlOverride == null && !offlineMode) {
                 flushPendingSurveySubmissions()
             }
         }
@@ -137,14 +145,23 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         progressBar.max = steps.size
 
         showStep(currentIndex)
+        saveDraft()
 
         setupNavigationButtons()
+    }
+
+    override fun onPause() {
+        if (!isSubmitting) {
+            activeCollector?.invoke()
+            saveDraft()
+        }
+        super.onPause()
     }
 
     override fun onStart() {
         super.onStart()
         viewLifecycleOwner.lifecycleScope.launch {
-            if (baseUrlOverride == null) {
+            if (baseUrlOverride == null && !offlineMode) {
                 flushPendingSurveySubmissions()
             }
         }
@@ -206,6 +223,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
         private const val ARG_IS_EXAM = "arg_is_exam"
         private const val ARG_BASE_URL = "arg_base_url"
         private const val ARG_INCLUDE_USER_CONTEXT = "arg_include_user_context"
+        private const val ARG_DRAFT_KEY = "arg_draft_key"
+        private const val ARG_OFFLINE_MODE = "arg_offline_mode"
 
         fun newInstance(
             document: SurveyDocument,
@@ -215,6 +234,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
             isExam: Boolean = false,
             baseUrl: String? = null,
             includeUserContext: Boolean = true,
+            draftKey: String? = null,
+            offlineMode: Boolean = false,
         ): SurveyWizardFragment =
             SurveyWizardFragment().apply {
                 arguments =
@@ -226,6 +247,8 @@ class SurveyWizardFragment : Fragment(R.layout.fragment_survey_wizard) {
                         putBoolean(ARG_IS_EXAM, isExam)
                         putString(ARG_BASE_URL, baseUrl)
                         putBoolean(ARG_INCLUDE_USER_CONTEXT, includeUserContext)
+                        putString(ARG_DRAFT_KEY, draftKey)
+                        putBoolean(ARG_OFFLINE_MODE, offlineMode)
                     }
             }
     }

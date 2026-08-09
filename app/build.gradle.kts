@@ -34,8 +34,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 487
-        versionName = "0.4.87"
+        versionCode = 522
+        versionName = "0.5.22"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -65,6 +65,7 @@ tasks.withType<Test>().configureEach {
     if (JavaVersion.current().isCompatibleWith(JavaVersion.VERSION_17)) {
         jvmArgs(
             "-XX:+EnableDynamicAgentLoading",
+            "--enable-native-access=ALL-UNNAMED",
             "--add-opens=java.base/java.lang=ALL-UNNAMED",
             "--add-opens=java.base/java.util=ALL-UNNAMED",
             "--add-opens=java.base/java.io=ALL-UNNAMED",

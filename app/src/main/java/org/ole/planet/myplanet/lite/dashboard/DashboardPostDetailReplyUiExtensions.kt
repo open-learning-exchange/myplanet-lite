@@ -23,12 +23,12 @@ import androidx.core.view.isVisible
 import androidx.core.widget.doAfterTextChanged
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.button.MaterialButton
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import org.ole.planet.myplanet.lite.R
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.COLLAPSED_REPLY_MIN_LINES
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostDetailActivity.Companion.EXPANDED_REPLY_MIN_LINES
+import org.ole.planet.myplanet.lite.util.ApplicationScope
+import org.ole.planet.myplanet.lite.util.FileUtils
 import kotlin.math.max
 
 internal fun DashboardPostDetailActivity.setupBackNavigation() {
@@ -273,13 +273,8 @@ internal fun DashboardPostDetailActivity.clearPendingReplyImages() {
     val filesToDelete = pendingReplyImages.values.map { it.file }.toList()
     pendingReplyImages.clear()
 
-    @OptIn(kotlinx.coroutines.DelicateCoroutinesApi::class)
-    GlobalScope.launch(Dispatchers.IO) {
-        filesToDelete.forEach { file ->
-            if (file.exists()) {
-                file.delete()
-            }
-        }
+    ApplicationScope.io.launch {
+        FileUtils.deleteFiles(filesToDelete)
     }
     updateReplyPreviewImages()
     updateReplyActionAvailabilityInternal(replyInput.text)
