@@ -26,7 +26,6 @@ import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardAvatarLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
-import org.ole.planet.myplanet.lite.dashboard.DashboardTeamMemberProfileActivity
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies
 import org.ole.planet.myplanet.lite.dashboard.JoinRequestDocument
@@ -51,7 +50,7 @@ class DashboardTeamMembersFragment : Fragment() {
                 avatarLoader?.bind(imageView, username, shouldAttemptLoad)
             },
             onMemberClicked = { member ->
-                openTeamMemberProfile(member)
+                openTeamMemberProfileSupport(member)
             },
             onRemoveMemberClicked = { member ->
                 confirmMemberRemoval(member)
@@ -194,28 +193,6 @@ class DashboardTeamMembersFragment : Fragment() {
         loadTeamMembers(teamId, isPullToRefresh = true)
     }
 
-    private fun openTeamMemberProfile(member: TeamMemberDetails) {
-        val username = member.username
-        if (username.isNullOrBlank()) {
-            Toast
-                .makeText(
-                    requireContext(),
-                    R.string.dashboard_team_members_profile_unavailable,
-                    Toast.LENGTH_SHORT,
-                ).show()
-            return
-        }
-        val displayName = member.fullName?.ifBlank { null } ?: username
-        val intent =
-            DashboardTeamMemberProfileActivity.buildIntent(
-                requireContext(),
-                username,
-                displayName,
-                member.isLeader,
-            )
-        startActivity(intent)
-    }
-
     private fun handleLoadError(messageResId: Int) {
         showEmptyState(getString(messageResId))
         binding.dashboardTeamMembersSwipeRefresh.isRefreshing = false
@@ -227,35 +204,12 @@ class DashboardTeamMembersFragment : Fragment() {
         members: List<TeamMemberDetails>,
         creds: StoredCredentials,
     ) {
-        val sortedMembers =
-            members.sortedWith(
-                compareBy(String.CASE_INSENSITIVE_ORDER) { member ->
-                    member.fullName?.takeIf { it.isNotBlank() }
-                        ?: member.username.orEmpty()
-                },
-            )
-        val normalizedCurrentUsername =
-            creds.username.substringAfter(
-                "org.couchdb.user:",
-                creds.username,
-            )
-        currentMembers = sortedMembers
-        currentTeamPlanetCode =
-            sortedMembers.firstNotNullOfOrNull { member ->
-                member.membership?.teamPlanetCode?.takeIf { it.isNotBlank() }
-            }
-        currentTeamType = sortedMembers.firstNotNullOfOrNull { member ->
-            member.membership?.teamType?.takeIf { it.isNotBlank() }
-        } ?: "local"
-        isCurrentUserTeamLeader =
-            sortedMembers.any { member ->
-                val username = member.username
-                member.isLeader && (
-                    username.equals(creds.username, ignoreCase = true) ||
-                        username.equals(normalizedCurrentUsername, ignoreCase = true)
-                )
-            }
-        currentUsername = normalizedCurrentUsername
+        val state = buildTeamMembersState(members, creds)
+        currentMembers = state.members
+        currentTeamPlanetCode = state.teamPlanetCode
+        currentTeamType = state.teamType
+        isCurrentUserTeamLeader = state.isCurrentUserLeader
+        currentUsername = state.currentUsername
         updateLeaderActionsVisibility()
     }
 

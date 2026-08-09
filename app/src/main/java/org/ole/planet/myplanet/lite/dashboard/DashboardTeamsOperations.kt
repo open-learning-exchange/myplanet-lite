@@ -7,8 +7,6 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.json.JSONArray
-import org.json.JSONObject
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.nullIfBlank
 
@@ -33,7 +31,7 @@ internal class DashboardTeamsOperations(
     private val deleteMembershipAdapter = moshi.adapter(DeleteDocumentRequest::class.java)
     private val membershipBulkDeleteAdapter = moshi.adapter(BulkMembershipDeleteRequest::class.java)
     private val membershipBulkAddAdapter = moshi.adapter(BulkMembershipAddRequest::class.java)
-    private val usersFindResponseAdapter = moshi.adapter(UsersFindResponse::class.java)
+    private val userOperations = DashboardTeamsUserOperations(client, moshi)
 
     fun addTeamMember(
         baseUrl: String,
@@ -421,12 +419,7 @@ internal class DashboardTeamsOperations(
         credentials: StoredCredentials?,
         sessionCookie: String?,
         username: String,
-    ): TeamMemberProfileDetails {
-        val normalizedBase = baseUrl.trim().trimEnd('/')
-        if (normalizedBase.isEmpty()) throw IOException("Missing base url")
-        return fetchUserProfile(normalizedBase, username, credentials, sessionCookie)
-            ?: throw IOException("Profile not found")
-    }
+    ): TeamMemberProfileDetails = userOperations.fetchTeamMemberProfileDetails(baseUrl, credentials, sessionCookie, username)
 
     fun cancelJoinRequest(baseUrl: String, credentials: StoredCredentials?, sessionCookie: String?, documentId: String, revision: String) {
         cancelDocument(baseUrl, credentials, sessionCookie, documentId, revision, deleteJoinRequestAdapter)
@@ -441,60 +434,9 @@ internal class DashboardTeamsOperations(
         credentials: StoredCredentials?,
         sessionCookie: String?,
         userIds: List<String>,
-    ): List<UserDocument> {
-        val normalizedBase = baseUrl.trim().trimEnd('/')
-        if (normalizedBase.isEmpty()) throw IOException("Missing server base URL")
-        val basicAuth = credentials?.let { Credentials.basic(it.username, it.password) }
-            ?: throw IOException("Missing credentials for basic auth")
-        if (userIds.isEmpty()) return emptyList()
+    ): List<UserDocument> = userOperations.fetchUserProfiles(baseUrl, credentials, sessionCookie, userIds)
 
-        val selector = UserIdSelector(ids = IdsInClause(ids = userIds))
-        val payload = moshi.adapter(UsersFindRequest::class.java).toJson(UsersFindRequest(selector))
-        val requestBuilder = Request.Builder()
-            .url("$normalizedBase/db/_users/_find")
-            .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-            .header("Authorization", basicAuth)
-            .header("Content-Type", "application/json")
-        sessionCookie.nullIfBlank()?.let { requestBuilder.addHeader("Cookie", it) }
-
-        return client.newCall(requestBuilder.build()).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected response ${response.code}")
-            moshi.adapter(UsersFindResponse::class.java).fromJson(response.body.string())?.docs ?: emptyList()
-        }
-    }
-
-    fun fetchAllUsers(request: FetchUsersRequest): List<UserDocument> {
-        val baseUrl = request.baseUrl
-        val credentials = request.credentials
-        val sessionCookie = request.sessionCookie
-        val planetCode = request.planetCode
-        val parentCode = request.parentCode
-        val pageSize = request.pageSize
-        val skip = request.skip
-        val searchTerm = request.searchTerm
-        val excludedUserIds = request.excludedUserIds
-        val normalizedBase = baseUrl.trim().trimEnd('/')
-        if (normalizedBase.isEmpty()) throw IOException("Missing server base URL")
-        val basicAuth = credentials?.let { Credentials.basic(it.username, it.password) }
-            ?: throw IOException("Missing credentials for basic auth")
-        if (pageSize <= 0) return emptyList()
-
-        val filteredPlanet = planetCode.nullIfBlank() ?: throw IOException("Missing planet code for user search")
-        val filteredParent = parentCode.nullIfBlank() ?: throw IOException("Missing parent code for user search")
-        val payload = buildUsersFindPayload(filteredPlanet, filteredParent, pageSize, skip, searchTerm, excludedUserIds)
-
-        val requestBuilder = Request.Builder()
-            .url("$normalizedBase/db/_users/_find")
-            .post(payload.toRequestBody(JSON_MEDIA_TYPE))
-            .header("Authorization", basicAuth)
-            .header("Content-Type", "application/json")
-        sessionCookie.nullIfBlank()?.let { requestBuilder.addHeader("Cookie", it) }
-
-        return client.newCall(requestBuilder.build()).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected response ${response.code}")
-            usersFindResponseAdapter.fromJson(response.body.string())?.docs ?: emptyList()
-        }
-    }
+    fun fetchAllUsers(request: FetchUsersRequest): List<UserDocument> = userOperations.fetchAllUsers(request)
 
     private fun cancelDocument(
         baseUrl: String,
@@ -521,73 +463,13 @@ internal class DashboardTeamsOperations(
         }
     }
 
+    @Suppress("unused")
     private fun fetchUserProfile(
         baseUrl: String,
         username: String,
         credentials: StoredCredentials?,
         sessionCookie: String?,
-    ): TeamMemberProfileDetails? {
-        if (baseUrl.isBlank() || username.isBlank()) return null
-
-        val requestBuilder = Request.Builder()
-            .url("$baseUrl/db/_users/org.couchdb.user:$username")
-            .get()
-            .withAuth(credentials, sessionCookie)
-
-        return try {
-            client.newCall(requestBuilder.build()).execute().use { response ->
-                if (!response.isSuccessful) return null
-                val body = response.body.string().nullIfBlank() ?: return null
-                val json = JSONObject(body)
-                val attachments = json.optJSONObject("_attachments")
-                TeamMemberProfileDetails(
-                    username = json.optString("name").nullIfBlank() ?: username,
-                    firstName = json.optString("firstName").nullIfBlank(),
-                    middleName = json.optString("middleName").nullIfBlank(),
-                    lastName = json.optString("lastName").nullIfBlank(),
-                    email = json.optString("email").nullIfBlank(),
-                    phoneNumber = json.optString("phoneNumber").nullIfBlank(),
-                    language = json.optString("language").nullIfBlank(),
-                    level = json.optString("level").nullIfBlank(),
-                    gender = json.optString("gender").nullIfBlank(),
-                    birthDate = json.optString("birthDate").nullIfBlank(),
-                    hasAvatar = attachments?.optJSONObject("img") != null,
-                )
-            }
-        } catch (_: IOException) {
-            null
-        }
-    }
-
-    private fun buildUsersFindPayload(
-        planetCode: String,
-        parentCode: String,
-        pageSize: Int,
-        skip: Int,
-        searchTerm: String?,
-        excludedUserIds: List<String>,
-    ): String {
-        val filteredExcludedIds = excludedUserIds.filter { it.isNotBlank() }
-        val selector = JSONObject().put("planetCode", planetCode).put("parentCode", parentCode)
-
-        if (filteredExcludedIds.isNotEmpty()) {
-            val excludedArray = JSONArray()
-            filteredExcludedIds.forEach { excludedArray.put(it) }
-            selector.put("_id", JSONObject().put("$" + "nin", excludedArray))
-        }
-
-        if (!searchTerm.isNullOrBlank()) {
-            val regexValue = "(?i)${searchTerm.trim()}"
-            val orArray = JSONArray()
-            listOf("name", "firstName", "middleName", "lastName").forEach { field ->
-                val regexObject = JSONObject().put("$" + "regex", regexValue)
-                orArray.put(JSONObject().put(field, regexObject))
-            }
-            selector.put("$" + "or", orArray)
-        }
-
-        return JSONObject().put("selector", selector).put("skip", skip).put("limit", pageSize).toString()
-    }
+    ): TeamMemberProfileDetails? = userOperations.fetchUserProfile(baseUrl, username, credentials, sessionCookie)
 
     private fun activeStatusClause(): StatusClause {
         return StatusClause(or = listOf(StatusCondition(exists = false), StatusCondition(notEquals = "archived")))

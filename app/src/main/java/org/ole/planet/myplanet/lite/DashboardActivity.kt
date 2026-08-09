@@ -47,38 +47,39 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.AppNavigator
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 class DashboardActivity : BaseActivity() {
-    private lateinit var avatarView: ImageView
-    private lateinit var drawerAvatar: ImageView
-    private lateinit var drawerName: TextView
-    private lateinit var drawerUsername: TextView
-    private lateinit var homeIcon: ImageView
-    private lateinit var surveysIcon: ImageView
-    private lateinit var coursesIcon: ImageView
-    private lateinit var resourcesIcon: ImageView
-    private lateinit var teamMembersIcon: ImageView
-    private lateinit var surveysContainer: FrameLayout
-    private lateinit var coursesContainer: FrameLayout
-    private lateinit var resourcesContainer: FrameLayout
-    private lateinit var teamMembersContainer: FrameLayout
-    private lateinit var drawerLayout: DrawerLayout
-    private lateinit var viewPager: ViewPager2
-    private lateinit var tabLayout: TabLayout
-    private var avatarUpdateListener: AvatarUpdateNotifier.Listener? = null
-    private var deepLinkHandled = false
-    private var currentSection = DashboardSection.HOME
-    private val connectivityManager by lazy { getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager }
-    private val serverPreferences by lazy {
+    internal lateinit var avatarView: ImageView
+    internal lateinit var drawerAvatar: ImageView
+    internal lateinit var drawerName: TextView
+    internal lateinit var drawerUsername: TextView
+    internal lateinit var homeIcon: ImageView
+    internal lateinit var surveysIcon: ImageView
+    internal lateinit var coursesIcon: ImageView
+    internal lateinit var resourcesIcon: ImageView
+    internal lateinit var teamMembersIcon: ImageView
+    internal lateinit var surveysContainer: FrameLayout
+    internal lateinit var coursesContainer: FrameLayout
+    internal lateinit var resourcesContainer: FrameLayout
+    internal lateinit var teamMembersContainer: FrameLayout
+    internal lateinit var drawerLayout: DrawerLayout
+    internal lateinit var viewPager: ViewPager2
+    internal lateinit var tabLayout: TabLayout
+    internal var avatarUpdateListener: AvatarUpdateNotifier.Listener? = null
+    internal var deepLinkHandled = false
+    internal var currentSection = DashboardSection.HOME
+    internal val connectivityManager by lazy { getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager }
+    internal val serverPreferences by lazy {
         SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
-    private var isHandlingSurveyTranslationToggle = false
-    private var surveyTranslationToggle: SwitchCompat? = null
-    private var isOfflineMode = false
-    private var isOfflineForcedByLaunch = false
-    private val networkCallback =
+    internal var isHandlingSurveyTranslationToggle = false
+    internal var surveyTranslationToggle: SwitchCompat? = null
+    internal var isOfflineMode = false
+    internal var isOfflineForcedByLaunch = false
+    internal val networkCallback =
         object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 runOnUiThread {
@@ -108,7 +109,7 @@ class DashboardActivity : BaseActivity() {
         setupProfileAndNetwork()
     }
 
-    private fun setupViews() {
+    internal fun setupViews() {
         drawerLayout = findViewById(R.id.dashboardDrawerLayout)
         val root: View = findViewById(R.id.dashboardRoot)
         val appBar: AppBarLayout = findViewById(R.id.dashboardAppBar)
@@ -141,7 +142,7 @@ class DashboardActivity : BaseActivity() {
         setupAppBarBehavior(appBar, topBar)
     }
 
-    private fun setupWindowInsets(
+    internal fun setupWindowInsets(
         root: View,
         appBar: AppBarLayout,
         bottomNavigation: View,
@@ -186,7 +187,7 @@ class DashboardActivity : BaseActivity() {
         }
     }
 
-    private fun setupViewPagerAndTabs() {
+    internal fun setupViewPagerAndTabs() {
         viewPager.adapter = DashboardPagerAdapter(this)
 
         TabLayoutMediator(tabLayout, viewPager) { tab, position ->
@@ -198,7 +199,7 @@ class DashboardActivity : BaseActivity() {
         }.attach()
     }
 
-    private fun setupBottomNavigation() {
+    internal fun setupBottomNavigation() {
         homeIcon.setOnClickListener {
             if (isOfflineMode) {
                 showOfflineModeMessage()
@@ -230,7 +231,7 @@ class DashboardActivity : BaseActivity() {
         updateBottomNavigationState()
     }
 
-    private fun setupDrawers(
+    internal fun setupDrawers(
         settingsButton: ImageButton,
         profileDrawer: NavigationView,
         settingsDrawer: NavigationView,
@@ -251,7 +252,7 @@ class DashboardActivity : BaseActivity() {
         setupSettingsDrawer(settingsDrawer, surveyTranslationMenuItem)
     }
 
-    private fun setupProfileDrawer(profileDrawer: NavigationView) {
+    internal fun setupProfileDrawer(profileDrawer: NavigationView) {
         profileDrawer.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.menu_profile -> {
@@ -291,118 +292,6 @@ class DashboardActivity : BaseActivity() {
         }
     }
 
-    private fun setupSettingsDrawer(
-        settingsDrawer: NavigationView,
-        surveyTranslationMenuItem: MenuItem,
-    ) {
-        val initialSurveyTranslationEnabled = isSurveyTranslationActive()
-        surveyTranslationMenuItem.isChecked = initialSurveyTranslationEnabled
-        surveyTranslationToggle?.apply {
-            isChecked = initialSurveyTranslationEnabled
-            setOnCheckedChangeListener { _, isChecked ->
-                if (isHandlingSurveyTranslationToggle) return@setOnCheckedChangeListener
-
-                if (isChecked) {
-                    isHandlingSurveyTranslationToggle = true
-                    this.isChecked = false
-                    surveyTranslationMenuItem.isChecked = false
-                    isHandlingSurveyTranslationToggle = false
-                    showSurveyTranslationConsentDialog(surveyTranslationMenuItem, requestedEnabled = true)
-                } else {
-                    applySurveyTranslationPreference(isChecked, surveyTranslationMenuItem, showToast = true)
-                }
-            }
-        }
-
-        settingsDrawer.setNavigationItemSelectedListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.menu_settings_language -> {
-                    drawerLayout.closeDrawer(GravityCompat.END)
-                    drawerLayout.post {
-                        LanguagePreferences.showLanguageSelectionDialog(this@DashboardActivity)
-                    }
-                    true
-                }
-
-                R.id.menu_settings_survey_translation -> {
-                    drawerLayout.closeDrawer(GravityCompat.END)
-                    val currentActive = surveyTranslationToggle?.isChecked ?: isSurveyTranslationActive()
-                    val enableRequest = !currentActive
-                    if (enableRequest) {
-                        showSurveyTranslationConsentDialog(surveyTranslationMenuItem, requestedEnabled = true)
-                    } else {
-                        surveyTranslationToggle?.let { toggle ->
-                            isHandlingSurveyTranslationToggle = true
-                            toggle.isChecked = false
-                            isHandlingSurveyTranslationToggle = false
-                        }
-                        applySurveyTranslationPreference(false, surveyTranslationMenuItem, showToast = true)
-                    }
-                    true
-                }
-
-                R.id.menu_settings_voice_batch_size -> {
-                    drawerLayout.closeDrawer(GravityCompat.END)
-                    drawerLayout.post {
-                        showVoiceBatchSizeDialog()
-                    }
-                    true
-                }
-
-                else -> {
-                    false
-                }
-            }
-        }
-    }
-
-    private fun setupAppBarBehavior(
-        appBar: AppBarLayout,
-        topBar: View,
-    ) {
-        val hideOvershoot = resources.getDimensionPixelOffset(R.dimen.dashboard_top_bar_hide_overshoot)
-        val tabsHideBuffer = resources.getDimensionPixelOffset(R.dimen.dashboard_tabs_hide_buffer)
-
-        appBar.addOnOffsetChangedListener(
-            AppBarLayout.OnOffsetChangedListener { _, verticalOffset ->
-                val tabsHeight = tabLayout.height
-                if (tabsHeight == 0) {
-                    topBar.translationY = 0f
-                    return@OnOffsetChangedListener
-                }
-                val totalScroll = -verticalOffset
-                val hideThreshold = tabsHeight + tabsHideBuffer
-                val pinnedUntilTabs = totalScroll.coerceAtMost(hideThreshold)
-                val extraScroll = (totalScroll - hideThreshold).coerceAtLeast(0)
-                val overshoot = extraScroll.coerceAtMost(hideOvershoot)
-                topBar.translationY = (pinnedUntilTabs - overshoot).toFloat()
-            },
-        )
-    }
-
-    private fun setupProfileAndNetwork() {
-        refreshProfileSummary()
-        avatarUpdateListener =
-            AvatarUpdateNotifier.register(
-                AvatarUpdateNotifier.Listener {
-                    refreshProfileSummary()
-                },
-            )
-
-        isOfflineForcedByLaunch = intent?.getBooleanExtra(EXTRA_OFFLINE_MODE, false) == true
-        isOfflineMode = isOfflineForcedByLaunch
-        handleDeepLinkNavigation()
-        val initialConnectivity = NetworkUtils.isDeviceOnline(this)
-        applyConnectivityState(
-            isConnected = initialConnectivity,
-            showMessages = isOfflineMode || !initialConnectivity,
-        )
-        if (initialConnectivity || currentSection == DashboardSection.SURVEYS) {
-            showSection(currentSection)
-        }
-        registerConnectivityCallback()
-    }
-
     override fun onDestroy() {
         super.onDestroy()
         AvatarUpdateNotifier.unregister(avatarUpdateListener)
@@ -423,359 +312,19 @@ class DashboardActivity : BaseActivity() {
         outState.putString(STATE_CURRENT_SECTION, currentSection.name)
     }
 
-    private fun showSection(section: DashboardSection) {
-        when (section) {
-            DashboardSection.HOME -> showHomeSection()
-            DashboardSection.SURVEYS -> showSurveysSection()
-            DashboardSection.COURSES -> showCoursesSection()
-            DashboardSection.RESOURCES -> showResourcesSection()
-            DashboardSection.TEAM_MEMBERS -> showTeamMembersSection()
-        }
-    }
-
-    private fun performLogout() {
-        lifecycleScope.launch {
-            withContext(Dispatchers.IO) {
-                val baseUrl = DashboardServerPreferences.getServerBaseUrl(applicationContext)
-                val authService =
-                    AuthDependencies.provideAuthService(
-                        this@DashboardActivity,
-                        baseUrl ?: BuildConfig.PLANET_BASE_URL,
-                    )
-                runCatching { authService.logout() }
-                runCatching {
-                    UserProfileDatabase.getInstance(applicationContext).clearProfile()
-                }
-            }
-
-            val intent =
-                Intent(this@DashboardActivity, MyPlanetLite::class.java).apply {
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
-                }
-            startActivity(intent)
-            finish()
-        }
-    }
-
-    private fun showHomeSection() {
-        currentSection = DashboardSection.HOME
-        surveysContainer.isVisible = false
-        coursesContainer.isVisible = false
-        resourcesContainer.isVisible = false
-        teamMembersContainer.isVisible = false
-        viewPager.isVisible = true
-        tabLayout.isVisible = true
-        updateBottomNavigationState()
-    }
-
-    private fun showSurveysSection() {
-        currentSection = DashboardSection.SURVEYS
-        viewPager.isVisible = false
-        surveysContainer.isVisible = true
-        coursesContainer.isVisible = false
-        resourcesContainer.isVisible = false
-        teamMembersContainer.isVisible = false
-        tabLayout.isVisible = false
-
-        val fragment = supportFragmentManager.findFragmentById(R.id.dashboardSurveysContainer)
-        if (fragment !is DashboardSurveysFragment) {
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.dashboardSurveysContainer, DashboardSurveysFragment())
-                .commit()
-        }
-
-        updateBottomNavigationState()
-    }
-
-    private fun showTeamMembersSection() {
-        currentSection = DashboardSection.TEAM_MEMBERS
-        viewPager.isVisible = false
-        surveysContainer.isVisible = false
-        coursesContainer.isVisible = false
-        resourcesContainer.isVisible = false
-        teamMembersContainer.isVisible = true
-        tabLayout.isVisible = false
-
-        val fragment = supportFragmentManager.findFragmentById(R.id.dashboardTeamMembersContainer)
-        if (fragment !is DashboardTeamMembersFragment) {
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.dashboardTeamMembersContainer, DashboardTeamMembersFragment())
-                .commit()
-        }
-
-        updateBottomNavigationState()
-    }
-
-    private fun showCoursesSection() {
-        currentSection = DashboardSection.COURSES
-        viewPager.isVisible = false
-        surveysContainer.isVisible = false
-        coursesContainer.isVisible = true
-        resourcesContainer.isVisible = false
-        teamMembersContainer.isVisible = false
-        tabLayout.isVisible = false
-
-        val fragment = supportFragmentManager.findFragmentById(R.id.dashboardCoursesContainer)
-        if (fragment !is DashboardCoursesFragment) {
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.dashboardCoursesContainer, DashboardCoursesFragment())
-                .commit()
-        }
-
-        updateBottomNavigationState()
-    }
-
-    private fun showResourcesSection() {
-        currentSection = DashboardSection.RESOURCES
-        viewPager.isVisible = false
-        surveysContainer.isVisible = false
-        coursesContainer.isVisible = false
-        resourcesContainer.isVisible = true
-        teamMembersContainer.isVisible = false
-        tabLayout.isVisible = false
-
-        val fragment = supportFragmentManager.findFragmentById(R.id.dashboardResourcesContainer)
-        if (fragment !is DashboardResourcesFragment) {
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.dashboardResourcesContainer, DashboardResourcesFragment())
-                .commit()
-        }
-
-        updateBottomNavigationState()
-    }
-
-    private fun updateBottomNavigationState() {
-        val homeActive = currentSection == DashboardSection.HOME && !isOfflineMode
-        val coursesActive = currentSection == DashboardSection.COURSES
-        val resourcesActive = currentSection == DashboardSection.RESOURCES
-        val teamActive = currentSection == DashboardSection.TEAM_MEMBERS && !isOfflineMode
-
-        homeIcon.alpha =
-            if (isOfflineMode) {
-                0.3f
-            } else if (homeActive) {
-                1f
-            } else {
-                0.5f
-            }
-        surveysIcon.alpha = if (currentSection == DashboardSection.SURVEYS) 1f else 0.5f
-        coursesIcon.alpha = if (coursesActive) 1f else 0.5f
-        resourcesIcon.alpha = if (resourcesActive) 1f else 0.5f
-        teamMembersIcon.alpha =
-            if (isOfflineMode) {
-                0.3f
-            } else if (teamActive) {
-                1f
-            } else {
-                0.5f
-            }
-        homeIcon.isEnabled = !isOfflineMode
-        coursesIcon.isEnabled = true
-        resourcesIcon.isEnabled = true
-        teamMembersIcon.isEnabled = !isOfflineMode
-        viewPager.isUserInputEnabled = !isOfflineMode
-        tabLayout.isEnabled = !isOfflineMode
-        tabLayout.alpha = if (isOfflineMode) 0.5f else 1f
-    }
-
-    private fun refreshProfileSummary() {
-        lifecycleScope.launch {
-            val (profile, avatarBitmap) =
-                withContext(Dispatchers.IO) {
-                    val profile = UserProfileDatabase.getInstance(applicationContext).getProfile()
-                    val avatarBytes = profile?.avatarImage
-                    val bitmap =
-                        if (avatarBytes != null && avatarBytes.isNotEmpty()) {
-                            BitmapFactory.decodeByteArray(avatarBytes, 0, avatarBytes.size)
-                        } else {
-                            null
-                        }
-                    profile to bitmap
-                }
-            val displayName =
-                profile?.let {
-                    listOfNotNull(it.firstName, it.middleName, it.lastName)
-                        .map { name -> name.trim() }
-                        .filter { name -> name.isNotEmpty() }
-                        .joinToString(" ")
-                        .ifEmpty { it.username }
-                } ?: getString(R.string.dashboard_profile_name_placeholder)
-
-            val usernameLabel =
-                profile?.let {
-                    getString(R.string.dashboard_profile_username_format, it.username)
-                } ?: getString(R.string.dashboard_profile_username_placeholder)
-
-            drawerName.text = displayName
-            drawerUsername.text = usernameLabel
-
-            if (avatarBitmap != null) {
-                avatarView.setImageBitmap(avatarBitmap)
-                drawerAvatar.setImageBitmap(avatarBitmap)
-            } else {
-                avatarView.setImageDrawable(null)
-                drawerAvatar.setImageDrawable(null)
-            }
-        }
-    }
-
-    private fun handleDeepLinkNavigation() {
-        if (deepLinkHandled) {
-            return
-        }
-        val postId =
-            intent
-                ?.getStringExtra(EXTRA_DEEP_LINK_POST_ID)
-                ?.takeIf { it.isNotBlank() }
-                ?: return
-        val detailIntent =
-            Intent(this, DashboardPostDetailActivity::class.java).apply {
-                putExtra(DashboardPostDetailActivity.EXTRA_POST_ID, postId)
-            }
-        startActivity(detailIntent)
-        deepLinkHandled = true
-    }
-
-    private fun showVoiceBatchSizeDialog() {
-        val options = VOICE_PAGE_SIZE_OPTIONS
-        val optionLabels =
-            options
-                .map { getString(R.string.dashboard_settings_voice_batch_size_option, it) }
-                .toTypedArray()
-        val current = getVoicePageSize()
-        val currentIndex = options.indexOf(current).takeIf { it >= 0 } ?: 0
-
-        AlertDialog
-            .Builder(this)
-            .setTitle(R.string.dashboard_settings_voice_batch_size_title)
-            .setSingleChoiceItems(optionLabels, currentIndex) { dialog, which ->
-                val selected = options[which]
-                val changed = setVoicePageSize(selected)
-                dialog.dismiss()
-                if (changed) {
-                    notifyVoicePageSizeChanged()
-                }
-            }.setNegativeButton(android.R.string.cancel, null)
-            .show()
-    }
-
-    private fun applySurveyTranslationPreference(
-        enabled: Boolean,
-        menuItem: MenuItem,
-        showToast: Boolean,
-    ) {
-        setSurveyTranslationEnabled(enabled)
-        menuItem.isChecked = enabled
-        if (showToast) {
-            val messageRes =
-                if (enabled) {
-                    R.string.dashboard_settings_survey_translation_enabled
-                } else {
-                    R.string.dashboard_settings_survey_translation_disabled
-                }
-            Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
-        }
-    }
-
     @androidx.annotation.VisibleForTesting
     internal fun isSurveyTranslationEnabled(): Boolean =
         serverPreferences.getBoolean(KEY_SURVEY_TRANSLATIONS_ENABLED, DEFAULT_SURVEY_TRANSLATION_ENABLED)
 
-    private fun isSurveyTranslationConsentAccepted(): Boolean = serverPreferences.getBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
+    internal fun isSurveyTranslationConsentAccepted(): Boolean = serverPreferences.getBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, false)
 
-    private fun setSurveyTranslationConsentAccepted(accepted: Boolean) {
-        serverPreferences
-            .edit()
-            .putBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, accepted)
-            .apply()
-    }
+    internal fun isSurveyTranslationActive(): Boolean = isSurveyTranslationEnabled() && isSurveyTranslationConsentAccepted()
 
-    private fun isSurveyTranslationActive(): Boolean = isSurveyTranslationEnabled() && isSurveyTranslationConsentAccepted()
+    internal fun getVoicePageSize(): Int = getVoicePageSizePreference(this)
 
-    private fun setSurveyTranslationEnabled(enabled: Boolean) {
-        serverPreferences
-            .edit()
-            .putBoolean(KEY_SURVEY_TRANSLATIONS_ENABLED, enabled)
-            .apply()
-    }
+    internal fun normalizeVoicePageSize(value: Int): Int = VOICE_PAGE_SIZE_OPTIONS.firstOrNull { it == value } ?: DEFAULT_VOICE_PAGE_SIZE
 
-    private fun getVoicePageSize(): Int = getVoicePageSizePreference(this)
-
-    private fun setVoicePageSize(pageSize: Int): Boolean {
-        val normalized = normalizeVoicePageSize(pageSize)
-        val current = getVoicePageSize()
-        if (current == normalized) {
-            return false
-        }
-        serverPreferences
-            .edit()
-            .putInt(KEY_VOICE_PAGE_SIZE, normalized)
-            .apply()
-        return true
-    }
-
-    private fun notifyVoicePageSizeChanged() {
-        val voicesFragment = supportFragmentManager.findFragmentByTag("f0") as? DashboardVoicesFragment
-        voicesFragment?.onPageSizeChanged(getVoicePageSize())
-    }
-
-    private fun showSurveyTranslationConsentDialog(
-        menuItem: MenuItem,
-        requestedEnabled: Boolean = isSurveyTranslationEnabled(),
-    ) {
-        if (!serverPreferences.contains(KEY_SURVEY_TRANSLATIONS_ENABLED)) {
-            setSurveyTranslationEnabled(DEFAULT_SURVEY_TRANSLATION_ENABLED)
-        }
-
-        val dialogView =
-            LayoutInflater
-                .from(this)
-                .inflate(R.layout.dialog_survey_translation_consent, null, false)
-        val consentCheckBox = dialogView.findViewById<MaterialCheckBox>(R.id.surveyTranslationConsentCheckBox)
-        val policyLink = dialogView.findViewById<TextView>(R.id.surveyTranslationPolicyLink)
-
-        consentCheckBox.isChecked = requestedEnabled
-
-        val dialog =
-            AlertDialog
-                .Builder(this)
-                .setTitle(R.string.login_survey_translation_consent_title)
-                .setView(dialogView)
-                .setPositiveButton(R.string.dashboard_survey_translation_consent_accept) { alertDialog, _ ->
-                    val translationsEnabled = consentCheckBox.isChecked
-                    setSurveyTranslationConsentAccepted(true)
-                    applySurveyTranslationPreference(translationsEnabled, menuItem, showToast = true)
-                    surveyTranslationToggle?.let { toggle ->
-                        isHandlingSurveyTranslationToggle = true
-                        toggle.isChecked = translationsEnabled
-                        isHandlingSurveyTranslationToggle = false
-                    }
-                    alertDialog.dismiss()
-                }.setNegativeButton(R.string.dashboard_survey_translation_consent_cancel) { alertDialog, _ ->
-                    setSurveyTranslationConsentAccepted(false)
-                    applySurveyTranslationPreference(false, menuItem, showToast = false)
-                    surveyTranslationToggle?.let { toggle ->
-                        isHandlingSurveyTranslationToggle = true
-                        toggle.isChecked = false
-                        isHandlingSurveyTranslationToggle = false
-                    }
-                    alertDialog.dismiss()
-                }.create()
-
-        policyLink.setOnClickListener {
-            startActivity(Intent(this, PrivacyPolicyActivity::class.java))
-        }
-
-        dialog.show()
-    }
-
-    private fun normalizeVoicePageSize(value: Int): Int = VOICE_PAGE_SIZE_OPTIONS.firstOrNull { it == value } ?: DEFAULT_VOICE_PAGE_SIZE
-
-    private class DashboardPagerAdapter(
+    internal class DashboardPagerAdapter(
         activity: AppCompatActivity,
     ) : FragmentStateAdapter(activity) {
         override fun getItemCount(): Int = 2
@@ -787,14 +336,14 @@ class DashboardActivity : BaseActivity() {
             }
     }
 
-    private data class Padding(
+    internal data class Padding(
         val left: Int,
         val top: Int,
         val right: Int,
         val bottom: Int,
     )
 
-    private enum class DashboardSection {
+    internal enum class DashboardSection {
         HOME,
         SURVEYS,
         COURSES,
@@ -804,16 +353,16 @@ class DashboardActivity : BaseActivity() {
 
     companion object {
         const val EXTRA_DEEP_LINK_POST_ID = "extra_deep_link_post_id"
-        private const val STATE_DEEP_LINK_HANDLED = "state_deep_link_handled"
-        private const val STATE_CURRENT_SECTION = "state_current_section"
-        private const val PREFS_NAME = "server_preferences"
-        private const val KEY_VOICE_PAGE_SIZE = "voice_page_size"
+        internal const val STATE_DEEP_LINK_HANDLED = "state_deep_link_handled"
+        internal const val STATE_CURRENT_SECTION = "state_current_section"
+        internal const val PREFS_NAME = "server_preferences"
+        internal const val KEY_VOICE_PAGE_SIZE = "voice_page_size"
 
         @androidx.annotation.VisibleForTesting const val KEY_SURVEY_TRANSLATIONS_ENABLED = "survey_translations_enabled"
 
         @androidx.annotation.VisibleForTesting const val KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED = "survey_translation_consent_accepted"
-        private const val DEFAULT_VOICE_PAGE_SIZE = 20
-        private const val DEFAULT_SURVEY_TRANSLATION_ENABLED = true
+        internal const val DEFAULT_VOICE_PAGE_SIZE = 20
+        internal const val DEFAULT_SURVEY_TRANSLATION_ENABLED = true
         const val EXTRA_OFFLINE_MODE = "extra_offline_mode"
         val VOICE_PAGE_SIZE_OPTIONS = listOf(10, 20, 40)
 
@@ -835,38 +384,6 @@ class DashboardActivity : BaseActivity() {
 
         fun isSurveyTranslationActive(context: Context): Boolean =
             isSurveyTranslationEnabled(context) && isSurveyTranslationConsentAccepted(context)
-    }
-
-    private fun registerConnectivityCallback() {
-        connectivityManager?.let { manager ->
-            runCatching { manager.registerDefaultNetworkCallback(networkCallback) }
-        }
-    }
-
-    private fun applyConnectivityState(
-        isConnected: Boolean,
-        showMessages: Boolean = false,
-    ) {
-        if (isConnected && !isOfflineForcedByLaunch) {
-            if (isOfflineMode) {
-                isOfflineMode = false
-                updateBottomNavigationState()
-                if (showMessages) {
-                    Toast.makeText(this, R.string.dashboard_online_mode_restored, Toast.LENGTH_SHORT).show()
-                }
-            }
-        } else {
-            if (!isOfflineMode && showMessages) {
-                Toast.makeText(this, R.string.dashboard_offline_mode_only_surveys, Toast.LENGTH_SHORT).show()
-            }
-            isOfflineMode = true
-            showSurveysSection()
-            updateBottomNavigationState()
-        }
-    }
-
-    private fun showOfflineModeMessage() {
-        Toast.makeText(this, R.string.dashboard_offline_mode_only_surveys, Toast.LENGTH_SHORT).show()
     }
 
     fun isOfflineModeActive(): Boolean = isOfflineMode
