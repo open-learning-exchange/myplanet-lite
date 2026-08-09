@@ -239,14 +239,14 @@ class UserProfileDatabaseTest {
         org.mockito.Mockito.doReturn(mockDb).`when`(dbSpy).readableDatabase
 
         org.mockito.Mockito.doThrow(IllegalStateException("Mocked Exception")).`when`(mockDb).query(
-            org.mockito.kotlin.any(),
-            org.mockito.kotlin.anyOrNull(),
-            org.mockito.kotlin.anyOrNull(),
-            org.mockito.kotlin.anyOrNull(),
-            org.mockito.kotlin.anyOrNull(),
-            org.mockito.kotlin.anyOrNull(),
-            org.mockito.kotlin.anyOrNull(),
-            org.mockito.kotlin.anyOrNull()
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.isNull(),
+            org.mockito.ArgumentMatchers.anyString(),
+            org.mockito.ArgumentMatchers.any(),
+            org.mockito.ArgumentMatchers.isNull(),
+            org.mockito.ArgumentMatchers.isNull(),
+            org.mockito.ArgumentMatchers.isNull(),
+            org.mockito.ArgumentMatchers.anyString()
         )
 
         val result = dbSpy.getProfile()
