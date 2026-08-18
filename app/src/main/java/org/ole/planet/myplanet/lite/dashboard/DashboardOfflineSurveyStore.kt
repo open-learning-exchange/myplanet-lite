@@ -103,26 +103,25 @@ class DashboardOfflineSurveyStore(
 
     suspend fun getSavedSurveysForTeam(teamId: String): List<SurveyDocument> =
         withContext(ioDispatcher) {
-            val jsons =
-                readableDatabase
-                    .query(
-                        TABLE_SURVEYS,
-                        arrayOf(COLUMN_DOCUMENT),
-                        "$COLUMN_TEAM_ID = ?",
-                        arrayOf(teamId),
-                        null,
-                        null,
-                        null,
-                    ).use { cursor ->
-                        val jsonIndex = cursor.getColumnIndexOrThrow(COLUMN_DOCUMENT)
-                        buildList {
-                            while (cursor.moveToNext()) {
-                                cursor.getString(jsonIndex)?.let { add(it) }
+            readableDatabase
+                .query(
+                    TABLE_SURVEYS,
+                    arrayOf(COLUMN_DOCUMENT),
+                    "$COLUMN_TEAM_ID = ?",
+                    arrayOf(teamId),
+                    null,
+                    null,
+                    null,
+                ).use { cursor ->
+                    val jsonIndex = cursor.getColumnIndexOrThrow(COLUMN_DOCUMENT)
+                    buildList {
+                        while (cursor.moveToNext()) {
+                            cursor.getString(jsonIndex)?.let { json ->
+                                documentAdapter.fromJson(json)?.let { add(it) }
                             }
                         }
                     }
-
-            jsons.mapNotNull { json -> documentAdapter.fromJson(json) }
+                }
         }
 
     suspend fun getSavedSurveyRevisions(): Map<String, String?> =
