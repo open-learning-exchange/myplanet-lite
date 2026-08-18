@@ -38,7 +38,6 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfile
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
-import org.ole.planet.myplanet.lite.util.enableDrag
 
 class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     private lateinit var recyclerView: RecyclerView
@@ -136,7 +135,6 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
             animateFabClick(fab)
             openCreateVoiceComposer()
         }
-        fab.enableDrag()
     }
 
     private fun setupRecyclerView() {
