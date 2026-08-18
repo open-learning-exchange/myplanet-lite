@@ -172,26 +172,29 @@ internal class ResourceDownloadService(
         candidates += File(publicDownloads, filename)
 
         context.getExternalFilesDir(null)?.let {
-            if (resourceId.isNotBlank()) {
-                candidates.add(File(it, "resources/$tabFolder/$resourceId/$filename"))
-                candidates.add(File(it, "resources/$resourceId/$filename"))
-            } else {
-                candidates.add(File(it, "resources/$tabFolder/_no_id/$filename"))
-                candidates.add(File(it, "resources/_no_id/$filename"))
-            }
+            candidates.addCandidatesForDir(it, resourceId, tabFolder, filename)
         }
 
         context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS)?.let {
-            if (resourceId.isNotBlank()) {
-                candidates.add(File(it, "resources/$tabFolder/$resourceId/$filename"))
-                candidates.add(File(it, "resources/$resourceId/$filename"))
-            } else {
-                candidates.add(File(it, "resources/$tabFolder/_no_id/$filename"))
-                candidates.add(File(it, "resources/_no_id/$filename"))
-            }
+            candidates.addCandidatesForDir(it, resourceId, tabFolder, filename)
         }
 
         return candidates.firstOrNull { it.exists() }
+    }
+
+    private fun MutableList<File>.addCandidatesForDir(
+        baseDir: File,
+        resourceId: String,
+        tabFolder: String,
+        filename: String
+    ) {
+        if (resourceId.isNotBlank()) {
+            add(File(baseDir, "resources/$tabFolder/$resourceId/$filename"))
+            add(File(baseDir, "resources/$resourceId/$filename"))
+        } else {
+            add(File(baseDir, "resources/$tabFolder/_no_id/$filename"))
+            add(File(baseDir, "resources/_no_id/$filename"))
+        }
     }
 
     fun resolveResourceUri(baseUrl: String?, item: ResourceUi): String? {
