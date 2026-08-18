@@ -188,4 +188,50 @@ class DashboardTeamsRepositoryTest {
         assertTrue(request.path?.startsWith("/db/teams") == true)
         assertEquals("POST", request.method)
     }
+
+
+
+
+    @Test
+    fun fetchTeamMembers_success() = runTest {
+        val responseBody = """
+            {
+                "docs": [
+                    {
+                        "_id": "membership1",
+                        "teamId": "team1",
+                        "userId": "user1"
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setBody(responseBody).setResponseCode(200))
+
+        val result = repository.fetchTeamMembers(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = StoredCredentials("u", "p"),
+            sessionCookie = "cookie",
+            teamId = "team1"
+        )
+
+        assertTrue(result.isSuccess)
+        val list = result.getOrNull()
+        assertEquals(1, list?.size)
+        assertEquals("membership1", list?.get(0)?.id)
+    }
+
+    @Test
+    fun fetchTeamMembers_failure() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        val result = repository.fetchTeamMembers(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = StoredCredentials("u", "p"),
+            sessionCookie = "cookie",
+            teamId = "team1"
+        )
+
+        assertTrue(result.isFailure)
+        assertTrue(result.exceptionOrNull() is java.io.IOException)
+    }
 }
