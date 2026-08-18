@@ -76,12 +76,11 @@
             android:id="@+id/dashboardTabs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="@dimen/dashboard_horizontal_padding"
-            android:paddingEnd="@dimen/dashboard_horizontal_padding"
             android:paddingBottom="@dimen/dashboard_section_spacing"
             app:layout_scrollFlags="scroll|enterAlways"
-            app:tabGravity="center"
+            app:tabGravity="fill"
             app:tabMode="fixed"
+            app:tabMaxWidth="0dp"
             app:tabIndicatorFullWidth="false"
             android:background="@color/white"/>
 
