@@ -80,6 +80,8 @@
             android:paddingEnd="@dimen/dashboard_horizontal_padding"
             android:paddingBottom="@dimen/dashboard_section_spacing"
             app:layout_scrollFlags="scroll|enterAlways"
+            app:tabGravity="center"
+            app:tabMode="fixed"
             app:tabIndicatorFullWidth="false"
             android:background="@color/white"/>
 
