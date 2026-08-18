@@ -196,6 +196,21 @@
 
         </LinearLayout>
 
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/dashboardAddVoiceFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="@dimen/dashboard_fab_margin_end"
+            android:layout_marginBottom="76dp"
+            android:backgroundTint="@color/C6F6F6F"
+            app:tint="@color/white"
+            app:fabCustomSize="@dimen/dashboard_fab_size"
+            app:fabSize="normal"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyPlanet.Circle"
+            android:contentDescription="@string/dashboard_add_voice_content_description"
+            app:srcCompat="@drawable/ic_add_24" />
+
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 
     <com.google.android.material.navigation.NavigationView

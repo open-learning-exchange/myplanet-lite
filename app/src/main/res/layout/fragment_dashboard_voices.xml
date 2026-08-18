@@ -5,8 +5,7 @@
     android:layout_height="match_parent"
     android:paddingTop="@dimen/dashboard_content_top_spacing"
     android:paddingBottom="@dimen/dashboard_content_bottom_spacing"
-    android:background="@color/white"
-    app:layout_behavior="@string/appbar_scrolling_view_behavior">
+    android:background="@color/white">
 
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/postsRecyclerView"
@@ -38,20 +37,5 @@
         android:textColor="?attr/colorOnSurface"
         android:textSize="@dimen/text_size_16sp"
         android:visibility="gone" />
-
-        <com.google.android.material.floatingactionbutton.FloatingActionButton
-        android:id="@+id/addVoiceFab"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_gravity="bottom|end"
-        android:layout_marginEnd="@dimen/dashboard_fab_margin_end"
-        android:layout_marginBottom="80dp"
-        android:backgroundTint="@color/C6F6F6F"
-        app:tint="@color/white"
-        app:fabCustomSize="@dimen/dashboard_fab_size"
-        app:fabSize="normal"
-        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyPlanet.Circle"
-        android:contentDescription="@string/dashboard_add_voice_content_description"
-        app:srcCompat="@drawable/ic_add_24" />
 
 </FrameLayout>

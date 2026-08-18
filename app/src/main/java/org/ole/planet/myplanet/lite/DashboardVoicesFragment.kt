@@ -18,7 +18,6 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.floatingactionbutton.FloatingActionButton
 import io.noties.markwon.Markwon
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -130,11 +129,6 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         recyclerView = view.findViewById(R.id.postsRecyclerView)
         loadingView = view.findViewById(R.id.postsLoading)
         emptyView = view.findViewById(R.id.postsEmptyView)
-        val fab: FloatingActionButton = view.findViewById(R.id.addVoiceFab)
-        fab.setOnClickListener {
-            animateFabClick(fab)
-            openCreateVoiceComposer()
-        }
     }
 
     private fun setupRecyclerView() {
@@ -194,15 +188,6 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                     )
                 loadInitial()
             }
-    }
-
-    private fun animateFabClick(fab: FloatingActionButton) {
-        fab
-            .animate()
-            .rotationBy(360f)
-            .setDuration(250)
-            .withEndAction { fab.rotation = 0f }
-            .start()
     }
 
     override fun onDestroyView() {

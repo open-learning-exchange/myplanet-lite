@@ -47,6 +47,8 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import com.google.android.material.floatingactionbutton.FloatingActionButton
+import org.ole.planet.myplanet.lite.dashboard.CreateVoiceActivity
 import org.ole.planet.myplanet.lite.util.AppNavigator
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
@@ -61,6 +63,7 @@ class DashboardActivity : BaseActivity() {
     internal lateinit var coursesIcon: ImageView
     internal lateinit var resourcesIcon: ImageView
     internal lateinit var teamMembersIcon: ImageView
+    internal lateinit var addVoiceFab: FloatingActionButton
     internal lateinit var surveysContainer: FrameLayout
     internal lateinit var coursesContainer: FrameLayout
     internal lateinit var resourcesContainer: FrameLayout
@@ -136,6 +139,11 @@ class DashboardActivity : BaseActivity() {
         coursesIcon = findViewById(R.id.dashboardCoursesIcon)
         resourcesIcon = findViewById(R.id.dashboardResourcesIcon)
         teamMembersIcon = findViewById(R.id.dashboardTeamMembersIcon)
+        addVoiceFab = findViewById(R.id.dashboardAddVoiceFab)
+        addVoiceFab.setOnClickListener {
+            val intent = Intent(this, CreateVoiceActivity::class.java)
+            startActivity(intent)
+        }
 
         setupWindowInsets(root, appBar, bottomNavigation)
         setupDrawers(settingsButton, profileDrawer, settingsDrawer, surveyTranslationMenuItem)
@@ -197,6 +205,14 @@ class DashboardActivity : BaseActivity() {
                     else -> getString(R.string.dashboard_teams_title)
                 }
         }.attach()
+
+        viewPager.registerOnPageChangeCallback(
+            object : ViewPager2.OnPageChangeCallback() {
+                override fun onPageSelected(position: Int) {
+                    updateFabVisibility()
+                }
+            },
+        )
     }
 
     internal fun setupBottomNavigation() {
