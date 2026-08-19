@@ -56,7 +56,7 @@ class DashboardResourcesRepositoryTest {
         val selector = body.getJSONObject("selector")
         assertEquals(false, selector.has("createdDate"))
         assertEquals(true, selector.has("_id"))
-        assertEquals(true, selector.getJSONObject("_id").has($$"$gt"))
+        assertEquals(true, selector.getJSONObject("_id").has("\$gt"))
     }
 
     @Test
