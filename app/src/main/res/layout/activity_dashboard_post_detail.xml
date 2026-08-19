@@ -259,8 +259,31 @@
                                 app:iconPadding="0dp"
                                 app:iconTint="@android:color/black" />
 
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/dashboardReplyGenerateAi"
+                                style="@style/Widget.MaterialComponents.Button.TextButton"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:minHeight="0dp"
+                                android:minWidth="0dp"
+                                android:paddingStart="8dp"
+                                android:paddingEnd="8dp"
+                                android:textColor="@android:color/black"
+                                android:contentDescription="@string/create_voice_generate_ai_description"
+                                app:icon="@drawable/ic_generate_ia"
+                                app:iconGravity="textStart"
+                                app:iconPadding="0dp"
+                                app:iconTint="@android:color/black" />
+
                         </LinearLayout>
                     </HorizontalScrollView>
+
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/dashboardReplyAiProgress"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:indeterminate="true"
+                        android:visibility="gone" />
 
                 </LinearLayout>
 

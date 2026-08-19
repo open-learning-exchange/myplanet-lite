@@ -524,6 +524,8 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="create_voice_link_insert_button">Insert</string>
     <string name="create_voice_link_required_fields">Please enter a title and URL.</string>
     <string name="create_voice_format_image_description">Insert image</string>
+    <string name="create_voice_generate_ai_description">Generate content with ChatGPT</string>
+    <string name="create_voice_generate_ai_error">We couldn\'t improve the content. Please try again.</string>
     <string name="create_voice_format_placeholder">text</string>
     <string name="create_voice_image_processing_error">We couldn\'t process that image. Please try another file.</string>
     <string name="create_voice_image_upload_error">We couldn\'t upload your images. Try again.</string>
