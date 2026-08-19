@@ -489,6 +489,8 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="create_voice_link_insert_button">Insérer</string>
     <string name="create_voice_link_required_fields">Veuillez saisir un titre et une URL.</string>
     <string name="create_voice_format_image_description">Insérer une image</string>
+    <string name="create_voice_generate_ai_description">Générer du contenu avec ChatGPT</string>
+    <string name="create_voice_generate_ai_error">Impossible d’améliorer le contenu. Réessayez.</string>
     <string name="create_voice_format_placeholder">texte</string>
     <string name="create_voice_image_processing_error">Nous n\'avons pas pu traiter cette image. Essayez un autre fichier.</string>
     <string name="create_voice_image_upload_error">Nous n\'avons pas pu téléverser vos images. Réessayez.</string>
