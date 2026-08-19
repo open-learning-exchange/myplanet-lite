@@ -44,7 +44,7 @@ The app acts as a local bridge to Planet servers (CouchDB-compatible REST APIs).
 
 myPlanet Lite uses a modern, lightweight Android architecture designed for stability and testability without unnecessary framework overhead:
 
-- **Platform & Language**: Native Android with Kotlin, compiled to JVM target 17 (`compileSdk 37`, `targetSdk 36`, `minSdk 28`).
+- **Platform & Language**: Native Android with Kotlin, compiled to JVM target 17 (`compileSdk 37`, `targetSdk 36`, `minSdk 29`).
 - **UI Layer**: AppCompat, Material Components, ViewBinding, and custom edge-to-edge system insets handling.
 - **Networking**: Retrofit 2 + Moshi (Kotlin reflective adapter) over OkHttp, utilizing cookie-based session management (`/_session`) for Planet backends.
 - **Data & Persistence**:
@@ -66,7 +66,7 @@ myPlanet Lite uses a modern, lightweight Android architecture designed for stabi
 
 - **Android Studio**: Android Studio Ladybug / Meerkat or later.
 - **Java Development Kit**: JDK 21 (Temurin or OpenJDK recommended).
-- **Android SDK**: API Level 37 (`minSdk 28`).
+- **Android SDK**: Compiles with API Level 37 and targets API Level 36 (`minSdk 29`).
 
 ### Cloning the Repository
 

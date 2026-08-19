@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 myPlanet Lite is a native Android app (Kotlin, `org.ole.planet.myplanet.lite`, applicationId `org.ole.planet.myplanet.lite`) that talks to a Planet / OLE backend (CouchDB-style HTTP API). The default dev server is `BuildConfig.PLANET_BASE_URL` (`app/build.gradle.kts:27`); override per-device via `local.properties`'s `sdk.dir` for the SDK path.
 
 - Gradle Kotlin DSL with a version catalog at `gradle/libs.versions.toml` — add/change dependencies there, not inline in `app/build.gradle.kts`.
-- JDK 21 is required (matches the CI in `.github/workflows/{build,test}.yml`). `compileSdk`/`targetSdk` 36, `minSdk` 28. Kotlin compiled to JVM target 11.
+- JDK 21 is required (matches the CI in `.github/workflows/{build,test}.yml`). `compileSdk` 37, `targetSdk` 36, `minSdk` 29. Kotlin compiled to JVM target 17.
 - `fix.sh` patches a `DashboardNewsActionsRepository.kt` string-interpolation typo that occasionally reappears after code generation / merges; run it if `assembleDebug` fails on that file.
 
 ## Commands
