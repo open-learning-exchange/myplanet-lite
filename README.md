@@ -66,7 +66,7 @@ myPlanet Lite uses a modern, lightweight Android architecture designed for stabi
 
 - **Android Studio**: Android Studio Ladybug / Meerkat or later.
 - **Java Development Kit**: JDK 21 (Temurin or OpenJDK recommended).
-- **Android SDK**: API Level 37 (`minSdk 28`).
+- **Android SDK**: Compiles with API Level 37 and targets API Level 36 (`minSdk 28`).
 
 ### Cloning the Repository
 
