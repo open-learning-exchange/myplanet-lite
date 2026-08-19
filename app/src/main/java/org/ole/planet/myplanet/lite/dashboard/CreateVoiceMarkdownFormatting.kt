@@ -22,6 +22,7 @@ internal fun CreateVoiceActivity.setupMarkdownToolbar() {
     val quoteButton: MaterialButton = findViewById(R.id.markdownQuoteButton)
     val linkButton: MaterialButton = findViewById(R.id.markdownLinkButton)
     val imageButton: MaterialButton = findViewById(R.id.markdownImageButton)
+    val generateAiButton: MaterialButton = findViewById(R.id.markdownGenerateAiButton)
 
     boldButton.setOnClickListener {
         applyWrappedFormatting("**", "**", "", placeCursorInsideWhenNoSelection = true)
@@ -47,6 +48,7 @@ internal fun CreateVoiceActivity.setupMarkdownToolbar() {
     imageButton.setOnClickListener {
         handleInsertImageClick()
     }
+    setupVoiceAiButton(generateAiButton)
 }
 
 internal fun CreateVoiceActivity.applyWrappedFormatting(
@@ -98,17 +100,7 @@ internal fun CreateVoiceActivity.applyHeadingFormatting() {
     ) {
         prefixEnd++
     }
-    val newHeadingLevel =
-        if (currentHashes == 0) {
-            1
-        } else {
-            (currentHashes % CreateVoiceActivity.MAX_HEADING_LEVEL) + 1
-        }
-    val replacement =
-        buildString {
-            repeat(newHeadingLevel) { append('#') }
-            append(' ')
-        }
+    val replacement = VoiceMarkdownFormatter.getHeadingReplacement(currentHashes)
     editable.replace(lineStart, prefixEnd, replacement)
     val selection = (lineStart + replacement.length).coerceAtMost(editable.length)
     editText.setSelection(selection)
@@ -122,17 +114,8 @@ internal fun CreateVoiceActivity.applyBulletFormatting() {
     val rangeStart = min(start, end)
     val rangeEnd = max(start, end)
     val selection = editable.subSequence(rangeStart, rangeEnd).toString()
-    if (selection.isBlank()) {
-        editable.replace(rangeStart, rangeEnd, "- ")
-        editText.setSelection((rangeStart + 2).coerceAtMost(editable.length))
-        return
-    }
-    val formatted =
-        selection.lines().joinToString("\n") { line ->
-            val trimmed = line.trimStart()
-            val indent = line.substring(0, line.length - trimmed.length)
-            "$indent- ${trimmed.ifEmpty { getString(R.string.create_voice_format_placeholder) }}"
-        }
+    val placeholder = getString(R.string.create_voice_format_placeholder)
+    val formatted = VoiceMarkdownFormatter.formatBullet(selection, placeholder)
     editable.replace(rangeStart, rangeEnd, formatted)
     editText.setSelection((rangeStart + formatted.length).coerceAtMost(editable.length))
 }
@@ -145,21 +128,8 @@ internal fun CreateVoiceActivity.applyNumberedListFormatting() {
     val rangeStart = min(start, end)
     val rangeEnd = max(start, end)
     val selection = editable.subSequence(rangeStart, rangeEnd).toString()
-    if (selection.isBlank()) {
-        editable.replace(rangeStart, rangeEnd, "1. ")
-        editText.setSelection((rangeStart + 3).coerceAtMost(editable.length))
-        return
-    }
     val placeholder = getString(R.string.create_voice_format_placeholder)
-    val formatted =
-        selection
-            .lines()
-            .mapIndexed { index, line ->
-                val trimmed = line.trimStart()
-                val indent = line.substring(0, line.length - trimmed.length)
-                val content = trimmed.ifEmpty { placeholder }
-                "$indent${index + 1}. $content"
-            }.joinToString("\n")
+    val formatted = VoiceMarkdownFormatter.formatNumberedList(selection, placeholder)
     editable.replace(rangeStart, rangeEnd, formatted)
     editText.setSelection((rangeStart + formatted.length).coerceAtMost(editable.length))
 }
@@ -172,19 +142,8 @@ internal fun CreateVoiceActivity.applyQuoteFormatting() {
     val rangeStart = min(start, end)
     val rangeEnd = max(start, end)
     val selection = editable.subSequence(rangeStart, rangeEnd).toString()
-    if (selection.isBlank()) {
-        editable.replace(rangeStart, rangeEnd, "> ")
-        editText.setSelection((rangeStart + 2).coerceAtMost(editable.length))
-        return
-    }
     val placeholder = getString(R.string.create_voice_format_placeholder)
-    val formatted =
-        selection.lines().joinToString("\n") { line ->
-            val trimmed = line.trimStart()
-            val indent = line.substring(0, line.length - trimmed.length)
-            val content = trimmed.ifEmpty { placeholder }
-            "$indent> $content"
-        }
+    val formatted = VoiceMarkdownFormatter.formatQuote(selection, placeholder)
     editable.replace(rangeStart, rangeEnd, formatted)
     editText.setSelection((rangeStart + formatted.length).coerceAtMost(editable.length))
 }
@@ -207,5 +166,46 @@ internal fun CreateVoiceActivity.setMarkdownToolbarEnabled(enabled: Boolean) {
     markdownToolbar.isEnabled = enabled
     for (index in 0 until markdownToolbar.childCount) {
         markdownToolbar.getChildAt(index)?.isEnabled = enabled
+    }
+    updateCreateVoiceAiAvailability()
+}
+
+
+internal object VoiceMarkdownFormatter {
+    fun getHeadingReplacement(currentHashes: Int): String {
+        val newHeadingLevel = if (currentHashes == 0) 1 else (currentHashes % CreateVoiceActivity.MAX_HEADING_LEVEL) + 1
+        return buildString {
+            repeat(newHeadingLevel) { append('#') }
+            append(' ')
+        }
+    }
+
+    fun formatBullet(selection: String, placeholder: String): String {
+        if (selection.isBlank()) return "- "
+        return selection.lines().joinToString("\n") { line ->
+            val trimmed = line.trimStart()
+            val indent = line.substring(0, line.length - trimmed.length)
+            "$indent- ${trimmed.ifEmpty { placeholder }}"
+        }
+    }
+
+    fun formatNumberedList(selection: String, placeholder: String): String {
+        if (selection.isBlank()) return "1. "
+        return selection.lines().mapIndexed { index, line ->
+            val trimmed = line.trimStart()
+            val indent = line.substring(0, line.length - trimmed.length)
+            val content = trimmed.ifEmpty { placeholder }
+            "$indent${index + 1}. $content"
+        }.joinToString("\n")
+    }
+
+    fun formatQuote(selection: String, placeholder: String): String {
+        if (selection.isBlank()) return "> "
+        return selection.lines().joinToString("\n") { line ->
+            val trimmed = line.trimStart()
+            val indent = line.substring(0, line.length - trimmed.length)
+            val content = trimmed.ifEmpty { placeholder }
+            "$indent> $content"
+        }
     }
 }
