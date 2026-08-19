@@ -146,6 +146,7 @@ internal suspend fun DashboardPostDetailActivity.initializeSession() {
     baseUrl?.let { base ->
         val authService = AuthDependencies.provideAuthService(context, base)
         sessionCookie = authService.getStoredToken()
+        loadReplyVoiceAiConfiguration()
     }
 }
 

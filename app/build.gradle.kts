@@ -25,6 +25,7 @@ configurations.named("androidTestImplementation") {
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
+    // Current dependencies require API 37 at compile time. Runtime behavior remains on API 36.
     compileSdk = 37
     buildFeatures {
         buildConfig = true
@@ -34,8 +35,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 525
-        versionName = "0.5.25"
+        versionCode = 528
+        versionName = "0.5.28"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
