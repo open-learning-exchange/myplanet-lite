@@ -135,6 +135,7 @@ internal fun DashboardPostDetailActivity.setupReplyMarkdownToolbar() {
     val replyQuote: MaterialButton = findViewById(R.id.dashboardReplyMarkdownQuote)
     val replyLink: MaterialButton = findViewById(R.id.dashboardReplyMarkdownLink)
     val replyImage: MaterialButton = findViewById(R.id.dashboardReplyMarkdownImage)
+    val replyGenerateAi: MaterialButton = findViewById(R.id.dashboardReplyGenerateAi)
 
     replyBold.setOnClickListener {
         applyWrappedFormattingInternal("**", "**", "", placeCursorInsideWhenNoSelection = true)
@@ -152,6 +153,7 @@ internal fun DashboardPostDetailActivity.setupReplyMarkdownToolbar() {
     replyImage.setOnClickListener {
         handleReplyInsertImageClick()
     }
+    setupReplyVoiceAiButton(replyGenerateAi)
 }
 
 internal fun DashboardPostDetailActivity.promptReply() {
@@ -290,6 +292,7 @@ internal fun DashboardPostDetailActivity.setMarkdownToolbarEnabled(enabled: Bool
     for (index in 0 until replyMarkdownToolbar.childCount) {
         replyMarkdownToolbar.getChildAt(index)?.isEnabled = enabled
     }
+    updateReplyVoiceAiAvailability()
 }
 
 internal fun DashboardPostDetailActivity.handleReplyInsertImageClick() {
@@ -338,6 +341,7 @@ internal fun DashboardPostDetailActivity.applyReplyExpansionState() {
     updateReplyPreviewImages()
     replyInputLayout.helperText = null
     setMarkdownToolbarEnabled(expanded && !isPostingReply)
+    updateReplyVoiceAiAvailability()
     updateReplyingToVisibility(expanded)
 }
 

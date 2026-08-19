@@ -441,6 +441,8 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="create_voice_link_insert_button">Geli</string>
     <string name="create_voice_link_required_fields">Fadlan geli cinwaan iyo URL.</string>
     <string name="create_voice_format_image_description">Ku dar sawir</string>
+    <string name="create_voice_generate_ai_description">Ku samee nuxur ChatGPT</string>
+    <string name="create_voice_generate_ai_error">Ma hagaajin karno nuxurka. Mar kale isku day.</string>
     <string name="create_voice_format_placeholder">qoraal</string>
     <string name="create_voice_image_processing_error">Sawirkaas ma aanan farsamayn karin. Fadlan isku day fayl kale.</string>
     <string name="create_voice_image_upload_error">Sawirradaada ma aanan soo gelin karin. Isku day mar kale.</string>
