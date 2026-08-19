@@ -33,7 +33,7 @@ android {
     }
     defaultConfig {
         applicationId = "org.ole.planet.myplanet.lite"
-        minSdk = 29
+        minSdk = 28
         targetSdk = 36
         versionCode = 527
         versionName = "0.5.27"
