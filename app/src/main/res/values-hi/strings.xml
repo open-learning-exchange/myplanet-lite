@@ -509,6 +509,8 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="create_voice_link_insert_button">डालें</string>
     <string name="create_voice_link_required_fields">कृपया शीर्षक और URL दर्ज करें।</string>
     <string name="create_voice_format_image_description">छवि जोड़ें</string>
+    <string name="create_voice_generate_ai_description">ChatGPT से सामग्री बनाएँ</string>
+    <string name="create_voice_generate_ai_error">सामग्री को बेहतर नहीं बनाया जा सका। फिर से प्रयास करें।</string>
     <string name="create_voice_format_placeholder">पाठ</string>
     <string name="create_voice_image_processing_error">हम उस छवि को संसाधित नहीं कर सके। कृपया कोई और फ़ाइल आज़माएँ।</string>
     <string name="create_voice_image_upload_error">हम आपकी छवियाँ अपलोड नहीं कर सके। पुनः प्रयास करें।</string>

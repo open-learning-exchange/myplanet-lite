@@ -270,6 +270,7 @@ class CreateVoiceActivity : BaseActivity() {
             val authService = AuthDependencies.provideAuthService(context, base)
             sessionCookie = authService.getStoredToken()
             isSessionReady = true
+            loadVoiceAiConfiguration()
             updateActionAvailability()
             if (isEditMode && editInitialImagePaths.isNotEmpty()) {
                 loadEditInitialImages()
