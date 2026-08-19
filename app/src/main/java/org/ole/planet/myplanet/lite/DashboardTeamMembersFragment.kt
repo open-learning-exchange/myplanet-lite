@@ -34,6 +34,7 @@ import org.ole.planet.myplanet.lite.databinding.DialogInviteMembersBinding
 import org.ole.planet.myplanet.lite.databinding.FragmentDashboardTeamMembersBinding
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.enableDrag
 
 class DashboardTeamMembersFragment : Fragment() {
     private var _binding: FragmentDashboardTeamMembersBinding? = null
@@ -119,6 +120,7 @@ class DashboardTeamMembersFragment : Fragment() {
             animateFabClick(binding.fabAddMember)
             showInviteMembersDialog()
         }
+        binding.fabAddMember.enableDrag()
         updateLeaderActionsVisibility()
         viewLifecycleOwner.lifecycleScope.launch {
             loadConnectionInfo()

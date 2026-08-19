@@ -52,6 +52,7 @@ import org.ole.planet.myplanet.lite.dashboard.CreateVoiceActivity
 import org.ole.planet.myplanet.lite.util.AppNavigator
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.ole.planet.myplanet.lite.util.enableDrag
 
 class DashboardActivity : BaseActivity() {
     internal lateinit var avatarView: ImageView
@@ -144,6 +145,7 @@ class DashboardActivity : BaseActivity() {
             val intent = Intent(this, CreateVoiceActivity::class.java)
             startActivity(intent)
         }
+        addVoiceFab.enableDrag()
 
         setupWindowInsets(root, appBar, bottomNavigation)
         setupDrawers(settingsButton, profileDrawer, settingsDrawer, surveyTranslationMenuItem)

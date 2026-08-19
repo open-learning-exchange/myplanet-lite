@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import com.google.android.material.textfield.TextInputEditText
+import org.ole.planet.myplanet.lite.util.enableDrag
 
 internal fun DashboardResourcesPageFragment.setupResourcesView(view: View) {
     val searchInput: TextInputEditText = view.findViewById(R.id.resourcesSearchInput)
@@ -146,6 +147,7 @@ private fun DashboardResourcesPageFragment.setupFab(fab: FloatingActionButton) {
     fab.setOnClickListener {
         showAddResourceMenu(fab)
     }
+    fab.enableDrag()
 }
 
 private fun DashboardResourcesPageFragment.setupList(list: RecyclerView) {
