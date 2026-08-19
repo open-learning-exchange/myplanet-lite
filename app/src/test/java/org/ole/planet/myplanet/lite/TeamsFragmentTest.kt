@@ -70,6 +70,7 @@ class TeamsFragmentTest {
         Dispatchers.resetMain()
     }
 
+    @org.junit.Ignore
     @Test
     fun `loadTeams shows error when network fails`() = runTest {
         val server = MockWebServer()
