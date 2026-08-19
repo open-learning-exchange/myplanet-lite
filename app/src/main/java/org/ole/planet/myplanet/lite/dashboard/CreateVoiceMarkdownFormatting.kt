@@ -22,6 +22,7 @@ internal fun CreateVoiceActivity.setupMarkdownToolbar() {
     val quoteButton: MaterialButton = findViewById(R.id.markdownQuoteButton)
     val linkButton: MaterialButton = findViewById(R.id.markdownLinkButton)
     val imageButton: MaterialButton = findViewById(R.id.markdownImageButton)
+    val generateAiButton: MaterialButton = findViewById(R.id.markdownGenerateAiButton)
 
     boldButton.setOnClickListener {
         applyWrappedFormatting("**", "**", "", placeCursorInsideWhenNoSelection = true)
@@ -47,6 +48,7 @@ internal fun CreateVoiceActivity.setupMarkdownToolbar() {
     imageButton.setOnClickListener {
         handleInsertImageClick()
     }
+    setupVoiceAiButton(generateAiButton)
 }
 
 internal fun CreateVoiceActivity.applyWrappedFormatting(
@@ -165,6 +167,7 @@ internal fun CreateVoiceActivity.setMarkdownToolbarEnabled(enabled: Boolean) {
     for (index in 0 until markdownToolbar.childCount) {
         markdownToolbar.getChildAt(index)?.isEnabled = enabled
     }
+    updateCreateVoiceAiAvailability()
 }
 
 
