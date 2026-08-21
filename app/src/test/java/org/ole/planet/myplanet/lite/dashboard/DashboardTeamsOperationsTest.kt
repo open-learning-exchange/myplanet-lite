@@ -291,4 +291,80 @@ class DashboardTeamsOperationsTest {
         )
         assertNull(result)
     }
+
+    @Test
+    fun fetchTeamMembers_success() {
+        val responseBody = """
+            {
+                "docs": [
+                    {
+                        "_id": "membership1",
+                        "teamId": "team1",
+                        "userId": "user1"
+                    }
+                ]
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setBody(responseBody).setResponseCode(200))
+
+        val result = operations.fetchTeamMembers(
+            baseUrl = mockWebServer.url("/").toString(),
+            credentials = StoredCredentials("u", "p"),
+            sessionCookie = "cookie",
+            teamId = "team1"
+        )
+
+        assertEquals(1, result.size)
+        assertEquals("membership1", result[0].id)
+        assertEquals("team1", result[0].teamId)
+        assertEquals("user1", result[0].userId)
+
+        val request = mockWebServer.takeRequest()
+        assertEquals("POST", request.method)
+        assertTrue(request.path?.startsWith("/db/teams/_find") == true)
+        val body = request.body.readUtf8()
+        assertTrue(body.contains("team1"))
+        assertTrue(body.contains("membership"))
+    }
+
+    @Test
+    fun fetchTeamMembers_missingBaseUrl() {
+        val exception = assertThrows(IOException::class.java) {
+            operations.fetchTeamMembers(
+                baseUrl = "",
+                credentials = null,
+                sessionCookie = null,
+                teamId = "team1"
+            )
+        }
+        assertEquals("Missing server base URL", exception.message)
+    }
+
+    @Test
+    fun fetchTeamMembers_missingTeamId() {
+        val exception = assertThrows(IOException::class.java) {
+            operations.fetchTeamMembers(
+                baseUrl = mockWebServer.url("/").toString(),
+                credentials = null,
+                sessionCookie = null,
+                teamId = ""
+            )
+        }
+        assertEquals("Missing team id", exception.message)
+    }
+
+    @Test
+    fun fetchTeamMembers_unsuccessfulResponse() {
+        mockWebServer.enqueue(MockResponse().setResponseCode(500))
+
+        val exception = assertThrows(IOException::class.java) {
+            operations.fetchTeamMembers(
+                baseUrl = mockWebServer.url("/").toString(),
+                credentials = StoredCredentials("u", "p"),
+                sessionCookie = null,
+                teamId = "team1"
+            )
+        }
+        assertTrue(exception.message?.startsWith("Unexpected response") == true)
+    }
 }
