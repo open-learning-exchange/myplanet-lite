@@ -492,6 +492,8 @@ Si no está de acuerdo, debe seleccionar "Cancelar" y dejar de usar la aplicaci�
     <string name="create_voice_link_insert_button">Insertar</string>
     <string name="create_voice_link_required_fields">Ingresa un título y una URL.</string>
     <string name="create_voice_format_image_description">Insertar imagen</string>
+    <string name="create_voice_generate_ai_description">Generar contenido con ChatGPT</string>
+    <string name="create_voice_generate_ai_error">No pudimos mejorar el contenido. Inténtalo de nuevo.</string>
     <string name="create_voice_format_placeholder">texto</string>
     <string name="create_voice_image_processing_error">No pudimos procesar esa imagen. Intenta con otro archivo.</string>
     <string name="create_voice_image_upload_error">No pudimos subir tus imágenes. Intenta de nuevo.</string>

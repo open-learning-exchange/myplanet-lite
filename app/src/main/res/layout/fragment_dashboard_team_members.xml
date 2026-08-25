@@ -127,7 +127,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginEnd="30dp"
-        android:layout_marginBottom="150dp"
+        android:layout_marginBottom="80dp"
         android:contentDescription="@string/add_member_button_description"
         android:src="@drawable/ic_group_join_24"
         app:layout_constraintBottom_toBottomOf="parent"
