@@ -48,5 +48,5 @@ ucrop = { module = "com.github.yalantis:ucrop", version = "2.2.8" }
 worldcountrydata = { module = "com.github.blongho:worldCountryData", version = "1.5.3" }
 
 [plugins]
-android-application = { id = "com.android.application", version = "9.3.1" }
+android-application = { id = "com.android.application", version = "9.3.2" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.4.10" }

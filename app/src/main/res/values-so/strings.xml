@@ -246,6 +246,8 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="dashboard_teams_select_team_hint">Dooro koox ka menu-ga si aad u aragto macluumaadkeeda.</string>
     <string name="dashboard_teams_explore_title">Baadh kooxaha</string>
     <string name="dashboard_teams_explore_description">Kooxo diyaar ah oo aad ku biiri karto.</string>
+    <string name="dashboard_teams_search_hint">Ka raadi dhammaan kooxaha</string>
+    <string name="dashboard_teams_search_empty">Ma jiro koox ku habboon raadintaada.</string>
     <string name="dashboard_teams_join_prompt">Weli kuma jirto koox. Waxaad ku biiri kartaa mid si aad u bilowdo.</string>
     <string name="dashboard_teams_no_server">Ku xidh server si aad u aragto kooxahaaga.</string>
     <string name="dashboard_teams_no_user">Ma awoodin inaan aqoonsanno isticmaalahaaga. Fadlan mar kale gal.</string>
@@ -315,6 +317,18 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="dashboard_profile_menu_logout">Ka bax</string>
     <string name="privacy_policy_title">Qaanuunka Arrimaha Khaaska ah</string>
     <string name="teams_title">Kooxo</string>
+    <string name="teams_action_button_content_description">Ficillada kooxda</string>
+    <string name="create_team_title">Abuur koox</string>
+    <string name="create_team_name_label">Magaca kooxda</string>
+    <string name="create_team_description_label">Sharaxaad (ikhtiyaari)</string>
+    <string name="create_team_public_label">Koox dadweyne</string>
+    <string name="create_team_action">Abuur</string>
+    <string name="create_team_name_required">Geli magaca kooxda.</string>
+    <string name="create_team_duplicate_name">Koox firfircoon oo magacan leh ayaa jirta.</string>
+    <string name="create_team_success">Kooxda si guul leh ayaa loo abuuray.</string>
+    <string name="create_team_error">Kooxda lama abuuri karin. Mar kale isku day.</string>
+    <string name="create_team_incomplete">Kooxda waa la abuuray, laakiin laguguma darin hoggaamiye ahaan. Taabo Abuur si aad mar kale isugu daydo.</string>
+    <string name="create_team_missing_context">Macluumaadka server-ka ama isticmaalaha lama heli karo. Mar kale gal.</string>
     <string name="profile_title">Xogtaada</string>
     <string name="profile_description">Dib u eeg oo wax ka beddel xogtaada gaarka ah.</string>
     <string name="profile_section_account">Akoonka</string>

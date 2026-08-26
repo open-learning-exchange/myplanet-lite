@@ -147,7 +147,7 @@ internal suspend fun TeamsFragment.fetchAvailableTeamsData(
         }
 
 internal fun TeamsFragment.loadMoreAvailableTeams() {
-        if (isLoading || isPaging || !hasMoreAvailableTeams) {
+        if (searchQuery.isNotEmpty() || isLoading || isPaging || !hasMoreAvailableTeams) {
             return
         }
         isPaging = true

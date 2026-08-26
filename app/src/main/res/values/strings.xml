@@ -328,6 +328,8 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="dashboard_teams_select_team_hint">Choose a team from the menu to see its updates.</string>
     <string name="dashboard_teams_explore_title">Explore teams</string>
     <string name="dashboard_teams_explore_description">Available groups you can join.</string>
+    <string name="dashboard_teams_search_hint">Search all teams</string>
+    <string name="dashboard_teams_search_empty">No teams match your search.</string>
     <string name="dashboard_teams_join_prompt">You are not part of any team yet. You can join one to get started.</string>
     <string name="dashboard_teams_no_server">Connect to a server to view your teams.</string>
     <string name="dashboard_teams_no_user">We couldn\'t determine your user. Please sign in again.</string>
@@ -398,6 +400,18 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="dashboard_profile_menu_logout">Log out</string>
     <string name="privacy_policy_title">Privacy policy</string>
     <string name="teams_title">Teams</string>
+    <string name="teams_action_button_content_description">Team actions</string>
+    <string name="create_team_title">Create team</string>
+    <string name="create_team_name_label">Team name</string>
+    <string name="create_team_description_label">Description (optional)</string>
+    <string name="create_team_public_label">Public team</string>
+    <string name="create_team_action">Create</string>
+    <string name="create_team_name_required">Enter a team name.</string>
+    <string name="create_team_duplicate_name">An active team with this name already exists.</string>
+    <string name="create_team_success">Team created successfully.</string>
+    <string name="create_team_error">We couldn\'t create the team. Try again.</string>
+    <string name="create_team_incomplete">The team was created, but you could not be added as its leader. Tap Create to retry.</string>
+    <string name="create_team_missing_context">Server or user information is unavailable. Please sign in again.</string>
     <string name="profile_title">Profile</string>
     <string name="profile_description">Review and edit your personal information.</string>
     <string name="profile_section_account">Account</string>

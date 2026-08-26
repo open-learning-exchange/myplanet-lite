@@ -156,6 +156,23 @@ data class IdsNotInClause(
 data class TeamsFindResponse(val docs: List<TeamDocument>?)
 
 @JsonClass(generateAdapter = true)
+data class SearchTeamsFindRequest(val selector: SearchTeamsSelector)
+
+@JsonClass(generateAdapter = true)
+data class SearchTeamsSelector(
+    val name: RegexCondition,
+    @param:Json(name = "_id") val id: NotEqualCondition,
+    val status: String = "active",
+    val type: String = "team",
+)
+
+@JsonClass(generateAdapter = true)
+data class RegexCondition(@param:Json(name = $$"$regex") val regex: String)
+
+@JsonClass(generateAdapter = true)
+data class NotEqualCondition(@param:Json(name = $$"$ne") val value: String = "")
+
+@JsonClass(generateAdapter = true)
 data class TeamDocument(
     @param:Json(name = "_id") val id: String?,
     @param:Json(name = "_rev") val revision: String?,
