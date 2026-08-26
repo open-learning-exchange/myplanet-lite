@@ -294,6 +294,8 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_teams_select_team_hint">Choisissez une équipe dans le menu pour voir ses informations.</string>
     <string name="dashboard_teams_explore_title">Explorer les équipes</string>
     <string name="dashboard_teams_explore_description">Groupes disponibles auxquels vous pouvez vous joindre.</string>
+    <string name="dashboard_teams_search_hint">Rechercher dans toutes les équipes</string>
+    <string name="dashboard_teams_search_empty">Aucune équipe ne correspond à votre recherche.</string>
     <string name="dashboard_teams_join_prompt">Vous ne faites pas encore partie d\'une équipe. Vous pouvez en rejoindre une pour commencer.</string>
     <string name="dashboard_teams_no_server">Connectez-vous à un serveur pour voir vos équipes.</string>
     <string name="dashboard_teams_no_user">Nous n\'avons pas pu déterminer votre utilisateur. Veuillez vous reconnecter.</string>
@@ -363,6 +365,18 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_profile_menu_logout">Se déconnecter</string>
     <string name="privacy_policy_title">Politique de confidentialité</string>
     <string name="teams_title">Équipes</string>
+    <string name="teams_action_button_content_description">Actions de l’équipe</string>
+    <string name="create_team_title">Créer une équipe</string>
+    <string name="create_team_name_label">Nom de l’équipe</string>
+    <string name="create_team_description_label">Description (facultative)</string>
+    <string name="create_team_public_label">Équipe publique</string>
+    <string name="create_team_action">Créer</string>
+    <string name="create_team_name_required">Saisissez un nom d’équipe.</string>
+    <string name="create_team_duplicate_name">Une équipe active portant ce nom existe déjà.</string>
+    <string name="create_team_success">L’équipe a été créée.</string>
+    <string name="create_team_error">Impossible de créer l’équipe. Réessayez.</string>
+    <string name="create_team_incomplete">L’équipe a été créée, mais vous n’avez pas pu être ajouté comme responsable. Appuyez sur Créer pour réessayer.</string>
+    <string name="create_team_missing_context">Les informations du serveur ou de l’utilisateur sont indisponibles. Reconnectez-vous.</string>
     <string name="profile_title">Profil</string>
     <string name="profile_description">Consultez et modifiez vos informations personnelles.</string>
     <string name="profile_section_account">Compte</string>

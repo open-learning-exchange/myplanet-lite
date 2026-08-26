@@ -296,6 +296,8 @@ Si no está de acuerdo, debe seleccionar "Cancelar" y dejar de usar la aplicaci�
     <string name="dashboard_teams_select_team_hint">Elige un equipo en el menú para ver su información.</string>
     <string name="dashboard_teams_explore_title">Explorar equipos</string>
     <string name="dashboard_teams_explore_description">Grupos disponibles a los que puedes unirte.</string>
+    <string name="dashboard_teams_search_hint">Buscar en todos los equipos</string>
+    <string name="dashboard_teams_search_empty">Ningún equipo coincide con tu búsqueda.</string>
     <string name="dashboard_teams_join_prompt">Aún no formas parte de ningún equipo. Puedes unirte a uno para comenzar.</string>
     <string name="dashboard_teams_no_server">Conéctate a un servidor para ver tus equipos.</string>
     <string name="dashboard_teams_no_user">No pudimos determinar tu usuario. Vuelve a iniciar sesión.</string>
@@ -366,6 +368,18 @@ Si no está de acuerdo, debe seleccionar "Cancelar" y dejar de usar la aplicaci�
     <string name="dashboard_profile_menu_logout">Cerrar sesión</string>
     <string name="privacy_policy_title">Política de privacidad</string>
     <string name="teams_title">Equipos</string>
+    <string name="teams_action_button_content_description">Acciones del equipo</string>
+    <string name="create_team_title">Crear equipo</string>
+    <string name="create_team_name_label">Nombre del equipo</string>
+    <string name="create_team_description_label">Descripción (opcional)</string>
+    <string name="create_team_public_label">Equipo público</string>
+    <string name="create_team_action">Crear</string>
+    <string name="create_team_name_required">Ingresa el nombre del equipo.</string>
+    <string name="create_team_duplicate_name">Ya existe un equipo activo con este nombre.</string>
+    <string name="create_team_success">El equipo se creó correctamente.</string>
+    <string name="create_team_error">No pudimos crear el equipo. Inténtalo nuevamente.</string>
+    <string name="create_team_incomplete">El equipo fue creado, pero no pudimos agregarte como líder. Pulsa Crear para reintentar.</string>
+    <string name="create_team_missing_context">No están disponibles los datos del servidor o del usuario. Inicia sesión nuevamente.</string>
     <string name="profile_title">Perfil</string>
     <string name="profile_description">Revisa y edita tu información personal.</string>
     <string name="profile_section_account">Cuenta</string>
