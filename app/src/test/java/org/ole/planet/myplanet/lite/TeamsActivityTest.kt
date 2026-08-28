@@ -5,6 +5,7 @@ import android.view.View
 import android.widget.ImageButton
 import androidx.activity.OnBackPressedCallback
 import com.google.android.material.appbar.MaterialToolbar
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.junit.After
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
@@ -43,6 +44,10 @@ class TeamsActivityTest {
 
         val toolbar = activity.findViewById<MaterialToolbar>(R.id.teamsToolbar)
         assertNotNull(toolbar)
+
+        val actionButton = activity.findViewById<FloatingActionButton>(R.id.teamsActionFab)
+        assertNotNull(actionButton)
+        assertTrue(actionButton.hasOnClickListeners())
     }
 
     @Test

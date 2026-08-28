@@ -325,6 +325,8 @@ Se você não concordar, deve selecionar "Cancelar" e parar de usar o aplicativo
     <string name="dashboard_teams_select_team_hint">Escolha uma equipe no menu para ver suas atualizações.</string>
     <string name="dashboard_teams_explore_title">Explorar equipes</string>
     <string name="dashboard_teams_explore_description">Grupos disponíveis que você pode entrar.</string>
+    <string name="dashboard_teams_search_hint">Pesquisar em todas as equipes</string>
+    <string name="dashboard_teams_search_empty">Nenhuma equipe corresponde à sua pesquisa.</string>
     <string name="dashboard_teams_join_prompt">Você ainda não faz parte de nenhuma equipe. Você pode entrar em uma para começar.</string>
     <string name="dashboard_teams_no_server">Conecte-se a um servidor para ver suas equipes.</string>
     <string name="dashboard_teams_no_user">Não foi possível identificar seu usuário. Faça login novamente.</string>
@@ -395,6 +397,18 @@ Se você não concordar, deve selecionar "Cancelar" e parar de usar o aplicativo
     <string name="dashboard_profile_menu_logout">Sair</string>
     <string name="privacy_policy_title">Política de privacidade</string>
     <string name="teams_title">Equipes</string>
+    <string name="teams_action_button_content_description">Ações da equipe</string>
+    <string name="create_team_title">Criar equipe</string>
+    <string name="create_team_name_label">Nome da equipe</string>
+    <string name="create_team_description_label">Descrição (opcional)</string>
+    <string name="create_team_public_label">Equipe pública</string>
+    <string name="create_team_action">Criar</string>
+    <string name="create_team_name_required">Digite o nome da equipe.</string>
+    <string name="create_team_duplicate_name">Já existe uma equipe ativa com esse nome.</string>
+    <string name="create_team_success">Equipe criada com sucesso.</string>
+    <string name="create_team_error">Não foi possível criar a equipe. Tente novamente.</string>
+    <string name="create_team_incomplete">A equipe foi criada, mas você não pôde ser adicionado como líder. Toque em Criar para tentar novamente.</string>
+    <string name="create_team_missing_context">As informações do servidor ou do usuário não estão disponíveis. Entre novamente.</string>
     <string name="profile_title">Perfil</string>
     <string name="profile_description">Revise e edite suas informações pessoais.</string>
     <string name="profile_section_account">Conta</string>
@@ -521,6 +535,8 @@ Se você não concordar, deve selecionar "Cancelar" e parar de usar o aplicativo
     <string name="create_voice_link_insert_button">Inserir</string>
     <string name="create_voice_link_required_fields">Digite um título e uma URL.</string>
     <string name="create_voice_format_image_description">Inserir imagem</string>
+    <string name="create_voice_generate_ai_description">Gerar conteúdo com o ChatGPT</string>
+    <string name="create_voice_generate_ai_error">Não foi possível melhorar o conteúdo. Tente novamente.</string>
     <string name="create_voice_format_placeholder">texto</string>
     <string name="create_voice_image_processing_error">Não foi possível processar essa imagem. Tente outro arquivo.</string>
     <string name="create_voice_image_upload_error">Não foi possível enviar suas imagens. Tente novamente.</string>

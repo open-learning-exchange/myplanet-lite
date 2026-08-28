@@ -103,6 +103,21 @@ class DashboardAvatarLoader(
         }
     }
 
+    private val authClient: OkHttpClient by lazy {
+        client.newBuilder()
+            .addInterceptor { chain ->
+                val requestBuilder = chain.request().newBuilder()
+                credentials?.let {
+                    requestBuilder.header("Authorization", Credentials.basic(it.username, it.password))
+                }
+                sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+                    requestBuilder.header("Cookie", cookie)
+                }
+                chain.proceed(requestBuilder.build())
+            }
+            .build()
+    }
+
     fun destroy() {
         AvatarUpdateNotifier.unregister(avatarUpdateListener)
     }
@@ -113,25 +128,15 @@ class DashboardAvatarLoader(
             return null
         }
         val requestUrl = "$normalizedBase/db/_users/org.couchdb.user:$username/img"
-        val requestBuilder =
-            Request
-                .Builder()
-                .url(requestUrl)
-                .get()
-        credentials?.let {
-            requestBuilder.addHeader("Authorization", Credentials.basic(it.username, it.password))
-        }
-        sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
-            requestBuilder.addHeader("Cookie", cookie)
-        }
+        val request = Request.Builder().url(requestUrl).get().build()
+
         return try {
-            client.newCall(requestBuilder.build()).execute().use { response ->
+            authClient.newCall(request).execute().use { response ->
                 if (!response.isSuccessful) {
                     return null
                 }
                 val bytes = response.body.bytes()
-                val bitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
-                bitmap
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
             }
         } catch (error: IOException) {
             null

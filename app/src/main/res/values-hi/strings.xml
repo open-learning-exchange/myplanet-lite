@@ -313,6 +313,8 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="dashboard_teams_select_team_hint">अपडेट देखने के लिए मेनू से कोई टीम चुनें।</string>
     <string name="dashboard_teams_explore_title">टीमों का अन्वेषण करें</string>
     <string name="dashboard_teams_explore_description">उपलब्ध समूह जिनमें आप शामिल हो सकते हैं।</string>
+    <string name="dashboard_teams_search_hint">सभी टीमों में खोजें</string>
+    <string name="dashboard_teams_search_empty">आपकी खोज से कोई टीम मेल नहीं खाती।</string>
     <string name="dashboard_teams_join_prompt">आप अभी तक किसी भी टीम का हिस्सा नहीं हैं। शुरू करने के लिए आप किसी में शामिल हो सकते हैं।</string>
     <string name="dashboard_teams_no_server">अपनी टीमों को देखने के लिए सर्वर से जुड़ें।</string>
     <string name="dashboard_teams_no_user">हम आपका उपयोगकर्ता निर्धारित नहीं कर सके। कृपया पुनः साइन इन करें।</string>
@@ -383,6 +385,18 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="dashboard_profile_menu_logout">साइन आउट</string>
     <string name="privacy_policy_title">गोपनीयता नीति</string>
     <string name="teams_title">टीमें</string>
+    <string name="teams_action_button_content_description">टीम की कार्रवाइयाँ</string>
+    <string name="create_team_title">टीम बनाएँ</string>
+    <string name="create_team_name_label">टीम का नाम</string>
+    <string name="create_team_description_label">विवरण (वैकल्पिक)</string>
+    <string name="create_team_public_label">सार्वजनिक टीम</string>
+    <string name="create_team_action">बनाएँ</string>
+    <string name="create_team_name_required">टीम का नाम दर्ज करें।</string>
+    <string name="create_team_duplicate_name">इस नाम की सक्रिय टीम पहले से मौजूद है।</string>
+    <string name="create_team_success">टीम सफलतापूर्वक बनाई गई।</string>
+    <string name="create_team_error">टीम नहीं बनाई जा सकी। फिर से प्रयास करें।</string>
+    <string name="create_team_incomplete">टीम बन गई, लेकिन आपको लीडर के रूप में नहीं जोड़ा जा सका। दोबारा प्रयास करने के लिए बनाएँ दबाएँ।</string>
+    <string name="create_team_missing_context">सर्वर या उपयोगकर्ता की जानकारी उपलब्ध नहीं है। फिर से साइन इन करें।</string>
     <string name="profile_title">प्रोफ़ाइल</string>
     <string name="profile_description">अपनी व्यक्तिगत जानकारी की समीक्षा और संपादन करें।</string>
     <string name="profile_section_account">खाता</string>
@@ -509,6 +523,8 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="create_voice_link_insert_button">डालें</string>
     <string name="create_voice_link_required_fields">कृपया शीर्षक और URL दर्ज करें।</string>
     <string name="create_voice_format_image_description">छवि जोड़ें</string>
+    <string name="create_voice_generate_ai_description">ChatGPT से सामग्री बनाएँ</string>
+    <string name="create_voice_generate_ai_error">सामग्री को बेहतर नहीं बनाया जा सका। फिर से प्रयास करें।</string>
     <string name="create_voice_format_placeholder">पाठ</string>
     <string name="create_voice_image_processing_error">हम उस छवि को संसाधित नहीं कर सके। कृपया कोई और फ़ाइल आज़माएँ।</string>
     <string name="create_voice_image_upload_error">हम आपकी छवियाँ अपलोड नहीं कर सके। पुनः प्रयास करें।</string>

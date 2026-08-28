@@ -120,8 +120,8 @@ class DashboardTeamMembersFragment : Fragment() {
             animateFabClick(binding.fabAddMember)
             showInviteMembersDialog()
         }
-        updateLeaderActionsVisibility()
         binding.fabAddMember.enableDrag()
+        updateLeaderActionsVisibility()
         viewLifecycleOwner.lifecycleScope.launch {
             loadConnectionInfo()
         }

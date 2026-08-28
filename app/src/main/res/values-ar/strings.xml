@@ -294,6 +294,8 @@
     <string name="dashboard_teams_select_team_hint">اختر فريقًا من القائمة لعرض معلوماته.</string>
     <string name="dashboard_teams_explore_title">استكشاف الفرق</string>
     <string name="dashboard_teams_explore_description">المجموعات المتاحة التي يمكنك الانضمام إليها.</string>
+    <string name="dashboard_teams_search_hint">البحث في جميع الفرق</string>
+    <string name="dashboard_teams_search_empty">لا توجد فرق تطابق بحثك.</string>
     <string name="dashboard_teams_join_prompt">أنت لست ضمن أي فريق بعد. يمكنك الانضمام إلى أحدها للبدء.</string>
     <string name="dashboard_teams_no_server">اتصل بخادم لعرض فرقك.</string>
     <string name="dashboard_teams_no_user">تعذر تحديد المستخدم الخاص بك. يرجى تسجيل الدخول مرة أخرى.</string>
@@ -367,6 +369,18 @@
     <string name="dashboard_profile_menu_logout">تسجيل الخروج</string>
     <string name="privacy_policy_title">سياسة الخصوصية</string>
     <string name="teams_title">الفرق</string>
+    <string name="teams_action_button_content_description">إجراءات الفريق</string>
+    <string name="create_team_title">إنشاء فريق</string>
+    <string name="create_team_name_label">اسم الفريق</string>
+    <string name="create_team_description_label">الوصف (اختياري)</string>
+    <string name="create_team_public_label">فريق عام</string>
+    <string name="create_team_action">إنشاء</string>
+    <string name="create_team_name_required">أدخل اسم الفريق.</string>
+    <string name="create_team_duplicate_name">يوجد بالفعل فريق نشط بهذا الاسم.</string>
+    <string name="create_team_success">تم إنشاء الفريق بنجاح.</string>
+    <string name="create_team_error">تعذر إنشاء الفريق. حاول مرة أخرى.</string>
+    <string name="create_team_incomplete">تم إنشاء الفريق، لكن تعذرت إضافتك كقائد. اضغط على إنشاء لإعادة المحاولة.</string>
+    <string name="create_team_missing_context">معلومات الخادم أو المستخدم غير متاحة. سجّل الدخول مرة أخرى.</string>
     <string name="profile_title">الملف الشخصي</string>
     <string name="profile_description">راجع وعدّل معلوماتك الشخصية.</string>
     <string name="profile_section_account">الحساب</string>
@@ -493,6 +507,8 @@
     <string name="create_voice_link_insert_button">إدراج</string>
     <string name="create_voice_link_required_fields">يرجى إدخال عنوان ورابط URL.</string>
     <string name="create_voice_format_image_description">إضافة صورة</string>
+    <string name="create_voice_generate_ai_description">إنشاء محتوى باستخدام ChatGPT</string>
+    <string name="create_voice_generate_ai_error">تعذّر تحسين المحتوى. حاول مرة أخرى.</string>
     <string name="create_voice_format_placeholder">نص</string>
     <string name="create_voice_image_processing_error">تعذّر معالجة هذه الصورة. جرّب ملفًا آخر.</string>
     <string name="create_voice_image_upload_error">تعذّر تحميل صورك. حاول مرة أخرى.</string>

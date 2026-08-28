@@ -16,6 +16,8 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ProgressBar
 import android.widget.TextView
+import android.widget.EditText
+import androidx.core.widget.doAfterTextChanged
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.core.widget.NestedScrollView
@@ -25,6 +27,8 @@ import androidx.swiperefreshlayout.widget.SwipeRefreshLayout
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.async
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
@@ -51,6 +55,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
     internal lateinit var myTeamsSection: View
     internal lateinit var exploreSection: View
     internal lateinit var refreshLayout: SwipeRefreshLayout
+    internal lateinit var searchInput: EditText
 
     internal val repository: DashboardTeamsRepository
         get() = DashboardTeamsDependencies.provideRepository()
@@ -69,6 +74,8 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
     internal var hasMoreAvailableTeams = true
     internal var pagingDialog: AlertDialog? = null
     internal var availableSkip = 0
+    internal var searchJob: Job? = null
+    internal var searchQuery: String = ""
 
     internal val pageSize = 25
 
@@ -85,6 +92,8 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         myTeamsSection = view.findViewById(R.id.myTeamsSection)
         exploreSection = view.findViewById(R.id.exploreTeamsSection)
         refreshLayout = view.findViewById(R.id.dashboardTeamsRefresh)
+        searchInput = view.findViewById(R.id.teamsSearchInput)
+        searchInput.doAfterTextChanged { text -> scheduleTeamSearch(text?.toString().orEmpty()) }
         refreshLayout.setOnRefreshListener { loadTeams() }
         scrollView.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
             if (scrollY > oldScrollY && !scrollView.canScrollVertically(1)) {
@@ -111,6 +120,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         isLoading = false
         isPaging = false
         hidePagingDialog()
+        searchJob?.cancel()
     }
 
     internal suspend fun initializeSession() {
@@ -230,6 +240,48 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
     }
 
     internal fun reloadTeams() = loadTeams()
+
+    internal fun scheduleTeamSearch(rawQuery: String) {
+        val query = rawQuery.trim()
+        val previousQuery = searchQuery
+        searchQuery = query
+        searchJob?.cancel()
+        if (query.isEmpty()) {
+            if (previousQuery.isNotEmpty()) loadTeams()
+            return
+        }
+        searchJob = viewLifecycleOwner.lifecycleScope.launch {
+            delay(350)
+            val base = baseUrl ?: return@launch
+            val credentials = ProfileCredentialsStore.getStoredCredentials(requireContext()) ?: return@launch
+            val result = repository.searchTeams(base, credentials, sessionCookie, query)
+            if (searchQuery != query) return@launch
+            result.onSuccess { teams ->
+                val members = teams.filter { membershipsByTeamId.containsKey(it.id) }
+                val available = teams.filterNot { membershipsByTeamId.containsKey(it.id) }
+                renderSearchResults(members, available)
+            }.onFailure {
+                showEmptyState(R.string.dashboard_teams_error_loading)
+            }
+        }
+    }
+
+    internal fun renderSearchResults(
+        members: List<TeamDocument>,
+        available: List<TeamDocument>,
+    ) {
+        if (members.isEmpty() && available.isEmpty()) {
+            myTeamsContainer.removeAllViews()
+            exploreTeamsContainer.removeAllViews()
+            emptyView.setText(R.string.dashboard_teams_search_empty)
+            myTeamsSection.isVisible = false
+            exploreSection.isVisible = false
+            updateLoadingVisibility()
+            return
+        }
+        renderTeams(members, available, memberCounts)
+        updateLoadingVisibility()
+    }
 
     internal data class TeamViewHolder(
         val teamId: String?,

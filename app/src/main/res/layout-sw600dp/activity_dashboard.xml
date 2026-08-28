@@ -76,10 +76,11 @@
             android:id="@+id/dashboardTabs"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingStart="@dimen/dashboard_horizontal_padding"
-            android:paddingEnd="@dimen/dashboard_horizontal_padding"
             android:paddingBottom="@dimen/dashboard_section_spacing"
             app:layout_scrollFlags="scroll|enterAlways"
+            app:tabGravity="fill"
+            app:tabMode="fixed"
+            app:tabMaxWidth="0dp"
             app:tabIndicatorFullWidth="false"
             android:background="@color/white"/>
 
@@ -195,6 +196,21 @@
                 android:src="@drawable/ic_resources_24" />
 
         </LinearLayout>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/dashboardAddVoiceFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="@dimen/dashboard_fab_margin_end"
+            android:layout_marginBottom="76dp"
+            android:backgroundTint="@color/C6F6F6F"
+            app:tint="@color/white"
+            app:fabCustomSize="@dimen/dashboard_fab_size"
+            app:fabSize="normal"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyPlanet.Circle"
+            android:contentDescription="@string/dashboard_add_voice_content_description"
+            app:srcCompat="@drawable/ic_add_24" />
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

@@ -25,6 +25,7 @@ configurations.named("androidTestImplementation") {
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
+    // Current dependencies require API 37 at compile time. Runtime behavior remains on API 36.
     compileSdk = 37
     buildFeatures {
         buildConfig = true

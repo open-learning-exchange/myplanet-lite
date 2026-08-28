@@ -27,6 +27,26 @@
                 android:divider="@drawable/dashboard_divider"
                 android:dividerPadding="@dimen/dashboard_card_spacing">
 
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/teamsSearchLayout"
+                    style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginBottom="@dimen/dashboard_card_spacing"
+                    android:hint="@string/dashboard_teams_search_hint"
+                    app:endIconMode="clear_text"
+                    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/teamsSearchInput"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:imeOptions="actionSearch"
+                        android:inputType="text"
+                        android:maxLines="1" />
+
+                </com.google.android.material.textfield.TextInputLayout>
+
                 <LinearLayout
                     android:id="@+id/myTeamsSection"
                     android:layout_width="match_parent"

@@ -332,4 +332,10 @@ internal fun DashboardActivity.updateBottomNavigationState() {
         viewPager.isUserInputEnabled = !isOfflineMode
         tabLayout.isEnabled = !isOfflineMode
         tabLayout.alpha = if (isOfflineMode) 0.5f else 1f
+        updateFabVisibility()
     }
+
+internal fun DashboardActivity.updateFabVisibility() {
+    val isVoicesTab = currentSection == DashboardSection.HOME && viewPager.currentItem == 0 && !isOfflineMode
+    addVoiceFab.isVisible = isVoicesTab
+}

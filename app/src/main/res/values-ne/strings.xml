@@ -246,6 +246,8 @@
     <string name="dashboard_teams_select_team_hint">मेनुभित्रबाट एउटा टोली छानेर यसको जानकारी हेर्नुहोस्।</string>
     <string name="dashboard_teams_explore_title">टोलीहरू अन्वेषण गर्नुहोस्</string>
     <string name="dashboard_teams_explore_description">तपाईं सामेल हुन सक्ने उपलब्ध समूहहरू।</string>
+    <string name="dashboard_teams_search_hint">सबै टोलीहरूमा खोज्नुहोस्</string>
+    <string name="dashboard_teams_search_empty">तपाईंको खोजसँग कुनै टोली मेल खाँदैन।</string>
     <string name="dashboard_teams_join_prompt">तपाईं अहिलेसम्म कुनै टिममा हुनुहुन्न। सुरु गर्न तपाईं एउटा टिममा सामेल हुन सक्नुहुन्छ।</string>
     <string name="dashboard_teams_no_server">आफ्ना टिमहरू हेर्न सर्भरमा जडान गर्नुहोस्।</string>
     <string name="dashboard_teams_no_user">हामीले तपाईंको प्रयोगकर्ता पत्ता लगाउन सकेनौं। कृपया फेरि साइन इन गर्नुहोस्।</string>
@@ -315,6 +317,18 @@
     <string name="dashboard_profile_menu_logout">लग आउट</string>
     <string name="privacy_policy_title">गोपनीयता नीति</string>
     <string name="teams_title">टोलीहरू</string>
+    <string name="teams_action_button_content_description">टोलीका कार्यहरू</string>
+    <string name="create_team_title">टोली सिर्जना गर्नुहोस्</string>
+    <string name="create_team_name_label">टोलीको नाम</string>
+    <string name="create_team_description_label">विवरण (वैकल्पिक)</string>
+    <string name="create_team_public_label">सार्वजनिक टोली</string>
+    <string name="create_team_action">सिर्जना गर्नुहोस्</string>
+    <string name="create_team_name_required">टोलीको नाम प्रविष्ट गर्नुहोस्।</string>
+    <string name="create_team_duplicate_name">यो नामको सक्रिय टोली पहिले नै छ।</string>
+    <string name="create_team_success">टोली सफलतापूर्वक सिर्जना भयो।</string>
+    <string name="create_team_error">टोली सिर्जना गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
+    <string name="create_team_incomplete">टोली सिर्जना भयो, तर तपाईंलाई नेताको रूपमा थप्न सकिएन। पुनः प्रयास गर्न सिर्जना गर्नुहोस् थिच्नुहोस्।</string>
+    <string name="create_team_missing_context">सर्भर वा प्रयोगकर्ता जानकारी उपलब्ध छैन। फेरि साइन इन गर्नुहोस्।</string>
     <string name="profile_title">प्रोफाइल</string>
     <string name="profile_description">आफ्नो व्यक्तिगत जानकारी हेर्नुहोस् र सम्पादन गर्नुहोस्।</string>
     <string name="profile_section_account">खाता</string>
@@ -441,6 +455,8 @@
     <string name="create_voice_link_insert_button">राख्नुहोस्</string>
     <string name="create_voice_link_required_fields">कृपया शीर्षक र URL प्रविष्ट गर्नुहोस्।</string>
     <string name="create_voice_format_image_description">तस्वीर थप्नुहोस्</string>
+    <string name="create_voice_generate_ai_description">ChatGPT मार्फत सामग्री सिर्जना गर्नुहोस्</string>
+    <string name="create_voice_generate_ai_error">सामग्री सुधार गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
     <string name="create_voice_format_placeholder">पाठ</string>
     <string name="create_voice_image_processing_error">त्यो तस्वीर प्रशोधन गर्न सकेनौं। कृपया अर्को फाइल प्रयास गर्नुहोस्।</string>
     <string name="create_voice_image_upload_error">हामीले तपाईंका तस्वीरहरू अपलोड गर्न सकेनौं। फेरि प्रयास गर्नुहोस्।</string>
