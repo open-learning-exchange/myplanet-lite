@@ -120,6 +120,7 @@ dependencies {
     implementation(libs.ext.tables)
     implementation(libs.markwon.html)
     implementation(libs.markwon.image.glide)
+    implementation(libs.markwon.tasklist)
     implementation(libs.glide)
     implementation(libs.photoview)
     implementation(libs.ucrop)

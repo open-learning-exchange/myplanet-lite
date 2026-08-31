@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <dimen name="enterprise_task_normal_margin">16dp</dimen>
+    <dimen name="enterprise_task_offset_margin">100dp</dimen>
+    <dimen name="enterprise_task_right_fold_action_offset">10dp</dimen>
     <dimen name="server_flag_min_width">24dp</dimen>
     <dimen name="server_flag_max_width">36dp</dimen>
     <dimen name="server_flag_margin_start">15dp</dimen>

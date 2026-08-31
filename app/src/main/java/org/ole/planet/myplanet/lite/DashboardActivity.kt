@@ -273,6 +273,11 @@ class DashboardActivity : BaseActivity() {
     internal fun setupProfileDrawer(profileDrawer: NavigationView) {
         profileDrawer.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
+                R.id.menu_learning -> {
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    true
+                }
+
                 R.id.menu_profile -> {
                     drawerLayout.closeDrawer(GravityCompat.START)
                     drawerLayout.post {
@@ -285,6 +290,14 @@ class DashboardActivity : BaseActivity() {
                     drawerLayout.closeDrawer(GravityCompat.START)
                     drawerLayout.post {
                         startActivity(Intent(this, TeamsActivity::class.java))
+                    }
+                    true
+                }
+
+                R.id.menu_enterprises -> {
+                    drawerLayout.closeDrawer(GravityCompat.START)
+                    drawerLayout.post {
+                        startActivity(Intent(this, EnterprisesDashboard::class.java))
                     }
                     true
                 }

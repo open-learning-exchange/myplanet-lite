@@ -362,6 +362,29 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_image_preview_content_description">Image en plein écran</string>
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">Sélectionner une équipe</string>
+    <string name="dashboard_profile_menu_learning">Apprentissage</string>
+    <string name="enterprises_title">Entreprises</string>
+    <string name="dashboard_enterprises_my_title">Mes entreprises</string>
+    <string name="dashboard_enterprises_my_description">Entreprises auxquelles vous appartenez et auxquelles vous pouvez participer.</string>
+    <string name="dashboard_enterprises_select_hint">Sélectionnez une entreprise pour afficher ses informations.</string>
+    <string name="dashboard_enterprises_explore_title">Explorer les entreprises</string>
+    <string name="dashboard_enterprises_explore_description">Entreprises actives que vous pouvez demander à rejoindre.</string>
+    <string name="dashboard_enterprises_search_hint">Rechercher dans toutes les entreprises</string>
+    <string name="dashboard_enterprises_search_empty">Aucune entreprise ne correspond à votre recherche.</string>
+    <string name="dashboard_enterprises_error_loading">Impossible de charger les entreprises. Réessayez plus tard.</string>
+    <string name="dashboard_enterprises_join_prompt">Aucune entreprise active n’est encore disponible.</string>
+    <string name="dashboard_enterprise_members_title">Membres de l’entreprise</string>
+    <string name="dashboard_enterprise_members_select_hint">Sélectionnez d’abord une entreprise pour voir ses membres.</string>
+    <string name="dashboard_enterprise_members_not_member">Vous devez appartenir à cette entreprise pour voir ses membres.</string>
+    <string name="dashboard_enterprise_members_error_loading">Impossible de charger les membres de l’entreprise.</string>
+    <string name="dashboard_enterprise_members_empty">Cette entreprise n’a pas encore de membres.</string>
+    <string name="dashboard_enterprise_tasks_title">Tâches de l’entreprise</string>
+    <string name="dashboard_enterprise_tasks_search_hint">Rechercher des tâches</string><string name="dashboard_enterprise_tasks_all">Toutes</string><string name="dashboard_enterprise_tasks_mine">Mes tâches</string>
+    <string name="dashboard_enterprise_tasks_add">Ajouter une tâche</string><string name="dashboard_enterprise_tasks_edit">Modifier la tâche</string><string name="dashboard_enterprise_tasks_complete">Terminer ou rouvrir la tâche</string><string name="dashboard_enterprise_tasks_archive">Archiver la tâche</string>
+    <string name="dashboard_enterprise_tasks_deadline_format">Échéance : %1$s</string><string name="dashboard_enterprise_tasks_assignee_format">Attribuée à : %1$s</string><string name="dashboard_enterprise_tasks_unassigned">Non attribuée</string>
+    <string name="dashboard_enterprise_tasks_field_title">Titre</string><string name="dashboard_enterprise_tasks_field_description">Description (facultative)</string><string name="dashboard_enterprise_tasks_select_hint">Sélectionnez d’abord une entreprise pour voir ses tâches.</string>
+    <string name="dashboard_enterprise_tasks_error_loading">Impossible de charger les tâches de l’entreprise.</string><string name="dashboard_enterprise_tasks_access_denied">Seuls les membres peuvent voir les tâches de cette entreprise privée.</string><string name="dashboard_enterprise_tasks_empty">Cette entreprise n’a aucune tâche active.</string><string name="dashboard_enterprise_tasks_search_empty">Aucune tâche ne correspond aux filtres.</string>
+    <string name="dashboard_enterprise_tasks_save">Enregistrer</string><string name="dashboard_enterprise_tasks_title_required">Saisissez un titre.</string><string name="dashboard_enterprise_tasks_conflict">Cette tâche a changé sur le serveur. Rechargez-la et réessayez.</string><string name="dashboard_enterprise_tasks_save_error">Impossible d’enregistrer la tâche.</string><string name="dashboard_enterprise_tasks_archive_confirmation">Archiver cette tâche ?</string>
     <string name="dashboard_profile_menu_logout">Se déconnecter</string>
     <string name="privacy_policy_title">Politique de confidentialité</string>
     <string name="teams_title">Équipes</string>
@@ -676,4 +699,9 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_resources_error_invalid_server_response">Erreur : Réponse du serveur non valide</string>
     <string name="dashboard_resources_error_read_file">Impossible de lire le fichier sélectionné</string>
     <string name="slider_desc">Curseur de pourcentage de résolution</string>
+    <string name="dashboard_enterprise_tasks_mark_complete">Terminer la tâche</string>
+    <string name="dashboard_enterprise_tasks_mark_pending">Rouvrir la tâche</string>
+    <string name="dashboard_enterprise_tasks_complete_confirmation">Voulez-vous vraiment terminer cette tâche ?</string>
+    <string name="dashboard_enterprise_tasks_cannot_complete">Impossible de terminer la tâche</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">Terminez tous les éléments en attente (- [ ]) avant de terminer cette tâche.</string>
 </resources>

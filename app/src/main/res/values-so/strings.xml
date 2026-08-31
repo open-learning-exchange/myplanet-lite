@@ -314,6 +314,29 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="dashboard_image_preview_content_description">Sawir shaashad buuxa ah</string>
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">Dooro koox</string>
+    <string name="dashboard_profile_menu_learning">Waxbarashada</string>
+    <string name="enterprises_title">Shirkadaha</string>
+    <string name="dashboard_enterprises_my_title">Shirkadahayga</string>
+    <string name="dashboard_enterprises_my_description">Shirkadaha aad ka tirsan tahay oo aad ka qayb qaadan karto.</string>
+    <string name="dashboard_enterprises_select_hint">Dooro shirkad si aad u aragto macluumaadkeeda.</string>
+    <string name="dashboard_enterprises_explore_title">Baadh shirkadaha</string>
+    <string name="dashboard_enterprises_explore_description">Shirkado firfircoon oo aad codsan karto inaad ku biirto.</string>
+    <string name="dashboard_enterprises_search_hint">Ka raadi dhammaan shirkadaha</string>
+    <string name="dashboard_enterprises_search_empty">Ma jiro shirkad ku habboon raadintaada.</string>
+    <string name="dashboard_enterprises_error_loading">Shirkadaha lama soo dejin karin. Mar dambe isku day.</string>
+    <string name="dashboard_enterprises_join_prompt">Weli ma jiraan shirkado firfircoon oo la heli karo.</string>
+    <string name="dashboard_enterprise_members_title">Xubnaha shirkadda</string>
+    <string name="dashboard_enterprise_members_select_hint">Marka hore dooro shirkad si aad u aragto xubnaheeda.</string>
+    <string name="dashboard_enterprise_members_not_member">Waa inaad ka tirsan tahay shirkaddan si aad u aragto xubnaheeda.</string>
+    <string name="dashboard_enterprise_members_error_loading">Xubnaha shirkadda lama soo dejin karin.</string>
+    <string name="dashboard_enterprise_members_empty">Shirkaddan wali xubno ma leh.</string>
+    <string name="dashboard_enterprise_tasks_title">Hawlaha shirkadda</string>
+    <string name="dashboard_enterprise_tasks_search_hint">Raadi hawlaha</string><string name="dashboard_enterprise_tasks_all">Dhammaan</string><string name="dashboard_enterprise_tasks_mine">Hawlahayga</string>
+    <string name="dashboard_enterprise_tasks_add">Ku dar hawl</string><string name="dashboard_enterprise_tasks_edit">Wax ka beddel hawsha</string><string name="dashboard_enterprise_tasks_complete">Dhammaystir ama dib u fur hawsha</string><string name="dashboard_enterprise_tasks_archive">Kaydi hawsha</string>
+    <string name="dashboard_enterprise_tasks_deadline_format">Waqtiga kama dambaysta: %1$s</string><string name="dashboard_enterprise_tasks_assignee_format">Loo xilsaaray: %1$s</string><string name="dashboard_enterprise_tasks_unassigned">Lama xilsaarin</string>
+    <string name="dashboard_enterprise_tasks_field_title">Cinwaan</string><string name="dashboard_enterprise_tasks_field_description">Sharaxaad (ikhtiyaari)</string><string name="dashboard_enterprise_tasks_select_hint">Marka hore dooro shirkad si aad u aragto hawlaheeda.</string>
+    <string name="dashboard_enterprise_tasks_error_loading">Hawlaha shirkadda lama soo dejin karin.</string><string name="dashboard_enterprise_tasks_access_denied">Xubnaha oo keliya ayaa arki kara hawlahan gaarka ah.</string><string name="dashboard_enterprise_tasks_empty">Ma jiraan hawlo firfircoon.</string><string name="dashboard_enterprise_tasks_search_empty">Ma jiraan hawlo ku habboon shaandhaynta.</string>
+    <string name="dashboard_enterprise_tasks_save">Kaydi</string><string name="dashboard_enterprise_tasks_title_required">Geli cinwaanka hawsha.</string><string name="dashboard_enterprise_tasks_conflict">Hawsha server-ka ayaa is beddeshay. Dib u soo rar oo isku day.</string><string name="dashboard_enterprise_tasks_save_error">Hawsha lama kaydin karin.</string><string name="dashboard_enterprise_tasks_archive_confirmation">Kaydi hawshan?</string>
     <string name="dashboard_profile_menu_logout">Ka bax</string>
     <string name="privacy_policy_title">Qaanuunka Arrimaha Khaaska ah</string>
     <string name="teams_title">Kooxo</string>
@@ -677,4 +700,9 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="dashboard_resources_error_invalid_server_response">Cilad: Jawaab server oo aan sax ahayn</string>
     <string name="dashboard_resources_error_read_file">Lama akhrin karo faylka la doortay</string>
     <string name="slider_desc">Slider boqolleyda xallinta</string>
+    <string name="dashboard_enterprise_tasks_mark_complete">Dhammaystir hawsha</string>
+    <string name="dashboard_enterprise_tasks_mark_pending">Dib u fur hawsha</string>
+    <string name="dashboard_enterprise_tasks_complete_confirmation">Ma hubtaa inaad hawshan dhammaystirayso?</string>
+    <string name="dashboard_enterprise_tasks_cannot_complete">Hawsha lama dhammaystiri karo</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">Dhammaystir dhammaan qodobada harsan (- [ ]) ka hor intaadan hawshan dhammaystirin.</string>
 </resources>

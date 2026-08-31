@@ -184,6 +184,9 @@
             android:exported="false"
             android:windowSoftInputMode="adjustResize" />
         <activity
+            android:name=".EnterprisesDashboard"
+            android:exported="false" />
+        <activity
             android:name=".dashboard.DashboardPostDetailActivity"
             android:exported="false"
             android:screenOrientation="portrait"

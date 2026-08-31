@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="42dp"
+    android:height="54dp"
+    android:viewportWidth="90"
+    android:viewportHeight="116">
+    <group
+        android:translateX="-1584.7"
+        android:translateY="-110.605">
+        <path
+            android:fillColor="@color/enterprise_pin_needle"
+            android:pathData="M1615.7,195.471C1614.55,199.334 1611.27,209.553 1607.85,220.195C1607.06,222.645 1608.34,225.281 1610.76,226.165C1613.27,227.084 1616.05,225.773 1616.93,223.25C1620.64,212.698 1624.2,202.551 1625.62,198.803C1624.03,195.007 1619.51,193.413 1615.88,195.369L1615.7,195.471Z" />
+        <path
+            android:fillColor="@color/enterprise_pin_dark"
+            android:pathData="M1645.35,180.931L1654.76,134.601L1629.8,128.064L1610.87,167.518L1645.35,180.931Z" />
+        <path
+            android:fillColor="@color/enterprise_pin_main"
+            android:pathData="M1660.06,203.609C1661.23,193.066 1655.48,182.08 1646.14,177.047L1611.83,165.53C1601.34,163.91 1590.12,169.198 1584.7,178.315C1604.83,196.56 1631.57,205.741 1658.67,203.713L1660.06,203.609Z" />
+        <path
+            android:fillColor="@color/enterprise_pin_main"
+            android:pathData="M1673.83,129.124C1669.86,135.8 1661.65,139.672 1653.97,138.486L1628.85,130.053C1622.01,126.368 1617.8,118.324 1618.66,110.605L1673.83,129.124Z" />
+    </group>
+</vector>
