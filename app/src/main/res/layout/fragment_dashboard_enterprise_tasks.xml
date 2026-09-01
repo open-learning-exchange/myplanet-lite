@@ -91,7 +91,10 @@
         android:src="@drawable/ic_add_24"
         android:visibility="gone"
         app:backgroundTint="@color/C6F6F6F"
+        app:fabCustomSize="@dimen/dashboard_fab_size"
+        app:fabSize="normal"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyPlanet.Circle"
         app:tint="@color/white" />
 </androidx.constraintlayout.widget.ConstraintLayout>

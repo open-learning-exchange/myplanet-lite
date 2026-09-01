@@ -13,11 +13,17 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 data class CreateTeamRequest(
     val name: String,
     val description: String,
+    val services: String = "",
+    val rules: String = "",
     val isPublic: Boolean,
     val planetCode: String,
     val parentCode: String,
     val userId: String,
+    val entityType: String = "team",
+    val teamType: String = TEAM_TYPE_LOCAL_VALUE,
 )
+
+private const val TEAM_TYPE_LOCAL_VALUE = "local"
 
 data class CreatedTeam(val id: String, val revision: String?)
 
@@ -33,7 +39,7 @@ internal class DashboardTeamsCreateOperations(private val client: OkHttpClient) 
     ): CreatedTeam {
         val normalizedBase = baseUrl.trim().trimEnd('/').ifEmpty { throw IOException("Missing server base URL") }
         validateRequest(request)
-        if (teamNameExists(normalizedBase, credentials, sessionCookie, request.name)) {
+        if (teamNameExists(normalizedBase, credentials, sessionCookie, request.name, request.entityType)) {
             throw DuplicateTeamNameException()
         }
 
@@ -62,12 +68,13 @@ internal class DashboardTeamsCreateOperations(private val client: OkHttpClient) 
         credentials: StoredCredentials?,
         sessionCookie: String?,
         name: String,
+        entityType: String,
     ): Boolean {
         val selector = JSONObject()
             .put("name", JSONObject().put("\$regex", "(?i)^\\s*${escapeRegex(name.trim())}\\s*$"))
             .put("_id", JSONObject().put("\$ne", ""))
             .put("status", "active")
-            .put("type", "team")
+            .put("type", entityType)
         val payload = JSONObject()
             .put("selector", selector)
             .put("fields", JSONArray().put("_id"))
@@ -86,8 +93,10 @@ internal class DashboardTeamsCreateOperations(private val client: OkHttpClient) 
         val payload = JSONObject()
             .put("name", request.name.trim())
             .put("description", request.description.trim())
+            .put("services", request.services.trim())
+            .put("rules", request.rules.trim())
             .put("requests", JSONArray())
-            .put("teamType", TEAM_TYPE_LOCAL)
+            .put("teamType", request.teamType)
             .put("public", request.isPublic)
             .put("limit", DEFAULT_TEAM_LIMIT)
             .put("status", "active")
@@ -95,7 +104,7 @@ internal class DashboardTeamsCreateOperations(private val client: OkHttpClient) 
             .put("teamPlanetCode", request.planetCode)
             .put("parentCode", request.parentCode)
             .put("createdBy", request.userId)
-            .put("type", "team")
+            .put("type", request.entityType)
         val response = executeJson(baseUrl, "teams", credentials, sessionCookie, payload)
         val id = response.optString("id").takeIf(String::isNotBlank) ?: throw IOException("Missing created team id")
         return CreatedTeam(id, response.optString("rev").takeIf(String::isNotBlank))
@@ -111,7 +120,7 @@ internal class DashboardTeamsCreateOperations(private val client: OkHttpClient) 
         val membership = JSONObject()
             .put("teamId", teamId)
             .put("teamPlanetCode", request.planetCode)
-            .put("teamType", TEAM_TYPE_LOCAL)
+            .put("teamType", request.teamType)
             .put("userId", request.userId)
             .put("userPlanetCode", request.planetCode)
             .put("docType", "membership")
@@ -179,7 +188,6 @@ internal class DashboardTeamsCreateOperations(private val client: OkHttpClient) 
 
     private companion object {
         const val DEFAULT_TEAM_LIMIT = 12
-        const val TEAM_TYPE_LOCAL = "local"
         val JSON_MEDIA_TYPE = "application/json; charset=utf-8".toMediaType()
     }
 }

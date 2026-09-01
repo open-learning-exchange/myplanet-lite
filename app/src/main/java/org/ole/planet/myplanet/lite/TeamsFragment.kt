@@ -391,9 +391,12 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
     }
 
-    internal fun setSelectedItem(id: String?, name: String?) {
+    internal fun setSelectedItem(id: String?, name: String?, team: TeamDocument? = null) {
         if (isEnterpriseMode) {
-            DashboardEnterpriseSelectionPreferences.setSelectedEnterprise(requireContext(), id, name)
+            DashboardEnterpriseSelectionPreferences.setSelectedEnterprise(
+                requireContext(), id, name, team?.teamType, team?.teamPlanetCode,
+            )
+            (activity as? EnterprisesDashboard)?.onEnterpriseSelectionChanged()
         } else {
             DashboardTeamSelectionPreferences.setSelectedTeam(requireContext(), id, name)
         }

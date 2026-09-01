@@ -703,5 +703,13 @@
     <string name="dashboard_enterprise_tasks_mark_pending">कार्य पुनः खोल्नुहोस्</string>
     <string name="dashboard_enterprise_tasks_complete_confirmation">के तपाईं यो कार्य पूरा गर्न निश्चित हुनुहुन्छ?</string>
     <string name="dashboard_enterprise_tasks_cannot_complete">कार्य पूरा गर्न सकिँदैन</string>
-    <string name="dashboard_enterprise_tasks_pending_checklist">यो कार्य पूरा गर्नुअघि सबै बाँकी सूची वस्तुहरू (- [ ]) पूरा गर्नुहोस्।</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">यो कार्य पूरा गर्नुअघि सबै बाँकी सूची वस्तुहरू पूरा गर्नुहोस्।</string>
+    <string name="create_enterprise_title">उद्यम सिर्जना गर्नुहोस्</string>
+    <string name="create_enterprise_mission_label">ध्येय (वैकल्पिक)</string>
+    <string name="create_enterprise_services_label">प्रदान गरिने सेवाहरू (वैकल्पिक)</string>
+    <string name="create_enterprise_rules_label">नियमहरू (वैकल्पिक)</string>
+    <string name="create_enterprise_success">उद्यम सिर्जना भयो।</string>
+    <string name="create_enterprise_duplicate_name">यो नामको सक्रिय उद्यम पहिले नै छ।</string>
+    <string name="create_enterprise_incomplete">उद्यम सिर्जना भयो, तर नेतृत्व सदस्यता बाँकी छ। पुनः प्रयास गर्न फेरि सिर्जना थिच्नुहोस्।</string>
+    <string name="create_enterprise_error">उद्यम सिर्जना गर्न सकिएन।</string>
 </resources>

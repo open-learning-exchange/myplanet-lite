@@ -704,5 +704,13 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="dashboard_enterprise_tasks_mark_pending">Dib u fur hawsha</string>
     <string name="dashboard_enterprise_tasks_complete_confirmation">Ma hubtaa inaad hawshan dhammaystirayso?</string>
     <string name="dashboard_enterprise_tasks_cannot_complete">Hawsha lama dhammaystiri karo</string>
-    <string name="dashboard_enterprise_tasks_pending_checklist">Dhammaystir dhammaan qodobada harsan (- [ ]) ka hor intaadan hawshan dhammaystirin.</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">Dhammaystir dhammaan qodobada harsan ka hor intaadan hawshan dhammaystirin.</string>
+    <string name="create_enterprise_title">Abuur shirkad</string>
+    <string name="create_enterprise_mission_label">Himilada (ikhtiyaari)</string>
+    <string name="create_enterprise_services_label">Adeegyada la bixiyo (ikhtiyaari)</string>
+    <string name="create_enterprise_rules_label">Xeerarka (ikhtiyaari)</string>
+    <string name="create_enterprise_success">Shirkadda waa la abuuray.</string>
+    <string name="create_enterprise_duplicate_name">Shirkad firfircoon oo magacan leh ayaa jirta.</string>
+    <string name="create_enterprise_incomplete">Shirkadda waa la abuuray, laakiin xubinnimada hoggaamiyaha ayaa dhiman. Mar kale taabo Abuur si aad u tijaabiso.</string>
+    <string name="create_enterprise_error">Shirkadda lama abuuri karin.</string>
 </resources>

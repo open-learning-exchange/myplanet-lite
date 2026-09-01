@@ -44,6 +44,9 @@ class VoicesComposerRepository(
         val userPayload: UserPayload?,
         val teamId: String? = null,
         val teamName: String? = null,
+        val enterpriseMode: Boolean = false,
+        val enterpriseType: String? = null,
+        val enterprisePlanetCode: String? = null,
     )
 
     suspend fun createVoice(params: CreateVoiceParams): Result<CreateVoiceResponse> =
@@ -59,12 +62,17 @@ class VoicesComposerRepository(
                         chat = false,
                         message = params.message,
                         time = timestamp,
+                        updatedDate = timestamp,
                         createdOn = params.createdOn,
                         docType = "message",
-                        viewIn = buildViewInEntries(params.createdOn, params.parentCode, params.teamId, params.teamName),
+                        viewIn = buildViewInEntries(
+                            params.createdOn, params.parentCode, params.teamId, params.teamName, params.enterpriseMode,
+                        ),
                         avatar = "",
-                        messageType = "news",
-                        messagePlanetCode = params.createdOn,
+                        messageType = if (params.enterpriseMode) params.enterpriseType ?: "sync" else "news",
+                        messagePlanetCode = if (params.enterpriseMode) {
+                            params.enterprisePlanetCode ?: params.createdOn
+                        } else params.createdOn,
                         replyTo = params.replyTo ?: "",
                         parentCode = params.parentCode,
                         images = params.images,
@@ -202,6 +210,7 @@ class VoicesComposerRepository(
         val chat: Boolean,
         val message: String,
         val time: Long,
+        val updatedDate: Long,
         val createdOn: String?,
         val docType: String,
         val viewIn: List<ViewInEntry>,
@@ -236,7 +245,7 @@ class VoicesComposerRepository(
         val deviceName: String?,
         val customDeviceName: String?,
         val mediaType: String,
-        val privateFor: String,
+        val privateFor: Any,
     ) {
         companion object {
             private const val PRIVATE_FOR_COMMUNITY = "community"
@@ -244,6 +253,7 @@ class VoicesComposerRepository(
             fun fromContext(
                 context: VoiceImageResourceContext,
                 fileName: String,
+                teamId: String? = null,
             ): ResourceMetadataRequest {
                 val baseTitle = fileName.substringBeforeLast('.')
                 return ResourceMetadataRequest(
@@ -258,7 +268,8 @@ class VoicesComposerRepository(
                     deviceName = context.deviceName,
                     customDeviceName = context.customDeviceName,
                     mediaType = "image",
-                    privateFor = PRIVATE_FOR_COMMUNITY,
+                    privateFor = teamId?.takeIf(String::isNotBlank)?.let { mapOf("teams" to it) }
+                        ?: PRIVATE_FOR_COMMUNITY,
                 )
             }
         }
@@ -353,6 +364,7 @@ class VoicesComposerRepository(
         parentCode: String?,
         teamId: String?,
         teamName: String?,
+        enterpriseMode: Boolean = false,
     ): List<ViewInEntry> {
         val targetTeamId = teamId?.takeIf { it.isNotBlank() }
         val targetTeamName = teamName?.takeIf { it.isNotBlank() }
@@ -363,7 +375,7 @@ class VoicesComposerRepository(
                     id = targetTeamId,
                     isPublic = false,
                     name = targetTeamName,
-                    mode = "team",
+                    mode = if (enterpriseMode) "enterprise" else "team",
                 ),
             )
         }

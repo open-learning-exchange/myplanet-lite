@@ -13,6 +13,7 @@ import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
 import com.google.android.material.navigation.NavigationView
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -21,8 +22,9 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.AvatarUpdateNotifier
 import org.ole.planet.myplanet.lite.profile.ProfileActivity
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.enableDrag
 
-class EnterprisesDashboard : BaseActivity() {
+class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
     private lateinit var drawerLayout: DrawerLayout
     private lateinit var avatarView: ImageView
     private lateinit var drawerAvatar: ImageView
@@ -30,9 +32,13 @@ class EnterprisesDashboard : BaseActivity() {
     private lateinit var drawerUsername: TextView
     private lateinit var enterprisesContent: FrameLayout
     private lateinit var teamsContainer: FrameLayout
+    private lateinit var voicesContainer: FrameLayout
     private lateinit var tasksContainer: FrameLayout
     private lateinit var enterprisesIcon: ImageView
     private lateinit var teamsIcon: ImageView
+    private lateinit var voicesIcon: ImageView
+    private lateinit var addVoiceFab: FloatingActionButton
+    private lateinit var createEnterpriseFab: FloatingActionButton
     private lateinit var tasksIcon: ImageView
     private var currentSection = Section.ENTERPRISES
     private var avatarUpdateListener: AvatarUpdateNotifier.Listener? = null
@@ -54,9 +60,13 @@ class EnterprisesDashboard : BaseActivity() {
         drawerUsername = drawerHeader.findViewById(R.id.drawerProfileUsername)
         enterprisesContent = findViewById(R.id.enterprisesDashboardContent)
         teamsContainer = findViewById(R.id.enterprisesTeamsContainer)
+        voicesContainer = findViewById(R.id.enterprisesVoicesContainer)
         tasksContainer = findViewById(R.id.enterprisesTasksContainer)
         enterprisesIcon = findViewById(R.id.enterprisesNavigationIcon)
         teamsIcon = findViewById(R.id.enterprisesTeamsNavigationIcon)
+        voicesIcon = findViewById(R.id.enterprisesVoicesNavigationIcon)
+        addVoiceFab = findViewById(R.id.enterprisesAddVoiceFab)
+        createEnterpriseFab = findViewById(R.id.enterprisesCreateFab)
         tasksIcon = findViewById(R.id.enterprisesTasksNavigationIcon)
 
         currentSection = savedInstanceState?.getString(STATE_SECTION)
@@ -72,6 +82,19 @@ class EnterprisesDashboard : BaseActivity() {
         setupSettingsDrawer(settingsDrawer)
         enterprisesIcon.setOnClickListener { showEnterprisesSection() }
         teamsIcon.setOnClickListener { showTeamsSection() }
+        voicesIcon.setOnClickListener { showVoicesSection() }
+        addVoiceFab.setOnClickListener {
+            (supportFragmentManager.findFragmentById(R.id.enterprisesVoicesContainer) as? DashboardVoicesFragment)
+                ?.createVoice()
+        }
+        addVoiceFab.enableDrag()
+        createEnterpriseFab.setOnClickListener {
+            if (supportFragmentManager.findFragmentByTag(CreateTeamDialogFragment.TAG) == null) {
+                CreateTeamDialogFragment.newEnterpriseInstance()
+                    .show(supportFragmentManager, CreateTeamDialogFragment.TAG)
+            }
+        }
+        createEnterpriseFab.enableDrag()
         tasksIcon.setOnClickListener { showTasksSection() }
         showSection(currentSection)
         refreshProfileSummary()
@@ -118,6 +141,7 @@ class EnterprisesDashboard : BaseActivity() {
         when (section) {
             Section.ENTERPRISES -> showEnterprisesSection()
             Section.MEMBERS -> showTeamsSection()
+            Section.VOICES -> showVoicesSection()
             Section.TASKS -> showTasksSection()
         }
     }
@@ -126,7 +150,10 @@ class EnterprisesDashboard : BaseActivity() {
         currentSection = Section.ENTERPRISES
         enterprisesContent.isVisible = true
         teamsContainer.isVisible = false
+        voicesContainer.isVisible = false
         tasksContainer.isVisible = false
+        addVoiceFab.isVisible = false
+        createEnterpriseFab.isVisible = true
         if (supportFragmentManager.findFragmentById(R.id.enterprisesListContainer) !is TeamsFragment) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.enterprisesListContainer, TeamsFragment.newEnterprisesInstance())
@@ -139,7 +166,10 @@ class EnterprisesDashboard : BaseActivity() {
         currentSection = Section.MEMBERS
         enterprisesContent.isVisible = false
         teamsContainer.isVisible = true
+        voicesContainer.isVisible = false
         tasksContainer.isVisible = false
+        addVoiceFab.isVisible = false
+        createEnterpriseFab.isVisible = false
         if (supportFragmentManager.findFragmentById(R.id.enterprisesTeamsContainer) !is DashboardEnterpriseMembersFragment) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.enterprisesTeamsContainer, DashboardEnterpriseMembersFragment())
@@ -152,7 +182,10 @@ class EnterprisesDashboard : BaseActivity() {
         currentSection = Section.TASKS
         enterprisesContent.isVisible = false
         teamsContainer.isVisible = false
+        voicesContainer.isVisible = false
         tasksContainer.isVisible = true
+        addVoiceFab.isVisible = false
+        createEnterpriseFab.isVisible = false
         if (supportFragmentManager.findFragmentById(R.id.enterprisesTasksContainer) !is DashboardEnterpriseTasksFragment) {
             supportFragmentManager.beginTransaction()
                 .replace(R.id.enterprisesTasksContainer, DashboardEnterpriseTasksFragment())
@@ -161,9 +194,38 @@ class EnterprisesDashboard : BaseActivity() {
         updateBottomNavigationState()
     }
 
+    private fun showVoicesSection() {
+        currentSection = Section.VOICES
+        enterprisesContent.isVisible = false
+        teamsContainer.isVisible = false
+        tasksContainer.isVisible = false
+        voicesContainer.isVisible = true
+        val context = applicationContext
+        val enterpriseId = org.ole.planet.myplanet.lite.dashboard.DashboardEnterpriseSelectionPreferences
+            .getSelectedEnterpriseId(context)
+        addVoiceFab.isVisible = !enterpriseId.isNullOrBlank()
+        createEnterpriseFab.isVisible = false
+        val existing = supportFragmentManager.findFragmentById(R.id.enterprisesVoicesContainer)
+            as? DashboardVoicesFragment
+        if (!enterpriseId.isNullOrBlank() && existing?.isEnterpriseFeedFor(enterpriseId) != true) {
+            val preferences = org.ole.planet.myplanet.lite.dashboard.DashboardEnterpriseSelectionPreferences
+            supportFragmentManager.beginTransaction().replace(
+                R.id.enterprisesVoicesContainer,
+                DashboardVoicesFragment.newInstanceForEnterprise(
+                    enterpriseId,
+                    preferences.getSelectedEnterpriseName(context),
+                    preferences.getSelectedEnterpriseType(context),
+                    preferences.getSelectedEnterprisePlanetCode(context),
+                ),
+            ).commit()
+        }
+        updateBottomNavigationState()
+    }
+
     private fun updateBottomNavigationState() {
         enterprisesIcon.alpha = if (currentSection == Section.ENTERPRISES) 1f else 0.5f
         teamsIcon.alpha = if (currentSection == Section.MEMBERS) 1f else 0.5f
+        voicesIcon.alpha = if (currentSection == Section.VOICES) 1f else 0.5f
         tasksIcon.alpha = if (currentSection == Section.TASKS) 1f else 0.5f
     }
 
@@ -227,12 +289,31 @@ class EnterprisesDashboard : BaseActivity() {
         avatarUpdateListener = null
     }
 
+    override fun onTeamCreated(teamId: String) {
+        onEnterpriseSelectionChanged()
+        val fragment = supportFragmentManager.findFragmentById(R.id.enterprisesListContainer) as? TeamsFragment
+        fragment?.reloadTeams()
+    }
+
+    fun onEnterpriseSelectionChanged() {
+        val dependentFragments = listOf(
+            R.id.enterprisesVoicesContainer,
+            R.id.enterprisesTeamsContainer,
+            R.id.enterprisesTasksContainer,
+        ).mapNotNull(supportFragmentManager::findFragmentById)
+        if (dependentFragments.isNotEmpty()) {
+            supportFragmentManager.beginTransaction().apply {
+                dependentFragments.forEach(::remove)
+            }.commit()
+        }
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
         outState.putString(STATE_SECTION, currentSection.name)
     }
 
-    private enum class Section { ENTERPRISES, MEMBERS, TASKS }
+    private enum class Section { ENTERPRISES, VOICES, MEMBERS, TASKS }
 
     private companion object {
         const val STATE_SECTION = "enterprises_dashboard_section"

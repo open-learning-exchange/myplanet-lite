@@ -756,5 +756,13 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="dashboard_enterprise_tasks_mark_pending">Reopen task</string>
     <string name="dashboard_enterprise_tasks_complete_confirmation">Are you sure you want to complete this task?</string>
     <string name="dashboard_enterprise_tasks_cannot_complete">Task cannot be completed</string>
-    <string name="dashboard_enterprise_tasks_pending_checklist">Complete all pending checklist items (- [ ]) before completing this task.</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">Complete all pending checklist items before completing this task.</string>
+    <string name="create_enterprise_title">Create enterprise</string>
+    <string name="create_enterprise_mission_label">Mission (optional)</string>
+    <string name="create_enterprise_services_label">Services offered (optional)</string>
+    <string name="create_enterprise_rules_label">Rules (optional)</string>
+    <string name="create_enterprise_success">Enterprise created.</string>
+    <string name="create_enterprise_duplicate_name">An active enterprise with this name already exists.</string>
+    <string name="create_enterprise_incomplete">The enterprise was created, but its leader membership is pending. Tap Create again to retry.</string>
+    <string name="create_enterprise_error">The enterprise could not be created.</string>
 </resources>

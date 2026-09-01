@@ -21,10 +21,17 @@ internal class DashboardVoicesNavigator(
     private val createVoiceLauncher: ActivityResultLauncher<Intent>,
     private val postDetailLauncher: ActivityResultLauncher<Intent>,
 ) {
-    fun openComposer(teamId: String?, teamName: String?) {
+    fun openComposer(
+        teamId: String?,
+        teamName: String?,
+        enterpriseMode: Boolean = false,
+        enterpriseType: String? = null,
+        enterprisePlanetCode: String? = null,
+    ) {
         val context = fragment.context ?: return
         val intent = Intent(context, CreateVoiceActivity::class.java)
         addTeamExtras(intent, teamId, teamName)
+        addEnterpriseExtras(intent, enterpriseMode, enterpriseType, enterprisePlanetCode)
         createVoiceLauncher.launch(intent)
     }
 
@@ -74,7 +81,14 @@ internal class DashboardVoicesNavigator(
         fragment.startActivity(intent)
     }
 
-    fun openEditVoice(item: DashboardNewsItem, teamId: String?, teamName: String?) {
+    fun openEditVoice(
+        item: DashboardNewsItem,
+        teamId: String?,
+        teamName: String?,
+        enterpriseMode: Boolean = false,
+        enterpriseType: String? = null,
+        enterprisePlanetCode: String? = null,
+    ) {
         val context = fragment.context ?: return
         val intent = Intent(context, CreateVoiceActivity::class.java)
         intent.putExtra(CreateVoiceActivity.EXTRA_IS_EDIT_MODE, true)
@@ -83,7 +97,19 @@ internal class DashboardVoicesNavigator(
         intent.putStringArrayListExtra(CreateVoiceActivity.EXTRA_EDIT_INITIAL_IMAGE_PATHS, ArrayList(item.imagePaths))
         intent.putExtra(CreateVoiceActivity.EXTRA_EDIT_DOCUMENT, item.document)
         addTeamExtras(intent, teamId, teamName)
+        addEnterpriseExtras(intent, enterpriseMode, enterpriseType, enterprisePlanetCode)
         createVoiceLauncher.launch(intent)
+    }
+
+    private fun addEnterpriseExtras(
+        intent: Intent,
+        enterpriseMode: Boolean,
+        enterpriseType: String?,
+        enterprisePlanetCode: String?,
+    ) {
+        intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_ENTERPRISE, enterpriseMode)
+        enterpriseType?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_ENTERPRISE_TYPE, it) }
+        enterprisePlanetCode?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_ENTERPRISE_PLANET_CODE, it) }
     }
 
     private fun addTeamExtras(intent: Intent, teamId: String?, teamName: String?) {

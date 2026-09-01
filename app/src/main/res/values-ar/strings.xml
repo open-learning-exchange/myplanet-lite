@@ -707,5 +707,13 @@
     <string name="dashboard_enterprise_tasks_mark_pending">إعادة فتح المهمة</string>
     <string name="dashboard_enterprise_tasks_complete_confirmation">هل أنت متأكد من إكمال هذه المهمة؟</string>
     <string name="dashboard_enterprise_tasks_cannot_complete">لا يمكن إكمال المهمة</string>
-    <string name="dashboard_enterprise_tasks_pending_checklist">أكمل جميع عناصر القائمة المعلقة (- [ ]) قبل إكمال هذه المهمة.</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">أكمل جميع عناصر القائمة المعلقة قبل إكمال هذه المهمة.</string>
+    <string name="create_enterprise_title">إنشاء مؤسسة</string>
+    <string name="create_enterprise_mission_label">المهمة (اختياري)</string>
+    <string name="create_enterprise_services_label">الخدمات المقدمة (اختياري)</string>
+    <string name="create_enterprise_rules_label">القواعد (اختياري)</string>
+    <string name="create_enterprise_success">تم إنشاء المؤسسة.</string>
+    <string name="create_enterprise_duplicate_name">توجد مؤسسة نشطة بهذا الاسم بالفعل.</string>
+    <string name="create_enterprise_incomplete">تم إنشاء المؤسسة، لكن عضوية القائد ما زالت معلقة. اضغط إنشاء مرة أخرى لإعادة المحاولة.</string>
+    <string name="create_enterprise_error">تعذر إنشاء المؤسسة.</string>
 </resources>

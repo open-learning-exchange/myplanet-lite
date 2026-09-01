@@ -305,7 +305,7 @@ internal fun TeamsFragment.buildTeamCard(
                 val newSelection = if (idToSelect == selectedTeamId) null else idToSelect
                 val newSelectionName = if (newSelection == null) null else displayName
                 selectedTeamId = newSelection
-                setSelectedItem(newSelection, newSelectionName)
+                setSelectedItem(newSelection, newSelectionName, if (newSelection == null) null else team)
                 updateBookmarkSelection()
             }
         } else {

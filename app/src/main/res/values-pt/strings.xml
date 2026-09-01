@@ -737,5 +737,13 @@ Se você não concordar, deve selecionar "Cancelar" e parar de usar o aplicativo
     <string name="dashboard_enterprise_tasks_mark_pending">Reabrir tarefa</string>
     <string name="dashboard_enterprise_tasks_complete_confirmation">Tem certeza de que deseja concluir esta tarefa?</string>
     <string name="dashboard_enterprise_tasks_cannot_complete">Não é possível concluir a tarefa</string>
-    <string name="dashboard_enterprise_tasks_pending_checklist">Conclua todos os itens pendentes (- [ ]) antes de concluir esta tarefa.</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">Conclua todos os itens pendentes antes de concluir esta tarefa.</string>
+    <string name="create_enterprise_title">Criar empresa</string>
+    <string name="create_enterprise_mission_label">Missão (opcional)</string>
+    <string name="create_enterprise_services_label">Serviços oferecidos (opcional)</string>
+    <string name="create_enterprise_rules_label">Regras (opcional)</string>
+    <string name="create_enterprise_success">Empresa criada.</string>
+    <string name="create_enterprise_duplicate_name">Já existe uma empresa ativa com este nome.</string>
+    <string name="create_enterprise_incomplete">A empresa foi criada, mas a associação do líder está pendente. Toque em Criar novamente para tentar de novo.</string>
+    <string name="create_enterprise_error">Não foi possível criar a empresa.</string>
 </resources>

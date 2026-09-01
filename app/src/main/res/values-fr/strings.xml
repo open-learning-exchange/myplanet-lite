@@ -703,5 +703,13 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_enterprise_tasks_mark_pending">Rouvrir la tâche</string>
     <string name="dashboard_enterprise_tasks_complete_confirmation">Voulez-vous vraiment terminer cette tâche ?</string>
     <string name="dashboard_enterprise_tasks_cannot_complete">Impossible de terminer la tâche</string>
-    <string name="dashboard_enterprise_tasks_pending_checklist">Terminez tous les éléments en attente (- [ ]) avant de terminer cette tâche.</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">Terminez tous les éléments en attente avant de terminer cette tâche.</string>
+    <string name="create_enterprise_title">Créer une entreprise</string>
+    <string name="create_enterprise_mission_label">Mission (facultatif)</string>
+    <string name="create_enterprise_services_label">Services proposés (facultatif)</string>
+    <string name="create_enterprise_rules_label">Règles (facultatif)</string>
+    <string name="create_enterprise_success">Entreprise créée.</string>
+    <string name="create_enterprise_duplicate_name">Une entreprise active porte déjà ce nom.</string>
+    <string name="create_enterprise_incomplete">L’entreprise a été créée, mais l’adhésion du responsable est en attente. Appuyez à nouveau sur Créer pour réessayer.</string>
+    <string name="create_enterprise_error">Impossible de créer l’entreprise.</string>
 </resources>
