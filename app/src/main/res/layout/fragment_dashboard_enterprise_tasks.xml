@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <androidx.appcompat.widget.AppCompatEditText
+        android:id="@+id/enterpriseTasksSearch"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:background="@drawable/dashboard_search_input_background"
+        android:drawableStart="@drawable/ic_search_24"
+        android:drawablePadding="8dp"
+        android:hint="@string/dashboard_enterprise_tasks_search_hint"
+        android:padding="12dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <com.google.android.material.button.MaterialButtonToggleGroup
+        android:id="@+id/enterpriseTasksFilter"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        app:checkedButton="@id/enterpriseTasksAll"
+        app:selectionRequired="true"
+        app:singleSelection="true"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/enterpriseTasksSearch">
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/enterpriseTasksAll"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/dashboard_enterprise_tasks_all" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/enterpriseTasksMine"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/dashboard_enterprise_tasks_mine" />
+    </com.google.android.material.button.MaterialButtonToggleGroup>
+
+    <com.google.android.material.progressindicator.LinearProgressIndicator
+        android:id="@+id/enterpriseTasksLoading"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/enterpriseTasksFilter" />
+
+    <androidx.swiperefreshlayout.widget.SwipeRefreshLayout
+        android:id="@+id/enterpriseTasksRefresh"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/enterpriseTasksLoading">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/enterpriseTasksList"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="80dp" />
+    </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <TextView
+        android:id="@+id/enterpriseTasksEmpty"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:padding="24dp"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/enterpriseTasksFilter" />
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/enterpriseTasksAdd"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="30dp"
+        android:layout_marginBottom="76dp"
+        android:contentDescription="@string/dashboard_enterprise_tasks_add"
+        android:src="@drawable/ic_add_24"
+        android:visibility="gone"
+        app:backgroundTint="@color/C6F6F6F"
+        app:fabCustomSize="@dimen/dashboard_fab_size"
+        app:fabSize="normal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyPlanet.Circle"
+        app:tint="@color/white" />
+</androidx.constraintlayout.widget.ConstraintLayout>

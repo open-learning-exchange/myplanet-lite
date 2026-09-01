@@ -294,6 +294,8 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_teams_select_team_hint">Choisissez une équipe dans le menu pour voir ses informations.</string>
     <string name="dashboard_teams_explore_title">Explorer les équipes</string>
     <string name="dashboard_teams_explore_description">Groupes disponibles auxquels vous pouvez vous joindre.</string>
+    <string name="dashboard_teams_search_hint">Rechercher dans toutes les équipes</string>
+    <string name="dashboard_teams_search_empty">Aucune équipe ne correspond à votre recherche.</string>
     <string name="dashboard_teams_join_prompt">Vous ne faites pas encore partie d\'une équipe. Vous pouvez en rejoindre une pour commencer.</string>
     <string name="dashboard_teams_no_server">Connectez-vous à un serveur pour voir vos équipes.</string>
     <string name="dashboard_teams_no_user">Nous n\'avons pas pu déterminer votre utilisateur. Veuillez vous reconnecter.</string>
@@ -360,9 +362,44 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_image_preview_content_description">Image en plein écran</string>
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">Sélectionner une équipe</string>
+    <string name="dashboard_profile_menu_learning">Apprentissage</string>
+    <string name="enterprises_title">Entreprises</string>
+    <string name="dashboard_enterprises_my_title">Mes entreprises</string>
+    <string name="dashboard_enterprises_my_description">Entreprises auxquelles vous appartenez et auxquelles vous pouvez participer.</string>
+    <string name="dashboard_enterprises_select_hint">Sélectionnez une entreprise pour afficher ses informations.</string>
+    <string name="dashboard_enterprises_explore_title">Explorer les entreprises</string>
+    <string name="dashboard_enterprises_explore_description">Entreprises actives que vous pouvez demander à rejoindre.</string>
+    <string name="dashboard_enterprises_search_hint">Rechercher dans toutes les entreprises</string>
+    <string name="dashboard_enterprises_search_empty">Aucune entreprise ne correspond à votre recherche.</string>
+    <string name="dashboard_enterprises_error_loading">Impossible de charger les entreprises. Réessayez plus tard.</string>
+    <string name="dashboard_enterprises_join_prompt">Aucune entreprise active n’est encore disponible.</string>
+    <string name="dashboard_enterprise_members_title">Membres de l’entreprise</string>
+    <string name="dashboard_enterprise_members_select_hint">Sélectionnez d’abord une entreprise pour voir ses membres.</string>
+    <string name="dashboard_enterprise_members_not_member">Vous devez appartenir à cette entreprise pour voir ses membres.</string>
+    <string name="dashboard_enterprise_members_error_loading">Impossible de charger les membres de l’entreprise.</string>
+    <string name="dashboard_enterprise_members_empty">Cette entreprise n’a pas encore de membres.</string>
+    <string name="dashboard_enterprise_tasks_title">Tâches de l’entreprise</string>
+    <string name="dashboard_enterprise_tasks_search_hint">Rechercher des tâches</string><string name="dashboard_enterprise_tasks_all">Toutes</string><string name="dashboard_enterprise_tasks_mine">Mes tâches</string>
+    <string name="dashboard_enterprise_tasks_add">Ajouter une tâche</string><string name="dashboard_enterprise_tasks_edit">Modifier la tâche</string><string name="dashboard_enterprise_tasks_complete">Terminer ou rouvrir la tâche</string><string name="dashboard_enterprise_tasks_archive">Archiver la tâche</string>
+    <string name="dashboard_enterprise_tasks_deadline_format">Échéance : %1$s</string><string name="dashboard_enterprise_tasks_assignee_format">Attribuée à : %1$s</string><string name="dashboard_enterprise_tasks_unassigned">Non attribuée</string>
+    <string name="dashboard_enterprise_tasks_field_title">Titre</string><string name="dashboard_enterprise_tasks_field_description">Description (facultative)</string><string name="dashboard_enterprise_tasks_select_hint">Sélectionnez d’abord une entreprise pour voir ses tâches.</string>
+    <string name="dashboard_enterprise_tasks_error_loading">Impossible de charger les tâches de l’entreprise.</string><string name="dashboard_enterprise_tasks_access_denied">Seuls les membres peuvent voir les tâches de cette entreprise privée.</string><string name="dashboard_enterprise_tasks_empty">Cette entreprise n’a aucune tâche active.</string><string name="dashboard_enterprise_tasks_search_empty">Aucune tâche ne correspond aux filtres.</string>
+    <string name="dashboard_enterprise_tasks_save">Enregistrer</string><string name="dashboard_enterprise_tasks_title_required">Saisissez un titre.</string><string name="dashboard_enterprise_tasks_conflict">Cette tâche a changé sur le serveur. Rechargez-la et réessayez.</string><string name="dashboard_enterprise_tasks_save_error">Impossible d’enregistrer la tâche.</string><string name="dashboard_enterprise_tasks_archive_confirmation">Archiver cette tâche ?</string>
     <string name="dashboard_profile_menu_logout">Se déconnecter</string>
     <string name="privacy_policy_title">Politique de confidentialité</string>
     <string name="teams_title">Équipes</string>
+    <string name="teams_action_button_content_description">Actions de l’équipe</string>
+    <string name="create_team_title">Créer une équipe</string>
+    <string name="create_team_name_label">Nom de l’équipe</string>
+    <string name="create_team_description_label">Description (facultative)</string>
+    <string name="create_team_public_label">Équipe publique</string>
+    <string name="create_team_action">Créer</string>
+    <string name="create_team_name_required">Saisissez un nom d’équipe.</string>
+    <string name="create_team_duplicate_name">Une équipe active portant ce nom existe déjà.</string>
+    <string name="create_team_success">L’équipe a été créée.</string>
+    <string name="create_team_error">Impossible de créer l’équipe. Réessayez.</string>
+    <string name="create_team_incomplete">L’équipe a été créée, mais vous n’avez pas pu être ajouté comme responsable. Appuyez sur Créer pour réessayer.</string>
+    <string name="create_team_missing_context">Les informations du serveur ou de l’utilisateur sont indisponibles. Reconnectez-vous.</string>
     <string name="profile_title">Profil</string>
     <string name="profile_description">Consultez et modifiez vos informations personnelles.</string>
     <string name="profile_section_account">Compte</string>
@@ -489,6 +526,8 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="create_voice_link_insert_button">Insérer</string>
     <string name="create_voice_link_required_fields">Veuillez saisir un titre et une URL.</string>
     <string name="create_voice_format_image_description">Insérer une image</string>
+    <string name="create_voice_generate_ai_description">Générer du contenu avec ChatGPT</string>
+    <string name="create_voice_generate_ai_error">Impossible d’améliorer le contenu. Réessayez.</string>
     <string name="create_voice_format_placeholder">texte</string>
     <string name="create_voice_image_processing_error">Nous n\'avons pas pu traiter cette image. Essayez un autre fichier.</string>
     <string name="create_voice_image_upload_error">Nous n\'avons pas pu téléverser vos images. Réessayez.</string>
@@ -660,4 +699,23 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="dashboard_resources_error_invalid_server_response">Erreur : Réponse du serveur non valide</string>
     <string name="dashboard_resources_error_read_file">Impossible de lire le fichier sélectionné</string>
     <string name="slider_desc">Curseur de pourcentage de résolution</string>
+    <string name="dashboard_enterprise_tasks_mark_complete">Terminer la tâche</string>
+    <string name="dashboard_enterprise_tasks_mark_pending">Rouvrir la tâche</string>
+    <string name="dashboard_enterprise_tasks_complete_confirmation">Voulez-vous vraiment terminer cette tâche ?</string>
+    <string name="dashboard_enterprise_tasks_cannot_complete">Impossible de terminer la tâche</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">Terminez tous les éléments en attente avant de terminer cette tâche.</string>
+    <string name="create_enterprise_title">Créer une entreprise</string>
+    <string name="create_enterprise_mission_label">Mission (facultatif)</string>
+    <string name="create_enterprise_services_label">Services proposés (facultatif)</string>
+    <string name="create_enterprise_rules_label">Règles (facultatif)</string>
+    <string name="create_enterprise_success">Entreprise créée.</string>
+    <string name="create_enterprise_duplicate_name">Une entreprise active porte déjà ce nom.</string>
+    <string name="create_enterprise_incomplete">L’entreprise a été créée, mais l’adhésion du responsable est en attente. Appuyez à nouveau sur Créer pour réessayer.</string>
+    <string name="create_enterprise_error">Impossible de créer l’entreprise.</string>
+    <string name="login_success_title">Connexion réussie</string>
+    <string name="login_success_message">Bienvenue, %1$s !</string>
+    <string name="dashboard_profile_menu_privacy_policy">Politique de confidentialité</string>
+    <string name="dashboard_courses_missing_credentials">Configuration du serveur ou identifiants manquants</string>
+    <string name="dashboard_courses_loading_error">Impossible de charger les cours</string>
+    <string name="dashboard_resources_permission_required">Une autorisation est requise pour continuer.</string>
 </resources>

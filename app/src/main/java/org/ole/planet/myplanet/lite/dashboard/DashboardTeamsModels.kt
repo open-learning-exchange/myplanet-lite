@@ -86,6 +86,7 @@ data class MembershipDocument(
     val docType: String?,
     val isLeader: Boolean?,
     val status: String?,
+    val role: String? = null,
 )
 
 data class TeamMemberDetails(
@@ -94,6 +95,9 @@ data class TeamMemberDetails(
     val isLeader: Boolean,
     val hasAvatar: Boolean,
     val membership: MembershipDocument?,
+    val role: String? = null,
+    val userId: String? = null,
+    val userPlanetCode: String? = null,
 )
 
 data class TeamMemberProfileDetails(
@@ -154,6 +158,23 @@ data class IdsNotInClause(
 
 @JsonClass(generateAdapter = true)
 data class TeamsFindResponse(val docs: List<TeamDocument>?)
+
+@JsonClass(generateAdapter = true)
+data class SearchTeamsFindRequest(val selector: SearchTeamsSelector)
+
+@JsonClass(generateAdapter = true)
+data class SearchTeamsSelector(
+    val name: RegexCondition,
+    @param:Json(name = "_id") val id: NotEqualCondition,
+    val status: String = "active",
+    val type: String = "team",
+)
+
+@JsonClass(generateAdapter = true)
+data class RegexCondition(@param:Json(name = $$"$regex") val regex: String)
+
+@JsonClass(generateAdapter = true)
+data class NotEqualCondition(@param:Json(name = $$"$ne") val value: String = "")
 
 @JsonClass(generateAdapter = true)
 data class TeamDocument(
@@ -287,6 +308,7 @@ data class UserDocument(
     @param:BirthDateString val birthDate: Long?,
     val gender: String?,
     val level: String?,
+    val couchId: String? = null,
 )
 
 @JsonClass(generateAdapter = true)

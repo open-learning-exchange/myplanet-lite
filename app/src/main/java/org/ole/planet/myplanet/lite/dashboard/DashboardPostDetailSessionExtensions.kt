@@ -146,6 +146,7 @@ internal suspend fun DashboardPostDetailActivity.initializeSession() {
     baseUrl?.let { base ->
         val authService = AuthDependencies.provideAuthService(context, base)
         sessionCookie = authService.getStoredToken()
+        loadReplyVoiceAiConfiguration()
     }
 }
 
@@ -161,6 +162,9 @@ internal suspend fun DashboardPostDetailActivity.loadComments(postId: String) {
             serverCode,
             serverParentCode,
             selectedTeamName,
+            selectedTeamId.takeIf {
+                document?.viewIn?.any { entry -> entry.mode == "enterprise" } == true
+            },
         )
     result
         .onSuccess { docs ->

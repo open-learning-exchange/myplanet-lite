@@ -25,6 +25,7 @@ configurations.named("androidTestImplementation") {
 
 android {
     namespace = "org.ole.planet.myplanet.lite"
+    // Current dependencies require API 37 at compile time. Runtime behavior remains on API 36.
     compileSdk = 37
     buildFeatures {
         buildConfig = true
@@ -119,6 +120,7 @@ dependencies {
     implementation(libs.ext.tables)
     implementation(libs.markwon.html)
     implementation(libs.markwon.image.glide)
+    implementation(libs.markwon.tasklist)
     implementation(libs.glide)
     implementation(libs.photoview)
     implementation(libs.ucrop)

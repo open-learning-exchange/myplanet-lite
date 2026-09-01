@@ -25,6 +25,8 @@ class DashboardTeamsRepository(
 ) {
     private val dispatcher = overrideDispatcher ?: dispatcher
     private val operations = DashboardTeamsOperations(client, moshi, teamMemberDetailsCache)
+    private val searchOperations = DashboardTeamsSearchOperations(client, moshi)
+    private val createOperations = DashboardTeamsCreateOperations(client)
 
     suspend fun addTeamMember(
         baseUrl: String,
@@ -96,6 +98,37 @@ class DashboardTeamsRepository(
     ): Result<List<TeamDocument>> =
         runInDispatcher {
             operations.fetchAvailableTeams(baseUrl, credentials, sessionCookie, excludedTeamIds, skip, limit)
+        }
+
+    suspend fun searchTeams(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        name: String,
+    ): Result<List<TeamDocument>> =
+        runInDispatcher {
+            searchOperations.searchTeams(baseUrl, credentials, sessionCookie, name)
+        }
+
+    suspend fun createTeam(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        request: CreateTeamRequest,
+    ): Result<CreatedTeam> =
+        runInDispatcher {
+            createOperations.createTeam(baseUrl, credentials, sessionCookie, request)
+        }
+
+    suspend fun retryTeamLeaderMembership(
+        baseUrl: String,
+        credentials: StoredCredentials?,
+        sessionCookie: String?,
+        teamId: String,
+        request: CreateTeamRequest,
+    ): Result<CreatedTeam> =
+        runInDispatcher {
+            createOperations.retryLeaderMembership(baseUrl, credentials, sessionCookie, teamId, request)
         }
 
     suspend fun fetchJoinRequests(

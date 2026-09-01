@@ -114,7 +114,8 @@ internal class TeamMemberViewHolder(
         binding.teamMemberUsername.text = username?.takeIf { it.isNotBlank() }?.let {
             itemView.context.getString(R.string.dashboard_team_member_profile_username_format, it)
         } ?: itemView.context.getString(R.string.dashboard_team_members_unknown_username)
-        binding.teamMemberRole.setText(if (member.isLeader) R.string.dashboard_team_members_leader_role else R.string.dashboard_team_members_member_role)
+        binding.teamMemberRole.text = member.role?.takeIf { it.isNotBlank() }
+            ?: itemView.context.getString(if (member.isLeader) R.string.dashboard_team_members_leader_role else R.string.dashboard_team_members_member_role)
         val clickListener = View.OnClickListener { onMemberClicked(member) }
         itemView.setOnClickListener(clickListener)
         binding.teamMemberAvatar.setOnClickListener(clickListener)

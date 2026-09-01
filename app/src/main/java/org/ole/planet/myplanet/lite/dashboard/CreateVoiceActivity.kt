@@ -98,6 +98,9 @@ class CreateVoiceActivity : BaseActivity() {
     internal var editDocument: DashboardNewsRepository.NewsDocument? = null
     internal var targetTeamId: String? = null
     internal var targetTeamName: String? = null
+    internal var targetEnterprise = false
+    internal var targetEnterpriseType: String? = null
+    internal var targetEnterprisePlanetCode: String? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -106,6 +109,9 @@ class CreateVoiceActivity : BaseActivity() {
 
         targetTeamId = intent.getStringExtra(EXTRA_TARGET_TEAM_ID)
         targetTeamName = intent.getStringExtra(EXTRA_TARGET_TEAM_NAME)
+        targetEnterprise = intent.getBooleanExtra(EXTRA_TARGET_ENTERPRISE, false)
+        targetEnterpriseType = intent.getStringExtra(EXTRA_TARGET_ENTERPRISE_TYPE)
+        targetEnterprisePlanetCode = intent.getStringExtra(EXTRA_TARGET_ENTERPRISE_PLANET_CODE)
 
         setupViews()
         setupMarkdownToolbar()
@@ -270,6 +276,7 @@ class CreateVoiceActivity : BaseActivity() {
             val authService = AuthDependencies.provideAuthService(context, base)
             sessionCookie = authService.getStoredToken()
             isSessionReady = true
+            loadVoiceAiConfiguration()
             updateActionAvailability()
             if (isEditMode && editInitialImagePaths.isNotEmpty()) {
                 loadEditInitialImages()
@@ -367,6 +374,9 @@ class CreateVoiceActivity : BaseActivity() {
                         userPayload = userPayload,
                         teamId = targetTeamId,
                         teamName = targetTeamName,
+                        enterpriseMode = targetEnterprise,
+                        enterpriseType = targetEnterpriseType,
+                        enterprisePlanetCode = targetEnterprisePlanetCode,
                     ),
                 )
             result
@@ -467,5 +477,8 @@ class CreateVoiceActivity : BaseActivity() {
         const val EXTRA_EDIT_DOCUMENT = "extra_edit_document"
         const val EXTRA_TARGET_TEAM_ID = "extra_target_team_id"
         const val EXTRA_TARGET_TEAM_NAME = "extra_target_team_name"
+        const val EXTRA_TARGET_ENTERPRISE = "extra_target_enterprise"
+        const val EXTRA_TARGET_ENTERPRISE_TYPE = "extra_target_enterprise_type"
+        const val EXTRA_TARGET_ENTERPRISE_PLANET_CODE = "extra_target_enterprise_planet_code"
     }
 }

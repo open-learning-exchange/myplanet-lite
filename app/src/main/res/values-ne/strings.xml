@@ -246,6 +246,8 @@
     <string name="dashboard_teams_select_team_hint">मेनुभित्रबाट एउटा टोली छानेर यसको जानकारी हेर्नुहोस्।</string>
     <string name="dashboard_teams_explore_title">टोलीहरू अन्वेषण गर्नुहोस्</string>
     <string name="dashboard_teams_explore_description">तपाईं सामेल हुन सक्ने उपलब्ध समूहहरू।</string>
+    <string name="dashboard_teams_search_hint">सबै टोलीहरूमा खोज्नुहोस्</string>
+    <string name="dashboard_teams_search_empty">तपाईंको खोजसँग कुनै टोली मेल खाँदैन।</string>
     <string name="dashboard_teams_join_prompt">तपाईं अहिलेसम्म कुनै टिममा हुनुहुन्न। सुरु गर्न तपाईं एउटा टिममा सामेल हुन सक्नुहुन्छ।</string>
     <string name="dashboard_teams_no_server">आफ्ना टिमहरू हेर्न सर्भरमा जडान गर्नुहोस्।</string>
     <string name="dashboard_teams_no_user">हामीले तपाईंको प्रयोगकर्ता पत्ता लगाउन सकेनौं। कृपया फेरि साइन इन गर्नुहोस्।</string>
@@ -312,9 +314,44 @@
     <string name="dashboard_image_preview_content_description">पूर्ण पर्दा तस्बिर</string>
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">टोली छनोट गर्नुहोस्</string>
+    <string name="dashboard_profile_menu_learning">सिकाइ</string>
+    <string name="enterprises_title">उद्यमहरू</string>
+    <string name="dashboard_enterprises_my_title">मेरा उद्यमहरू</string>
+    <string name="dashboard_enterprises_my_description">तपाईं सदस्य रहेका र सहभागी हुन सक्ने उद्यमहरू।</string>
+    <string name="dashboard_enterprises_select_hint">जानकारी हेर्न उद्यम चयन गर्नुहोस्।</string>
+    <string name="dashboard_enterprises_explore_title">उद्यमहरू अन्वेषण गर्नुहोस्</string>
+    <string name="dashboard_enterprises_explore_description">तपाईंले सामेल हुन अनुरोध गर्न सक्ने सक्रिय उद्यमहरू।</string>
+    <string name="dashboard_enterprises_search_hint">सबै उद्यमहरू खोज्नुहोस्</string>
+    <string name="dashboard_enterprises_search_empty">तपाईंको खोजसँग कुनै उद्यम मेल खाँदैन।</string>
+    <string name="dashboard_enterprises_error_loading">उद्यमहरू लोड गर्न सकिएन। पछि फेरि प्रयास गर्नुहोस्।</string>
+    <string name="dashboard_enterprises_join_prompt">अहिलेसम्म कुनै सक्रिय उद्यम उपलब्ध छैन।</string>
+    <string name="dashboard_enterprise_members_title">उद्यमका सदस्यहरू</string>
+    <string name="dashboard_enterprise_members_select_hint">सदस्यहरू हेर्न पहिले उद्यम चयन गर्नुहोस्।</string>
+    <string name="dashboard_enterprise_members_not_member">सदस्यहरू हेर्न तपाईं यस उद्यममा आबद्ध हुनुपर्छ।</string>
+    <string name="dashboard_enterprise_members_error_loading">उद्यमका सदस्यहरू लोड गर्न सकिएन।</string>
+    <string name="dashboard_enterprise_members_empty">यस उद्यममा अहिलेसम्म सदस्यहरू छैनन्।</string>
+    <string name="dashboard_enterprise_tasks_title">उद्यमका कार्यहरू</string>
+    <string name="dashboard_enterprise_tasks_search_hint">कार्यहरू खोज्नुहोस्</string><string name="dashboard_enterprise_tasks_all">सबै</string><string name="dashboard_enterprise_tasks_mine">मेरा कार्यहरू</string>
+    <string name="dashboard_enterprise_tasks_add">कार्य थप्नुहोस्</string><string name="dashboard_enterprise_tasks_edit">कार्य सम्पादन गर्नुहोस्</string><string name="dashboard_enterprise_tasks_complete">कार्य पूरा वा पुनः खोल्नुहोस्</string><string name="dashboard_enterprise_tasks_archive">कार्य अभिलेख गर्नुहोस्</string>
+    <string name="dashboard_enterprise_tasks_deadline_format">म्याद: %1$s</string><string name="dashboard_enterprise_tasks_assignee_format">जिम्मा दिइएको: %1$s</string><string name="dashboard_enterprise_tasks_unassigned">नतोकिएको</string>
+    <string name="dashboard_enterprise_tasks_field_title">शीर्षक</string><string name="dashboard_enterprise_tasks_field_description">विवरण (वैकल्पिक)</string><string name="dashboard_enterprise_tasks_select_hint">कार्य हेर्न पहिले उद्यम चयन गर्नुहोस्।</string>
+    <string name="dashboard_enterprise_tasks_error_loading">उद्यमका कार्यहरू लोड गर्न सकिएन।</string><string name="dashboard_enterprise_tasks_access_denied">सदस्यहरूले मात्र निजी कार्यहरू हेर्न सक्छन्।</string><string name="dashboard_enterprise_tasks_empty">कुनै सक्रिय कार्य छैन।</string><string name="dashboard_enterprise_tasks_search_empty">फिल्टरसँग कुनै कार्य मेल खाँदैन।</string>
+    <string name="dashboard_enterprise_tasks_save">सुरक्षित गर्नुहोस्</string><string name="dashboard_enterprise_tasks_title_required">कार्यको शीर्षक प्रविष्ट गर्नुहोस्।</string><string name="dashboard_enterprise_tasks_conflict">कार्य सर्भरमा परिवर्तन भयो। पुनः लोड गरी प्रयास गर्नुहोस्।</string><string name="dashboard_enterprise_tasks_save_error">कार्य सुरक्षित गर्न सकिएन।</string><string name="dashboard_enterprise_tasks_archive_confirmation">यो कार्य अभिलेख गर्ने?</string>
     <string name="dashboard_profile_menu_logout">लग आउट</string>
     <string name="privacy_policy_title">गोपनीयता नीति</string>
     <string name="teams_title">टोलीहरू</string>
+    <string name="teams_action_button_content_description">टोलीका कार्यहरू</string>
+    <string name="create_team_title">टोली सिर्जना गर्नुहोस्</string>
+    <string name="create_team_name_label">टोलीको नाम</string>
+    <string name="create_team_description_label">विवरण (वैकल्पिक)</string>
+    <string name="create_team_public_label">सार्वजनिक टोली</string>
+    <string name="create_team_action">सिर्जना गर्नुहोस्</string>
+    <string name="create_team_name_required">टोलीको नाम प्रविष्ट गर्नुहोस्।</string>
+    <string name="create_team_duplicate_name">यो नामको सक्रिय टोली पहिले नै छ।</string>
+    <string name="create_team_success">टोली सफलतापूर्वक सिर्जना भयो।</string>
+    <string name="create_team_error">टोली सिर्जना गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
+    <string name="create_team_incomplete">टोली सिर्जना भयो, तर तपाईंलाई नेताको रूपमा थप्न सकिएन। पुनः प्रयास गर्न सिर्जना गर्नुहोस् थिच्नुहोस्।</string>
+    <string name="create_team_missing_context">सर्भर वा प्रयोगकर्ता जानकारी उपलब्ध छैन। फेरि साइन इन गर्नुहोस्।</string>
     <string name="profile_title">प्रोफाइल</string>
     <string name="profile_description">आफ्नो व्यक्तिगत जानकारी हेर्नुहोस् र सम्पादन गर्नुहोस्।</string>
     <string name="profile_section_account">खाता</string>
@@ -441,6 +478,8 @@
     <string name="create_voice_link_insert_button">राख्नुहोस्</string>
     <string name="create_voice_link_required_fields">कृपया शीर्षक र URL प्रविष्ट गर्नुहोस्।</string>
     <string name="create_voice_format_image_description">तस्वीर थप्नुहोस्</string>
+    <string name="create_voice_generate_ai_description">ChatGPT मार्फत सामग्री सिर्जना गर्नुहोस्</string>
+    <string name="create_voice_generate_ai_error">सामग्री सुधार गर्न सकिएन। फेरि प्रयास गर्नुहोस्।</string>
     <string name="create_voice_format_placeholder">पाठ</string>
     <string name="create_voice_image_processing_error">त्यो तस्वीर प्रशोधन गर्न सकेनौं। कृपया अर्को फाइल प्रयास गर्नुहोस्।</string>
     <string name="create_voice_image_upload_error">हामीले तपाईंका तस्वीरहरू अपलोड गर्न सकेनौं। फेरि प्रयास गर्नुहोस्।</string>
@@ -660,4 +699,24 @@
     <string name="dashboard_resources_error_invalid_server_response">त्रुटि: सर्भरबाट अमान्य प्रतिक्रिया</string>
     <string name="dashboard_resources_error_read_file">चयन गरिएको फाइल पढ्न सकिएन</string>
     <string name="slider_desc">रिजोल्युसन प्रतिशत स्लाइडर</string>
+    <string name="dashboard_enterprise_tasks_mark_complete">कार्य पूरा गर्नुहोस्</string>
+    <string name="dashboard_enterprise_tasks_mark_pending">कार्य पुनः खोल्नुहोस्</string>
+    <string name="dashboard_enterprise_tasks_complete_confirmation">के तपाईं यो कार्य पूरा गर्न निश्चित हुनुहुन्छ?</string>
+    <string name="dashboard_enterprise_tasks_cannot_complete">कार्य पूरा गर्न सकिँदैन</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">यो कार्य पूरा गर्नुअघि सबै बाँकी सूची वस्तुहरू पूरा गर्नुहोस्।</string>
+    <string name="create_enterprise_title">उद्यम सिर्जना गर्नुहोस्</string>
+    <string name="create_enterprise_mission_label">ध्येय (वैकल्पिक)</string>
+    <string name="create_enterprise_services_label">प्रदान गरिने सेवाहरू (वैकल्पिक)</string>
+    <string name="create_enterprise_rules_label">नियमहरू (वैकल्पिक)</string>
+    <string name="create_enterprise_success">उद्यम सिर्जना भयो।</string>
+    <string name="create_enterprise_duplicate_name">यो नामको सक्रिय उद्यम पहिले नै छ।</string>
+    <string name="create_enterprise_incomplete">उद्यम सिर्जना भयो, तर नेतृत्व सदस्यता बाँकी छ। पुनः प्रयास गर्न फेरि सिर्जना थिच्नुहोस्।</string>
+    <string name="create_enterprise_error">उद्यम सिर्जना गर्न सकिएन।</string>
+    <string name="login_success_title">लगइन सफल भयो</string>
+    <string name="login_success_message">स्वागत छ, %1$s!</string>
+    <string name="dashboard_profile_menu_privacy_policy">गोपनीयता नीति</string>
+    <string name="course_wizard_open_survey">सर्वेक्षण खोल्नुहोस्</string>
+    <string name="dashboard_courses_missing_credentials">सर्भर कन्फिगरेसन वा प्रमाणहरू उपलब्ध छैनन्</string>
+    <string name="dashboard_courses_loading_error">पाठ्यक्रमहरू लोड गर्न सकिएन</string>
+    <string name="dashboard_resources_permission_required">जारी राख्न अनुमति आवश्यक छ।</string>
 </resources>

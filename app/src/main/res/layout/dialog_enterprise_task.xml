@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="24dp">
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/dashboard_enterprise_tasks_field_title">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/enterpriseTaskDialogTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <com.google.android.material.textfield.TextInputLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="@string/dashboard_enterprise_tasks_field_description">
+        <com.google.android.material.textfield.TextInputEditText
+            android:id="@+id/enterpriseTaskDialogDescription"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minLines="3" />
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:overScrollMode="never">
+
+        <LinearLayout
+            android:id="@+id/enterpriseTaskMarkdownToolbar"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enterpriseTaskMarkdownBold"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:contentDescription="@string/create_voice_format_bold_description"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:icon="@drawable/ic_format_bold_24"
+                app:iconPadding="0dp"
+                app:iconTint="@color/C6F6F6F" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enterpriseTaskMarkdownItalic"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:contentDescription="@string/create_voice_format_italic_description"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:icon="@drawable/ic_format_italic_24"
+                app:iconPadding="0dp"
+                app:iconTint="@color/C6F6F6F" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enterpriseTaskMarkdownHeading"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:contentDescription="@string/create_voice_format_heading_description"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:icon="@drawable/ic_format_heading_24"
+                app:iconPadding="0dp"
+                app:iconTint="@color/C6F6F6F" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enterpriseTaskMarkdownBullet"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:contentDescription="@string/create_voice_format_bullet_description"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:icon="@drawable/ic_format_list_bulleted_24"
+                app:iconPadding="0dp"
+                app:iconTint="@color/C6F6F6F" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enterpriseTaskMarkdownNumbered"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:contentDescription="@string/create_voice_format_numbered_description"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:icon="@drawable/ic_format_list_numbered_24"
+                app:iconPadding="0dp"
+                app:iconTint="@color/C6F6F6F" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enterpriseTaskMarkdownQuote"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:contentDescription="@string/create_voice_format_quote_description"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:icon="@drawable/ic_format_quote_24"
+                app:iconPadding="0dp"
+                app:iconTint="@color/C6F6F6F" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enterpriseTaskMarkdownLink"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:contentDescription="@string/create_voice_format_link_description"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:icon="@drawable/ic_insert_link_24"
+                app:iconPadding="0dp"
+                app:iconTint="@color/C6F6F6F" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/enterpriseTaskMarkdownChecklist"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="0dp"
+                android:minWidth="0dp"
+                android:contentDescription="@string/dashboard_enterprise_tasks_complete"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                app:icon="@drawable/ic_course_check_24"
+                app:iconPadding="0dp"
+                app:iconTint="@color/C6F6F6F" />
+        </LinearLayout>
+    </HorizontalScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/enterpriseTaskDialogDeadline"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp" />
+
+    <Spinner
+        android:id="@+id/enterpriseTaskDialogAssignee"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="12dp" />
+</LinearLayout>
