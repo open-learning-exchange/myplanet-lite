@@ -16,4 +16,9 @@
         android:actionLayout="@layout/menu_settings_switch_item"
         android:icon="@drawable/ic_translation_refresh"
         android:title="@string/dashboard_settings_menu_survey_translation" />
+    <item
+        android:id="@+id/menu_settings_currency"
+        android:checkable="false"
+        android:icon="@drawable/ic_enterprise_finance_24"
+        android:title="@string/dashboard_settings_menu_currency" />
 </menu>

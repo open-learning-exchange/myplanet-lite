@@ -33,7 +33,7 @@ internal fun DashboardCourseDetailsBottomSheet.recordCourseDescriptionVisit(
     }
 }
 
-private suspend fun postCourseActivity(
+internal suspend fun postCourseActivity(
     context: Context,
     baseUrl: String,
     requestUrl: String,
@@ -53,7 +53,7 @@ private suspend fun postCourseActivity(
     repository.recordCourseActivity(requestUrl, payload, sessionCookie)
 }
 
-private fun buildCourseActivityUrl(baseUrl: String): String? =
+internal fun buildCourseActivityUrl(baseUrl: String): String? =
     baseUrl
         .toHttpUrlOrNull()
         ?.newBuilder()
@@ -61,7 +61,7 @@ private fun buildCourseActivityUrl(baseUrl: String): String? =
         ?.build()
         ?.toString()
 
-private fun buildCourseActivityPayload(
+internal fun buildCourseActivityPayload(
     context: Context,
     courseId: String,
     title: String,

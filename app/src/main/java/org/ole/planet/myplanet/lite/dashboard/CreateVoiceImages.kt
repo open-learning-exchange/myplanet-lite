@@ -243,8 +243,8 @@ internal fun CreateVoiceActivity.removeImageMarkdownReferences(pending: PendingV
     }
 }
 
-private class ImageOptionAdapter(
-    context: CreateVoiceActivity,
+internal class ImageOptionAdapter(
+    context: android.content.Context,
     private val items: Array<String>,
     private val icons: IntArray,
 ) : android.widget.ArrayAdapter<String>(
@@ -300,9 +300,6 @@ internal suspend fun CreateVoiceActivity.handleImageSelection(uri: Uri) {
     pendingResult
         .onSuccess { pending ->
             pendingImages[pending.id] = pending
-            if (isEditMode) {
-                insertTemporaryImagePlaceholder(pending.fileName)
-            }
             updatePreview(createVoiceInput.text?.toString().orEmpty())
             renderPreviewImages()
         }.onFailure {
@@ -339,6 +336,8 @@ internal suspend fun CreateVoiceActivity.loadEditInitialImages() {
                 .filterNotNull()
         }
     if (loaded.isEmpty()) {
+        Toast.makeText(this, R.string.create_voice_image_processing_error, Toast.LENGTH_SHORT).show()
+        updateActionAvailability()
         return
     }
     editImagesLoaded = true
@@ -346,6 +345,7 @@ internal suspend fun CreateVoiceActivity.loadEditInitialImages() {
         pendingImages[pending.id] = pending
     }
     renderPreviewImages()
+    updateActionAvailability()
 }
 
 internal fun CreateVoiceActivity.extractPathFromMarkdown(markdown: String?): String? {
@@ -424,22 +424,12 @@ internal fun CreateVoiceActivity.deduplicateMessageImages(markdown: String): Pai
     return builder.toString() to seen
 }
 
-internal fun CreateVoiceActivity.insertTemporaryImagePlaceholder(fileName: String) {
-    val editable = createVoiceInput.text ?: return
-    val placeholder = "![]($fileName)"
-    val current = editable.toString()
-    if (current.contains(placeholder)) {
-        return
-    }
-    val builder = StringBuilder(current)
-    if (builder.isNotEmpty() && builder.last() != '\n') {
-        builder.append('\n')
-    }
-    builder.append('\n').append(placeholder)
-    val updated = builder.toString()
-    editable.replace(0, editable.length, updated)
-    createVoiceInput.setSelection(updated.length)
-}
+internal fun stripVoiceImageMarkdown(markdown: String): String =
+    CreateVoiceActivity.MARKDOWN_IMAGE_REGEX
+        .replace(markdown, "")
+        .replace(Regex("[ \\t]+(?=\\r?$)", RegexOption.MULTILINE), "")
+        .replace(Regex("(?:\\r?\\n){3,}"), "\n\n")
+        .trim()
 
 internal fun CreateVoiceActivity.generatePendingImageId(baseName: String): String {
     var candidate = baseName

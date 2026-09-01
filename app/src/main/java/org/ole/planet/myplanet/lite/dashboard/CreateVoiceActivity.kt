@@ -237,9 +237,10 @@ class CreateVoiceActivity : BaseActivity() {
         createVoiceSubmitButton.setText(R.string.edit_voice_primary_action)
 
         editInitialMessage?.let { message ->
-            createVoiceInput.setText(message)
+            val editorMessage = stripVoiceImageMarkdown(message)
+            createVoiceInput.setText(editorMessage)
             createVoiceInput.setSelection(createVoiceInput.text?.length ?: 0)
-            updatePreview(message)
+            updatePreview(editorMessage)
         }
 
         if (editInitialImagePaths.isNotEmpty()) {
@@ -293,7 +294,7 @@ class CreateVoiceActivity : BaseActivity() {
                 ?.toString()
                 ?.trim()
                 .orEmpty()
-        if (message.isBlank()) {
+        if (message.isBlank() && pendingImages.isEmpty()) {
             Toast.makeText(this, R.string.create_voice_empty_error, Toast.LENGTH_SHORT).show()
             return
         }
@@ -451,9 +452,10 @@ class CreateVoiceActivity : BaseActivity() {
         updateActionAvailability()
     }
 
-    private fun updateActionAvailability() {
-        val hasContent = !createVoiceInput.text.isNullOrBlank()
-        val enabled = hasContent && !isPosting && isSessionReady
+    internal fun updateActionAvailability() {
+        val hasContent = !createVoiceInput.text.isNullOrBlank() || pendingImages.isNotEmpty()
+        val editImagesReady = !isEditMode || editInitialImagePaths.isEmpty() || editImagesLoaded
+        val enabled = hasContent && editImagesReady && !isPosting && isSessionReady
         toolbar.menu?.findItem(R.id.action_post_voice)?.isEnabled = enabled
         createVoiceSubmitButton.isEnabled = enabled
     }

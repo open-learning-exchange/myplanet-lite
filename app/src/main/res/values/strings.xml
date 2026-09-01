@@ -765,4 +765,27 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="create_enterprise_duplicate_name">An active enterprise with this name already exists.</string>
     <string name="create_enterprise_incomplete">The enterprise was created, but its leader membership is pending. Tap Create again to retry.</string>
     <string name="create_enterprise_error">The enterprise could not be created.</string>
+    <string name="dashboard_enterprise_finance_title">Finance</string>
+    <string name="dashboard_enterprise_finance_add_receipt">Add receipt</string>
+    <string name="dashboard_enterprise_finance_start_date">Start date</string><string name="dashboard_enterprise_finance_end_date">End date</string><string name="dashboard_enterprise_finance_reset_dates">Reset date range</string>
+    <string name="dashboard_enterprise_finance_edit">Edit transaction</string><string name="dashboard_enterprise_finance_description">Description</string><string name="dashboard_enterprise_finance_amount">Amount</string><string name="dashboard_enterprise_finance_select_receipts">Select receipts (maximum 2)</string>
+    <string name="dashboard_enterprise_finance_select_enterprise">Select an enterprise to view its finances.</string><string name="dashboard_enterprise_finance_error">Unable to load enterprise finances.</string><string name="dashboard_enterprise_finance_access_denied">You do not have access to this enterprise’s finances.</string>
+    <string name="dashboard_enterprise_finance_total_credits">Income\n%1$s</string><string name="dashboard_enterprise_finance_total_debits">Expenses\n%1$s</string><string name="dashboard_enterprise_finance_total_balance">Balance\n%1$s</string>
+    <string name="dashboard_enterprise_finance_empty">No transactions yet.</string><string name="dashboard_enterprise_finance_filter_empty">No transactions in this date range.</string><string name="dashboard_enterprise_finance_credit">Income</string><string name="dashboard_enterprise_finance_debit">Expense</string>
+    <string name="dashboard_enterprise_finance_receipts_selected">Receipts: %1$d of 2</string><string name="dashboard_enterprise_finance_receipt_limit">This transaction already has two receipts.</string><string name="dashboard_enterprise_finance_add">Add transaction</string>
+    <string name="dashboard_enterprise_finance_validation">Enter a description and an amount greater than zero.</string><string name="dashboard_enterprise_finance_conflict">This transaction changed on the server. It has been reloaded; try again.</string><string name="dashboard_enterprise_finance_save_error">Unable to save the transaction.</string><string name="dashboard_enterprise_finance_archive_confirmation">Remove this transaction from the active finances?</string>
+    <string name="dashboard_enterprise_finance_credit_format">+ %1$s</string><string name="dashboard_enterprise_finance_debit_format">− %1$s</string><string name="dashboard_enterprise_finance_row_balance">Balance: %1$s</string>
+    <plurals name="dashboard_enterprise_finance_receipt_count"><item quantity="one">%1$d receipt</item><item quantity="other">%1$d receipts</item></plurals>
+    <string name="dashboard_settings_menu_currency">Currency</string>
+    <string name="dashboard_settings_currency_title">Currency format</string>
+    <string name="dashboard_settings_currency_type">Currency</string>
+    <string name="dashboard_settings_currency_grouping">Thousands separator</string>
+    <string name="dashboard_settings_currency_decimal">Decimal separator</string>
+    <string name="dashboard_settings_currency_preview">Preview: %1$s</string>
+    <string name="dashboard_settings_currency_separators_different">The thousands and decimal separators must be different.</string>
+    <string name="dashboard_settings_currency_separator_dot">Dot (.)</string>
+    <string name="dashboard_settings_currency_separator_comma">Comma (,)</string>
+    <string name="dashboard_settings_currency_separator_space">Space</string>
+    <string name="dashboard_settings_currency_separator_apostrophe">Apostrophe (\')</string>
+    <string name="dashboard_image_preview_load_error">Unable to load this image.</string>
 </resources>

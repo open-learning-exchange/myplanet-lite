@@ -21,7 +21,7 @@ internal suspend fun CreateVoiceActivity.prepareImagesForPosting(
 ): PreparedVoicePost {
     val context = buildImageResourceContext(credentials)
     val (dedupedMessage, dedupedExistingImages) = deduplicateMessageImages(originalMessage)
-    val uniquePendings = buildUniquePendingList()
+    val uniquePendings = buildUniquePendingList(includeUploaded = true)
     if (uniquePendings.isEmpty()) {
         return PreparedVoicePost(dedupedMessage, emptyList())
     }
