@@ -98,6 +98,9 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     private var isUserAdmin: Boolean = false
     private var teamId: String? = null
     private var teamName: String? = null
+    private var enterpriseId: String? = null
+    private var enterpriseType: String? = null
+    private var enterprisePlanetCode: String? = null
 
     private var initJob: kotlinx.coroutines.Job? = null
     private var fetchJob: kotlinx.coroutines.Job? = null
@@ -217,6 +220,9 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
         serverParentCode = DashboardServerPreferences.getServerParentCode(context)
         teamId = arguments?.getString(ARG_TEAM_ID)
         teamName = arguments?.getString(ARG_TEAM_NAME)
+        enterpriseId = arguments?.getString(ARG_ENTERPRISE_ID)
+        enterpriseType = arguments?.getString(ARG_ENTERPRISE_TYPE)
+        enterprisePlanetCode = arguments?.getString(ARG_ENTERPRISE_PLANET_CODE)
         baseUrl?.let { base ->
             val authService = AuthDependencies.provideAuthService(context, base)
             sessionCookie = authService.getStoredToken()
@@ -278,6 +284,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                     createdOn = serverCode,
                     parentCode = serverParentCode,
                     teamName = teamName,
+                    enterpriseId = enterpriseId,
                 ),
             )
         return result.fold(
@@ -366,7 +373,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                     base,
                     cookie,
                     item.document,
-                    teamId = teamId,
+                    teamId = teamId ?: enterpriseId,
                     teamName = teamName,
                 )
             result
@@ -412,7 +419,13 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     }
 
     private fun openCreateVoiceComposer() {
-        navigator.openComposer(teamId, teamName)
+        navigator.openComposer(
+            teamId ?: enterpriseId,
+            teamName,
+            enterpriseId != null,
+            enterpriseType,
+            enterprisePlanetCode,
+        )
     }
 
     private fun showEmptyState(messageRes: Int) {
@@ -436,7 +449,7 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     }
 
     private fun openPostDetail(item: DashboardNewsItem) {
-        navigator.openPostDetail(item, teamId, teamName)
+        navigator.openPostDetail(item, teamId ?: enterpriseId, teamName)
     }
 
     private fun sharePost(item: DashboardNewsItem) {
@@ -451,7 +464,14 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     }
 
     private fun openEditVoice(item: DashboardNewsItem) {
-        navigator.openEditVoice(item, teamId, teamName)
+        navigator.openEditVoice(
+            item,
+            teamId ?: enterpriseId,
+            teamName,
+            enterpriseId != null,
+            enterpriseType,
+            enterprisePlanetCode,
+        )
     }
 
     fun isTeamFeedFor(
@@ -466,6 +486,9 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
     companion object {
         private const val ARG_TEAM_ID = "arg_team_id"
         private const val ARG_TEAM_NAME = "arg_team_name"
+        private const val ARG_ENTERPRISE_ID = "arg_enterprise_id"
+        private const val ARG_ENTERPRISE_TYPE = "arg_enterprise_type"
+        private const val ARG_ENTERPRISE_PLANET_CODE = "arg_enterprise_planet_code"
         fun newInstanceForTeam(
             teamId: String,
             teamName: String,
@@ -477,5 +500,23 @@ class DashboardVoicesFragment : Fragment(R.layout.fragment_dashboard_voices) {
                         putString(ARG_TEAM_NAME, teamName)
                     }
             }
+
+        fun newInstanceForEnterprise(
+            enterpriseId: String,
+            enterpriseName: String?,
+            enterpriseType: String?,
+            enterprisePlanetCode: String?,
+        ): DashboardVoicesFragment = DashboardVoicesFragment().apply {
+            arguments = Bundle().apply {
+                putString(ARG_TEAM_NAME, enterpriseName)
+                putString(ARG_ENTERPRISE_ID, enterpriseId)
+                putString(ARG_ENTERPRISE_TYPE, enterpriseType)
+                putString(ARG_ENTERPRISE_PLANET_CODE, enterprisePlanetCode)
+            }
+        }
     }
+
+    fun isEnterpriseFeedFor(id: String): Boolean = enterpriseId == id
+
+    fun createVoice() = openCreateVoiceComposer()
 }

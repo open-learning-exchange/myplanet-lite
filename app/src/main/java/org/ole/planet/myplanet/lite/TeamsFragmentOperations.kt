@@ -53,7 +53,9 @@ internal suspend fun TeamsFragment.fetchAllTeamsData(
         credentials: StoredCredentials,
         sessionCookie: String?,
     ): Result<TeamsLoadResult> =
-        runCatching {
+        if (isEnterpriseMode) {
+            fetchAllEnterprisesData(base, username, credentials, sessionCookie)
+        } else runCatching {
             val membershipsResult = repository.fetchMemberships(base, credentials, sessionCookie, username)
             val memberships = membershipsResult.getOrThrow()
 
@@ -147,6 +149,7 @@ internal suspend fun TeamsFragment.fetchAvailableTeamsData(
         }
 
 internal fun TeamsFragment.loadMoreAvailableTeams() {
+        if (isEnterpriseMode) return
         if (searchQuery.isNotEmpty() || isLoading || isPaging || !hasMoreAvailableTeams) {
             return
         }
@@ -231,7 +234,7 @@ internal fun TeamsFragment.renderTeams(
         exploreTeamsContainer.removeAllViews()
 
         if (memberTeams.isEmpty() && availableTeams.isEmpty()) {
-            showEmptyState(R.string.dashboard_teams_join_prompt)
+            showEmptyState(joinPromptMessageRes())
             return
         }
 
@@ -302,11 +305,7 @@ internal fun TeamsFragment.buildTeamCard(
                 val newSelection = if (idToSelect == selectedTeamId) null else idToSelect
                 val newSelectionName = if (newSelection == null) null else displayName
                 selectedTeamId = newSelection
-                DashboardTeamSelectionPreferences.setSelectedTeam(
-                    requireContext(),
-                    newSelection,
-                    newSelectionName,
-                )
+                setSelectedItem(newSelection, newSelectionName, if (newSelection == null) null else team)
                 updateBookmarkSelection()
             }
         } else {
@@ -347,6 +346,7 @@ internal fun TeamsFragment.configureJoinAction(
             val request =
                 JoinTeamRequest(
                     teamId = idToJoin,
+                    teamType = if (isEnterpriseMode) "sync" else "local",
                     teamPlanetCode = team.teamPlanetCode ?: team.planetCode ?: serverCode,
                     userId = userId,
                     userPlanetCode = serverCode,
@@ -356,7 +356,16 @@ internal fun TeamsFragment.configureJoinAction(
             actionButton.setImageResource(R.drawable.ic_wait_response_24)
 
             viewLifecycleOwner.lifecycleScope.launch {
-                val hasExistingRequest =
+                val hasExistingRequest = if (isEnterpriseMode) {
+                    enterprisesRepository.hasExistingRelationship(
+                        base,
+                        credentials,
+                        sessionCookie,
+                        idToJoin,
+                        userId,
+                        serverCode.orEmpty(),
+                    )
+                } else {
                     repository.hasExistingJoinRequest(
                         base,
                         credentials,
@@ -364,6 +373,7 @@ internal fun TeamsFragment.configureJoinAction(
                         idToJoin,
                         userId,
                     )
+                }
                 val existing =
                     hasExistingRequest.getOrElse {
                         actionButton.isEnabled = true

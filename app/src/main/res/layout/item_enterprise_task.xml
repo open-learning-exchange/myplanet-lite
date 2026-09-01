@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginHorizontal="16dp"
+    android:layout_marginVertical="8dp"
+    app:cardBackgroundColor="@android:color/transparent"
+    app:cardCornerRadius="0dp"
+    app:cardElevation="0dp"
+    app:strokeWidth="0dp">
+
+    <org.ole.planet.myplanet.lite.EnterpriseTaskStickerLayout
+        android:id="@+id/enterpriseTaskStickerBackground"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <View
+            android:id="@+id/enterpriseTaskStickerTop"
+            android:layout_width="match_parent"
+            android:layout_height="28dp"
+            android:layout_marginStart="12dp"
+            android:layout_marginTop="32dp"
+            android:layout_marginEnd="12dp"
+            android:importantForAccessibility="no" />
+
+        <LinearLayout
+            android:id="@+id/enterpriseTaskSticker"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingStart="36dp"
+            android:paddingTop="76dp"
+            android:paddingEnd="36dp"
+            android:paddingBottom="16dp">
+
+        <TextView android:id="@+id/enterpriseTaskTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:textAppearance="?attr/textAppearanceSubtitle1" />
+        <TextView android:id="@+id/enterpriseTaskDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" />
+        <TextView android:id="@+id/enterpriseTaskDeadline" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" />
+        <TextView android:id="@+id/enterpriseTaskAssignee" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp" />
+
+        <FrameLayout
+            android:id="@+id/enterpriseTaskActionsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="56dp"
+            android:layout_marginTop="36dp">
+
+            <org.ole.planet.myplanet.lite.EnterpriseTaskActionsTapeView
+                android:layout_width="168dp"
+                android:layout_height="56dp"
+                android:layout_gravity="end|center_vertical"
+                android:importantForAccessibility="no" />
+
+            <LinearLayout
+                android:id="@+id/enterpriseTaskActions"
+                android:layout_width="wrap_content"
+                android:layout_height="48dp"
+                android:layout_gravity="end|center_vertical"
+                android:layout_marginEnd="12dp"
+                android:orientation="horizontal">
+                <ImageButton android:id="@+id/enterpriseTaskEdit" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/dashboard_enterprise_tasks_edit" android:padding="12dp" android:src="@drawable/ic_dashboard_edit_24" />
+                <ImageButton android:id="@+id/enterpriseTaskComplete" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/dashboard_enterprise_tasks_mark_complete" android:padding="12dp" android:src="@drawable/ic_enterprise_task_pending_24" />
+                <ImageButton android:id="@+id/enterpriseTaskArchive" android:layout_width="48dp" android:layout_height="48dp" android:background="?attr/selectableItemBackgroundBorderless" android:contentDescription="@string/dashboard_post_action_delete" android:padding="12dp" android:src="@drawable/ic_dashboard_delete_24" />
+            </LinearLayout>
+        </FrameLayout>
+        </LinearLayout>
+
+    </org.ole.planet.myplanet.lite.EnterpriseTaskStickerLayout>
+</com.google.android.material.card.MaterialCardView>

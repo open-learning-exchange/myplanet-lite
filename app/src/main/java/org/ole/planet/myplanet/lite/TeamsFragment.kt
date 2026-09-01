@@ -35,6 +35,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.dashboard.DashboardEnterprisesRepository
+import org.ole.planet.myplanet.lite.dashboard.DashboardEnterpriseSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamSelectionPreferences
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsDependencies
 import org.ole.planet.myplanet.lite.dashboard.DashboardTeamsRepository
@@ -47,6 +49,9 @@ import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
 
 class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
+    internal val isEnterpriseMode: Boolean
+        get() = arguments?.getBoolean(ARG_ENTERPRISE_MODE) == true
+    internal val enterprisesRepository = DashboardEnterprisesRepository()
     internal lateinit var myTeamsContainer: LinearLayout
     internal lateinit var exploreTeamsContainer: LinearLayout
     internal lateinit var scrollView: NestedScrollView
@@ -93,6 +98,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         exploreSection = view.findViewById(R.id.exploreTeamsSection)
         refreshLayout = view.findViewById(R.id.dashboardTeamsRefresh)
         searchInput = view.findViewById(R.id.teamsSearchInput)
+        if (isEnterpriseMode) configureEnterpriseLabels(view)
         searchInput.doAfterTextChanged { text -> scheduleTeamSearch(text?.toString().orEmpty()) }
         refreshLayout.setOnRefreshListener { loadTeams() }
         scrollView.setOnScrollChangeListener { _, _, scrollY, _, oldScrollY ->
@@ -101,7 +107,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
             }
         }
 
-        selectedTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
+        selectedTeamId = getSelectedItemId()
 
         viewLifecycleOwner.lifecycleScope.launch {
             initializeSession()
@@ -111,7 +117,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
 
     override fun onResume() {
         super.onResume()
-        selectedTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
+        selectedTeamId = getSelectedItemId()
         updateBookmarkSelection()
     }
 
@@ -252,6 +258,14 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         }
         searchJob = viewLifecycleOwner.lifecycleScope.launch {
             delay(350)
+            if (isEnterpriseMode) {
+                val allEnterprises = memberTeams + availableTeams
+                val matches = allEnterprises.filter { resolveTeamName(it).contains(query, ignoreCase = true) }
+                val members = matches.filter { membershipsByTeamId.containsKey(it.id) }
+                val available = matches.filterNot { membershipsByTeamId.containsKey(it.id) }
+                renderSearchResults(members, available)
+                return@launch
+            }
             val base = baseUrl ?: return@launch
             val credentials = ProfileCredentialsStore.getStoredCredentials(requireContext()) ?: return@launch
             val result = repository.searchTeams(base, credentials, sessionCookie, query)
@@ -261,7 +275,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
                 val available = teams.filterNot { membershipsByTeamId.containsKey(it.id) }
                 renderSearchResults(members, available)
             }.onFailure {
-                showEmptyState(R.string.dashboard_teams_error_loading)
+                showEmptyState(loadErrorMessageRes())
             }
         }
     }
@@ -273,7 +287,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
         if (members.isEmpty() && available.isEmpty()) {
             myTeamsContainer.removeAllViews()
             exploreTeamsContainer.removeAllViews()
-            emptyView.setText(R.string.dashboard_teams_search_empty)
+            emptyView.setText(if (isEnterpriseMode) R.string.dashboard_enterprises_search_empty else R.string.dashboard_teams_search_empty)
             myTeamsSection.isVisible = false
             exploreSection.isVisible = false
             updateLoadingVisibility()
@@ -319,7 +333,7 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
 
     internal fun handleLoadError() {
         isLoading = false
-        showEmptyState(R.string.dashboard_teams_error_loading)
+        showEmptyState(loadErrorMessageRes())
     }
 
     internal fun showEmptyState(messageRes: Int) {
@@ -369,5 +383,46 @@ class TeamsFragment : Fragment(R.layout.fragment_dashboard_teams) {
             return parts.first().take(2).uppercase()
         }
         return "${parts[0].take(1)}${parts[1].take(1)}".uppercase()
+    }
+
+    internal fun getSelectedItemId(): String? = if (isEnterpriseMode) {
+        DashboardEnterpriseSelectionPreferences.getSelectedEnterpriseId(requireContext())
+    } else {
+        DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
+    }
+
+    internal fun setSelectedItem(id: String?, name: String?, team: TeamDocument? = null) {
+        if (isEnterpriseMode) {
+            DashboardEnterpriseSelectionPreferences.setSelectedEnterprise(
+                requireContext(), id, name, team?.teamType, team?.teamPlanetCode,
+            )
+            (activity as? EnterprisesDashboard)?.onEnterpriseSelectionChanged()
+        } else {
+            DashboardTeamSelectionPreferences.setSelectedTeam(requireContext(), id, name)
+        }
+    }
+
+    private fun configureEnterpriseLabels(view: View) {
+        view.findViewById<com.google.android.material.textfield.TextInputLayout>(R.id.teamsSearchLayout)
+            .hint = getString(R.string.dashboard_enterprises_search_hint)
+        view.findViewById<TextView>(R.id.myTeamsTitle).setText(R.string.dashboard_enterprises_my_title)
+        view.findViewById<TextView>(R.id.myTeamsDescription).setText(R.string.dashboard_enterprises_my_description)
+        view.findViewById<TextView>(R.id.selectedTeamHint).setText(R.string.dashboard_enterprises_select_hint)
+        view.findViewById<TextView>(R.id.exploreTeamsTitle).setText(R.string.dashboard_enterprises_explore_title)
+        view.findViewById<TextView>(R.id.exploreTeamsDescription).setText(R.string.dashboard_enterprises_explore_description)
+    }
+
+    internal fun loadErrorMessageRes() =
+        if (isEnterpriseMode) R.string.dashboard_enterprises_error_loading else R.string.dashboard_teams_error_loading
+
+    internal fun joinPromptMessageRes() =
+        if (isEnterpriseMode) R.string.dashboard_enterprises_join_prompt else R.string.dashboard_teams_join_prompt
+
+    companion object {
+        private const val ARG_ENTERPRISE_MODE = "enterprise_mode"
+
+        fun newEnterprisesInstance() = TeamsFragment().apply {
+            arguments = Bundle().apply { putBoolean(ARG_ENTERPRISE_MODE, true) }
+        }
     }
 }

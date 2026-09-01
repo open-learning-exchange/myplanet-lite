@@ -162,7 +162,11 @@ internal suspend fun CreateVoiceActivity.ensureImageUpload(
                 revision = resourceRevision,
             )
         } else {
-            val metadata = VoicesComposerRepository.ResourceMetadataRequest.fromContext(context, pending.fileName)
+            val metadata = VoicesComposerRepository.ResourceMetadataRequest.fromContext(
+                context,
+                pending.fileName,
+                targetTeamId,
+            )
             repository.createResourceDocument(baseUrl, credentials, metadata)
         }
     pending.resourceId = creationResponse.id

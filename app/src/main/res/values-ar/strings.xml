@@ -366,6 +366,29 @@
     <string name="dashboard_image_preview_content_description">صورة بملء الشاشة</string>
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">اختر فريقًا</string>
+    <string name="dashboard_profile_menu_learning">التعلّم</string>
+    <string name="enterprises_title">المؤسسات</string>
+    <string name="dashboard_enterprises_my_title">مؤسساتي</string>
+    <string name="dashboard_enterprises_my_description">المؤسسات التي تنتمي إليها ويمكنك المشاركة فيها.</string>
+    <string name="dashboard_enterprises_select_hint">اختر مؤسسة لعرض معلوماتها.</string>
+    <string name="dashboard_enterprises_explore_title">استكشاف المؤسسات</string>
+    <string name="dashboard_enterprises_explore_description">مؤسسات نشطة يمكنك طلب الانضمام إليها.</string>
+    <string name="dashboard_enterprises_search_hint">البحث في جميع المؤسسات</string>
+    <string name="dashboard_enterprises_search_empty">لا توجد مؤسسات تطابق بحثك.</string>
+    <string name="dashboard_enterprises_error_loading">تعذر تحميل المؤسسات. حاول لاحقًا.</string>
+    <string name="dashboard_enterprises_join_prompt">لا توجد مؤسسات نشطة متاحة بعد.</string>
+    <string name="dashboard_enterprise_members_title">أعضاء المؤسسة</string>
+    <string name="dashboard_enterprise_members_select_hint">اختر مؤسسة أولاً لعرض أعضائها.</string>
+    <string name="dashboard_enterprise_members_not_member">يجب أن تنتمي إلى هذه المؤسسة لعرض أعضائها.</string>
+    <string name="dashboard_enterprise_members_error_loading">تعذر تحميل أعضاء المؤسسة.</string>
+    <string name="dashboard_enterprise_members_empty">لا يوجد أعضاء في هذه المؤسسة بعد.</string>
+    <string name="dashboard_enterprise_tasks_title">مهام المؤسسة</string>
+    <string name="dashboard_enterprise_tasks_search_hint">البحث في المهام</string><string name="dashboard_enterprise_tasks_all">الكل</string><string name="dashboard_enterprise_tasks_mine">مهامي</string>
+    <string name="dashboard_enterprise_tasks_add">إضافة مهمة</string><string name="dashboard_enterprise_tasks_edit">تعديل المهمة</string><string name="dashboard_enterprise_tasks_complete">إكمال المهمة أو إعادة فتحها</string><string name="dashboard_enterprise_tasks_archive">أرشفة المهمة</string>
+    <string name="dashboard_enterprise_tasks_deadline_format">الموعد: %1$s</string><string name="dashboard_enterprise_tasks_assignee_format">مُسندة إلى: %1$s</string><string name="dashboard_enterprise_tasks_unassigned">غير مُسندة</string>
+    <string name="dashboard_enterprise_tasks_field_title">العنوان</string><string name="dashboard_enterprise_tasks_field_description">الوصف (اختياري)</string><string name="dashboard_enterprise_tasks_select_hint">اختر مؤسسة أولاً لعرض مهامها.</string>
+    <string name="dashboard_enterprise_tasks_error_loading">تعذر تحميل مهام المؤسسة.</string><string name="dashboard_enterprise_tasks_access_denied">يمكن لأعضاء المؤسسة فقط رؤية هذه المهام الخاصة.</string><string name="dashboard_enterprise_tasks_empty">لا توجد مهام نشطة.</string><string name="dashboard_enterprise_tasks_search_empty">لا توجد مهام تطابق عوامل التصفية.</string>
+    <string name="dashboard_enterprise_tasks_save">حفظ</string><string name="dashboard_enterprise_tasks_title_required">أدخل عنوان المهمة.</string><string name="dashboard_enterprise_tasks_conflict">تغيرت المهمة على الخادم. أعد تحميلها وحاول مرة أخرى.</string><string name="dashboard_enterprise_tasks_save_error">تعذر حفظ المهمة.</string><string name="dashboard_enterprise_tasks_archive_confirmation">أرشفة هذه المهمة؟</string>
     <string name="dashboard_profile_menu_logout">تسجيل الخروج</string>
     <string name="privacy_policy_title">سياسة الخصوصية</string>
     <string name="teams_title">الفرق</string>
@@ -680,4 +703,23 @@
     <string name="dashboard_resources_error_invalid_server_response">خطأ: استجابة غير صالحة من الخادم</string>
     <string name="dashboard_resources_error_read_file">تعذر قراءة الملف المحدد</string>
     <string name="slider_desc">شريط تمرير نسبة الدقة</string>
+    <string name="dashboard_enterprise_tasks_mark_complete">إكمال المهمة</string>
+    <string name="dashboard_enterprise_tasks_mark_pending">إعادة فتح المهمة</string>
+    <string name="dashboard_enterprise_tasks_complete_confirmation">هل أنت متأكد من إكمال هذه المهمة؟</string>
+    <string name="dashboard_enterprise_tasks_cannot_complete">لا يمكن إكمال المهمة</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">أكمل جميع عناصر القائمة المعلقة قبل إكمال هذه المهمة.</string>
+    <string name="create_enterprise_title">إنشاء مؤسسة</string>
+    <string name="create_enterprise_mission_label">المهمة (اختياري)</string>
+    <string name="create_enterprise_services_label">الخدمات المقدمة (اختياري)</string>
+    <string name="create_enterprise_rules_label">القواعد (اختياري)</string>
+    <string name="create_enterprise_success">تم إنشاء المؤسسة.</string>
+    <string name="create_enterprise_duplicate_name">توجد مؤسسة نشطة بهذا الاسم بالفعل.</string>
+    <string name="create_enterprise_incomplete">تم إنشاء المؤسسة، لكن عضوية القائد ما زالت معلقة. اضغط إنشاء مرة أخرى لإعادة المحاولة.</string>
+    <string name="create_enterprise_error">تعذر إنشاء المؤسسة.</string>
+    <string name="login_success_title">تم تسجيل الدخول بنجاح</string>
+    <string name="login_success_message">مرحبًا، %1$s!</string>
+    <string name="dashboard_profile_menu_privacy_policy">سياسة الخصوصية</string>
+    <string name="dashboard_courses_missing_credentials">إعدادات الخادم أو بيانات الاعتماد مفقودة</string>
+    <string name="dashboard_courses_loading_error">تعذر تحميل الدورات</string>
+    <string name="dashboard_resources_permission_required">الإذن مطلوب للمتابعة.</string>
 </resources>

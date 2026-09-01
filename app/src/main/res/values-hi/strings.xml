@@ -381,6 +381,29 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="dashboard_image_preview_content_description">पूर्ण स्क्रीन पोस्ट छवि</string>
     <string name="dashboard_profile_menu_profile">@string/profile_title</string>
     <string name="dashboard_profile_menu_teams">टीम चुनें</string>
+    <string name="dashboard_profile_menu_learning">सीखना</string>
+    <string name="enterprises_title">उद्यम</string>
+    <string name="dashboard_enterprises_my_title">मेरे उद्यम</string>
+    <string name="dashboard_enterprises_my_description">वे उद्यम जिनके आप सदस्य हैं और जिनमें भाग ले सकते हैं।</string>
+    <string name="dashboard_enterprises_select_hint">जानकारी देखने के लिए कोई उद्यम चुनें।</string>
+    <string name="dashboard_enterprises_explore_title">उद्यम खोजें</string>
+    <string name="dashboard_enterprises_explore_description">सक्रिय उद्यम जिनमें शामिल होने का अनुरोध कर सकते हैं।</string>
+    <string name="dashboard_enterprises_search_hint">सभी उद्यमों में खोजें</string>
+    <string name="dashboard_enterprises_search_empty">आपकी खोज से कोई उद्यम मेल नहीं खाता।</string>
+    <string name="dashboard_enterprises_error_loading">उद्यम लोड नहीं हो सके। बाद में पुनः प्रयास करें।</string>
+    <string name="dashboard_enterprises_join_prompt">अभी कोई सक्रिय उद्यम उपलब्ध नहीं है।</string>
+    <string name="dashboard_enterprise_members_title">उद्यम के सदस्य</string>
+    <string name="dashboard_enterprise_members_select_hint">सदस्यों को देखने के लिए पहले कोई उद्यम चुनें।</string>
+    <string name="dashboard_enterprise_members_not_member">सदस्यों को देखने के लिए आपका इस उद्यम से जुड़ा होना आवश्यक है।</string>
+    <string name="dashboard_enterprise_members_error_loading">उद्यम के सदस्य लोड नहीं हो सके।</string>
+    <string name="dashboard_enterprise_members_empty">इस उद्यम में अभी कोई सदस्य नहीं है।</string>
+    <string name="dashboard_enterprise_tasks_title">उद्यम के कार्य</string>
+    <string name="dashboard_enterprise_tasks_search_hint">कार्य खोजें</string><string name="dashboard_enterprise_tasks_all">सभी</string><string name="dashboard_enterprise_tasks_mine">मेरे कार्य</string>
+    <string name="dashboard_enterprise_tasks_add">कार्य जोड़ें</string><string name="dashboard_enterprise_tasks_edit">कार्य संपादित करें</string><string name="dashboard_enterprise_tasks_complete">कार्य पूरा करें या फिर खोलें</string><string name="dashboard_enterprise_tasks_archive">कार्य संग्रहीत करें</string>
+    <string name="dashboard_enterprise_tasks_deadline_format">समय सीमा: %1$s</string><string name="dashboard_enterprise_tasks_assignee_format">इन्हें सौंपा गया: %1$s</string><string name="dashboard_enterprise_tasks_unassigned">असाइन नहीं किया गया</string>
+    <string name="dashboard_enterprise_tasks_field_title">शीर्षक</string><string name="dashboard_enterprise_tasks_field_description">विवरण (वैकल्पिक)</string><string name="dashboard_enterprise_tasks_select_hint">कार्य देखने के लिए पहले उद्यम चुनें।</string>
+    <string name="dashboard_enterprise_tasks_error_loading">उद्यम के कार्य लोड नहीं हो सके।</string><string name="dashboard_enterprise_tasks_access_denied">केवल सदस्य निजी कार्य देख सकते हैं।</string><string name="dashboard_enterprise_tasks_empty">कोई सक्रिय कार्य नहीं है।</string><string name="dashboard_enterprise_tasks_search_empty">फ़िल्टर से कोई कार्य मेल नहीं खाता।</string>
+    <string name="dashboard_enterprise_tasks_save">सहेजें</string><string name="dashboard_enterprise_tasks_title_required">कार्य का शीर्षक दर्ज करें।</string><string name="dashboard_enterprise_tasks_conflict">कार्य सर्वर पर बदल गया है। पुनः लोड करके प्रयास करें।</string><string name="dashboard_enterprise_tasks_save_error">कार्य सहेजा नहीं जा सका।</string><string name="dashboard_enterprise_tasks_archive_confirmation">यह कार्य संग्रहीत करें?</string>
     <string name="dashboard_profile_menu_privacy_policy">गोपनीयता नीति</string>
     <string name="dashboard_profile_menu_logout">साइन आउट</string>
     <string name="privacy_policy_title">गोपनीयता नीति</string>
@@ -695,4 +718,23 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="dashboard_resources_error_invalid_server_response">त्रुटि: सर्वर से अमान्य प्रतिक्रिया</string>
     <string name="dashboard_resources_error_read_file">चयनित फ़ाइल पढ़ने में असमर्थ</string>
     <string name="slider_desc">रिज़ॉल्यूशन प्रतिशत स्लाइडर</string>
+    <string name="dashboard_enterprise_tasks_mark_complete">कार्य पूरा करें</string>
+    <string name="dashboard_enterprise_tasks_mark_pending">कार्य फिर से खोलें</string>
+    <string name="dashboard_enterprise_tasks_complete_confirmation">क्या आप वाकई इस कार्य को पूरा करना चाहते हैं?</string>
+    <string name="dashboard_enterprise_tasks_cannot_complete">कार्य पूरा नहीं किया जा सकता</string>
+    <string name="dashboard_enterprise_tasks_pending_checklist">इस कार्य को पूरा करने से पहले सभी लंबित सूची आइटम पूरे करें।</string>
+    <string name="create_enterprise_title">उद्यम बनाएँ</string>
+    <string name="create_enterprise_mission_label">मिशन (वैकल्पिक)</string>
+    <string name="create_enterprise_services_label">दी जाने वाली सेवाएँ (वैकल्पिक)</string>
+    <string name="create_enterprise_rules_label">नियम (वैकल्पिक)</string>
+    <string name="create_enterprise_success">उद्यम बनाया गया।</string>
+    <string name="create_enterprise_duplicate_name">इस नाम का सक्रिय उद्यम पहले से मौजूद है।</string>
+    <string name="create_enterprise_incomplete">उद्यम बन गया, लेकिन लीडर सदस्यता लंबित है। पुनः प्रयास के लिए फिर से बनाएँ दबाएँ।</string>
+    <string name="create_enterprise_error">उद्यम नहीं बनाया जा सका।</string>
+    <string name="login_success_title">लॉगिन सफल</string>
+    <string name="login_success_message">स्वागत है, %1$s!</string>
+    <string name="course_wizard_open_survey">सर्वेक्षण खोलें</string>
+    <string name="dashboard_courses_missing_credentials">सर्वर कॉन्फ़िगरेशन या क्रेडेंशियल अनुपलब्ध हैं</string>
+    <string name="dashboard_courses_loading_error">पाठ्यक्रम लोड नहीं किए जा सके</string>
+    <string name="dashboard_resources_permission_required">जारी रखने के लिए अनुमति आवश्यक है।</string>
 </resources>

@@ -35,8 +35,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 36
-        versionCode = 531
-        versionName = "0.5.31"
+        versionCode = 532
+        versionName = "0.5.32"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -120,6 +120,7 @@ dependencies {
     implementation(libs.ext.tables)
     implementation(libs.markwon.html)
     implementation(libs.markwon.image.glide)
+    implementation(libs.markwon.tasklist)
     implementation(libs.glide)
     implementation(libs.photoview)
     implementation(libs.ucrop)

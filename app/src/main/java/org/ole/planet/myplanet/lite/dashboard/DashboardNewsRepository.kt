@@ -40,7 +40,16 @@ class DashboardNewsRepository(
                 }
                 val requestUrl = "$normalizedBase/db/news/_find"
                 val selector = mutableMapOf<String, Any>()
-                query.createdOn?.takeIf { it.isNotBlank() }?.let { code ->
+                query.enterpriseId?.takeIf { it.isNotBlank() }?.let { enterpriseId ->
+                    selector["$" + "or"] = listOf(
+                        mapOf("viewableBy" to "teams", "viewableId" to enterpriseId),
+                        mapOf(
+                            "viewIn" to mapOf(
+                                "$" + "elemMatch" to mapOf("_id" to enterpriseId, "section" to "teams"),
+                            ),
+                        ),
+                    )
+                } ?: query.createdOn?.takeIf { it.isNotBlank() }?.let { code ->
                     selector["createdOn"] = code
                     val viewInClause =
                         if (!query.teamName.isNullOrBlank()) {
@@ -117,6 +126,7 @@ class DashboardNewsRepository(
         createdOn: String?,
         parentCode: String?,
         teamName: String? = null,
+        enterpriseId: String? = null,
     ): Result<List<NewsDocument>> =
         withContext(dispatcher) {
             runCatching {
@@ -129,7 +139,11 @@ class DashboardNewsRepository(
                 }
                 val requestUrl = "$normalizedBase/db/news/_find"
                 val selector = mutableMapOf<String, Any>("replyTo" to postId)
-                createdOn?.takeIf { it.isNotBlank() }?.let { code ->
+                enterpriseId?.takeIf { it.isNotBlank() }?.let { id ->
+                    selector["viewIn"] = mapOf(
+                        "$" + "elemMatch" to mapOf("_id" to id, "section" to "teams"),
+                    )
+                } ?: createdOn?.takeIf { it.isNotBlank() }?.let { code ->
                     selector["createdOn"] = code
                     val viewInClause =
                         if (!teamName.isNullOrBlank()) {
@@ -259,5 +273,6 @@ class DashboardNewsRepository(
         val createdOn: String?,
         val parentCode: String?,
         val teamName: String? = null,
+        val enterpriseId: String? = null,
     )
 }
