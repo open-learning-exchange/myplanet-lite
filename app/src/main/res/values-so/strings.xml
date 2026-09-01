@@ -713,4 +713,10 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="create_enterprise_duplicate_name">Shirkad firfircoon oo magacan leh ayaa jirta.</string>
     <string name="create_enterprise_incomplete">Shirkadda waa la abuuray, laakiin xubinnimada hoggaamiyaha ayaa dhiman. Mar kale taabo Abuur si aad u tijaabiso.</string>
     <string name="create_enterprise_error">Shirkadda lama abuuri karin.</string>
+    <string name="login_success_title">Gelitaanku wuu guulaystay</string>
+    <string name="login_success_message">Soo dhawoow, %1$s!</string>
+    <string name="dashboard_profile_menu_privacy_policy">Siyaasadda asturnaanta</string>
+    <string name="dashboard_courses_missing_credentials">Habaynta server-ka ama aqoonsiyada ayaa maqan</string>
+    <string name="dashboard_courses_loading_error">Koorsooyinka lama soo dejin karo</string>
+    <string name="dashboard_resources_permission_required">Oggolaansho ayaa loo baahan yahay si loo sii wado.</string>
 </resources>

@@ -731,4 +731,10 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="create_enterprise_duplicate_name">इस नाम का सक्रिय उद्यम पहले से मौजूद है।</string>
     <string name="create_enterprise_incomplete">उद्यम बन गया, लेकिन लीडर सदस्यता लंबित है। पुनः प्रयास के लिए फिर से बनाएँ दबाएँ।</string>
     <string name="create_enterprise_error">उद्यम नहीं बनाया जा सका।</string>
+    <string name="login_success_title">लॉगिन सफल</string>
+    <string name="login_success_message">स्वागत है, %1$s!</string>
+    <string name="course_wizard_open_survey">सर्वेक्षण खोलें</string>
+    <string name="dashboard_courses_missing_credentials">सर्वर कॉन्फ़िगरेशन या क्रेडेंशियल अनुपलब्ध हैं</string>
+    <string name="dashboard_courses_loading_error">पाठ्यक्रम लोड नहीं किए जा सके</string>
+    <string name="dashboard_resources_permission_required">जारी रखने के लिए अनुमति आवश्यक है।</string>
 </resources>

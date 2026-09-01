@@ -712,4 +712,10 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="create_enterprise_duplicate_name">Une entreprise active porte déjà ce nom.</string>
     <string name="create_enterprise_incomplete">L’entreprise a été créée, mais l’adhésion du responsable est en attente. Appuyez à nouveau sur Créer pour réessayer.</string>
     <string name="create_enterprise_error">Impossible de créer l’entreprise.</string>
+    <string name="login_success_title">Connexion réussie</string>
+    <string name="login_success_message">Bienvenue, %1$s !</string>
+    <string name="dashboard_profile_menu_privacy_policy">Politique de confidentialité</string>
+    <string name="dashboard_courses_missing_credentials">Configuration du serveur ou identifiants manquants</string>
+    <string name="dashboard_courses_loading_error">Impossible de charger les cours</string>
+    <string name="dashboard_resources_permission_required">Une autorisation est requise pour continuer.</string>
 </resources>

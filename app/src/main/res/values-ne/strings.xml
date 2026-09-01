@@ -712,4 +712,11 @@
     <string name="create_enterprise_duplicate_name">यो नामको सक्रिय उद्यम पहिले नै छ।</string>
     <string name="create_enterprise_incomplete">उद्यम सिर्जना भयो, तर नेतृत्व सदस्यता बाँकी छ। पुनः प्रयास गर्न फेरि सिर्जना थिच्नुहोस्।</string>
     <string name="create_enterprise_error">उद्यम सिर्जना गर्न सकिएन।</string>
+    <string name="login_success_title">लगइन सफल भयो</string>
+    <string name="login_success_message">स्वागत छ, %1$s!</string>
+    <string name="dashboard_profile_menu_privacy_policy">गोपनीयता नीति</string>
+    <string name="course_wizard_open_survey">सर्वेक्षण खोल्नुहोस्</string>
+    <string name="dashboard_courses_missing_credentials">सर्भर कन्फिगरेसन वा प्रमाणहरू उपलब्ध छैनन्</string>
+    <string name="dashboard_courses_loading_error">पाठ्यक्रमहरू लोड गर्न सकिएन</string>
+    <string name="dashboard_resources_permission_required">जारी राख्न अनुमति आवश्यक छ।</string>
 </resources>

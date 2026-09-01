@@ -746,4 +746,7 @@ Se você não concordar, deve selecionar "Cancelar" e parar de usar o aplicativo
     <string name="create_enterprise_duplicate_name">Já existe uma empresa ativa com este nome.</string>
     <string name="create_enterprise_incomplete">A empresa foi criada, mas a associação do líder está pendente. Toque em Criar novamente para tentar de novo.</string>
     <string name="create_enterprise_error">Não foi possível criar a empresa.</string>
+    <string name="login_success_title">Login realizado com sucesso</string>
+    <string name="login_success_message">Boas-vindas, %1$s!</string>
+    <string name="dashboard_resources_permission_required">É necessária permissão para continuar.</string>
 </resources>

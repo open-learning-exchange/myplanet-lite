@@ -716,4 +716,10 @@
     <string name="create_enterprise_duplicate_name">توجد مؤسسة نشطة بهذا الاسم بالفعل.</string>
     <string name="create_enterprise_incomplete">تم إنشاء المؤسسة، لكن عضوية القائد ما زالت معلقة. اضغط إنشاء مرة أخرى لإعادة المحاولة.</string>
     <string name="create_enterprise_error">تعذر إنشاء المؤسسة.</string>
+    <string name="login_success_title">تم تسجيل الدخول بنجاح</string>
+    <string name="login_success_message">مرحبًا، %1$s!</string>
+    <string name="dashboard_profile_menu_privacy_policy">سياسة الخصوصية</string>
+    <string name="dashboard_courses_missing_credentials">إعدادات الخادم أو بيانات الاعتماد مفقودة</string>
+    <string name="dashboard_courses_loading_error">تعذر تحميل الدورات</string>
+    <string name="dashboard_resources_permission_required">الإذن مطلوب للمتابعة.</string>
 </resources>
