@@ -719,4 +719,19 @@
     <string name="dashboard_courses_missing_credentials">सर्भर कन्फिगरेसन वा प्रमाणहरू उपलब्ध छैनन्</string>
     <string name="dashboard_courses_loading_error">पाठ्यक्रमहरू लोड गर्न सकिएन</string>
     <string name="dashboard_resources_permission_required">जारी राख्न अनुमति आवश्यक छ।</string>
+    <string name="dashboard_enterprise_finance_title">वित्त</string>
+    <string name="dashboard_enterprise_finance_add_receipt">रसिद थप्नुहोस्</string>
+    <string name="dashboard_enterprise_finance_start_date">सुरु मिति</string><string name="dashboard_enterprise_finance_end_date">अन्तिम मिति</string><string name="dashboard_enterprise_finance_reset_dates">मितिहरू रिसेट गर्नुहोस्</string><string name="dashboard_enterprise_finance_edit">कारोबार सम्पादन गर्नुहोस्</string><string name="dashboard_enterprise_finance_description">विवरण</string><string name="dashboard_enterprise_finance_amount">रकम</string><string name="dashboard_enterprise_finance_select_receipts">रसिदहरू छान्नुहोस् (बढीमा २)</string><string name="dashboard_enterprise_finance_select_enterprise">वित्त हेर्न उद्यम छान्नुहोस्।</string><string name="dashboard_enterprise_finance_error">वित्त लोड गर्न सकिएन।</string><string name="dashboard_enterprise_finance_access_denied">तपाईंलाई यी वित्तमा पहुँच छैन।</string><string name="dashboard_enterprise_finance_total_credits">आम्दानी\n%1$s</string><string name="dashboard_enterprise_finance_total_debits">खर्च\n%1$s</string><string name="dashboard_enterprise_finance_total_balance">मौज्दात\n%1$s</string><string name="dashboard_enterprise_finance_empty">अहिलेसम्म कारोबार छैन।</string><string name="dashboard_enterprise_finance_filter_empty">यस अवधिमा कारोबार छैन।</string><string name="dashboard_enterprise_finance_credit">आम्दानी</string><string name="dashboard_enterprise_finance_debit">खर्च</string><string name="dashboard_enterprise_finance_receipts_selected">रसिद: २ मध्ये %1$d</string><string name="dashboard_enterprise_finance_receipt_limit">यस कारोबारमा दुई रसिद छन्।</string><string name="dashboard_enterprise_finance_add">कारोबार थप्नुहोस्</string><string name="dashboard_enterprise_finance_validation">विवरण र शून्यभन्दा ठूलो रकम लेख्नुहोस्।</string><string name="dashboard_enterprise_finance_conflict">कारोबार सर्भरमा बदलिएको छ। फेरि प्रयास गर्नुहोस्।</string><string name="dashboard_enterprise_finance_save_error">कारोबार सुरक्षित गर्न सकिएन।</string><string name="dashboard_enterprise_finance_archive_confirmation">यसलाई सक्रिय वित्तबाट हटाउने?</string><string name="dashboard_enterprise_finance_credit_format">+ %1$s</string><string name="dashboard_enterprise_finance_debit_format">− %1$s</string><string name="dashboard_enterprise_finance_row_balance">मौज्दात: %1$s</string><plurals name="dashboard_enterprise_finance_receipt_count"><item quantity="one">%1$d रसिद</item><item quantity="other">%1$d रसिदहरू</item></plurals>
+    <string name="dashboard_settings_menu_currency">मुद्रा</string>
+    <string name="dashboard_settings_currency_title">मुद्रा ढाँचा</string>
+    <string name="dashboard_settings_currency_type">मुद्रा</string>
+    <string name="dashboard_settings_currency_grouping">हजार विभाजक</string>
+    <string name="dashboard_settings_currency_decimal">दशमलव विभाजक</string>
+    <string name="dashboard_settings_currency_preview">पूर्वावलोकन: %1$s</string>
+    <string name="dashboard_settings_currency_separators_different">हजार र दशमलव विभाजक फरक हुनुपर्छ।</string>
+    <string name="dashboard_settings_currency_separator_dot">बिन्दु (.)</string>
+    <string name="dashboard_settings_currency_separator_comma">अल्पविराम (,)</string>
+    <string name="dashboard_settings_currency_separator_space">खाली ठाउँ</string>
+    <string name="dashboard_settings_currency_separator_apostrophe">अपोस्ट्रोफ (\')</string>
+    <string name="dashboard_image_preview_load_error">यो तस्बिर लोड गर्न सकिएन।</string>
 </resources>

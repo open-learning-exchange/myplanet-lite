@@ -722,4 +722,19 @@
     <string name="dashboard_courses_missing_credentials">إعدادات الخادم أو بيانات الاعتماد مفقودة</string>
     <string name="dashboard_courses_loading_error">تعذر تحميل الدورات</string>
     <string name="dashboard_resources_permission_required">الإذن مطلوب للمتابعة.</string>
+    <string name="dashboard_enterprise_finance_title">المالية</string>
+    <string name="dashboard_enterprise_finance_add_receipt">إضافة إيصال</string>
+    <string name="dashboard_enterprise_finance_start_date">تاريخ البدء</string><string name="dashboard_enterprise_finance_end_date">تاريخ الانتهاء</string><string name="dashboard_enterprise_finance_reset_dates">إعادة تعيين التواريخ</string><string name="dashboard_enterprise_finance_edit">تعديل المعاملة</string><string name="dashboard_enterprise_finance_description">الوصف</string><string name="dashboard_enterprise_finance_amount">المبلغ</string><string name="dashboard_enterprise_finance_select_receipts">اختيار الإيصالات (بحد أقصى 2)</string><string name="dashboard_enterprise_finance_select_enterprise">اختر مؤسسة لعرض ماليتها.</string><string name="dashboard_enterprise_finance_error">تعذر تحميل البيانات المالية.</string><string name="dashboard_enterprise_finance_access_denied">ليس لديك وصول إلى هذه البيانات المالية.</string><string name="dashboard_enterprise_finance_total_credits">الدخل\n%1$s</string><string name="dashboard_enterprise_finance_total_debits">المصروفات\n%1$s</string><string name="dashboard_enterprise_finance_total_balance">الرصيد\n%1$s</string><string name="dashboard_enterprise_finance_empty">لا توجد معاملات بعد.</string><string name="dashboard_enterprise_finance_filter_empty">لا توجد معاملات في هذا النطاق.</string><string name="dashboard_enterprise_finance_credit">دخل</string><string name="dashboard_enterprise_finance_debit">مصروف</string><string name="dashboard_enterprise_finance_receipts_selected">الإيصالات: %1$d من 2</string><string name="dashboard_enterprise_finance_receipt_limit">لهذه المعاملة إيصالان بالفعل.</string><string name="dashboard_enterprise_finance_add">إضافة معاملة</string><string name="dashboard_enterprise_finance_validation">أدخل وصفًا ومبلغًا أكبر من صفر.</string><string name="dashboard_enterprise_finance_conflict">تغيرت المعاملة على الخادم. حاول مجددًا.</string><string name="dashboard_enterprise_finance_save_error">تعذر حفظ المعاملة.</string><string name="dashboard_enterprise_finance_archive_confirmation">إزالة هذه المعاملة من المالية النشطة؟</string><string name="dashboard_enterprise_finance_credit_format">+ %1$s</string><string name="dashboard_enterprise_finance_debit_format">− %1$s</string><string name="dashboard_enterprise_finance_row_balance">الرصيد: %1$s</string><plurals name="dashboard_enterprise_finance_receipt_count"><item quantity="one">إيصال واحد</item><item quantity="two">إيصالان</item><item quantity="other">%1$d إيصالات</item></plurals>
+    <string name="dashboard_settings_menu_currency">العملة</string>
+    <string name="dashboard_settings_currency_title">تنسيق العملة</string>
+    <string name="dashboard_settings_currency_type">العملة</string>
+    <string name="dashboard_settings_currency_grouping">فاصل الآلاف</string>
+    <string name="dashboard_settings_currency_decimal">الفاصل العشري</string>
+    <string name="dashboard_settings_currency_preview">معاينة: %1$s</string>
+    <string name="dashboard_settings_currency_separators_different">يجب أن يكون فاصل الآلاف والفاصل العشري مختلفين.</string>
+    <string name="dashboard_settings_currency_separator_dot">نقطة (.)</string>
+    <string name="dashboard_settings_currency_separator_comma">فاصلة (,)</string>
+    <string name="dashboard_settings_currency_separator_space">مسافة</string>
+    <string name="dashboard_settings_currency_separator_apostrophe">فاصلة علوية (\')</string>
+    <string name="dashboard_image_preview_load_error">تعذر تحميل هذه الصورة.</string>
 </resources>

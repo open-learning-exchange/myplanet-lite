@@ -10,6 +10,17 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center" />
 
+    <TextView
+        android:id="@+id/previewPageError"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center"
+        android:padding="24dp"
+        android:text="@string/dashboard_image_preview_load_error"
+        android:textColor="@color/white"
+        android:visibility="gone" />
+
     <com.github.chrisbanes.photoview.PhotoView
         android:id="@+id/previewPhotoView"
         android:layout_width="match_parent"

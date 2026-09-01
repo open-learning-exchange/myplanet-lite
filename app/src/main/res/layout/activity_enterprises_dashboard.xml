@@ -104,6 +104,14 @@
             android:visibility="gone"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
+        <FrameLayout
+            android:id="@+id/enterprisesFinanceContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/white"
+            android:visibility="gone"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
         <LinearLayout
             android:id="@+id/enterprisesBottomNavigation"
             android:layout_width="match_parent"
@@ -161,6 +169,17 @@
                 android:padding="@dimen/dashboard_icon_padding"
                 android:scaleType="center"
                 android:src="@drawable/ic_course_step_survey_24" />
+
+            <ImageView
+                android:id="@+id/enterprisesFinanceNavigationIcon"
+                android:layout_width="@dimen/dashboard_icon_button_size"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:layout_marginHorizontal="6dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dashboard_enterprise_finance_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
+                android:src="@drawable/ic_enterprise_finance_24" />
         </LinearLayout>
 
         <com.google.android.material.floatingactionbutton.FloatingActionButton

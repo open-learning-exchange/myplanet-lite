@@ -10,6 +10,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.RecyclerView
 import com.github.chrisbanes.photoview.PhotoView
@@ -47,13 +48,13 @@ class DashboardImagePreviewAdapter(
     ) : RecyclerView.ViewHolder(view) {
         private val photoView: PhotoView = view.findViewById(R.id.previewPhotoView)
         private val progressBar: ProgressBar = view.findViewById(R.id.previewPageLoading)
+        private val errorView: TextView = view.findViewById(R.id.previewPageError)
 
         init {
             photoView.maximumScale = MAX_SCALE
             photoView.mediumScale = MEDIUM_SCALE
             photoView.minimumScale = MIN_SCALE
             photoView.setOnViewTapListener { _, _, _ -> onDismissRequested() }
-            photoView.setOnOutsidePhotoTapListener { onDismissRequested() }
             photoView.setOnScaleChangeListener { _, _, _ ->
                 if (photoView.scale <= DISMISS_SCALE_THRESHOLD) {
                     onDismissRequested()
@@ -63,14 +64,13 @@ class DashboardImagePreviewAdapter(
 
         fun bind(imagePath: String) {
             progressBar.isVisible = true
+            errorView.isVisible = false
             photoView.isVisible = false
             photoView.setScale(1f, false)
             imageLoader.bind(photoView, imagePath) { success ->
                 progressBar.isVisible = false
                 photoView.isVisible = success
-                if (!success) {
-                    onDismissRequested()
-                }
+                errorView.isVisible = !success
             }
         }
 

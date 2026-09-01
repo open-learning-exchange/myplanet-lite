@@ -7,7 +7,6 @@
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.os.Bundle
-import android.view.View
 import android.widget.ProgressBar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
@@ -33,8 +32,6 @@ class DashboardImagePreviewActivity : AppCompatActivity() {
 
         viewPager = findViewById(R.id.dashboardPreviewPager)
         progressBar = findViewById(R.id.dashboardPreviewLoading)
-        findViewById<View>(R.id.dashboardPreviewContainer).setOnClickListener { finish() }
-
         val imagePaths = intent.getStringArrayListExtra(EXTRA_IMAGE_PATHS)?.filter { it.isNotBlank() }
         if (imagePaths.isNullOrEmpty()) {
             finish()

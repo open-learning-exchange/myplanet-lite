@@ -103,6 +103,14 @@ internal fun DashboardActivity.setupSettingsDrawer(
                     true
                 }
 
+                R.id.menu_settings_currency -> {
+                    drawerLayout.closeDrawer(GravityCompat.END)
+                    drawerLayout.post {
+                        CurrencySettingsDialog.show(this@setupSettingsDrawer)
+                    }
+                    true
+                }
+
                 R.id.menu_settings_voice_batch_size -> {
                     drawerLayout.closeDrawer(GravityCompat.END)
                     drawerLayout.post {

@@ -734,4 +734,27 @@ Si no está de acuerdo, debe seleccionar "Cancelar" y dejar de usar la aplicaci�
     <string name="create_enterprise_error">No se pudo crear la empresa.</string>
     <string name="dashboard_courses_missing_credentials">Falta la configuración del servidor o las credenciales</string>
     <string name="dashboard_courses_loading_error">No se pudieron cargar los cursos</string>
+    <string name="dashboard_enterprise_finance_title">Finanzas</string>
+    <string name="dashboard_enterprise_finance_add_receipt">Agregar recibo</string>
+    <string name="dashboard_enterprise_finance_start_date">Fecha inicial</string><string name="dashboard_enterprise_finance_end_date">Fecha final</string><string name="dashboard_enterprise_finance_reset_dates">Restablecer rango de fechas</string>
+    <string name="dashboard_enterprise_finance_edit">Editar transacción</string><string name="dashboard_enterprise_finance_description">Descripción</string><string name="dashboard_enterprise_finance_amount">Monto</string><string name="dashboard_enterprise_finance_select_receipts">Seleccionar recibos (máximo 2)</string>
+    <string name="dashboard_enterprise_finance_select_enterprise">Selecciona una empresa para ver sus finanzas.</string><string name="dashboard_enterprise_finance_error">No se pudieron cargar las finanzas de la empresa.</string><string name="dashboard_enterprise_finance_access_denied">No tienes acceso a las finanzas de esta empresa.</string>
+    <string name="dashboard_enterprise_finance_total_credits">Ingresos\n%1$s</string><string name="dashboard_enterprise_finance_total_debits">Gastos\n%1$s</string><string name="dashboard_enterprise_finance_total_balance">Balance\n%1$s</string>
+    <string name="dashboard_enterprise_finance_empty">Todavía no hay transacciones.</string><string name="dashboard_enterprise_finance_filter_empty">No hay transacciones en este rango de fechas.</string><string name="dashboard_enterprise_finance_credit">Ingreso</string><string name="dashboard_enterprise_finance_debit">Gasto</string>
+    <string name="dashboard_enterprise_finance_receipts_selected">Recibos: %1$d de 2</string><string name="dashboard_enterprise_finance_receipt_limit">Esta transacción ya tiene dos recibos.</string><string name="dashboard_enterprise_finance_add">Agregar transacción</string>
+    <string name="dashboard_enterprise_finance_validation">Ingresa una descripción y un monto mayor que cero.</string><string name="dashboard_enterprise_finance_conflict">Esta transacción cambió en el servidor. Se volvió a cargar; inténtalo nuevamente.</string><string name="dashboard_enterprise_finance_save_error">No se pudo guardar la transacción.</string><string name="dashboard_enterprise_finance_archive_confirmation">¿Quitar esta transacción de las finanzas activas?</string>
+    <string name="dashboard_enterprise_finance_credit_format">+ %1$s</string><string name="dashboard_enterprise_finance_debit_format">− %1$s</string><string name="dashboard_enterprise_finance_row_balance">Balance: %1$s</string>
+    <plurals name="dashboard_enterprise_finance_receipt_count"><item quantity="one">%1$d recibo</item><item quantity="other">%1$d recibos</item></plurals>
+    <string name="dashboard_settings_menu_currency">Moneda</string>
+    <string name="dashboard_settings_currency_title">Formato de moneda</string>
+    <string name="dashboard_settings_currency_type">Moneda</string>
+    <string name="dashboard_settings_currency_grouping">Separador de miles</string>
+    <string name="dashboard_settings_currency_decimal">Separador de centavos</string>
+    <string name="dashboard_settings_currency_preview">Vista previa: %1$s</string>
+    <string name="dashboard_settings_currency_separators_different">Los separadores de miles y centavos deben ser diferentes.</string>
+    <string name="dashboard_settings_currency_separator_dot">Punto (.)</string>
+    <string name="dashboard_settings_currency_separator_comma">Coma (,)</string>
+    <string name="dashboard_settings_currency_separator_space">Espacio</string>
+    <string name="dashboard_settings_currency_separator_apostrophe">Apóstrofo (\')</string>
+    <string name="dashboard_image_preview_load_error">No se pudo cargar esta imagen.</string>
 </resources>

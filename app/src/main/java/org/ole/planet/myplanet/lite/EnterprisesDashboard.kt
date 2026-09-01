@@ -34,12 +34,14 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
     private lateinit var teamsContainer: FrameLayout
     private lateinit var voicesContainer: FrameLayout
     private lateinit var tasksContainer: FrameLayout
+    private lateinit var financeContainer: FrameLayout
     private lateinit var enterprisesIcon: ImageView
     private lateinit var teamsIcon: ImageView
     private lateinit var voicesIcon: ImageView
     private lateinit var addVoiceFab: FloatingActionButton
     private lateinit var createEnterpriseFab: FloatingActionButton
     private lateinit var tasksIcon: ImageView
+    private lateinit var financeIcon: ImageView
     private var currentSection = Section.ENTERPRISES
     private var avatarUpdateListener: AvatarUpdateNotifier.Listener? = null
 
@@ -62,12 +64,14 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         teamsContainer = findViewById(R.id.enterprisesTeamsContainer)
         voicesContainer = findViewById(R.id.enterprisesVoicesContainer)
         tasksContainer = findViewById(R.id.enterprisesTasksContainer)
+        financeContainer = findViewById(R.id.enterprisesFinanceContainer)
         enterprisesIcon = findViewById(R.id.enterprisesNavigationIcon)
         teamsIcon = findViewById(R.id.enterprisesTeamsNavigationIcon)
         voicesIcon = findViewById(R.id.enterprisesVoicesNavigationIcon)
         addVoiceFab = findViewById(R.id.enterprisesAddVoiceFab)
         createEnterpriseFab = findViewById(R.id.enterprisesCreateFab)
         tasksIcon = findViewById(R.id.enterprisesTasksNavigationIcon)
+        financeIcon = findViewById(R.id.enterprisesFinanceNavigationIcon)
 
         currentSection = savedInstanceState?.getString(STATE_SECTION)
             ?.let { saved -> Section.entries.firstOrNull { it.name == saved } }
@@ -96,6 +100,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         }
         createEnterpriseFab.enableDrag()
         tasksIcon.setOnClickListener { showTasksSection() }
+        financeIcon.setOnClickListener { showFinanceSection() }
         showSection(currentSection)
         refreshProfileSummary()
         avatarUpdateListener = AvatarUpdateNotifier.register(
@@ -132,6 +137,16 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
                     drawerLayout.post { LanguagePreferences.showLanguageSelectionDialog(this) }
                     true
                 }
+                R.id.menu_settings_currency -> {
+                    drawerLayout.closeDrawer(GravityCompat.END)
+                    drawerLayout.post {
+                        CurrencySettingsDialog.show(this) {
+                            (supportFragmentManager.findFragmentById(R.id.enterprisesFinanceContainer)
+                                as? DashboardEnterpriseFinanceFragment)?.refreshCurrencyFormat()
+                        }
+                    }
+                    true
+                }
                 else -> false
             }
         }
@@ -143,6 +158,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
             Section.MEMBERS -> showTeamsSection()
             Section.VOICES -> showVoicesSection()
             Section.TASKS -> showTasksSection()
+            Section.FINANCE -> showFinanceSection()
         }
     }
 
@@ -152,6 +168,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         teamsContainer.isVisible = false
         voicesContainer.isVisible = false
         tasksContainer.isVisible = false
+        financeContainer.isVisible = false
         addVoiceFab.isVisible = false
         createEnterpriseFab.isVisible = true
         if (supportFragmentManager.findFragmentById(R.id.enterprisesListContainer) !is TeamsFragment) {
@@ -168,6 +185,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         teamsContainer.isVisible = true
         voicesContainer.isVisible = false
         tasksContainer.isVisible = false
+        financeContainer.isVisible = false
         addVoiceFab.isVisible = false
         createEnterpriseFab.isVisible = false
         if (supportFragmentManager.findFragmentById(R.id.enterprisesTeamsContainer) !is DashboardEnterpriseMembersFragment) {
@@ -184,6 +202,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         teamsContainer.isVisible = false
         voicesContainer.isVisible = false
         tasksContainer.isVisible = true
+        financeContainer.isVisible = false
         addVoiceFab.isVisible = false
         createEnterpriseFab.isVisible = false
         if (supportFragmentManager.findFragmentById(R.id.enterprisesTasksContainer) !is DashboardEnterpriseTasksFragment) {
@@ -199,6 +218,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         enterprisesContent.isVisible = false
         teamsContainer.isVisible = false
         tasksContainer.isVisible = false
+        financeContainer.isVisible = false
         voicesContainer.isVisible = true
         val context = applicationContext
         val enterpriseId = org.ole.planet.myplanet.lite.dashboard.DashboardEnterpriseSelectionPreferences
@@ -222,11 +242,31 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         updateBottomNavigationState()
     }
 
+    private fun showFinanceSection() {
+        currentSection = Section.FINANCE
+        enterprisesContent.isVisible = false
+        teamsContainer.isVisible = false
+        voicesContainer.isVisible = false
+        tasksContainer.isVisible = false
+        financeContainer.isVisible = true
+        addVoiceFab.isVisible = false
+        createEnterpriseFab.isVisible = false
+        if (supportFragmentManager.findFragmentById(R.id.enterprisesFinanceContainer)
+            !is DashboardEnterpriseFinanceFragment
+        ) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.enterprisesFinanceContainer, DashboardEnterpriseFinanceFragment())
+                .commit()
+        }
+        updateBottomNavigationState()
+    }
+
     private fun updateBottomNavigationState() {
         enterprisesIcon.alpha = if (currentSection == Section.ENTERPRISES) 1f else 0.5f
         teamsIcon.alpha = if (currentSection == Section.MEMBERS) 1f else 0.5f
         voicesIcon.alpha = if (currentSection == Section.VOICES) 1f else 0.5f
         tasksIcon.alpha = if (currentSection == Section.TASKS) 1f else 0.5f
+        financeIcon.alpha = if (currentSection == Section.FINANCE) 1f else 0.5f
     }
 
     private fun navigateTo(destination: Class<*>, finishCurrent: Boolean = false): Boolean {
@@ -300,6 +340,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
             R.id.enterprisesVoicesContainer,
             R.id.enterprisesTeamsContainer,
             R.id.enterprisesTasksContainer,
+            R.id.enterprisesFinanceContainer,
         ).mapNotNull(supportFragmentManager::findFragmentById)
         if (dependentFragments.isNotEmpty()) {
             supportFragmentManager.beginTransaction().apply {
@@ -313,7 +354,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         outState.putString(STATE_SECTION, currentSection.name)
     }
 
-    private enum class Section { ENTERPRISES, VOICES, MEMBERS, TASKS }
+    private enum class Section { ENTERPRISES, VOICES, MEMBERS, TASKS, FINANCE }
 
     private companion object {
         const val STATE_SECTION = "enterprises_dashboard_section"

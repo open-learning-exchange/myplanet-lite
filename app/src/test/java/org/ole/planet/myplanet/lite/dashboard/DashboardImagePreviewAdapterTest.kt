@@ -2,6 +2,7 @@ package org.ole.planet.myplanet.lite.dashboard
 
 import android.widget.FrameLayout
 import android.widget.ProgressBar
+import android.widget.TextView
 import androidx.core.view.isVisible
 import androidx.test.core.app.ApplicationProvider
 import com.github.chrisbanes.photoview.PhotoView
@@ -77,11 +78,12 @@ class DashboardImagePreviewAdapterTest {
     }
 
     @Test
-    fun `onBindViewHolder dismisses on image load failure`() {
+    fun `onBindViewHolder keeps viewer open and shows error on image load failure`() {
         val parent = FrameLayout(ApplicationProvider.getApplicationContext())
         val viewHolder = adapter.onCreateViewHolder(parent, 0)
         val photoView = viewHolder.itemView.findViewById<PhotoView>(R.id.previewPhotoView)
         val progressBar = viewHolder.itemView.findViewById<ProgressBar>(R.id.previewPageLoading)
+        val errorView = viewHolder.itemView.findViewById<TextView>(R.id.previewPageError)
 
         // Mock image loader to invoke the callback with success = false
         doAnswer { invocation ->
@@ -96,6 +98,7 @@ class DashboardImagePreviewAdapterTest {
 
         assertFalse(progressBar.isVisible)
         assertFalse(photoView.isVisible)
-        assertEquals(1, dismissCount)
+        assertTrue(errorView.isVisible)
+        assertEquals(0, dismissCount)
     }
 }

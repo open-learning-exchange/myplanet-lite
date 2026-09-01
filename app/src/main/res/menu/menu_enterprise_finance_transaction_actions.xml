@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_edit"
+        android:icon="@drawable/ic_dashboard_edit_24"
+        android:title="@string/dashboard_post_action_edit" />
+    <item
+        android:id="@+id/action_delete"
+        android:icon="@drawable/ic_dashboard_delete_24"
+        android:title="@string/dashboard_post_action_delete" />
+</menu>

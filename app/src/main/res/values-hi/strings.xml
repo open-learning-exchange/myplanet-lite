@@ -737,4 +737,19 @@ Applications: Planet, myPlanet, और myPlanetLite</string>
     <string name="dashboard_courses_missing_credentials">सर्वर कॉन्फ़िगरेशन या क्रेडेंशियल अनुपलब्ध हैं</string>
     <string name="dashboard_courses_loading_error">पाठ्यक्रम लोड नहीं किए जा सके</string>
     <string name="dashboard_resources_permission_required">जारी रखने के लिए अनुमति आवश्यक है।</string>
+    <string name="dashboard_enterprise_finance_title">वित्त</string>
+    <string name="dashboard_enterprise_finance_add_receipt">रसीद जोड़ें</string>
+    <string name="dashboard_enterprise_finance_start_date">आरंभ तिथि</string><string name="dashboard_enterprise_finance_end_date">अंतिम तिथि</string><string name="dashboard_enterprise_finance_reset_dates">तिथियाँ रीसेट करें</string><string name="dashboard_enterprise_finance_edit">लेन-देन संपादित करें</string><string name="dashboard_enterprise_finance_description">विवरण</string><string name="dashboard_enterprise_finance_amount">राशि</string><string name="dashboard_enterprise_finance_select_receipts">रसीदें चुनें (अधिकतम 2)</string><string name="dashboard_enterprise_finance_select_enterprise">वित्त देखने के लिए उद्यम चुनें।</string><string name="dashboard_enterprise_finance_error">वित्त लोड नहीं किए जा सके।</string><string name="dashboard_enterprise_finance_access_denied">आपको इन वित्तीय विवरणों की पहुँच नहीं है।</string><string name="dashboard_enterprise_finance_total_credits">आय\n%1$s</string><string name="dashboard_enterprise_finance_total_debits">व्यय\n%1$s</string><string name="dashboard_enterprise_finance_total_balance">शेष\n%1$s</string><string name="dashboard_enterprise_finance_empty">अभी कोई लेन-देन नहीं है।</string><string name="dashboard_enterprise_finance_filter_empty">इस अवधि में कोई लेन-देन नहीं है।</string><string name="dashboard_enterprise_finance_credit">आय</string><string name="dashboard_enterprise_finance_debit">व्यय</string><string name="dashboard_enterprise_finance_receipts_selected">रसीदें: 2 में से %1$d</string><string name="dashboard_enterprise_finance_receipt_limit">इस लेन-देन में पहले से दो रसीदें हैं।</string><string name="dashboard_enterprise_finance_add">लेन-देन जोड़ें</string><string name="dashboard_enterprise_finance_validation">विवरण और शून्य से अधिक राशि दर्ज करें।</string><string name="dashboard_enterprise_finance_conflict">लेन-देन सर्वर पर बदल गया। फिर प्रयास करें।</string><string name="dashboard_enterprise_finance_save_error">लेन-देन सहेजा नहीं जा सका।</string><string name="dashboard_enterprise_finance_archive_confirmation">इसे सक्रिय वित्त से हटाएँ?</string><string name="dashboard_enterprise_finance_credit_format">+ %1$s</string><string name="dashboard_enterprise_finance_debit_format">− %1$s</string><string name="dashboard_enterprise_finance_row_balance">शेष: %1$s</string><plurals name="dashboard_enterprise_finance_receipt_count"><item quantity="one">%1$d रसीद</item><item quantity="other">%1$d रसीदें</item></plurals>
+    <string name="dashboard_settings_menu_currency">मुद्रा</string>
+    <string name="dashboard_settings_currency_title">मुद्रा प्रारूप</string>
+    <string name="dashboard_settings_currency_type">मुद्रा</string>
+    <string name="dashboard_settings_currency_grouping">हज़ार विभाजक</string>
+    <string name="dashboard_settings_currency_decimal">दशमलव विभाजक</string>
+    <string name="dashboard_settings_currency_preview">पूर्वावलोकन: %1$s</string>
+    <string name="dashboard_settings_currency_separators_different">हज़ार और दशमलव विभाजक अलग होने चाहिए।</string>
+    <string name="dashboard_settings_currency_separator_dot">बिंदु (.)</string>
+    <string name="dashboard_settings_currency_separator_comma">अल्पविराम (,)</string>
+    <string name="dashboard_settings_currency_separator_space">रिक्त स्थान</string>
+    <string name="dashboard_settings_currency_separator_apostrophe">एपॉस्ट्रॉफ़ (\')</string>
+    <string name="dashboard_image_preview_load_error">यह छवि लोड नहीं हो सकी।</string>
 </resources>
