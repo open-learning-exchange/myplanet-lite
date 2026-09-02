@@ -144,7 +144,8 @@ class DashboardSurveySubmissionsRepositoryTest {
                     "docs": [
                         {
                             "_id": "sub123",
-                            "_rev": "1-abc"
+                            "_rev": "1-abc",
+                            "app": "myplanet"
                         }
                     ]
                 }
@@ -170,6 +171,7 @@ class DashboardSurveySubmissionsRepositoryTest {
         assertNotNull(lookup)
         assertEquals("sub123", lookup?.id)
         assertEquals("1-abc", lookup?.rev)
+        assertEquals("myplanet", lookup?.app)
 
         val request = mockWebServer.takeRequest()
         assertEquals("/db/submissions/_find", request.path)

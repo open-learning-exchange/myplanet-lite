@@ -198,7 +198,7 @@ class DashboardSurveySubmissionsRepository(
         @param:Json(name = "parentCode") val parentCode: String?,
         @param:Json(name = "deviceName") val deviceName: String? = null,
         @param:Json(name = "customDeviceName") val customDeviceName: String? = null,
-        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String = PlanetAppIdentity.APP_ID,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String? = PlanetAppIdentity.APP_ID,
     )
 
     @JsonClass(generateAdapter = true)
@@ -276,6 +276,7 @@ class DashboardSurveySubmissionsRepository(
     data class SubmissionLookup(
         @param:Json(name = "_id") val id: String? = null,
         @param:Json(name = "_rev") val rev: String? = null,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String? = null,
     )
 
     companion object {
