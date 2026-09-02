@@ -70,6 +70,7 @@ class DashboardSurveySubmissionsRepositoryTest {
 
         val body = request.body.readUtf8()
         assertTrue(body.contains("\"parentId\":\"parent123\""))
+        assertTrue(body.contains("\"app\":\"myplanet-lite\""))
     }
 
     @Test

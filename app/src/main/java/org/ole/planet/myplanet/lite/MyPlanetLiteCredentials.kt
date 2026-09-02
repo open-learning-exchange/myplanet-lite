@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.putPlanetAppId
 
 
 internal suspend fun MyPlanetLite.handleLoginResult(
@@ -94,6 +95,12 @@ internal fun MyPlanetLite.recordLoginActivity(
     lifecycleScope.launch {
         serverConnectivityRepository.recordLoginActivity(requestUrl, payload, sessionCookie)
     }
+    MyPlanetActivityLogger.postSyncActivity(
+        applicationContext,
+        sanitizedBaseUrl,
+        serverConnectivityRepository,
+        sessionCookie,
+    )
 }
 
 internal fun MyPlanetLite.buildLoginActivityUrl(baseUrl: String): String? =
@@ -126,6 +133,7 @@ internal fun MyPlanetLite.buildLoginActivityPayload(username: String): JSONObjec
             put("androidId", androidId?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
             put("deviceName", deviceName)
             put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+            putPlanetAppId()
         }
     }.getOrNull()
 }

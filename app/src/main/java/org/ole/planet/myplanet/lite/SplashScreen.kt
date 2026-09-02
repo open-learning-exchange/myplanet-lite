@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.AppNavigator
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.ole.planet.myplanet.lite.util.putPlanetAppId
 import java.util.UUID
 
 class SplashScreen : BaseActivity() {
@@ -182,6 +183,7 @@ class SplashScreen : BaseActivity() {
         val refreshed = userProfileSync.refreshProfile(baseUrl, cachedUsername, storedToken)
         return if (refreshed) {
             recordRememberedLoginActivity(baseUrl, storedToken)
+            recordMyPlanetSyncActivity(baseUrl, storedToken)
             DashboardLaunchMode.ONLINE
         } else {
             authService.logout()
@@ -200,6 +202,18 @@ class SplashScreen : BaseActivity() {
         val requestUrl = buildLoginActivityUrl(baseUrl) ?: return
         val payload = buildLoginActivityPayload(rememberedCredentials.username) ?: return
         serverConnectivityRepository.recordLoginActivity(requestUrl, payload, sessionCookie)
+    }
+
+    private fun recordMyPlanetSyncActivity(
+        baseUrl: String,
+        sessionCookie: String,
+    ) {
+        MyPlanetActivityLogger.postSyncActivity(
+            applicationContext,
+            baseUrl,
+            serverConnectivityRepository,
+            sessionCookie,
+        )
     }
 
     private fun isRememberUserEnabled(): Boolean {
@@ -238,6 +252,7 @@ class SplashScreen : BaseActivity() {
                 put("androidId", androidId?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
                 put("deviceName", deviceName)
                 put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+                putPlanetAppId()
             }
         }.getOrNull()
     }

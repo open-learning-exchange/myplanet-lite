@@ -32,6 +32,7 @@ import org.ole.planet.myplanet.lite.profile.GENDER_MALE
 import org.ole.planet.myplanet.lite.profile.LearningLevelTranslator
 import org.ole.planet.myplanet.lite.signup.SignupRepository
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.ole.planet.myplanet.lite.util.putPlanetAppId
 
 class SignupActivity : BaseActivity() {
     internal var imeInsetBottom: Int = 0
@@ -263,6 +264,7 @@ class SignupActivity : BaseActivity() {
             uniqueAndroidId?.let { put("uniqueAndroidId", it) }
             customDeviceName?.let { put("customDeviceName", it) }
             put("roles", JSONArray().apply { put("learner") })
+            putPlanetAppId()
         }
     }
 

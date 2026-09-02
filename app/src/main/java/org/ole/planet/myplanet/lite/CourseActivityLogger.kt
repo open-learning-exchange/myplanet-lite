@@ -14,6 +14,7 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.util.DeviceUtils
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.ole.planet.myplanet.lite.util.putPlanetAppId
 
 internal fun DashboardCourseDetailsBottomSheet.recordCourseDescriptionVisit(
     courseId: String,
@@ -83,6 +84,7 @@ internal fun buildCourseActivityPayload(
             put("androidId", androidId?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
             put("deviceName", DeviceUtils.getDeviceName())
             put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+            putPlanetAppId()
         }
     }.getOrNull()
 }

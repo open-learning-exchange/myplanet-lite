@@ -18,6 +18,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 import java.io.IOException
 
 class VoicesComposerRepository(
@@ -223,6 +224,7 @@ class VoicesComposerRepository(
         val labels: List<String>,
         val user: UserPayload?,
         val news: NewsMetadata?,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String = PlanetAppIdentity.APP_ID,
     )
 
     @JsonClass(generateAdapter = true)
@@ -246,6 +248,7 @@ class VoicesComposerRepository(
         val customDeviceName: String?,
         val mediaType: String,
         val privateFor: Any,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String = PlanetAppIdentity.APP_ID,
     ) {
         companion object {
             private const val PRIVATE_FOR_COMMUNITY = "community"

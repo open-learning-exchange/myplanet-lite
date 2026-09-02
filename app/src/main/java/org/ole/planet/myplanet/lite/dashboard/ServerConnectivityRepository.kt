@@ -60,6 +60,10 @@ class ServerConnectivityRepository(
         postActivity(requestUrl, payload, sessionCookie, authHeader = null)
     }
 
+    suspend fun recordMyPlanetActivity(requestUrl: String, payload: JSONObject, sessionCookie: String?) {
+        postActivity(requestUrl, payload, sessionCookie, authHeader = null)
+    }
+
     private suspend fun postActivity(
         requestUrl: String,
         payload: JSONObject,

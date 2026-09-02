@@ -90,6 +90,7 @@ class CourseActivityLoggerTest {
         assertEquals("test_parent_code", payload?.getString("parentCode"))
         assertEquals("test_android_id", payload?.getString("androidId"))
         assertEquals("test_custom_name", payload?.getString("customDeviceName"))
+        assertEquals("myplanet-lite", payload?.getString("app"))
         assertNotNull(payload?.getLong("time"))
         assertNotNull(payload?.getString("deviceName"))
     }

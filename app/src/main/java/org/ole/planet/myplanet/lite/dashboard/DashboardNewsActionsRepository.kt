@@ -15,6 +15,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 import java.io.IOException
 
 class DashboardNewsActionsRepository(
@@ -160,6 +161,7 @@ class DashboardNewsActionsRepository(
         val images: List<DashboardNewsRepository.NewsImage>?,
         val updatedDate: Long?,
         @param:Json(name = "_deleted") val deleted: Boolean,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String = PlanetAppIdentity.APP_ID,
     )
 
     @JsonClass(generateAdapter = true)
@@ -178,6 +180,7 @@ class DashboardNewsActionsRepository(
         val message: String?,
         val images: List<DashboardNewsRepository.NewsImage>?,
         val updatedDate: Long?,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String = PlanetAppIdentity.APP_ID,
     )
 
     @JsonClass(generateAdapter = true)
