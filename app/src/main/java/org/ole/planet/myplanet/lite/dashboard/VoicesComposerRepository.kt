@@ -98,7 +98,7 @@ class VoicesComposerRepository(
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
                     responseAdapter.fromJson(body)
@@ -163,7 +163,7 @@ class VoicesComposerRepository(
             val creationResponse =
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
                     resourceCreationAdapter.fromJson(body)
@@ -197,7 +197,7 @@ class VoicesComposerRepository(
             val uploadResponse =
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
                     resourceUploadAdapter.fromJson(body)
