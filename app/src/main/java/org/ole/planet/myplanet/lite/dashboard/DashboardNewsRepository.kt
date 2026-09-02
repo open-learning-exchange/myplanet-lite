@@ -226,6 +226,7 @@ class DashboardNewsRepository(
         val images: List<NewsImage>?,
         val updatedDate: Long?,
         @param:Json(name = "_deleted") val isDeleted: Boolean?,
+        val app: String? = null,
     ) : Serializable
 
     @JsonClass(generateAdapter = true)

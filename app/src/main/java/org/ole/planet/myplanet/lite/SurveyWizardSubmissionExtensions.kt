@@ -20,6 +20,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.survey.SubmitOutcome
 import org.ole.planet.myplanet.lite.profile.UserProfileDatabase
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
 internal fun SurveyWizardFragment.buildSubmissionPayload(): Pair<List<SubmissionAnswer>, Int> {
@@ -286,8 +287,13 @@ internal fun SurveyWizardFragment.buildSurveySubmission(params: SurveySubmission
             org.ole.planet.myplanet.lite.util.DeviceUtils
                 .getDeviceName(),
         customDeviceName = resolveCustomDeviceName(),
+        app = resolveSubmissionApp(existingSubmission),
     )
 }
+
+internal fun resolveSubmissionApp(
+    existingSubmission: DashboardSurveySubmissionsRepository.SubmissionLookup?,
+): String? = if (existingSubmission == null) PlanetAppIdentity.APP_ID else existingSubmission.app
 
 internal fun SurveyWizardFragment.parseProfileRawDocument(rawDocument: String?): JSONObject? {
     if (rawDocument.isNullOrBlank()) return null

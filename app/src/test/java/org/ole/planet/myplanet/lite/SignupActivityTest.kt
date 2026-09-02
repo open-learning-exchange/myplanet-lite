@@ -266,6 +266,7 @@ class SignupActivityTest {
         assertEquals("password123", result?.getString("password"))
         assertEquals(GENDER_MALE, result?.getString("gender"))
         assertEquals("English", result?.getString("language"))
+        assertEquals("myplanet-lite", result?.getString("app"))
     }
 
 
