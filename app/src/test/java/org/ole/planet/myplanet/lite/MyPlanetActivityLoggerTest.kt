@@ -67,6 +67,8 @@ class MyPlanetActivityLoggerTest {
             .putString("device_android_id", "android-1")
             .putString("device_unique_android_id", "unique-1")
             .putString("device_custom_device_name", "Classroom Tablet")
+            .putString("server_code", "earth")
+            .putString("server_parent_code", "solar")
             .commit()
 
         val payload = MyPlanetActivityLogger.buildSyncActivityPayload(context)
@@ -80,6 +82,8 @@ class MyPlanetActivityLoggerTest {
         assertEquals("android-1", document.getString("androidId"))
         assertEquals("unique-1", document.getString("uniqueAndroidId"))
         assertEquals("Classroom Tablet", document.getString("customDeviceName"))
+        assertEquals("earth", document.getString("createdOn"))
+        assertEquals("solar", document.getString("parentCode"))
         assertTrue(document.getString("deviceName").isNotBlank())
         assertTrue(document.get("time") is Number)
     }
@@ -91,6 +95,8 @@ class MyPlanetActivityLoggerTest {
         assertTrue(document.isNull("androidId"))
         assertTrue(document.isNull("uniqueAndroidId"))
         assertTrue(document.isNull("customDeviceName"))
+        assertTrue(document.isNull("createdOn"))
+        assertTrue(document.isNull("parentCode"))
         assertEquals("myplanet-lite", document.getString("app"))
     }
 

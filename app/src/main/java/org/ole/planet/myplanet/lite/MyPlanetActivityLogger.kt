@@ -59,12 +59,14 @@ object MyPlanetActivityLogger {
             ?.toString()
 
     internal fun buildSyncActivityPayload(context: Context): JSONObject? {
-        val preferences = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
-        val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)
-        val uniqueAndroidId = preferences.getString(KEY_DEVICE_UNIQUE_ANDROID_ID, null)
-        val customDeviceName = preferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)
-
         return runCatching {
+            val preferences = SecurePreferencesProvider.getServerPreferences(context.applicationContext)
+            val androidId = preferences.getString(KEY_DEVICE_ANDROID_ID, null)
+            val uniqueAndroidId = preferences.getString(KEY_DEVICE_UNIQUE_ANDROID_ID, null)
+            val customDeviceName = preferences.getString(KEY_DEVICE_CUSTOM_DEVICE_NAME, null)
+            val code = preferences.getString(KEY_SERVER_CODE, null)
+            val parentCode = preferences.getString(KEY_SERVER_PARENT_CODE, null)
+
             JSONObject().apply {
                 put("type", "sync")
                 put("versionName", BuildConfig.VERSION_NAME)
@@ -73,6 +75,8 @@ object MyPlanetActivityLogger {
                 put("uniqueAndroidId", uniqueAndroidId?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
                 put("deviceName", DeviceUtils.getDeviceName())
                 put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+                put("createdOn", code?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+                put("parentCode", parentCode?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
                 put("time", System.currentTimeMillis())
                 putPlanetAppId()
             }

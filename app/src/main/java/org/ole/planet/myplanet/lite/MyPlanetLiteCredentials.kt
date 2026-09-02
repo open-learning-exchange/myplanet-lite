@@ -89,18 +89,19 @@ internal fun MyPlanetLite.recordLoginActivity(
     if (sanitizedBaseUrl.isEmpty()) {
         return
     }
-    val requestUrl = buildLoginActivityUrl(sanitizedBaseUrl) ?: return
-    val payload = buildLoginActivityPayload(username) ?: return
-
-    lifecycleScope.launch {
-        serverConnectivityRepository.recordLoginActivity(requestUrl, payload, sessionCookie)
-    }
     MyPlanetActivityLogger.postSyncActivity(
         applicationContext,
         sanitizedBaseUrl,
         serverConnectivityRepository,
         sessionCookie,
     )
+
+    val requestUrl = buildLoginActivityUrl(sanitizedBaseUrl) ?: return
+    val payload = buildLoginActivityPayload(username) ?: return
+
+    lifecycleScope.launch {
+        serverConnectivityRepository.recordLoginActivity(requestUrl, payload, sessionCookie)
+    }
 }
 
 internal fun MyPlanetLite.buildLoginActivityUrl(baseUrl: String): String? =
@@ -262,7 +263,6 @@ internal fun MyPlanetLite.setSurveyTranslationConsentAccepted(accepted: Boolean)
         .putBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, accepted)
         .apply()
 }
-
 
 
 
