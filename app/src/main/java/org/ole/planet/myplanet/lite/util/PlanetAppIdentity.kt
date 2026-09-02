@@ -1,9 +1,3 @@
-/*
- * Author: mutugiii
- * Email: mutugimutuma@gmail.com
- * Creation date: 2026-09-02
- */
-
 package org.ole.planet.myplanet.lite.util
 
 import org.json.JSONObject
