@@ -62,6 +62,7 @@ class DashboardNewsActionsRepository(
                         images = document.images,
                         updatedDate = System.currentTimeMillis(),
                         deleted = true,
+                        app = document.app,
                     )
                 val requestBody =
                     deleteRequestAdapter
@@ -122,6 +123,7 @@ class DashboardNewsActionsRepository(
                         message = message,
                         images = images.takeUnless { it.isEmpty() },
                         updatedDate = System.currentTimeMillis(),
+                        app = document.app,
                     )
                 val requestBody =
                     updateRequestAdapter
@@ -161,7 +163,7 @@ class DashboardNewsActionsRepository(
         val images: List<DashboardNewsRepository.NewsImage>?,
         val updatedDate: Long?,
         @param:Json(name = "_deleted") val deleted: Boolean,
-        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String = PlanetAppIdentity.APP_ID,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String? = null,
     )
 
     @JsonClass(generateAdapter = true)
@@ -180,7 +182,7 @@ class DashboardNewsActionsRepository(
         val message: String?,
         val images: List<DashboardNewsRepository.NewsImage>?,
         val updatedDate: Long?,
-        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String = PlanetAppIdentity.APP_ID,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String? = null,
     )
 
     @JsonClass(generateAdapter = true)

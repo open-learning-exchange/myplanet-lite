@@ -6,6 +6,7 @@ import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import kotlinx.coroutines.Dispatchers
@@ -148,6 +149,106 @@ class DashboardNewsActionsRepositoryTest {
         )
 
         assertTrue(result.isFailure)
+    }
+
+    @Test
+    fun deleteNews_preservesOriginalAppField() = runTest {
+        val successResponse = """
+            {
+                "ok": true,
+                "id": "doc-123",
+                "rev": "2-def"
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(successResponse))
+
+        val result = repository.deleteNews(
+            baseUrl = mockWebServer.url("/").toString(),
+            sessionCookie = null,
+            document = createDocument().copy(app = "planet")
+        )
+
+        assertTrue(result.isSuccess)
+
+        val request = mockWebServer.takeRequest()
+        val body = org.json.JSONObject(request.body.readUtf8())
+        assertEquals("planet", body.getString("app"))
+    }
+
+    @Test
+    fun deleteNews_omitsAppWhenDocumentHasNone() = runTest {
+        val successResponse = """
+            {
+                "ok": true,
+                "id": "doc-123",
+                "rev": "2-def"
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(successResponse))
+
+        val result = repository.deleteNews(
+            baseUrl = mockWebServer.url("/").toString(),
+            sessionCookie = null,
+            document = createDocument().copy(app = null)
+        )
+
+        assertTrue(result.isSuccess)
+
+        val request = mockWebServer.takeRequest()
+        val body = org.json.JSONObject(request.body.readUtf8())
+        assertFalse(body.has("app"))
+    }
+
+    @Test
+    fun updateNews_preservesOriginalAppField() = runTest {
+        val successResponse = """
+            {
+                "ok": true,
+                "id": "doc-123",
+                "rev": "2-def"
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(successResponse))
+
+        val result = repository.updateNews(
+            baseUrl = mockWebServer.url("/").toString(),
+            sessionCookie = null,
+            document = createDocument().copy(app = "myplanet"),
+            message = "Updated message",
+            images = emptyList()
+        )
+
+        assertTrue(result.isSuccess)
+
+        val request = mockWebServer.takeRequest()
+        val body = org.json.JSONObject(request.body.readUtf8())
+        assertEquals("myplanet", body.getString("app"))
+    }
+
+    @Test
+    fun updateNews_omitsAppWhenDocumentHasNone() = runTest {
+        val successResponse = """
+            {
+                "ok": true,
+                "id": "doc-123",
+                "rev": "2-def"
+            }
+        """.trimIndent()
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(successResponse))
+
+        val result = repository.updateNews(
+            baseUrl = mockWebServer.url("/").toString(),
+            sessionCookie = null,
+            document = createDocument().copy(app = null),
+            message = "Updated message",
+            images = emptyList()
+        )
+
+        assertTrue(result.isSuccess)
+
+        val request = mockWebServer.takeRequest()
+        val body = org.json.JSONObject(request.body.readUtf8())
+        assertFalse(body.has("app"))
     }
 
     @Test
