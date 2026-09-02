@@ -9,6 +9,7 @@ import org.json.JSONArray
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.util.NetworkUtils
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 
 suspend fun CourseWizardActivity.resolveInitialStepIndex(fallbackIndex: Int): Int {
     if (cachedProgressDocument != null) {
@@ -76,7 +77,9 @@ suspend fun CourseWizardActivity.updateCourseProgressIfNeeded(targetStepNumber: 
         parentCode = progressDoc?.parentCode
             ?: DashboardServerPreferences.getServerParentCode(applicationContext),
         createdDate = progressDoc?.createdDate ?: now,
-        updatedDate = now
+        updatedDate = now,
+        androidId = progressDoc?.androidId,
+        app = resolveCourseProgressApp(progressDoc),
     )
     val saveResult = coursesRepository.saveCourseProgress(normalizedBase, creds, listOf(document))
     if (saveResult.isFailure) {
@@ -95,7 +98,9 @@ suspend fun CourseWizardActivity.updateCourseProgressIfNeeded(targetStepNumber: 
             createdDate = document.createdDate,
             updatedDate = document.updatedDate,
             createdOn = document.createdOn,
-            parentCode = document.parentCode
+            parentCode = document.parentCode,
+            androidId = document.androidId,
+            app = document.app,
         )
     }
 }
@@ -144,7 +149,9 @@ suspend fun CourseWizardActivity.flushPendingCourseProgress() {
         parentCode = existingDoc?.parentCode
             ?: DashboardServerPreferences.getServerParentCode(applicationContext),
         createdDate = existingDoc?.createdDate ?: now,
-        updatedDate = now
+        updatedDate = now,
+        androidId = existingDoc?.androidId,
+        app = resolveCourseProgressApp(existingDoc),
     )
 
     val result = coursesRepository.saveCourseProgress(normalizedBase, creds, listOf(document))
@@ -163,10 +170,16 @@ suspend fun CourseWizardActivity.flushPendingCourseProgress() {
             createdDate = document.createdDate,
             updatedDate = now,
             createdOn = document.createdOn,
-            parentCode = document.parentCode
+            parentCode = document.parentCode,
+            androidId = document.androidId,
+            app = document.app,
         )
     }
 }
+
+internal fun resolveCourseProgressApp(
+    existingDocument: DashboardCoursesRepository.CourseProgressDocument?,
+): String? = if (existingDocument == null) PlanetAppIdentity.APP_ID else existingDocument.app
 
 suspend fun CourseWizardActivity.flushPendingExamSubmissions() {
     localSurveyRepository.flushPendingSurveyOutbox("exam")

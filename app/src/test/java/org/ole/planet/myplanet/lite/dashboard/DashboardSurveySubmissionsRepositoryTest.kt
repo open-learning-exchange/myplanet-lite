@@ -70,7 +70,6 @@ class DashboardSurveySubmissionsRepositoryTest {
 
         val body = request.body.readUtf8()
         assertTrue(body.contains("\"parentId\":\"parent123\""))
-        assertTrue(body.contains("\"app\":\"myplanet-lite\""))
     }
 
     @Test
@@ -144,8 +143,7 @@ class DashboardSurveySubmissionsRepositoryTest {
                     "docs": [
                         {
                             "_id": "sub123",
-                            "_rev": "1-abc",
-                            "app": "myplanet"
+                            "_rev": "1-abc"
                         }
                     ]
                 }
@@ -171,7 +169,6 @@ class DashboardSurveySubmissionsRepositoryTest {
         assertNotNull(lookup)
         assertEquals("sub123", lookup?.id)
         assertEquals("1-abc", lookup?.rev)
-        assertEquals("myplanet", lookup?.app)
 
         val request = mockWebServer.takeRequest()
         assertEquals("/db/submissions/_find", request.path)

@@ -65,33 +65,6 @@ class VoicesComposerRepositoryTest {
     }
 
     @Test
-    fun `createResourceDocument tags the resource document as myplanet-lite`() = runTest {
-        mockWebServer.enqueue(
-            MockResponse().setResponseCode(201).setBody("""{"ok":true,"id":"res_1","rev":"1-abc"}"""),
-        )
-        val context = VoiceImageResourceContext(
-            username = "testUser",
-            resideOn = "planet",
-            sourcePlanet = "parent",
-            androidId = "android123",
-            deviceName = "device",
-            customDeviceName = "custom",
-        )
-
-        repository.createResourceDocument(
-            baseUrl = mockWebServer.url("/").toString(),
-            credentials = StoredCredentials("testUser", "testPass"),
-            metadata = VoicesComposerRepository.ResourceMetadataRequest.fromContext(context, "image.jpg"),
-        )
-
-        val request = mockWebServer.takeRequest()
-        assertEquals("/db/resources", request.path)
-        val body = JSONObject(request.body.readUtf8())
-        assertEquals("myplanet-lite", body.getString("app"))
-        assertEquals("android123", body.getString("androidId"))
-    }
-
-    @Test
     fun `uploadResourceBinary returns successful response on valid input`() = runTest {
         val validJsonResponse = """
             {

@@ -27,6 +27,7 @@ import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
 import org.ole.planet.myplanet.lite.util.MarkdownUtils
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 import java.io.File
 import java.io.IOException
 
@@ -225,6 +226,8 @@ class DashboardCoursesRepository(
         val updatedDate: Long? = null,
         val createdOn: String? = null,
         val parentCode: String? = null,
+        val androidId: String? = null,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String? = null,
     )
 
     @JsonClass(generateAdapter = true)
@@ -244,6 +247,8 @@ class DashboardCoursesRepository(
         val parentCode: String? = null,
         val createdDate: Long,
         val updatedDate: Long,
+        val androidId: String?,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String?,
     )
 
     typealias CoursesProgressBulkResponse = List<BulkDocResult>

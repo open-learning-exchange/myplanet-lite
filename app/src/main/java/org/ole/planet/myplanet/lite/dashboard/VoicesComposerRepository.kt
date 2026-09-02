@@ -248,7 +248,6 @@ class VoicesComposerRepository(
         val customDeviceName: String?,
         val mediaType: String,
         val privateFor: Any,
-        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String = PlanetAppIdentity.APP_ID,
     ) {
         companion object {
             private const val PRIVATE_FOR_COMMUNITY = "community"
