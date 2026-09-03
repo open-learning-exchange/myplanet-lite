@@ -256,6 +256,3 @@ internal fun MyPlanetLite.setSurveyTranslationConsentAccepted(accepted: Boolean)
         .putBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, accepted)
         .apply()
 }
-
-
-

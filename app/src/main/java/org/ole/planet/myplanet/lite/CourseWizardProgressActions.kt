@@ -177,9 +177,8 @@ suspend fun CourseWizardActivity.flushPendingCourseProgress() {
     }
 }
 
-internal fun resolveCourseProgressApp(
-    existingDocument: DashboardCoursesRepository.CourseProgressDocument?,
-): String? = if (existingDocument == null) PlanetAppIdentity.APP_ID else existingDocument.app
+internal fun resolveCourseProgressApp(existingDocument: DashboardCoursesRepository.CourseProgressDocument?): String? =
+    if (existingDocument == null) PlanetAppIdentity.APP_ID else existingDocument.app
 
 suspend fun CourseWizardActivity.flushPendingExamSubmissions() {
     localSurveyRepository.flushPendingSurveyOutbox("exam")

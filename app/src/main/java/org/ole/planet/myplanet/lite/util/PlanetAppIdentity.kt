@@ -7,5 +7,4 @@ object PlanetAppIdentity {
     const val APP_ID = "myplanet-lite"
 }
 
-fun JSONObject.putPlanetAppId(): JSONObject =
-    put(PlanetAppIdentity.FIELD_NAME, PlanetAppIdentity.APP_ID)
+fun JSONObject.putPlanetAppId(): JSONObject = put(PlanetAppIdentity.FIELD_NAME, PlanetAppIdentity.APP_ID)

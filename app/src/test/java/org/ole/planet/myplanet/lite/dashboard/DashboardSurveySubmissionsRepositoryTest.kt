@@ -7,6 +7,7 @@ import okhttp3.mockwebserver.MockWebServer
 import okhttp3.mockwebserver.SocketPolicy
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -16,6 +17,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionUser
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 
 class DashboardSurveySubmissionsRepositoryTest {
 
@@ -34,7 +36,7 @@ class DashboardSurveySubmissionsRepositoryTest {
         mockWebServer.shutdown()
     }
 
-    private fun createSubmission() = SurveySubmission(
+    private fun createSubmission(app: String? = PlanetAppIdentity.APP_ID) = SurveySubmission(
         parentId = "parent123",
         parent = SubmissionParent(id = "parent123", rev = "1", name = "Test Survey", description = "Test", questions = emptyList()),
         user = SubmissionUser(id = "user1", name = "Test User", planetCode = "planet", parentCode = "parent"),
@@ -44,7 +46,8 @@ class DashboardSurveySubmissionsRepositoryTest {
         startTime = System.currentTimeMillis(),
         lastUpdateTime = System.currentTimeMillis(),
         source = "test",
-        parentCode = "code"
+        parentCode = "code",
+        app = app,
     )
 
     @Test
@@ -70,6 +73,23 @@ class DashboardSurveySubmissionsRepositoryTest {
 
         val body = request.body.readUtf8()
         assertTrue(body.contains("\"parentId\":\"parent123\""))
+        assertTrue(body.contains("\"app\":\"myplanet-lite\""))
+    }
+
+    @Test
+    fun `submitSurvey omits app when the submission carries none`() = runTest {
+        mockWebServer.enqueue(
+            MockResponse().setResponseCode(201).setBody("""{"ok":true,"id":"sub1","rev":"1-abc"}"""),
+        )
+
+        val baseUrl = mockWebServer.url("/").toString()
+        val result = repository.submitSurvey(baseUrl, null, null, createSubmission(app = null))
+
+        assertTrue(result.isSuccess)
+
+        val request = mockWebServer.takeRequest()
+        val body = request.body.readUtf8()
+        assertFalse(body.contains("\"app\""))
     }
 
     @Test
@@ -143,7 +163,8 @@ class DashboardSurveySubmissionsRepositoryTest {
                     "docs": [
                         {
                             "_id": "sub123",
-                            "_rev": "1-abc"
+                            "_rev": "1-abc",
+                            "app": "myplanet"
                         }
                     ]
                 }
@@ -169,6 +190,7 @@ class DashboardSurveySubmissionsRepositoryTest {
         assertNotNull(lookup)
         assertEquals("sub123", lookup?.id)
         assertEquals("1-abc", lookup?.rev)
+        assertEquals("myplanet", lookup?.app)
 
         val request = mockWebServer.takeRequest()
         assertEquals("/db/submissions/_find", request.path)

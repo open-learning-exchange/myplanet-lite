@@ -9,6 +9,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionLookup
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyChoice
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 
@@ -200,5 +201,12 @@ class SurveyWizardSubmissionExtensionsTest {
     fun optIntOrNull_booleanValue_returnsNull() {
         val json = JSONObject().apply { put("key", true) }
         assertNull(json.optIntOrNull("key"))
+    }
+
+    @Test
+    fun resolveSubmissionApp_tagsNewSubmissionsOnly() {
+        assertEquals("myplanet-lite", resolveSubmissionApp(null))
+        assertEquals("myplanet", resolveSubmissionApp(SubmissionLookup(app = "myplanet")))
+        assertNull(resolveSubmissionApp(SubmissionLookup(app = null)))
     }
 }

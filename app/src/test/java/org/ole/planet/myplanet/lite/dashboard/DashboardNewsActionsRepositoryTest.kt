@@ -167,7 +167,7 @@ class DashboardNewsActionsRepositoryTest {
             sessionCookie = null,
             document = createDocument().copy(app = "myplanet"),
             message = "Updated message",
-            images = emptyList()
+            images = emptyList(),
         )
 
         assertTrue(result.isSuccess)
@@ -193,7 +193,7 @@ class DashboardNewsActionsRepositoryTest {
             sessionCookie = null,
             document = createDocument().copy(app = null),
             message = "Updated message",
-            images = emptyList()
+            images = emptyList(),
         )
 
         assertTrue(result.isSuccess)

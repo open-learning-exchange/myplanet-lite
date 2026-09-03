@@ -16,6 +16,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 import java.io.IOException
 import java.io.Serializable
 
@@ -226,7 +227,7 @@ class DashboardNewsRepository(
         val images: List<NewsImage>?,
         val updatedDate: Long?,
         @param:Json(name = "_deleted") val isDeleted: Boolean?,
-        val app: String? = null,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String? = null,
     ) : Serializable
 
     @JsonClass(generateAdapter = true)
