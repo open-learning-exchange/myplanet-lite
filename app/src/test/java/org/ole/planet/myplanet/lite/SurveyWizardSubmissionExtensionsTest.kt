@@ -5,11 +5,20 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
+import org.junit.After
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import androidx.fragment.app.FragmentActivity
+import androidx.test.core.app.ApplicationProvider
+import com.google.mlkit.common.sdkinternal.MlKitContext
+import org.robolectric.Robolectric
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.PublicSurveyRespondent
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionLookup
+import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyChoice
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 
@@ -18,6 +27,20 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQ
 class SurveyWizardSubmissionExtensionsTest {
 
     private val fragment = SurveyWizardFragment()
+
+    @Before
+    fun injectPlainPreferences() {
+        // The keystore EncryptedSharedPreferences needs is not available under Robolectric.
+        SecurePreferencesProvider.injectedPreferences =
+            ApplicationProvider
+                .getApplicationContext<android.content.Context>()
+                .getSharedPreferences("survey_wizard_test_prefs", android.content.Context.MODE_PRIVATE)
+    }
+
+    @After
+    fun clearInjectedPreferences() {
+        SecurePreferencesProvider.injectedPreferences = null
+    }
 
     @Test
     fun testNormalizeSelectedId() {
@@ -208,5 +231,101 @@ class SurveyWizardSubmissionExtensionsTest {
         assertEquals("myplanet-lite", resolveSubmissionApp(null))
         assertEquals("myplanet", resolveSubmissionApp(SubmissionLookup(app = "myplanet")))
         assertNull(resolveSubmissionApp(SubmissionLookup(app = null)))
+    }
+
+    private fun attachedFragment(): SurveyWizardFragment {
+        MlKitContext.initializeIfNeeded(ApplicationProvider.getApplicationContext())
+        val activity = Robolectric.buildActivity(FragmentActivity::class.java).create().start().resume().get()
+        activity.setTheme(androidx.appcompat.R.style.Theme_AppCompat)
+        val document = SurveyDocument(
+            id = "survey1",
+            rev = "rev1",
+            name = "NY - Tech Pioneers",
+            questions = listOf(SurveyQuestion(body = "Rate the team", type = "input"))
+        )
+        val attached = SurveyWizardFragment().apply {
+            arguments = android.os.Bundle().apply { putSerializable("arg_document", document) }
+        }
+        activity.supportFragmentManager.beginTransaction()
+            .add(android.R.id.content, attached, "survey")
+            .commit()
+        activity.supportFragmentManager.executePendingTransactions()
+        return attached
+    }
+
+    private fun submissionParams(survey: SurveyDocument) = SurveySubmissionParams(
+        survey = survey,
+        existingSubmission = null,
+        username = "gg",
+        fullName = "gg",
+        parentId = "survey1",
+        answersPayload = emptyList(),
+        totalGrade = 0,
+        profile = null
+    )
+
+    @Test
+    fun `team survey separates the respondent from the operator who collected it`() {
+        val survey = SurveyDocument(id = "survey1", rev = "rev1", name = "NY - Tech Pioneers", teamId = "team1")
+        val attached = attachedFragment().apply {
+            teamId = "team1"
+            teamName = "Tech Pioneers"
+            courseId = null
+            respondent.age = 34
+            respondent.gender = "male"
+        }
+
+        val submission = attached.buildSurveySubmission(submissionParams(survey))
+
+        // The walk-up respondent is not the signed-in operator, so the response carries no identity.
+        assertNull(submission.user.id)
+        assertNull(submission.user.name)
+        assertEquals(34, submission.user.age)
+        assertEquals(34, submission.respondent?.age)
+        assertEquals("male", submission.respondent?.gender)
+        assertEquals("org.couchdb.user:gg", submission.collectedBy?.id)
+        assertEquals("gg", submission.collectedBy?.name)
+        // The team document, not the wizard, decides whether this is a team or an enterprise.
+        assertNull(submission.team?.type)
+        assertEquals("team1", submission.team?.id)
+    }
+
+    @Test
+    fun `course content stays attributed to the learner who answered it`() {
+        val survey = SurveyDocument(id = "survey1", rev = "rev1", name = "Course survey")
+        val attached = attachedFragment().apply {
+            courseId = "course1"
+            respondent.age = 20
+            respondent.gender = "female"
+        }
+
+        val submission = attached.buildSurveySubmission(submissionParams(survey))
+
+        assertEquals("org.couchdb.user:gg", submission.user.id)
+        assertEquals("gg", submission.user.name)
+        assertNull(submission.respondent)
+        assertNull(submission.collectedBy)
+    }
+
+    @Test
+    fun `parent snapshot reports the survey's own sharing flag`() {
+        val survey = SurveyDocument(id = "survey1", rev = "rev1", name = "Shared survey", teamShareAllowed = true)
+        val attached = attachedFragment()
+
+        val submission = attached.buildSurveySubmission(submissionParams(survey))
+
+        assertEquals(true, submission.parent.teamShareAllowed)
+    }
+
+    @Test
+    fun `public respondent keeps only details the server accepts`() {
+        val respondent = PublicSurveyRespondent.of(34, " Male ")
+        assertEquals(34, respondent?.age)
+        assertEquals("male", respondent?.gender)
+
+        assertNull(PublicSurveyRespondent.of(null, null))
+        assertNull(PublicSurveyRespondent.of(0, "unspecified"))
+        assertEquals(null, PublicSurveyRespondent.of(200, "female")?.age)
+        assertEquals("female", PublicSurveyRespondent.of(200, "female")?.gender)
     }
 }

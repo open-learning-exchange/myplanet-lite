@@ -69,7 +69,7 @@ class DashboardSurveysRepository(
                     SurveySelector(
                         type = "surveys",
                         teamId = teamId,
-                        isArchived = mapOf($$"$exists" to false),
+                        isArchived = mapOf($$"$ne" to true),
                     )
                 val payload = findRequestAdapter.toJson(SurveysFindRequest(selector))
                 val endpoint = "$normalizedBase/db/exams/_find"
@@ -209,6 +209,7 @@ class DashboardSurveysRepository(
         @param:Json(name = "passingPercentage") @param:FlexibleInt val passingPercentage: Int? = null,
         @param:Json(name = "sourceSurveyId") val sourceSurveyId: String? = null,
         @param:Json(name = "teamId") val teamId: String? = null,
+        @param:Json(name = "teamShareAllowed") val teamShareAllowed: Boolean? = null,
         @param:Json(name = "createdDate") @param:FlexibleString val createdDate: String? = null,
         @param:Json(name = "questions") val questions: List<SurveyQuestion>? = null,
         @param:Json(name = "totalMarks") @param:FlexibleInt val totalMarks: Int? = null,

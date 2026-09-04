@@ -77,7 +77,9 @@ class DashboardSurveysRepositoryTest {
         assertTrue(request.getHeader("Authorization")?.startsWith("Basic") == true)
         assertEquals("cookie", request.getHeader("Cookie"))
 
-        val expectedRequestBody = """{"selector":{"type":"surveys","teamId":"team1","isArchived":{"${'$'}exists":false}}}"""
+        // $ne, not $exists: a survey that was archived and later restored carries
+        // "isArchived": false, and $exists would hide it for good.
+        val expectedRequestBody = """{"selector":{"type":"surveys","teamId":"team1","isArchived":{"${'$'}ne":true}}}"""
         assertEquals(expectedRequestBody, request.body.readUtf8())
     }
 

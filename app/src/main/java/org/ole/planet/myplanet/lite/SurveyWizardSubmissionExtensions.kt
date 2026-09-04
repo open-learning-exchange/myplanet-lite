@@ -171,6 +171,9 @@ internal fun SurveyWizardFragment.submitPublicSurvey(
                 teamId = publicTeamId,
                 surveyId = publicSurveyId,
                 answers = answersPayload.map { it.value },
+                respondent =
+                    DashboardSurveySubmissionsRepository.PublicSurveyRespondent
+                        .of(respondent.age, respondent.gender),
             )
         setSubmitting(false)
         if (result.isSuccess) {
@@ -235,6 +238,38 @@ internal fun SurveyWizardFragment.buildSurveySubmission(params: SurveySubmission
             ?: fullName
     val resolvedPlanetCode = rawProfile?.optString("planetCode").takeIf { !it.isNullOrBlank() } ?: serverCode
     val resolvedParentCode = rawProfile?.optString("parentCode").takeIf { !it.isNullOrBlank() } ?: parentCode
+
+    // Course content is answered by the signed-in learner, so the account is the respondent. A
+    // survey recorded for a team is answered by a walk-up respondent the operator surveyed: their
+    // details belong to the response, and the operator is only who collected it.
+    val isSelfTaken = !courseId.isNullOrBlank()
+    val respondentDetails =
+        DashboardSurveySubmissionsRepository.SubmissionUser(
+            id = null,
+            name = null,
+            planetCode = resolvedPlanetCode,
+            parentCode = resolvedParentCode,
+            firstName = respondent.firstName ?: rawProfile?.optString("firstName").takeIf { !it.isNullOrBlank() },
+            middleName = respondent.middleName ?: rawProfile?.optString("middleName").takeIf { !it.isNullOrBlank() },
+            lastName = respondent.lastName ?: rawProfile?.optString("lastName").takeIf { !it.isNullOrBlank() },
+            email = respondent.email ?: rawProfile?.optString("email").takeIf { !it.isNullOrBlank() },
+            language = respondent.language ?: rawProfile?.optString("language").takeIf { !it.isNullOrBlank() },
+            phoneNumber = respondent.phoneNumber ?: rawProfile?.optString("phoneNumber").takeIf { !it.isNullOrBlank() },
+            birthDate = respondent.birthDate ?: rawProfile?.optString("birthDate").takeIf { !it.isNullOrBlank() },
+            age = respondent.age ?: rawProfile.optIntOrNull("age"),
+            gender = respondent.gender ?: rawProfile?.optString("gender").takeIf { !it.isNullOrBlank() },
+            level = respondent.level ?: rawProfile?.optString("level").takeIf { !it.isNullOrBlank() },
+        )
+    val collector =
+        if (isSelfTaken) {
+            null
+        } else {
+            val accountName = rawProfile?.optString("name").takeIf { !it.isNullOrBlank() } ?: username
+            DashboardSurveySubmissionsRepository
+                .SubmissionCollector(id = resolvedUserId, name = accountName)
+                .takeIf { !it.id.isNullOrBlank() || !it.name.isNullOrBlank() }
+        }
+
     return SurveySubmission(
         id = existingSubmission?.id,
         rev = existingSubmission?.rev,
@@ -247,33 +282,22 @@ internal fun SurveyWizardFragment.buildSurveySubmission(params: SurveySubmission
                 name = survey.name,
                 type = if (isExam) "courses" else "surveys",
                 passingPercentage = survey.passingPercentage,
-                teamShareAllowed = if (isExam) null else false,
+                teamShareAllowed = if (isExam) null else survey.teamShareAllowed,
                 questions = survey.questions,
                 description = survey.description,
             ),
-        user =
-            DashboardSurveySubmissionsRepository.SubmissionUser(
-                id = resolvedUserId,
-                name = resolvedUserName,
-                planetCode = resolvedPlanetCode,
-                parentCode = resolvedParentCode,
-                firstName = respondent.firstName ?: rawProfile?.optString("firstName").takeIf { !it.isNullOrBlank() },
-                middleName = respondent.middleName ?: rawProfile?.optString("middleName").takeIf { !it.isNullOrBlank() },
-                lastName = respondent.lastName ?: rawProfile?.optString("lastName").takeIf { !it.isNullOrBlank() },
-                email = respondent.email ?: rawProfile?.optString("email").takeIf { !it.isNullOrBlank() },
-                language = respondent.language ?: rawProfile?.optString("language").takeIf { !it.isNullOrBlank() },
-                phoneNumber = respondent.phoneNumber ?: rawProfile?.optString("phoneNumber").takeIf { !it.isNullOrBlank() },
-                birthDate = respondent.birthDate ?: rawProfile?.optString("birthDate").takeIf { !it.isNullOrBlank() },
-                age = respondent.age ?: rawProfile.optIntOrNull("age"),
-                gender = respondent.gender ?: rawProfile?.optString("gender").takeIf { !it.isNullOrBlank() },
-                level = respondent.level ?: rawProfile?.optString("level").takeIf { !it.isNullOrBlank() },
-            ),
+        user = if (isSelfTaken) respondentDetails.copy(id = resolvedUserId, name = resolvedUserName) else respondentDetails,
+        respondent = respondentDetails.takeUnless { isSelfTaken },
+        collectedBy = collector,
         team =
             (teamId ?: survey.teamId)?.let { id ->
                 SubmissionTeam(
                     id = id,
                     name = teamName,
-                    type = "local",
+                    // The team's own document is the authority on whether it is a team or an
+                    // enterprise, and the wizard is not given it; claiming a type here put a
+                    // category of our own invention into Planet's reports.
+                    type = null,
                 )
             },
         answers = answersPayload,

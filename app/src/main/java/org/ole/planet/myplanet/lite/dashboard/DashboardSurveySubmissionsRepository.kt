@@ -79,6 +79,7 @@ class DashboardSurveySubmissionsRepository(
         teamId: String,
         surveyId: String,
         answers: List<Any?>,
+        respondent: PublicSurveyRespondent? = null,
     ): Result<Unit> =
         withContext(dispatcher) {
             runCatching {
@@ -105,7 +106,7 @@ class DashboardSurveySubmissionsRepository(
                         .addPathSegment(surveyId)
                         .addPathSegment("submissions")
                         .build()
-                val payload = publicSubmissionAdapter.toJson(PublicSurveySubmissionRequest(answers))
+                val payload = publicSubmissionAdapter.toJson(PublicSurveySubmissionRequest(answers, respondent))
                 val request =
                     Request
                         .Builder()
@@ -188,6 +189,8 @@ class DashboardSurveySubmissionsRepository(
         @param:Json(name = "parentId") val parentId: String?,
         @param:Json(name = "parent") val parent: SubmissionParent,
         @param:Json(name = "user") val user: SubmissionUser,
+        @param:Json(name = "respondent") val respondent: SubmissionUser? = null,
+        @param:Json(name = "collectedBy") val collectedBy: SubmissionCollector? = null,
         @param:Json(name = "team") val team: SubmissionTeam?,
         @param:Json(name = "answers") val answers: List<SubmissionAnswer>,
         @param:Json(name = "grade") val grade: Int = 0,
@@ -233,6 +236,12 @@ class DashboardSurveySubmissionsRepository(
     )
 
     @JsonClass(generateAdapter = true)
+    data class SubmissionCollector(
+        @param:Json(name = "_id") val id: String?,
+        @param:Json(name = "name") val name: String?,
+    )
+
+    @JsonClass(generateAdapter = true)
     data class SubmissionTeam(
         @param:Json(name = "_id") val id: String?,
         @param:Json(name = "name") val name: String?,
@@ -250,7 +259,32 @@ class DashboardSurveySubmissionsRepository(
     @JsonClass(generateAdapter = true)
     data class PublicSurveySubmissionRequest(
         @param:Json(name = "answers") val answers: List<Any?>,
+        @param:Json(name = "user") val user: PublicSurveyRespondent? = null,
     )
+
+    /**
+     * The demographics a public respondent supplies. The server accepts an integer age and a
+     * gender of "male" or "female" and rejects anything else, so a value outside that range is
+     * dropped rather than failing the whole submission.
+     */
+    @JsonClass(generateAdapter = true)
+    data class PublicSurveyRespondent(
+        @param:Json(name = "age") val age: Int? = null,
+        @param:Json(name = "gender") val gender: String? = null,
+    ) {
+        companion object {
+            private val ACCEPTED_GENDERS = setOf("male", "female")
+
+            fun of(age: Int?, gender: String?): PublicSurveyRespondent? {
+                val validAge = age?.takeIf { it in 1..130 }
+                val validGender = gender?.trim()?.lowercase()?.takeIf { it in ACCEPTED_GENDERS }
+                if (validAge == null && validGender == null) {
+                    return null
+                }
+                return PublicSurveyRespondent(age = validAge, gender = validGender)
+            }
+        }
+    }
 
     @JsonClass(generateAdapter = true)
     data class SubmissionLookupRequest(
