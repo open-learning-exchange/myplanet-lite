@@ -35,8 +35,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 37
-        versionCode = 533
-        versionName = "0.5.33"
+        versionCode = 534
+        versionName = "0.5.34"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
