@@ -44,7 +44,6 @@ internal fun ProfileActivity.processAvatarSelectionImpl(uri: Uri) {
             val white = resources.getColor(R.color.white, theme)
             val blue = resources.getColor(R.color.blueOle, theme)
             setToolbarColor(white)
-            setStatusBarColor(white)
             setToolbarWidgetColor(blue)
             setActiveControlsWidgetColor(blue)
         }

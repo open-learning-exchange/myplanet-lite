@@ -28,14 +28,10 @@ internal val CreateVoiceActivity.listContinuationWatcher: TextWatcher
                 if (isHandlingListContinuation) {
                     return
                 }
-                if (count <= 0 || s == null) {
+                if (!isSingleNewlineInsertion(s, start, count)) {
                     return
                 }
-                val inserted = s.subSequence(start, start + count)
-                val newlineOffset = inserted.lastIndexOf('\n')
-                if (newlineOffset >= 0) {
-                    pendingNewlineIndex = start + newlineOffset
-                }
+                pendingNewlineIndex = start
             }
 
             override fun afterTextChanged(s: Editable?) {
@@ -121,3 +117,9 @@ internal fun findIndentLength(line: String): Int {
     val index = line.indexOfFirst { !it.isWhitespace() }
     return if (index == -1) line.length else index
 }
+
+internal fun isSingleNewlineInsertion(
+    text: CharSequence?,
+    start: Int,
+    count: Int,
+): Boolean = text != null && count == 1 && start in text.indices && text[start] == '\n'

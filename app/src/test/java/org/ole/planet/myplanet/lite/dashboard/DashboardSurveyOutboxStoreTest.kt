@@ -23,6 +23,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionTeam
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionUser
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import kotlin.time.Duration.Companion.milliseconds
@@ -47,7 +48,7 @@ class DashboardSurveyOutboxStoreTest {
         DashboardSurveyOutboxStore.resetForTesting(ApplicationProvider.getApplicationContext())
     }
 
-    private fun createSubmission() = SurveySubmission(
+    private fun createSubmission(app: String? = PlanetAppIdentity.APP_ID) = SurveySubmission(
         parentId = "parent123",
         parent = SubmissionParent(id = "parent123", rev = "1", name = "Test Survey", description = "Test", questions = emptyList()),
         user = SubmissionUser(id = "user1", name = "Test User", planetCode = "planet", parentCode = "parent"),
@@ -57,7 +58,8 @@ class DashboardSurveyOutboxStoreTest {
         startTime = System.currentTimeMillis(),
         lastUpdateTime = System.currentTimeMillis(),
         source = "test",
-        parentCode = "code"
+        parentCode = "code",
+        app = app,
     )
 
     @Test
@@ -76,6 +78,26 @@ class DashboardSurveyOutboxStoreTest {
         assertEquals("parent123", pending[0].submission.parentId)
         assertEquals("parent123", pending[0].submission.parent.id)
         assertEquals("1", pending[0].submission.parent.rev)
+    }
+
+    @Test
+    fun saveSubmission_roundTripsAppAttribution() = runBlocking {
+        store.saveSubmission(createSubmission(), "survey1", "Test Survey", "team1", "Team A")
+
+        val pending = store.getPendingForTeam("team1")
+        assertEquals(1, pending.size)
+        assertEquals("myplanet-lite", pending[0].submission.app)
+        assertEquals("myplanet-lite", store.getEntry(pending[0].id)?.submission?.app)
+    }
+
+    @Test
+    fun saveSubmission_roundTripsMissingAppAsNull() = runBlocking {
+        store.saveSubmission(createSubmission(app = null), "survey1", "Test Survey", "team1", "Team A")
+
+        val pending = store.getPendingForTeam("team1")
+        assertEquals(1, pending.size)
+        assertNull(pending[0].submission.app)
+        assertNull(store.getEntry(pending[0].id)?.submission?.app)
     }
 
     @Test

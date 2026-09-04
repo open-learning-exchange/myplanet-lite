@@ -17,6 +17,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsReposito
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SubmissionUser
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveySubmissionsRepository.SurveySubmission
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
@@ -57,7 +58,8 @@ class DashboardLocalSurveyRepositoryTest {
         startTime = System.currentTimeMillis(),
         lastUpdateTime = System.currentTimeMillis(),
         source = "test",
-        parentCode = "code"
+        parentCode = "code",
+        app = PlanetAppIdentity.APP_ID,
     )
 
     private fun createSurveyDocument() = SurveyDocument(

@@ -63,4 +63,5 @@
     <dimen name="text_size_24sp">24sp</dimen>
     <dimen name="text_size_26sp">26sp</dimen>
     <dimen name="text_size_28sp">28sp</dimen>
+    <dimen name="enterprise_dashboard_content_bottom_padding">88dp</dimen>
 </resources>

@@ -113,14 +113,10 @@ internal val DashboardPostDetailActivity.replyListContinuationWatcher: TextWatch
                 if (isHandlingReplyListContinuation) {
                     return
                 }
-                if (count <= 0 || s == null) {
+                if (!isSingleNewlineInsertion(s, start, count)) {
                     return
                 }
-                val inserted = s.subSequence(start, start + count)
-                val newlineOffset = inserted.lastIndexOf('\n')
-                if (newlineOffset >= 0) {
-                    replyPendingNewlineIndex = start + newlineOffset
-                }
+                replyPendingNewlineIndex = start
             }
 
             override fun afterTextChanged(s: Editable?) {

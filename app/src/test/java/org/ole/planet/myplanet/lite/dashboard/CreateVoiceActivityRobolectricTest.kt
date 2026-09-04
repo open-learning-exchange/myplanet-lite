@@ -216,4 +216,26 @@ class CreateVoiceActivityRobolectricTest {
 
         assertEquals("**bold**  \n*italic*", result)
     }
+
+    @Test
+    fun `setting generated numbered list does not duplicate its last marker`() {
+        val activity = buildActivityController().get()
+        val input: TextInputEditText = activity.findViewById(R.id.createVoiceInput)
+
+        input.setText("1. Primero\n2. Segundo\n3. Tercero")
+
+        assertEquals("1. Primero\n2. Segundo\n3. Tercero", input.text.toString())
+    }
+
+    @Test
+    fun `typing newline still continues numbered list`() {
+        val activity = buildActivityController().get()
+        val input: TextInputEditText = activity.findViewById(R.id.createVoiceInput)
+        input.setText("1. Primero")
+        input.setSelection(input.length())
+
+        input.text?.append('\n')
+
+        assertEquals("1. Primero\n2. ", input.text.toString())
+    }
 }

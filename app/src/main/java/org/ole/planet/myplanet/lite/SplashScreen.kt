@@ -33,6 +33,7 @@ import org.ole.planet.myplanet.lite.profile.UserProfileSync
 import org.ole.planet.myplanet.lite.util.AppNavigator
 import org.ole.planet.myplanet.lite.util.IntentUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.ole.planet.myplanet.lite.util.putPlanetAppId
 import java.util.UUID
 
 class SplashScreen : BaseActivity() {
@@ -238,6 +239,7 @@ class SplashScreen : BaseActivity() {
                 put("androidId", androidId?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
                 put("deviceName", deviceName)
                 put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+                putPlanetAppId()
             }
         }.getOrNull()
     }

@@ -104,12 +104,16 @@ class DashboardTeamMembersFragment : Fragment() {
         binding.dashboardTeamMembersList.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@DashboardTeamMembersFragment.adapter
+            isNestedScrollingEnabled = true
             addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
         }
         binding.dashboardTeamJoinRequestsList.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = this@DashboardTeamMembersFragment.joinRequestsAdapter
             addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
+        }
+        binding.dashboardTeamMembersSwipeRefresh.setOnChildScrollUpCallback { _, _ ->
+            binding.dashboardTeamMembersList.canScrollVertically(-1)
         }
         binding.dashboardTeamMembersSwipeRefresh.setOnRefreshListener { onRefreshRequested() }
         binding.dashboardTeamMembersSearchInput.addTextChangedListener { editable ->

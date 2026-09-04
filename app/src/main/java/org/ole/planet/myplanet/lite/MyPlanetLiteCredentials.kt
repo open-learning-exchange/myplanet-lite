@@ -19,6 +19,7 @@ import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.auth.AuthResult
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.putPlanetAppId
 
 
 internal suspend fun MyPlanetLite.handleLoginResult(
@@ -126,6 +127,7 @@ internal fun MyPlanetLite.buildLoginActivityPayload(username: String): JSONObjec
             put("androidId", androidId?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
             put("deviceName", deviceName)
             put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+            putPlanetAppId()
         }
     }.getOrNull()
 }
@@ -254,7 +256,3 @@ internal fun MyPlanetLite.setSurveyTranslationConsentAccepted(accepted: Boolean)
         .putBoolean(KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, accepted)
         .apply()
 }
-
-
-
-

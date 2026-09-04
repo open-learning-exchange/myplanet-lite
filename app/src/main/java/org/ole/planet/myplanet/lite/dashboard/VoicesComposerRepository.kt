@@ -18,6 +18,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
+import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 import java.io.IOException
 
 class VoicesComposerRepository(
@@ -97,7 +98,7 @@ class VoicesComposerRepository(
                 }
                 client.newCall(requestBuilder.build()).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
                     responseAdapter.fromJson(body)
@@ -162,7 +163,7 @@ class VoicesComposerRepository(
             val creationResponse =
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
                     resourceCreationAdapter.fromJson(body)
@@ -196,7 +197,7 @@ class VoicesComposerRepository(
             val uploadResponse =
                 client.newCall(request).execute().use { response ->
                     if (!response.isSuccessful) {
-                        throw IOException("Unexpected response ${'$'}{response.code}")
+                        throw IOException("Unexpected response ${response.code}")
                     }
                     val body = response.body.string()
                     resourceUploadAdapter.fromJson(body)
@@ -223,6 +224,7 @@ class VoicesComposerRepository(
         val labels: List<String>,
         val user: UserPayload?,
         val news: NewsMetadata?,
+        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String = PlanetAppIdentity.APP_ID,
     )
 
     @JsonClass(generateAdapter = true)

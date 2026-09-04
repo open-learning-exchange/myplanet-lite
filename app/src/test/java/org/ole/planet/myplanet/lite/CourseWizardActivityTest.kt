@@ -21,10 +21,12 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseProgressDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
@@ -150,6 +152,18 @@ class CourseWizardActivityTest {
             )
         )
         controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun `course progress attribution is added only to new documents`() {
+        assertEquals("myplanet-lite", resolveCourseProgressApp(null))
+        assertEquals(
+            "myplanet",
+            resolveCourseProgressApp(CourseProgressDocument(app = "myplanet", courseId = null, stepNum = null)),
+        )
+        assertNull(
+            resolveCourseProgressApp(CourseProgressDocument(app = null, courseId = null, stepNum = null)),
+        )
     }
 
     private fun createCourseIntent(steps: List<CourseItem.LessonStep>): Intent {

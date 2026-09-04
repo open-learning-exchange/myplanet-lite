@@ -18,6 +18,7 @@ import org.ole.planet.myplanet.lite.dashboard.ServerConnectivityRepository
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.util.DeviceUtils
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
+import org.ole.planet.myplanet.lite.util.putPlanetAppId
 
 internal fun DashboardResourcesPageFragment.openResource(item: ResourceUi) {
     val mediaType = item.type.lowercase(Locale.ROOT)
@@ -119,6 +120,7 @@ private fun DashboardResourcesPageFragment.buildResourceActivityPayload(item: Re
             put("androidId", androidId?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
             put("deviceName", DeviceUtils.getDeviceName())
             put("customDeviceName", customDeviceName?.takeIf { it.isNotBlank() } ?: JSONObject.NULL)
+            putPlanetAppId()
         }
     }.getOrNull()
 }

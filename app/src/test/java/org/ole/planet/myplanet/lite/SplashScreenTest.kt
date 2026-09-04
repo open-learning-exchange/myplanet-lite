@@ -272,6 +272,7 @@ class SplashScreenTest {
             assertEquals("server-1", payload.getString("createdOn"))
             assertEquals("parent-1", payload.getString("parentCode"))
             assertEquals("android-1", payload.getString("androidId"))
+            assertEquals("myplanet-lite", payload.getString("app"))
             assertTrue(payload.getString("customDeviceName").isNotBlank())
             assertTrue(payload.get("loginTime") is Number)
 
