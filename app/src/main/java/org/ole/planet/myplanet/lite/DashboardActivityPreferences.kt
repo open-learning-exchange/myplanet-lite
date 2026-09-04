@@ -127,41 +127,6 @@ internal fun DashboardActivity.showVoiceBatchSizeDialog() {
     }
 
 
-internal fun DashboardActivity.applySurveyTranslationPreference(
-        enabled: Boolean,
-        menuItem: MenuItem,
-        showToast: Boolean,
-    ) {
-        setSurveyTranslationEnabled(enabled)
-        menuItem.isChecked = enabled
-        if (showToast) {
-            val messageRes =
-                if (enabled) {
-                    R.string.dashboard_settings_survey_translation_enabled
-                } else {
-                    R.string.dashboard_settings_survey_translation_disabled
-                }
-            Toast.makeText(this, messageRes, Toast.LENGTH_SHORT).show()
-        }
-    }
-
-
-internal fun DashboardActivity.setSurveyTranslationConsentAccepted(accepted: Boolean) {
-        serverPreferences
-            .edit()
-            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATION_CONSENT_ACCEPTED, accepted)
-            .apply()
-    }
-
-
-internal fun DashboardActivity.setSurveyTranslationEnabled(enabled: Boolean) {
-        serverPreferences
-            .edit()
-            .putBoolean(DashboardActivity.KEY_SURVEY_TRANSLATIONS_ENABLED, enabled)
-            .apply()
-    }
-
-
 internal fun DashboardActivity.setVoicePageSize(pageSize: Int): Boolean {
         val normalized = normalizeVoicePageSize(pageSize)
         val current = getVoicePageSize()
@@ -179,57 +144,6 @@ internal fun DashboardActivity.setVoicePageSize(pageSize: Int): Boolean {
 internal fun DashboardActivity.notifyVoicePageSizeChanged() {
         val voicesFragment = supportFragmentManager.findFragmentByTag("f0") as? DashboardVoicesFragment
         voicesFragment?.onPageSizeChanged(getVoicePageSize())
-    }
-
-
-internal fun DashboardActivity.showSurveyTranslationConsentDialog(
-        menuItem: MenuItem,
-        requestedEnabled: Boolean = isSurveyTranslationEnabled(),
-    ) {
-        if (!serverPreferences.contains(DashboardActivity.KEY_SURVEY_TRANSLATIONS_ENABLED)) {
-            setSurveyTranslationEnabled(DEFAULT_SURVEY_TRANSLATION_ENABLED)
-        }
-
-        val dialogView =
-            LayoutInflater
-                .from(this)
-                .inflate(R.layout.dialog_survey_translation_consent, null, false)
-        val consentCheckBox = dialogView.findViewById<MaterialCheckBox>(R.id.surveyTranslationConsentCheckBox)
-        val policyLink = dialogView.findViewById<TextView>(R.id.surveyTranslationPolicyLink)
-
-        consentCheckBox.isChecked = requestedEnabled
-
-        val dialog =
-            AlertDialog
-                .Builder(this)
-                .setTitle(R.string.login_survey_translation_consent_title)
-                .setView(dialogView)
-                .setPositiveButton(R.string.dashboard_survey_translation_consent_accept) { alertDialog, _ ->
-                    val translationsEnabled = consentCheckBox.isChecked
-                    setSurveyTranslationConsentAccepted(true)
-                    applySurveyTranslationPreference(translationsEnabled, menuItem, showToast = true)
-                    surveyTranslationToggle?.let { toggle ->
-                        isHandlingSurveyTranslationToggle = true
-                        toggle.isChecked = translationsEnabled
-                        isHandlingSurveyTranslationToggle = false
-                    }
-                    alertDialog.dismiss()
-                }.setNegativeButton(R.string.dashboard_survey_translation_consent_cancel) { alertDialog, _ ->
-                    setSurveyTranslationConsentAccepted(false)
-                    applySurveyTranslationPreference(false, menuItem, showToast = false)
-                    surveyTranslationToggle?.let { toggle ->
-                        isHandlingSurveyTranslationToggle = true
-                        toggle.isChecked = false
-                        isHandlingSurveyTranslationToggle = false
-                    }
-                    alertDialog.dismiss()
-                }.create()
-
-        policyLink.setOnClickListener {
-            startActivity(Intent(this, PrivacyPolicyActivity::class.java))
-        }
-
-        dialog.show()
     }
 
 

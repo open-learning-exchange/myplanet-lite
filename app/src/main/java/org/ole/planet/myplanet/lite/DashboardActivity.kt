@@ -79,8 +79,6 @@ class DashboardActivity : BaseActivity() {
     internal val serverPreferences by lazy {
         SecurePreferencesProvider.getServerPreferences(applicationContext)
     }
-    internal var isHandlingSurveyTranslationToggle = false
-    internal var surveyTranslationToggle: SwitchCompat? = null
     internal var isOfflineMode = false
     internal var isOfflineForcedByLaunch = false
     internal val networkCallback =
@@ -126,7 +124,6 @@ class DashboardActivity : BaseActivity() {
         val profileDrawer: NavigationView = findViewById(R.id.dashboardProfileDrawer)
         val settingsDrawer: NavigationView = findViewById(R.id.dashboardSettingsDrawer)
         val surveyTranslationMenuItem = settingsDrawer.menu.findItem(R.id.menu_settings_survey_translation)
-        surveyTranslationToggle = surveyTranslationMenuItem.actionView?.findViewById(R.id.menuToggle)
         val drawerHeader = profileDrawer.getHeaderView(0)
         drawerAvatar = drawerHeader.findViewById(R.id.drawerProfileAvatar)
         drawerName = drawerHeader.findViewById(R.id.drawerProfileName)

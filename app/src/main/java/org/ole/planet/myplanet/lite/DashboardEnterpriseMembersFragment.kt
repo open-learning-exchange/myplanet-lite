@@ -4,7 +4,9 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.core.widget.addTextChangedListener
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
@@ -40,6 +42,7 @@ class DashboardEnterpriseMembersFragment : Fragment() {
     private var avatarLoader: DashboardAvatarLoader? = null
     private var enterpriseAvatarLoader: DashboardEnterpriseAvatarLoader? = null
     private var members: List<TeamMemberDetails> = emptyList()
+    private var joinRequests: List<TeamJoinRequestUiModel> = emptyList()
     private var selectedEnterpriseId: String? = null
     private var selectedEnterprise: TeamDocument? = null
     private var baseUrl: String? = null
@@ -58,6 +61,14 @@ class DashboardEnterpriseMembersFragment : Fragment() {
         onMemberClicked = { member -> openTeamMemberProfileSupport(member) },
         onRemoveMemberClicked = { member -> confirmMemberRemoval(member) },
     )
+    private val joinRequestsAdapter = TeamJoinRequestsAdapter(
+        avatarBinder = { imageView, username, _ ->
+            val request = joinRequests.firstOrNull { it.username == username }?.request
+            enterpriseAvatarLoader?.bind(imageView, request?.userId, request?.userPlanetCode, username)
+        },
+        onAcceptClicked = { request -> confirmAcceptRequest(request) },
+        onRejectClicked = { request -> confirmRejectRequest(request) },
+    )
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, state: Bundle?): View {
         _binding = FragmentDashboardTeamMembersBinding.inflate(inflater, container, false)
@@ -69,11 +80,20 @@ class DashboardEnterpriseMembersFragment : Fragment() {
         binding.dashboardTeamMembersList.apply {
             layoutManager = LinearLayoutManager(requireContext())
             adapter = membersAdapter
+            isNestedScrollingEnabled = true
+            updatePadding(bottom = resources.getDimensionPixelSize(R.dimen.enterprise_dashboard_content_bottom_padding))
             addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
         }
+        binding.dashboardTeamJoinRequestsList.apply {
+            layoutManager = LinearLayoutManager(requireContext())
+            adapter = joinRequestsAdapter
+            addItemDecoration(DividerItemDecoration(requireContext(), DividerItemDecoration.VERTICAL))
+        }
+        binding.dashboardTeamMembersSwipeRefresh.setOnChildScrollUpCallback { _, _ ->
+            binding.dashboardTeamMembersList.canScrollVertically(-1)
+        }
         binding.dashboardTeamMembersListTitle.setText(R.string.dashboard_enterprise_members_title)
-        binding.dashboardTeamJoinRequestsTitle.isVisible = false
-        binding.dashboardTeamJoinRequestsList.isVisible = false
+        hideJoinRequests()
         binding.fabAddMember.isVisible = false
         binding.fabAddMember.setOnClickListener { showInviteMembersDialog() }
         binding.fabAddMember.enableDrag()
@@ -141,6 +161,7 @@ class DashboardEnterpriseMembersFragment : Fragment() {
                     isCurrentUserLeader = members.any {
                         it.isLeader && it.username.equals(creds.username, ignoreCase = true)
                     }
+                    if (isCurrentUserLeader) loadJoinRequests(result.enterprise) else hideJoinRequests()
                     binding.fabAddMember.isVisible = isCurrentUserLeader
                     if (members.isEmpty()) {
                         showMessage(R.string.dashboard_enterprise_members_empty)
@@ -150,6 +171,69 @@ class DashboardEnterpriseMembersFragment : Fragment() {
                     }
                 }
             }
+        }
+    }
+
+    private suspend fun loadJoinRequests(enterprise: TeamDocument) {
+        val base = baseUrl ?: return hideJoinRequests()
+        val creds = credentials ?: return hideJoinRequests()
+        val enterpriseId = enterprise.id ?: return hideJoinRequests()
+        val enterprisePlanetCode = enterprise.teamPlanetCode ?: return hideJoinRequests()
+        teamsRepository.fetchTeamJoinRequestDetails(
+            base, creds, sessionCookie, enterpriseId, enterprisePlanetCode,
+        ).onSuccess { details ->
+            joinRequests = details.map { detail ->
+                TeamJoinRequestUiModel(
+                    id = detail.request.id ?: detail.request.userId.orEmpty(),
+                    username = detail.username,
+                    fullName = detail.fullName,
+                    hasAvatar = detail.hasAvatar,
+                    request = detail.request,
+                )
+            }
+            joinRequestsAdapter.submitList(joinRequests)
+            val visible = joinRequests.isNotEmpty()
+            binding.dashboardTeamJoinRequestsTitle.isVisible = visible
+            binding.dashboardTeamJoinRequestsList.isVisible = visible
+        }.onFailure {
+            hideJoinRequests()
+            Toast.makeText(requireContext(), R.string.dashboard_team_members_requests_error_loading, Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun hideJoinRequests() {
+        joinRequests = emptyList()
+        joinRequestsAdapter.submitList(emptyList())
+        binding.dashboardTeamJoinRequestsTitle.isVisible = false
+        binding.dashboardTeamJoinRequestsList.isVisible = false
+    }
+
+    private fun confirmAcceptRequest(request: TeamJoinRequestUiModel) {
+        if (!isCurrentUserLeader) return
+        confirmAcceptJoinRequestDialog(this, request) { selected ->
+            runAcceptJoinRequest(
+                AcceptJoinRequestParams(
+                    fragment = this,
+                    repository = teamsRepository,
+                    baseUrl = baseUrl,
+                    credentials = credentials,
+                    sessionCookie = sessionCookie,
+                    request = selected,
+                    currentTeamPlanetCode = selectedEnterprise?.teamPlanetCode,
+                    serverPlanetCode = serverPlanetCode,
+                    onReload = { loadSelectedEnterprise() },
+                ),
+            )
+        }
+    }
+
+    private fun confirmRejectRequest(request: TeamJoinRequestUiModel) {
+        if (!isCurrentUserLeader) return
+        confirmRejectJoinRequestDialog(this, request) { selected ->
+            runRejectJoinRequest(
+                DashboardTeamActionContext(this, teamsRepository, baseUrl, credentials, sessionCookie),
+                selected,
+            ) { loadSelectedEnterprise() }
         }
     }
 
@@ -252,6 +336,7 @@ class DashboardEnterpriseMembersFragment : Fragment() {
 
     private fun showMessage(messageRes: Int) {
         members = emptyList()
+        hideJoinRequests()
         selectedEnterprise = null
         isCurrentUserLeader = false
         binding.fabAddMember.isVisible = false

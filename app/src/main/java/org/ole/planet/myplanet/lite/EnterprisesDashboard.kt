@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.lite
 import android.content.Intent
 import android.graphics.BitmapFactory
 import android.os.Bundle
+import android.view.MenuItem
 import android.widget.FrameLayout
 import android.widget.ImageButton
 import android.widget.ImageView
@@ -56,6 +57,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         val settingsButton: ImageButton = findViewById(R.id.enterprisesDashboardSettings)
         val profileDrawer: NavigationView = findViewById(R.id.enterprisesProfileDrawer)
         val settingsDrawer: NavigationView = findViewById(R.id.enterprisesSettingsDrawer)
+        val surveyTranslationMenuItem = settingsDrawer.menu.findItem(R.id.menu_settings_survey_translation)
         val drawerHeader = profileDrawer.getHeaderView(0)
         drawerAvatar = drawerHeader.findViewById(R.id.drawerProfileAvatar)
         drawerName = drawerHeader.findViewById(R.id.drawerProfileName)
@@ -83,7 +85,7 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
             drawerLayout.openDrawer(GravityCompat.END)
         }
         setupProfileDrawer(profileDrawer)
-        setupSettingsDrawer(settingsDrawer)
+        setupSettingsDrawer(settingsDrawer, surveyTranslationMenuItem)
         enterprisesIcon.setOnClickListener { showEnterprisesSection() }
         teamsIcon.setOnClickListener { showTeamsSection() }
         voicesIcon.setOnClickListener { showVoicesSection() }
@@ -129,7 +131,12 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         }
     }
 
-    private fun setupSettingsDrawer(settingsDrawer: NavigationView) {
+    private fun setupSettingsDrawer(
+        settingsDrawer: NavigationView,
+        surveyTranslationMenuItem: MenuItem,
+    ) {
+        val surveyTranslationSettings =
+            SurveyTranslationSettingsController(this, surveyTranslationMenuItem).also { it.bind() }
         settingsDrawer.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.menu_settings_language -> {
@@ -147,10 +154,16 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
                     }
                     true
                 }
+                R.id.menu_settings_survey_translation -> {
+                    drawerLayout.closeDrawer(GravityCompat.END)
+                    surveyTranslationSettings.handleMenuSelection()
+                    true
+                }
                 else -> false
             }
         }
     }
+
 
     private fun showSection(section: Section) {
         when (section) {

@@ -57,24 +57,8 @@ internal fun DashboardActivity.setupSettingsDrawer(
         settingsDrawer: NavigationView,
         surveyTranslationMenuItem: MenuItem,
     ) {
-        val initialSurveyTranslationEnabled = isSurveyTranslationActive()
-        surveyTranslationMenuItem.isChecked = initialSurveyTranslationEnabled
-        surveyTranslationToggle?.apply {
-            isChecked = initialSurveyTranslationEnabled
-            setOnCheckedChangeListener { _, isChecked ->
-                if (isHandlingSurveyTranslationToggle) return@setOnCheckedChangeListener
-
-                if (isChecked) {
-                    isHandlingSurveyTranslationToggle = true
-                    this.isChecked = false
-                    surveyTranslationMenuItem.isChecked = false
-                    isHandlingSurveyTranslationToggle = false
-                    showSurveyTranslationConsentDialog(surveyTranslationMenuItem, requestedEnabled = true)
-                } else {
-                    applySurveyTranslationPreference(isChecked, surveyTranslationMenuItem, showToast = true)
-                }
-            }
-        }
+        val surveyTranslationSettings =
+            SurveyTranslationSettingsController(this, surveyTranslationMenuItem).also { it.bind() }
 
         settingsDrawer.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
@@ -88,18 +72,7 @@ internal fun DashboardActivity.setupSettingsDrawer(
 
                 R.id.menu_settings_survey_translation -> {
                     drawerLayout.closeDrawer(GravityCompat.END)
-                    val currentActive = surveyTranslationToggle?.isChecked ?: isSurveyTranslationActive()
-                    val enableRequest = !currentActive
-                    if (enableRequest) {
-                        showSurveyTranslationConsentDialog(surveyTranslationMenuItem, requestedEnabled = true)
-                    } else {
-                        surveyTranslationToggle?.let { toggle ->
-                            isHandlingSurveyTranslationToggle = true
-                            toggle.isChecked = false
-                            isHandlingSurveyTranslationToggle = false
-                        }
-                        applySurveyTranslationPreference(false, surveyTranslationMenuItem, showToast = true)
-                    }
+                    surveyTranslationSettings.handleMenuSelection()
                     true
                 }
 

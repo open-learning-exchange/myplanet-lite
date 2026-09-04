@@ -45,9 +45,9 @@ moshi-kotlin = { module = "com.squareup.moshi:moshi-kotlin", version = "1.15.2" 
 photoview = { module = "com.github.chrisbanes:PhotoView", version = "2.3.0" }
 retrofit = { module = "com.squareup.retrofit2:retrofit", version = "3.0.0" }
 robolectric = { module = "org.robolectric:robolectric", version = "4.16.1" }
-ucrop = { module = "com.github.yalantis:ucrop", version = "2.2.8" }
+ucrop = { module = "com.github.yalantis:ucrop", version = "2.2.11" }
 worldcountrydata = { module = "com.github.blongho:worldCountryData", version = "1.5.3" }
 
 [plugins]
-android-application = { id = "com.android.application", version = "9.3.2" }
+android-application = { id = "com.android.application", version = "9.4.0" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version = "2.4.10" }
