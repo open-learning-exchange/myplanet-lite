@@ -184,7 +184,11 @@ internal fun SurveyWizardFragment.createRatingButton(
     MaterialButton(context).apply {
         text = value.toString()
         isAllCaps = false
+        isSingleLine = true
         textSize = 18f
+        minWidth = 0
+        minimumWidth = 0
+        setPadding(0, paddingTop, 0, paddingBottom)
         cornerRadius = resources.getDimensionPixelSize(R.dimen.padding_small)
         insetTop = 0
         insetBottom = 0
