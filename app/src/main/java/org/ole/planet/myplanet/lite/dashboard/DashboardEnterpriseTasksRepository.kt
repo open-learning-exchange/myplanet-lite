@@ -71,14 +71,20 @@ class DashboardEnterpriseTasksRepository(
                 .put("description", input.description.trim())
                 .put("deadline", input.deadline)
                 .put("completed", input.original?.completed ?: false)
-                .put("assignee", input.assignee?.toJson() ?: "")
+                .put("assignee", input.assignees.firstOrNull()?.toJson() ?: "")
+                .put("assignees", JSONArray(input.assignees.map { it.toJson() }))
                 .put("link", JSONObject().put("teams", input.enterpriseId))
                 .put("sync", JSONObject().put("type", input.enterpriseType).put("planetCode", input.enterprisePlanetCode))
             val saved = postDocument(baseUrl, "tasks", json, credentials, sessionCookie)
             json.put("_id", saved.getString("id")).put("_rev", saved.getString("rev"))
-            if (input.assignee != null && input.assignee.userId != input.currentUserId) {
+            val previousAssigneeKeys = input.original?.assignees.orEmpty().mapTo(mutableSetOf()) {
+                it.userId to it.userPlanetCode
+            }
+            input.assignees.filter {
+                it.userId != input.currentUserId && (it.userId to it.userPlanetCode) !in previousAssigneeKeys
+            }.forEach { assignee ->
                 runCatching {
-                    notifyAssignee(baseUrl, credentials, sessionCookie, input.enterpriseId, input.assignee)
+                    notifyAssignee(baseUrl, credentials, sessionCookie, input.enterpriseId, assignee)
                 }
             }
             json.toTaskDocument() ?: throw IOException("Invalid saved task")
@@ -129,11 +135,21 @@ class DashboardEnterpriseTasksRepository(
         userId: String,
     ): Result<Unit> = withContext(dispatcher) {
         runCatching {
-            val selector = JSONObject().put("assignee.userId", userId).put("link.teams", enterpriseId)
+            val selector = JSONObject()
+                .put("link.teams", enterpriseId)
+                .put("$" + "or", JSONArray()
+                    .put(JSONObject().put("assignee.userId", userId))
+                    .put(JSONObject().put("assignees.userId", userId)))
             val docs = find(baseUrl, "tasks", selector, 1000, credentials, sessionCookie)
             if (docs.length() == 0) return@runCatching Unit
             val updates = JSONArray()
-            for (index in 0 until docs.length()) updates.put(docs.getJSONObject(index).put("assignee", ""))
+            for (index in 0 until docs.length()) {
+                val doc = docs.getJSONObject(index)
+                val remaining = doc.effectiveAssignees().filterNot { it.optString("userId") == userId }
+                doc.put("assignees", JSONArray(remaining))
+                    .put("assignee", remaining.firstOrNull() ?: "")
+                updates.put(doc)
+            }
             postJson(baseUrl, "tasks/_bulk_docs", JSONObject().put("docs", updates), credentials, sessionCookie)
             Unit
         }
@@ -241,7 +257,7 @@ class DashboardEnterpriseTasksRepository(
 
     private fun JSONObject.toTaskDocument(): EnterpriseTaskDocument? {
         val id = optString("_id").takeIf(String::isNotBlank) ?: return null
-        val assigneeJson = optJSONObject("assignee")
+        val assignees = effectiveAssignees().map { it.toAssignee() }
         return EnterpriseTaskDocument(
             id = id,
             revision = optString("_rev"),
@@ -249,7 +265,7 @@ class DashboardEnterpriseTasksRepository(
             description = optString("description"),
             deadline = optLong("deadline"),
             completed = optBoolean("completed"),
-            assignee = assigneeJson?.toAssignee(),
+            assignees = assignees,
             raw = toString(),
         )
     }
@@ -264,6 +280,14 @@ class DashboardEnterpriseTasksRepository(
     private fun EnterpriseTaskAssignee.toJson() = JSONObject()
         .put("userId", userId).put("userPlanetCode", userPlanetCode).put("name", name)
         .put("userDoc", JSONObject().put("fullName", fullName))
+
+    private fun JSONObject.effectiveAssignees(): List<JSONObject> {
+        val multiple = optJSONArray("assignees")
+        if (multiple != null && multiple.length() > 0) {
+            return (0 until multiple.length()).mapNotNull(multiple::optJSONObject)
+        }
+        return listOfNotNull(optJSONObject("assignee"))
+    }
 
     sealed interface EnterpriseTasksSnapshot {
         data object AccessDenied : EnterpriseTasksSnapshot
@@ -291,7 +315,7 @@ data class EnterpriseTaskDocument(
     val description: String,
     val deadline: Long,
     val completed: Boolean,
-    val assignee: EnterpriseTaskAssignee?,
+    val assignees: List<EnterpriseTaskAssignee>,
     val raw: String,
 )
 
@@ -309,7 +333,7 @@ data class SaveEnterpriseTask(
     val title: String,
     val description: String,
     val deadline: Long,
-    val assignee: EnterpriseTaskAssignee?,
+    val assignees: List<EnterpriseTaskAssignee>,
     val currentUserId: String,
     val original: EnterpriseTaskDocument? = null,
 )

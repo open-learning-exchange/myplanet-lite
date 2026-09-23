@@ -422,6 +422,7 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="dashboard_enterprise_tasks_archive">Archive task</string>
     <string name="dashboard_enterprise_tasks_deadline_format">Due: %1$s</string>
     <string name="dashboard_enterprise_tasks_assignee_format">Assigned to: %1$s</string>
+    <string name="dashboard_enterprise_tasks_assignees">Task assignees</string>
     <string name="dashboard_enterprise_tasks_unassigned">Unassigned</string>
     <string name="dashboard_enterprise_tasks_field_title">Title</string>
     <string name="dashboard_enterprise_tasks_field_description">Description (optional)</string>

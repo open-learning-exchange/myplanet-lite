@@ -25,7 +25,11 @@
             android:id="@+id/enterpriseTaskDialogDescription"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:minLines="3" />
+            android:gravity="top|start"
+            android:inputType="textCapSentences|textMultiLine"
+            android:maxLines="6"
+            android:minLines="3"
+            android:scrollbars="vertical" />
     </com.google.android.material.textfield.TextInputLayout>
 
     <HorizontalScrollView
@@ -161,9 +165,12 @@
         android:layout_height="wrap_content"
         android:layout_marginTop="12dp" />
 
-    <Spinner
+    <com.google.android.material.button.MaterialButton
         android:id="@+id/enterpriseTaskDialogAssignee"
+        style="@style/Widget.MaterialComponents.Button.OutlinedButton"
         android:layout_width="match_parent"
-        android:layout_height="48dp"
-        android:layout_marginTop="12dp" />
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:gravity="start|center_vertical"
+        android:textAllCaps="false" />
 </LinearLayout>
