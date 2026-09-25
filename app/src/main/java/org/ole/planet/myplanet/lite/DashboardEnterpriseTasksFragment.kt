@@ -6,7 +6,6 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.isVisible
 import androidx.core.widget.addTextChangedListener
@@ -156,9 +155,14 @@ class DashboardEnterpriseTasksFragment : Fragment() {
         val currentUserId = credentials?.username?.let { "org.couchdb.user:$it" }
         val currentPlanetCode = userPlanetCode
         val filtered = tasks.filter { task ->
-            val assignee = task.assignee
-            (!mineOnly || (assignee?.userId == currentUserId && assignee?.userPlanetCode == currentPlanetCode)) &&
-                (query.isEmpty() || task.title.contains(query, true) || task.description.contains(query, true))
+            val isMine = task.assignees.any {
+                it.userId == currentUserId && it.userPlanetCode == currentPlanetCode
+            }
+            val matchesQuery = query.isEmpty() || task.title.contains(query, true) ||
+                task.description.contains(query, true) || task.assignees.any {
+                    it.fullName.contains(query, true) || it.name.contains(query, true)
+                }
+            (!mineOnly || isMine) && matchesQuery
         }
         adapter.submitList(filtered)
         binding.enterpriseTasksEmpty.isVisible = filtered.isEmpty()
@@ -204,11 +208,41 @@ class DashboardEnterpriseTasksFragment : Fragment() {
                 ).show()
             }, calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), calendar.get(Calendar.DAY_OF_MONTH)).show()
         }
-        val assigneeOptions = listOf<TeamMemberDetails?>(null) + members
-        val labels = assigneeOptions.map { it?.fullName ?: it?.username ?: getString(R.string.dashboard_enterprise_tasks_unassigned) }
-        dialogBinding.enterpriseTaskDialogAssignee.adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_dropdown_item, labels)
-        val selectedIndex = assigneeOptions.indexOfFirst { it?.userId == original?.assignee?.userId }.coerceAtLeast(0)
-        dialogBinding.enterpriseTaskDialogAssignee.setSelection(selectedIndex)
+        val selectedMemberKeys = original?.assignees.orEmpty().mapTo(mutableSetOf()) {
+            it.userId to it.userPlanetCode
+        }
+        fun updateAssigneesLabel() {
+            val selectedNames = members.filter {
+                (it.userId.orEmpty() to it.userPlanetCode.orEmpty()) in selectedMemberKeys
+            }.map { it.fullName?.takeIf(String::isNotBlank) ?: it.username.orEmpty() }
+            dialogBinding.enterpriseTaskDialogAssignee.text = selectedNames.takeIf { it.isNotEmpty() }
+                ?.joinToString() ?: getString(R.string.dashboard_enterprise_tasks_unassigned)
+        }
+        updateAssigneesLabel()
+        dialogBinding.enterpriseTaskDialogAssignee.setOnClickListener {
+            val pendingKeys = selectedMemberKeys.toMutableSet()
+            val labels = members.map {
+                it.fullName?.takeIf(String::isNotBlank) ?: it.username.orEmpty()
+            }.toTypedArray()
+            val checked = BooleanArray(members.size) { index ->
+                val member = members[index]
+                (member.userId.orEmpty() to member.userPlanetCode.orEmpty()) in pendingKeys
+            }
+            AlertDialog.Builder(requireContext())
+                .setTitle(R.string.dashboard_enterprise_tasks_assignees)
+                .setMultiChoiceItems(labels, checked) { _, index, selected ->
+                    val member = members[index]
+                    val key = member.userId.orEmpty() to member.userPlanetCode.orEmpty()
+                    if (selected) pendingKeys.add(key) else pendingKeys.remove(key)
+                }
+                .setNegativeButton(android.R.string.cancel, null)
+                .setPositiveButton(android.R.string.ok) { _, _ ->
+                    selectedMemberKeys.clear()
+                    selectedMemberKeys.addAll(pendingKeys)
+                    updateAssigneesLabel()
+                }
+                .show()
+        }
         val dialog = AlertDialog.Builder(requireContext())
             .setTitle(if (original == null) R.string.dashboard_enterprise_tasks_add else R.string.dashboard_enterprise_tasks_edit)
             .setView(dialogBinding.root)
@@ -222,8 +256,10 @@ class DashboardEnterpriseTasksFragment : Fragment() {
                     dialogBinding.enterpriseTaskDialogTitle.error = getString(R.string.dashboard_enterprise_tasks_title_required)
                     return@setOnClickListener
                 }
-                val member = assigneeOptions[dialogBinding.enterpriseTaskDialogAssignee.selectedItemPosition]
-                saveTask(dialog, current, original, title, dialogBinding.enterpriseTaskDialogDescription.text?.toString().orEmpty(), deadline, member)
+                val selectedMembers = members.filter {
+                    (it.userId.orEmpty() to it.userPlanetCode.orEmpty()) in selectedMemberKeys
+                }
+                saveTask(dialog, current, original, title, dialogBinding.enterpriseTaskDialogDescription.text?.toString().orEmpty(), deadline, selectedMembers)
             }
         }
         dialog.show()
@@ -236,11 +272,11 @@ class DashboardEnterpriseTasksFragment : Fragment() {
         title: String,
         description: String,
         deadline: Long,
-        member: TeamMemberDetails?,
+        selectedMembers: List<TeamMemberDetails>,
     ) {
         val base = baseUrl ?: return
         val creds = credentials ?: return
-        val assignee = member?.let {
+        val assignees = selectedMembers.map {
             EnterpriseTaskAssignee(it.userId.orEmpty(), it.userPlanetCode.orEmpty(), it.username.orEmpty(), it.fullName.orEmpty())
         }
         showLoading(true)
@@ -249,7 +285,7 @@ class DashboardEnterpriseTasksFragment : Fragment() {
                 base, creds, sessionCookie,
                 SaveEnterpriseTask(
                     current.enterpriseId, current.enterpriseType, current.enterprisePlanetCode,
-                    title, description, deadline, assignee,
+                    title, description, deadline, assignees,
                     "org.couchdb.user:${creds.username}", original,
                 ),
             )

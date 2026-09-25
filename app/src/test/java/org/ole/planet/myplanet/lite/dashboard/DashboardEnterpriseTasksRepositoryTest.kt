@@ -90,4 +90,40 @@ class DashboardEnterpriseTasksRepositoryTest {
         assertEquals("preserved", JSONObject(task.raw).getString("customField"))
         assertEquals("/db/tasks/task-1", server.takeRequest().path)
     }
+
+    @Test
+    fun `fetch task reads multiple assignees and falls back to legacy assignee`() = runTest {
+        server.enqueue(MockResponse().setBody(
+            """{"_id":"multi","assignee":{"userId":"ignored"},"assignees":[{"userId":"ana","userPlanetCode":"p","name":"ana"},{"userId":"bob","userPlanetCode":"p","name":"bob"}]}""",
+        ))
+        server.enqueue(MockResponse().setBody(
+            """{"_id":"legacy","assignee":{"userId":"ana","userPlanetCode":"p","name":"ana"}}""",
+        ))
+
+        val multiple = repository.fetchTask(server.url("/").toString(), null, null, "multi").getOrThrow()
+        val legacy = repository.fetchTask(server.url("/").toString(), null, null, "legacy").getOrThrow()
+
+        assertEquals(listOf("ana", "bob"), multiple.assignees.map { it.userId })
+        assertEquals(listOf("ana"), legacy.assignees.map { it.userId })
+    }
+
+    @Test
+    fun `save task writes primary and multiple assignee fields`() = runTest {
+        server.enqueue(MockResponse().setBody("""{"ok":true,"id":"task-1","rev":"1-a"}"""))
+        server.enqueue(MockResponse().setBody("""{"docs":[]}"""))
+        server.enqueue(MockResponse().setBody("""{"ok":true,"id":"notification-1","rev":"1-a"}"""))
+        val assignees = listOf(
+            EnterpriseTaskAssignee("ana", "p", "ana", "Ana"),
+            EnterpriseTaskAssignee("bob", "p", "bob", "Bob"),
+        )
+
+        repository.saveTask(
+            server.url("/").toString(), null, null,
+            SaveEnterpriseTask("enterprise-1", "sync", "p", "Task", "", 2000, assignees, "ana"),
+        ).getOrThrow()
+
+        val saved = JSONObject(server.takeRequest().body.readUtf8())
+        assertEquals("ana", saved.getJSONObject("assignee").getString("userId"))
+        assertEquals(2, saved.getJSONArray("assignees").length())
+    }
 }

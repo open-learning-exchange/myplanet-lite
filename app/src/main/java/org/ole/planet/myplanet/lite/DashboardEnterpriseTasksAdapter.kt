@@ -254,8 +254,8 @@ internal class DashboardEnterpriseTaskViewHolder(
             R.string.dashboard_enterprise_tasks_deadline_format,
             DateFormat.getDateTimeInstance(DateFormat.MEDIUM, DateFormat.SHORT).format(Date(task.deadline)),
         )
-        val assignee = task.assignee?.fullName?.ifBlank { task.assignee.name }
-        binding.enterpriseTaskAssignee.text = assignee?.let {
+        val assignees = task.assignees.joinToString { it.fullName.ifBlank { it.name } }
+        binding.enterpriseTaskAssignee.text = assignees.takeIf(String::isNotBlank)?.let {
             context.getString(R.string.dashboard_enterprise_tasks_assignee_format, it)
         } ?: context.getString(R.string.dashboard_enterprise_tasks_unassigned)
         binding.enterpriseTaskActionsContainer.isVisible = canManage

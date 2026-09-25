@@ -211,6 +211,11 @@ class SurveyWizardFragmentTest {
 
         assertEquals((1..scaleMax).map { it.toString() }, ratingButtons.map { it.text.toString() })
         assertEquals(expectedColumns, gridLayout?.columnCount)
+        ratingButtons.forEach { button ->
+            assertEquals(0, button.minimumWidth)
+            assertEquals(0, button.paddingLeft)
+            assertEquals(0, button.paddingRight)
+        }
     }
 
     private fun <T : View> findViewsOfType(root: View, type: Class<T>): List<T> {

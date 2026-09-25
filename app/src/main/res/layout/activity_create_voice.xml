@@ -64,8 +64,10 @@
                         android:gravity="top|start"
                         android:imeOptions="flagNoEnterAction"
                         android:inputType="textCapSentences|textMultiLine"
+                        android:maxLines="8"
                         android:minLines="8"
                         android:overScrollMode="always"
+                        android:scrollbars="vertical"
                         android:textColor="?attr/colorOnSurface" />
                 </com.google.android.material.textfield.TextInputLayout>
 

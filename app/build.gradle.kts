@@ -35,8 +35,8 @@ android {
         applicationId = "org.ole.planet.myplanet.lite"
         minSdk = 28
         targetSdk = 37
-        versionCode = 534
-        versionName = "0.5.34"
+        versionCode = 535
+        versionName = "0.5.35"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "PLANET_BASE_URL", "\"http://10.82.1.30/\"")
@@ -72,8 +72,13 @@ tasks.withType<Test>().configureEach {
             "--add-opens=java.base/java.io=ALL-UNNAMED",
             "--add-opens=java.base/java.net=ALL-UNNAMED",
             "--add-opens=java.base/java.nio=ALL-UNNAMED",
+            "--add-opens=java.base/java.security=ALL-UNNAMED",
+            "--add-opens=java.base/java.text=ALL-UNNAMED",
             "--add-opens=java.base/java.util.concurrent=ALL-UNNAMED",
+            "--add-opens=java.base/jdk.internal.access=ALL-UNNAMED",
             "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+            "--add-opens=java.desktop/java.awt.font=ALL-UNNAMED",
+            "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
         )
     }
     systemProperty("robolectric.logging", "none")
