@@ -9,13 +9,16 @@ package org.ole.planet.myplanet.lite.dashboard
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
-import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
+import org.json.JSONArray
+import org.json.JSONObject
 import java.io.IOException
 
 class DashboardNewsActionsRepository(
@@ -24,7 +27,14 @@ class DashboardNewsActionsRepository(
     private val dispatcher: CoroutineDispatcher,
 ) {
     private val deleteRequestAdapter = moshi.adapter(DeleteNewsRequest::class.java)
-    private val updateRequestAdapter = moshi.adapter(UpdateNewsRequest::class.java)
+    private val imagesAdapter =
+        moshi.adapter<List<DashboardNewsRepository.NewsImage>>(
+            Types.newParameterizedType(List::class.java, DashboardNewsRepository.NewsImage::class.java),
+        )
+    private val viewInAdapter =
+        moshi.adapter<List<DashboardNewsRepository.ViewInEntry>>(
+            Types.newParameterizedType(List::class.java, DashboardNewsRepository.ViewInEntry::class.java),
+        )
     private val responseAdapter = moshi.adapter(DeleteNewsResponse::class.java)
 
     suspend fun deleteNews(
@@ -103,30 +113,18 @@ class DashboardNewsActionsRepository(
                 val id =
                     document.id?.takeIf { it.isNotBlank() }
                         ?: throw IOException("Missing document id")
-                val revision =
-                    document.revision?.takeIf { it.isNotBlank() }
-                        ?: throw IOException("Missing document revision")
-                val payload =
-                    UpdateNewsRequest(
-                        id = id,
-                        revision = revision,
-                        docType = document.docType,
-                        time = document.time,
-                        createdOn = document.createdOn,
-                        parentCode = document.parentCode,
-                        replyTo = document.replyTo,
-                        user = document.user,
-                        viewIn = resolveViewInEntries(document, teamId, teamName),
-                        messageType = document.messageType,
-                        messagePlanetCode = document.messagePlanetCode,
-                        message = message,
-                        images = images.takeUnless { it.isEmpty() },
-                        updatedDate = System.currentTimeMillis(),
-                        app = document.app,
-                    )
+                val latest = fetchNewsDocument(normalizedBase, sessionCookie, id)
+                latest.put("message", message)
+                if (images.isEmpty()) {
+                    latest.remove("images")
+                } else {
+                    latest.put("images", JSONArray(imagesAdapter.toJson(images)))
+                }
+                latest.put("updatedDate", System.currentTimeMillis())
+                completeViewIn(latest, document, teamId, teamName)
                 val requestBody =
-                    updateRequestAdapter
-                        .toJson(payload)
+                    latest
+                        .toString()
                         .toRequestBody(JSON_MEDIA_TYPE)
                 val requestBuilder =
                     Request
@@ -146,6 +144,51 @@ class DashboardNewsActionsRepository(
             }
         }
 
+    private fun fetchNewsDocument(
+        baseUrl: String,
+        sessionCookie: String?,
+        id: String,
+    ): JSONObject {
+        val url =
+            "$baseUrl/db/news/"
+                .toHttpUrl()
+                .newBuilder()
+                .addPathSegment(id)
+                .build()
+        val requestBuilder = Request.Builder().url(url).get()
+        sessionCookie?.takeIf { it.isNotBlank() }?.let { cookie ->
+            requestBuilder.addHeader("Cookie", cookie)
+        }
+        client.newCall(requestBuilder.build()).execute().use { response ->
+            if (!response.isSuccessful) {
+                throw IOException("Unexpected response ${response.code}")
+            }
+            return JSONObject(response.body.string())
+        }
+    }
+
+    private fun completeViewIn(
+        latest: JSONObject,
+        document: DashboardNewsRepository.NewsDocument,
+        teamId: String?,
+        teamName: String?,
+    ) {
+        val entries = latest.optJSONArray("viewIn")
+        if (entries == null || entries.length() == 0) {
+            val built = buildViewInEntries(document.createdOn, document.parentCode, teamId, teamName)
+            latest.put("viewIn", JSONArray(viewInAdapter.toJson(built)))
+            return
+        }
+        for (index in 0 until entries.length()) {
+            val entry = entries.optJSONObject(index) ?: continue
+            if (entry.optString("section") == "teams") {
+                if (!entry.has("public")) entry.put("public", false)
+                if (!entry.has("name") && !teamName.isNullOrBlank()) entry.put("name", teamName)
+                if (!entry.has("mode")) entry.put("mode", "team")
+            }
+        }
+    }
+
     @JsonClass(generateAdapter = true)
     data class DeleteNewsRequest(
         @param:Json(name = "_id") val id: String,
@@ -162,25 +205,6 @@ class DashboardNewsActionsRepository(
         val images: List<DashboardNewsRepository.NewsImage>?,
         val updatedDate: Long?,
         @param:Json(name = "_deleted") val deleted: Boolean,
-    )
-
-    @JsonClass(generateAdapter = true)
-    data class UpdateNewsRequest(
-        @param:Json(name = "_id") val id: String,
-        @param:Json(name = "_rev") val revision: String,
-        val docType: String?,
-        val time: Long?,
-        val createdOn: String?,
-        val parentCode: String?,
-        val replyTo: String?,
-        val user: DashboardNewsRepository.NewsUser?,
-        val viewIn: List<DashboardNewsRepository.ViewInEntry>?,
-        val messageType: String?,
-        val messagePlanetCode: String?,
-        val message: String?,
-        val images: List<DashboardNewsRepository.NewsImage>?,
-        val updatedDate: Long?,
-        @param:Json(name = PlanetAppIdentity.FIELD_NAME) val app: String? = null,
     )
 
     @JsonClass(generateAdapter = true)
