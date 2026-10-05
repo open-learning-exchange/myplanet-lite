@@ -29,6 +29,7 @@ import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyDraftStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyDraftStore.DraftEntry
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveyStatusStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.dashboard.sortedNewestFirst
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepositoryProvider
 import org.ole.planet.myplanet.lite.dashboard.SurveyStatus
@@ -218,9 +219,10 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                             cached
                         }
                     }
-                statusStore.ensureNewDefaults(documents.map { it.id })
-                adoptedSurveys = documents.filter { !it.sourceSurveyId.isNullOrBlank() }
-                teamSurveys = documents.filter { it.sourceSurveyId.isNullOrBlank() }
+                val orderedDocuments = documents.sortedNewestFirst()
+                statusStore.ensureNewDefaults(orderedDocuments.map { it.id })
+                adoptedSurveys = orderedDocuments.filter { !it.sourceSurveyId.isNullOrBlank() }
+                teamSurveys = orderedDocuments.filter { it.sourceSurveyId.isNullOrBlank() }
                 if (offlineMode) {
                     completionCounts.clear()
                     documents.forEach { doc -> doc.id?.let { completionCounts[it] = 0 } }
