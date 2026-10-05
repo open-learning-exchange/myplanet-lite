@@ -36,7 +36,6 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
     companion object {
         private const val ARG_IS_TEAM_RESOURCES = "arg_is_team_resources"
         internal const val MAIN_RESOURCES_PAGE_SIZE = 1000
-        private const val DOUBLE_TAP_WINDOW_MS = 350L
         private const val DOWNLOADED_PREFS = "dashboard_resources_downloads"
         private const val KEY_DOWNLOADED_RESOURCES = "downloaded_resources_json"
 
@@ -254,7 +253,6 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
         class ResourceViewHolder(
             private val binding: ItemDashboardResourceExplorerBinding
         ) : RecyclerView.ViewHolder(binding.root) {
-            private var lastRootTapAt: Long = 0L
 
             fun bind(
                 item: ResourceUi,
@@ -279,11 +277,7 @@ class DashboardResourcesPageFragment : Fragment(R.layout.fragment_dashboard_reso
                     onViewResource(item)
                 }
                 binding.root.setOnClickListener {
-                    val now = System.currentTimeMillis()
-                    if (now - lastRootTapAt <= DOUBLE_TAP_WINDOW_MS) {
-                        onViewResource(item)
-                    }
-                    lastRootTapAt = now
+                    onViewResource(item)
                 }
                 val (secondaryIcon, secondaryDescriptionRes) = if (item.isDownloaded) {
                     R.drawable.ic_dashboard_delete_24 to R.string.dashboard_resources_action_delete
