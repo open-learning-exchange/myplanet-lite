@@ -100,31 +100,6 @@ internal fun DashboardActivity.setupSettingsDrawer(
     }
 
 
-internal fun DashboardActivity.setupAppBarBehavior(
-        appBar: AppBarLayout,
-        topBar: View,
-    ) {
-        val hideOvershoot = resources.getDimensionPixelOffset(R.dimen.dashboard_top_bar_hide_overshoot)
-        val tabsHideBuffer = resources.getDimensionPixelOffset(R.dimen.dashboard_tabs_hide_buffer)
-
-        appBar.addOnOffsetChangedListener(
-            AppBarLayout.OnOffsetChangedListener { _, verticalOffset ->
-                val tabsHeight = tabLayout.height
-                if (tabsHeight == 0) {
-                    topBar.translationY = 0f
-                    return@OnOffsetChangedListener
-                }
-                val totalScroll = -verticalOffset
-                val hideThreshold = tabsHeight + tabsHideBuffer
-                val pinnedUntilTabs = totalScroll.coerceAtMost(hideThreshold)
-                val extraScroll = (totalScroll - hideThreshold).coerceAtLeast(0)
-                val overshoot = extraScroll.coerceAtMost(hideOvershoot)
-                topBar.translationY = (pinnedUntilTabs - overshoot).toFloat()
-            },
-        )
-    }
-
-
 internal fun DashboardActivity.setupProfileAndNetwork() {
         refreshProfileSummary()
         avatarUpdateListener =
@@ -142,7 +117,7 @@ internal fun DashboardActivity.setupProfileAndNetwork() {
             isConnected = initialConnectivity,
             showMessages = isOfflineMode || !initialConnectivity,
         )
-        if (initialConnectivity || currentSection == DashboardSection.SURVEYS) {
+        if (initialConnectivity || currentSection == DashboardSection.COURSES) {
             showSection(currentSection)
         }
         registerConnectivityCallback()
@@ -152,10 +127,8 @@ internal fun DashboardActivity.setupProfileAndNetwork() {
 internal fun DashboardActivity.showSection(section: DashboardSection) {
         when (section) {
             DashboardSection.HOME -> showHomeSection()
-            DashboardSection.SURVEYS -> showSurveysSection()
             DashboardSection.COURSES -> showCoursesSection()
             DashboardSection.RESOURCES -> showResourcesSection()
-            DashboardSection.TEAM_MEMBERS -> showTeamMembersSection()
         }
     }
 
@@ -187,66 +160,18 @@ internal fun DashboardActivity.performLogout() {
 
 internal fun DashboardActivity.showHomeSection() {
         currentSection = DashboardSection.HOME
-        surveysContainer.isVisible = false
         coursesContainer.isVisible = false
         resourcesContainer.isVisible = false
-        teamMembersContainer.isVisible = false
-        viewPager.isVisible = true
-        tabLayout.isVisible = true
-        updateBottomNavigationState()
-    }
-
-
-internal fun DashboardActivity.showSurveysSection() {
-        currentSection = DashboardSection.SURVEYS
-        viewPager.isVisible = false
-        surveysContainer.isVisible = true
-        coursesContainer.isVisible = false
-        resourcesContainer.isVisible = false
-        teamMembersContainer.isVisible = false
-        tabLayout.isVisible = false
-
-        val fragment = supportFragmentManager.findFragmentById(R.id.dashboardSurveysContainer)
-        if (fragment !is DashboardSurveysFragment) {
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.dashboardSurveysContainer, DashboardSurveysFragment())
-                .commit()
-        }
-
-        updateBottomNavigationState()
-    }
-
-
-internal fun DashboardActivity.showTeamMembersSection() {
-        currentSection = DashboardSection.TEAM_MEMBERS
-        viewPager.isVisible = false
-        surveysContainer.isVisible = false
-        coursesContainer.isVisible = false
-        resourcesContainer.isVisible = false
-        teamMembersContainer.isVisible = true
-        tabLayout.isVisible = false
-
-        val fragment = supportFragmentManager.findFragmentById(R.id.dashboardTeamMembersContainer)
-        if (fragment !is DashboardTeamMembersFragment) {
-            supportFragmentManager
-                .beginTransaction()
-                .replace(R.id.dashboardTeamMembersContainer, DashboardTeamMembersFragment())
-                .commit()
-        }
-
+        voicesContainer.isVisible = true
         updateBottomNavigationState()
     }
 
 
 internal fun DashboardActivity.showCoursesSection() {
         currentSection = DashboardSection.COURSES
-        viewPager.isVisible = false
-        surveysContainer.isVisible = false
+        voicesContainer.isVisible = false
         coursesContainer.isVisible = true
         resourcesContainer.isVisible = false
-        teamMembersContainer.isVisible = false
-        tabLayout.isVisible = false
 
         val fragment = supportFragmentManager.findFragmentById(R.id.dashboardCoursesContainer)
         if (fragment !is DashboardCoursesFragment) {
@@ -262,18 +187,15 @@ internal fun DashboardActivity.showCoursesSection() {
 
 internal fun DashboardActivity.showResourcesSection() {
         currentSection = DashboardSection.RESOURCES
-        viewPager.isVisible = false
-        surveysContainer.isVisible = false
+        voicesContainer.isVisible = false
         coursesContainer.isVisible = false
         resourcesContainer.isVisible = true
-        teamMembersContainer.isVisible = false
-        tabLayout.isVisible = false
 
         val fragment = supportFragmentManager.findFragmentById(R.id.dashboardResourcesContainer)
-        if (fragment !is DashboardResourcesFragment) {
+        if (fragment !is DashboardResourcesPageFragment || fragment.isTeamResourcesTab) {
             supportFragmentManager
                 .beginTransaction()
-                .replace(R.id.dashboardResourcesContainer, DashboardResourcesFragment())
+                .replace(R.id.dashboardResourcesContainer, DashboardResourcesPageFragment.newInstance(isTeamResources = false))
                 .commit()
         }
 
@@ -285,7 +207,6 @@ internal fun DashboardActivity.updateBottomNavigationState() {
         val homeActive = currentSection == DashboardSection.HOME && !isOfflineMode
         val coursesActive = currentSection == DashboardSection.COURSES
         val resourcesActive = currentSection == DashboardSection.RESOURCES
-        val teamActive = currentSection == DashboardSection.TEAM_MEMBERS && !isOfflineMode
 
         homeIcon.alpha =
             if (isOfflineMode) {
@@ -295,28 +216,15 @@ internal fun DashboardActivity.updateBottomNavigationState() {
             } else {
                 0.5f
             }
-        surveysIcon.alpha = if (currentSection == DashboardSection.SURVEYS) 1f else 0.5f
         coursesIcon.alpha = if (coursesActive) 1f else 0.5f
         resourcesIcon.alpha = if (resourcesActive) 1f else 0.5f
-        teamMembersIcon.alpha =
-            if (isOfflineMode) {
-                0.3f
-            } else if (teamActive) {
-                1f
-            } else {
-                0.5f
-            }
         homeIcon.isEnabled = !isOfflineMode
         coursesIcon.isEnabled = true
         resourcesIcon.isEnabled = true
-        teamMembersIcon.isEnabled = !isOfflineMode
-        viewPager.isUserInputEnabled = !isOfflineMode
-        tabLayout.isEnabled = !isOfflineMode
-        tabLayout.alpha = if (isOfflineMode) 0.5f else 1f
         updateFabVisibility()
     }
 
 internal fun DashboardActivity.updateFabVisibility() {
-    val isVoicesTab = currentSection == DashboardSection.HOME && viewPager.currentItem == 0 && !isOfflineMode
-    addVoiceFab.isVisible = isVoicesTab
+    val isVoicesSection = currentSection == DashboardSection.HOME && !isOfflineMode
+    addVoiceFab.isVisible = isVoicesSection
 }

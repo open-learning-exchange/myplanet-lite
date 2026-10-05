@@ -12,6 +12,7 @@ import org.mockito.kotlin.argumentCaptor
 import org.mockito.kotlin.mock
 import org.mockito.kotlin.verify
 import org.ole.planet.myplanet.lite.DashboardActivity
+import org.ole.planet.myplanet.lite.TeamsDashboard
 import org.ole.planet.myplanet.lite.MyPlanetLite
 import org.ole.planet.myplanet.lite.SplashScreen
 import org.ole.planet.myplanet.lite.SurveyWizardActivity
@@ -47,13 +48,14 @@ class AppNavigatorTest {
     }
 
     @Test
-    fun `navigateToDashboard starts DashboardActivity with right extras`() {
+    fun `offline dashboard opens Teams surveys with right extras`() {
         val context: Context = mock()
         AppNavigator.navigateToDashboard(context, "12345", true)
 
         argumentCaptor<Intent>().apply {
             verify(context).startActivity(capture())
-            assertEquals(DashboardActivity::class.java.name, firstValue.component?.className)
+            assertEquals(TeamsDashboard::class.java.name, firstValue.component?.className)
+            assertTrue(firstValue.getBooleanExtra(TeamsDashboard.EXTRA_OPEN_SURVEYS, false))
             assertTrue(firstValue.getBooleanExtra(DashboardActivity.EXTRA_OFFLINE_MODE, false))
             assertEquals("12345", firstValue.getStringExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID))
         }

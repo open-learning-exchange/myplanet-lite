@@ -111,11 +111,12 @@ class EnterprisesDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
     }
 
     private fun setupProfileDrawer(profileDrawer: NavigationView) {
+        profileDrawer.highlightDashboardDestination(R.id.menu_enterprises)
         profileDrawer.setNavigationItemSelectedListener { item ->
             when (item.itemId) {
                 R.id.menu_learning -> navigateTo(DashboardActivity::class.java, finishCurrent = true)
                 R.id.menu_profile -> navigateTo(ProfileActivity::class.java)
-                R.id.menu_teams -> navigateTo(TeamsActivity::class.java)
+                R.id.menu_teams_dashboard -> navigateTo(TeamsDashboard::class.java)
                 R.id.menu_enterprises -> {
                     drawerLayout.closeDrawer(GravityCompat.START)
                     true

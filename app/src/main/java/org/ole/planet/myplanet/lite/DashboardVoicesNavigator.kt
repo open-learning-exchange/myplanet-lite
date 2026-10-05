@@ -58,6 +58,9 @@ internal class DashboardVoicesNavigator(
         intent.putExtra(DashboardPostDetailActivity.EXTRA_DOCUMENT, item.document)
         teamId?.let { intent.putExtra(DashboardPostDetailActivity.EXTRA_TEAM_ID, it) }
         teamName?.let { intent.putExtra(DashboardPostDetailActivity.EXTRA_TEAM_NAME, it) }
+        val enterpriseMode = teamId != null &&
+            (fragment as? DashboardVoicesFragment)?.isEnterpriseFeedFor(teamId) == true
+        addEnterpriseExtras(intent, enterpriseMode, item.document.messageType, item.document.messagePlanetCode)
         postDetailLauncher.launch(intent)
     }
 

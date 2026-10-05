@@ -16,7 +16,8 @@ internal fun DashboardResourcesPageFragment.refreshContent(forceRefresh: Boolean
         val content = contentView ?: return
         val empty = emptyView ?: return
         val list = resourcesList ?: return
-        val offlineMode = (activity as? DashboardActivity)?.isOfflineModeActive() == true
+        val offlineMode = ((activity as? DashboardActivity)?.isOfflineModeActive() == true ||
+            (activity as? TeamsDashboard)?.isOfflineModeActive() == true)
         addResourceFab?.isVisible = !offlineMode && (!isTeamResourcesTab || hasSelectedTeam())
 
         if (isTeamResourcesTab) {

@@ -103,6 +103,7 @@ class DashboardNewsActionsRepository(
         images: List<DashboardNewsRepository.NewsImage>,
         teamId: String? = null,
         teamName: String? = null,
+        enterpriseMode: Boolean = false,
     ): Result<DeleteNewsResponse> =
         withContext(dispatcher) {
             runCatching {
@@ -121,7 +122,7 @@ class DashboardNewsActionsRepository(
                     latest.put("images", JSONArray(imagesAdapter.toJson(images)))
                 }
                 latest.put("updatedDate", System.currentTimeMillis())
-                completeViewIn(latest, document, teamId, teamName)
+                completeViewIn(latest, document, teamId, teamName, enterpriseMode)
                 val requestBody =
                     latest
                         .toString()
@@ -172,10 +173,11 @@ class DashboardNewsActionsRepository(
         document: DashboardNewsRepository.NewsDocument,
         teamId: String?,
         teamName: String?,
+        enterpriseMode: Boolean,
     ) {
         val entries = latest.optJSONArray("viewIn")
         if (entries == null || entries.length() == 0) {
-            val built = buildViewInEntries(document.createdOn, document.parentCode, teamId, teamName)
+            val built = buildViewInEntries(document.createdOn, document.parentCode, teamId, teamName, enterpriseMode)
             latest.put("viewIn", JSONArray(viewInAdapter.toJson(built)))
             return
         }
@@ -184,7 +186,7 @@ class DashboardNewsActionsRepository(
             if (entry.optString("section") == "teams") {
                 if (!entry.has("public")) entry.put("public", false)
                 if (!entry.has("name") && !teamName.isNullOrBlank()) entry.put("name", teamName)
-                if (!entry.has("mode")) entry.put("mode", "team")
+                if (!entry.has("mode")) entry.put("mode", if (enterpriseMode) "enterprise" else "team")
             }
         }
     }
@@ -222,6 +224,7 @@ class DashboardNewsActionsRepository(
             document: DashboardNewsRepository.NewsDocument,
             teamId: String?,
             teamName: String?,
+            enterpriseMode: Boolean = false,
         ): List<DashboardNewsRepository.ViewInEntry> {
             val existing =
                 document.viewIn?.takeUnless { it.isEmpty() }?.map { entry ->
@@ -229,7 +232,7 @@ class DashboardNewsActionsRepository(
                         entry.copy(
                             isPublic = entry.isPublic ?: false,
                             name = entry.name ?: teamName,
-                            mode = entry.mode ?: "team",
+                            mode = entry.mode ?: if (enterpriseMode) "enterprise" else "team",
                         )
                     } else {
                         entry
@@ -238,7 +241,7 @@ class DashboardNewsActionsRepository(
             if (!existing.isNullOrEmpty()) {
                 return existing
             }
-            return buildViewInEntries(document.createdOn, document.parentCode, teamId, teamName)
+            return buildViewInEntries(document.createdOn, document.parentCode, teamId, teamName, enterpriseMode)
         }
 
         @androidx.annotation.VisibleForTesting
@@ -247,6 +250,7 @@ class DashboardNewsActionsRepository(
             parentCode: String?,
             teamId: String?,
             teamName: String?,
+            enterpriseMode: Boolean = false,
         ): List<DashboardNewsRepository.ViewInEntry> {
             val targetTeamId = teamId?.takeIf { it.isNotBlank() }
             val targetTeamName = teamName?.takeIf { it.isNotBlank() }
@@ -257,7 +261,7 @@ class DashboardNewsActionsRepository(
                         id = targetTeamId,
                         isPublic = false,
                         name = targetTeamName,
-                        mode = "team",
+                        mode = if (enterpriseMode) "enterprise" else "team",
                     ),
                 )
             }

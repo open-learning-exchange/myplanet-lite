@@ -31,13 +31,9 @@ import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.drawerlayout.widget.DrawerLayout
 import androidx.lifecycle.lifecycleScope
-import androidx.viewpager2.adapter.FragmentStateAdapter
-import androidx.viewpager2.widget.ViewPager2
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.checkbox.MaterialCheckBox
 import com.google.android.material.navigation.NavigationView
-import com.google.android.material.tabs.TabLayout
-import com.google.android.material.tabs.TabLayoutMediator
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -60,18 +56,13 @@ class DashboardActivity : BaseActivity() {
     internal lateinit var drawerName: TextView
     internal lateinit var drawerUsername: TextView
     internal lateinit var homeIcon: ImageView
-    internal lateinit var surveysIcon: ImageView
     internal lateinit var coursesIcon: ImageView
     internal lateinit var resourcesIcon: ImageView
-    internal lateinit var teamMembersIcon: ImageView
     internal lateinit var addVoiceFab: FloatingActionButton
-    internal lateinit var surveysContainer: FrameLayout
     internal lateinit var coursesContainer: FrameLayout
     internal lateinit var resourcesContainer: FrameLayout
-    internal lateinit var teamMembersContainer: FrameLayout
     internal lateinit var drawerLayout: DrawerLayout
-    internal lateinit var viewPager: ViewPager2
-    internal lateinit var tabLayout: TabLayout
+    internal lateinit var voicesContainer: FrameLayout
     internal var avatarUpdateListener: AvatarUpdateNotifier.Listener? = null
     internal var deepLinkHandled = false
     internal var currentSection = DashboardSection.HOME
@@ -106,7 +97,7 @@ class DashboardActivity : BaseActivity() {
         setContentView(R.layout.activity_dashboard)
 
         setupViews()
-        setupViewPagerAndTabs()
+        setupVoicesContent()
         setupBottomNavigation()
         setupProfileAndNetwork()
     }
@@ -116,9 +107,7 @@ class DashboardActivity : BaseActivity() {
         val root: View = findViewById(R.id.dashboardRoot)
         val appBar: AppBarLayout = findViewById(R.id.dashboardAppBar)
         val bottomNavigation: View = findViewById(R.id.dashboardBottomNavigation)
-        val topBar: View = findViewById(R.id.dashboardTopBar)
-        tabLayout = findViewById(R.id.dashboardTabs)
-        viewPager = findViewById(R.id.dashboardViewPager)
+        voicesContainer = findViewById(R.id.dashboardVoicesContainer)
         val settingsButton: ImageButton = findViewById(R.id.dashboardSettings)
         avatarView = findViewById(R.id.dashboardAvatar)
         val profileDrawer: NavigationView = findViewById(R.id.dashboardProfileDrawer)
@@ -128,25 +117,20 @@ class DashboardActivity : BaseActivity() {
         drawerAvatar = drawerHeader.findViewById(R.id.drawerProfileAvatar)
         drawerName = drawerHeader.findViewById(R.id.drawerProfileName)
         drawerUsername = drawerHeader.findViewById(R.id.drawerProfileUsername)
-        surveysContainer = findViewById(R.id.dashboardSurveysContainer)
         coursesContainer = findViewById(R.id.dashboardCoursesContainer)
         resourcesContainer = findViewById(R.id.dashboardResourcesContainer)
-        teamMembersContainer = findViewById(R.id.dashboardTeamMembersContainer)
         homeIcon = findViewById(R.id.dashboardHomeIcon)
-        surveysIcon = findViewById(R.id.dashboardSurveysIcon)
         coursesIcon = findViewById(R.id.dashboardCoursesIcon)
         resourcesIcon = findViewById(R.id.dashboardResourcesIcon)
-        teamMembersIcon = findViewById(R.id.dashboardTeamMembersIcon)
         addVoiceFab = findViewById(R.id.dashboardAddVoiceFab)
         addVoiceFab.setOnClickListener {
-            val intent = Intent(this, CreateVoiceActivity::class.java)
-            startActivity(intent)
+            (supportFragmentManager.findFragmentById(R.id.dashboardVoicesContainer) as? DashboardVoicesFragment)
+                ?.createVoice()
         }
         addVoiceFab.enableDrag()
 
         setupWindowInsets(root, appBar, bottomNavigation)
         setupDrawers(settingsButton, profileDrawer, settingsDrawer, surveyTranslationMenuItem)
-        setupAppBarBehavior(appBar, topBar)
     }
 
     internal fun setupWindowInsets(
@@ -162,12 +146,12 @@ class DashboardActivity : BaseActivity() {
                 bottomNavigation.paddingRight,
                 bottomNavigation.paddingBottom,
             )
-        val viewPagerInitialPadding =
+        val voicesContainerInitialPadding =
             Padding(
-                viewPager.paddingLeft,
-                viewPager.paddingTop,
-                viewPager.paddingRight,
-                viewPager.paddingBottom,
+                voicesContainer.paddingLeft,
+                voicesContainer.paddingTop,
+                voicesContainer.paddingRight,
+                voicesContainer.paddingBottom,
             )
 
         ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
@@ -184,34 +168,22 @@ class DashboardActivity : BaseActivity() {
                 right = bottomInitialPadding.right + systemBars.right,
                 bottom = bottomInitialPadding.bottom + systemBars.bottom,
             )
-            viewPager.updatePadding(
-                left = viewPagerInitialPadding.left + systemBars.left,
-                top = viewPagerInitialPadding.top,
-                right = viewPagerInitialPadding.right + systemBars.right,
-                bottom = viewPagerInitialPadding.bottom,
+            voicesContainer.updatePadding(
+                left = voicesContainerInitialPadding.left + systemBars.left,
+                top = voicesContainerInitialPadding.top,
+                right = voicesContainerInitialPadding.right + systemBars.right,
+                bottom = voicesContainerInitialPadding.bottom,
             )
             insets
         }
     }
 
-    internal fun setupViewPagerAndTabs() {
-        viewPager.adapter = DashboardPagerAdapter(this)
-
-        TabLayoutMediator(tabLayout, viewPager) { tab, position ->
-            tab.text =
-                when (position) {
-                    0 -> getString(R.string.dashboard_voices_title)
-                    else -> getString(R.string.dashboard_teams_title)
-                }
-        }.attach()
-
-        viewPager.registerOnPageChangeCallback(
-            object : ViewPager2.OnPageChangeCallback() {
-                override fun onPageSelected(position: Int) {
-                    updateFabVisibility()
-                }
-            },
-        )
+    internal fun setupVoicesContent() {
+        if (supportFragmentManager.findFragmentById(R.id.dashboardVoicesContainer) !is DashboardVoicesFragment) {
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.dashboardVoicesContainer, DashboardVoicesFragment())
+                .commit()
+        }
     }
 
     internal fun setupBottomNavigation() {
@@ -223,24 +195,12 @@ class DashboardActivity : BaseActivity() {
             showHomeSection()
         }
 
-        surveysIcon.setOnClickListener {
-            showSurveysSection()
-        }
-
         coursesIcon.setOnClickListener {
             showCoursesSection()
         }
 
         resourcesIcon.setOnClickListener {
             showResourcesSection()
-        }
-
-        teamMembersIcon.setOnClickListener {
-            if (isOfflineMode) {
-                showOfflineModeMessage()
-                return@setOnClickListener
-            }
-            showTeamMembersSection()
         }
 
         updateBottomNavigationState()
@@ -268,6 +228,7 @@ class DashboardActivity : BaseActivity() {
     }
 
     internal fun setupProfileDrawer(profileDrawer: NavigationView) {
+        profileDrawer.highlightDashboardDestination(R.id.menu_learning)
         profileDrawer.setNavigationItemSelectedListener { menuItem ->
             when (menuItem.itemId) {
                 R.id.menu_learning -> {
@@ -283,10 +244,10 @@ class DashboardActivity : BaseActivity() {
                     true
                 }
 
-                R.id.menu_teams -> {
+                R.id.menu_teams_dashboard -> {
                     drawerLayout.closeDrawer(GravityCompat.START)
                     drawerLayout.post {
-                        startActivity(Intent(this, TeamsActivity::class.java))
+                        startActivity(Intent(this, TeamsDashboard::class.java))
                     }
                     true
                 }
@@ -352,18 +313,6 @@ class DashboardActivity : BaseActivity() {
 
     internal fun normalizeVoicePageSize(value: Int): Int = VOICE_PAGE_SIZE_OPTIONS.firstOrNull { it == value } ?: DEFAULT_VOICE_PAGE_SIZE
 
-    internal class DashboardPagerAdapter(
-        activity: AppCompatActivity,
-    ) : FragmentStateAdapter(activity) {
-        override fun getItemCount(): Int = 2
-
-        override fun createFragment(position: Int) =
-            when (position) {
-                0 -> DashboardVoicesFragment()
-                else -> DashboardTeamsFragment()
-            }
-    }
-
     internal data class Padding(
         val left: Int,
         val top: Int,
@@ -373,10 +322,8 @@ class DashboardActivity : BaseActivity() {
 
     internal enum class DashboardSection {
         HOME,
-        SURVEYS,
         COURSES,
         RESOURCES,
-        TEAM_MEMBERS,
     }
 
     companion object {

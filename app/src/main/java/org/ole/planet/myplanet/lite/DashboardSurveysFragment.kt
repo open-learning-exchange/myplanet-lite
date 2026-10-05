@@ -35,7 +35,7 @@ class DashboardSurveysFragment : Fragment(R.layout.fragment_dashboard_surveys) {
         refreshSelectionState(forceReload = false)
     }
 
-    private fun refreshSelectionState(forceReload: Boolean) {
+    internal fun refreshSelectionState(forceReload: Boolean) {
         val selectedTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
         val selectedTeamName = DashboardTeamSelectionPreferences.getSelectedTeamName(requireContext())
         val hasSelection = !selectedTeamId.isNullOrBlank() && !selectedTeamName.isNullOrBlank()
