@@ -70,7 +70,8 @@ private fun DashboardResourcesPageFragment.openPdfResource(resourceUri: String) 
 }
 
 private fun DashboardResourcesPageFragment.recordResourceVisit(item: ResourceUi) {
-    if ((activity as? DashboardActivity)?.isOfflineModeActive() == true) {
+    if (((activity as? DashboardActivity)?.isOfflineModeActive() == true ||
+            (activity as? TeamsDashboard)?.isOfflineModeActive() == true)) {
         return
     }
     val currentBaseUrl = DashboardServerPreferences.getServerBaseUrl(requireContext()) ?: return

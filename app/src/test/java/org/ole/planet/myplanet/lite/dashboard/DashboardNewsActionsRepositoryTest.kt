@@ -151,56 +151,101 @@ class DashboardNewsActionsRepositoryTest {
         assertTrue(result.isFailure)
     }
 
+    private fun enqueueUpdate(serverDocument: String) {
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(serverDocument))
+        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody("""{ "ok": true, "id": "doc-123", "rev": "4-ghi" }"""))
+    }
+
+    private fun savedDocument(): org.json.JSONObject {
+        mockWebServer.takeRequest()
+        return org.json.JSONObject(mockWebServer.takeRequest().body.readUtf8())
+    }
+
     @Test
     fun updateNews_preservesOriginalAppField() = runTest {
-        val successResponse = """
-            {
-                "ok": true,
-                "id": "doc-123",
-                "rev": "2-def"
-            }
-        """.trimIndent()
-        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(successResponse))
+        enqueueUpdate("""{ "_id": "doc-123", "_rev": "1-abc", "message": "Test message", "app": "myplanet" }""")
 
         val result = repository.updateNews(
             baseUrl = mockWebServer.url("/").toString(),
             sessionCookie = null,
-            document = createDocument().copy(app = "myplanet"),
+            document = createDocument(),
             message = "Updated message",
             images = emptyList(),
         )
 
         assertTrue(result.isSuccess)
-
-        val request = mockWebServer.takeRequest()
-        val body = org.json.JSONObject(request.body.readUtf8())
-        assertEquals("myplanet", body.getString("app"))
+        assertEquals("myplanet", savedDocument().getString("app"))
     }
 
     @Test
     fun updateNews_omitsAppWhenDocumentHasNone() = runTest {
-        val successResponse = """
-            {
-                "ok": true,
-                "id": "doc-123",
-                "rev": "2-def"
-            }
-        """.trimIndent()
-        mockWebServer.enqueue(MockResponse().setResponseCode(200).setBody(successResponse))
+        enqueueUpdate("""{ "_id": "doc-123", "_rev": "1-abc", "message": "Test message" }""")
 
         val result = repository.updateNews(
             baseUrl = mockWebServer.url("/").toString(),
             sessionCookie = null,
-            document = createDocument().copy(app = null),
+            document = createDocument(),
             message = "Updated message",
             images = emptyList(),
         )
 
         assertTrue(result.isSuccess)
+        assertFalse(savedDocument().has("app"))
+    }
 
-        val request = mockWebServer.takeRequest()
-        val body = org.json.JSONObject(request.body.readUtf8())
-        assertFalse(body.has("app"))
+    @Test
+    fun updateNews_editsTheLatestServerCopyAndKeepsFieldsItDoesNotModel() = runTest {
+        enqueueUpdate(
+            """
+            {
+                "_id": "doc-123",
+                "_rev": "3-new",
+                "message": "Test message",
+                "labels": [ "help" ],
+                "reactions": { "👍": [ "org.couchdb.user:ana" ] },
+                "user": { "_id": "org.couchdb.user:ana", "name": "ana", "planetCode": "planet-code" },
+                "viewIn": [ { "_id": "planet-code@parent-code", "section": "community", "sharedDate": 1700000000000 } ]
+            }
+            """.trimIndent(),
+        )
+
+        val result = repository.updateNews(
+            baseUrl = mockWebServer.url("/").toString(),
+            sessionCookie = "session=cookie123",
+            document = createDocument(),
+            message = "Updated message",
+            images = emptyList(),
+        )
+
+        assertTrue(result.isSuccess)
+        val fetch = mockWebServer.takeRequest()
+        assertEquals("GET", fetch.method)
+        assertEquals("/db/news/doc-123", fetch.path)
+        assertEquals("session=cookie123", fetch.getHeader("Cookie"))
+        val saved = org.json.JSONObject(mockWebServer.takeRequest().body.readUtf8())
+        assertEquals("3-new", saved.getString("_rev"))
+        assertEquals("Updated message", saved.getString("message"))
+        assertEquals("help", saved.getJSONArray("labels").getString(0))
+        assertEquals("org.couchdb.user:ana", saved.getJSONObject("reactions").getJSONArray("👍").getString(0))
+        assertEquals("planet-code", saved.getJSONObject("user").getString("planetCode"))
+        assertEquals(1700000000000L, saved.getJSONArray("viewIn").getJSONObject(0).getLong("sharedDate"))
+    }
+
+    @Test
+    fun updateNews_failedFetch_writesNothing() = runTest {
+        mockWebServer.enqueue(MockResponse().setResponseCode(404).setBody("""{ "error": "not_found" }"""))
+
+        val result = repository.updateNews(
+            baseUrl = mockWebServer.url("/").toString(),
+            sessionCookie = null,
+            document = createDocument(),
+            message = "Updated message",
+            images = emptyList(),
+        )
+
+        assertTrue(result.isFailure)
+        assertEquals("Unexpected response 404", result.exceptionOrNull()?.message)
+        assertEquals(1, mockWebServer.requestCount)
     }
 
     @Test

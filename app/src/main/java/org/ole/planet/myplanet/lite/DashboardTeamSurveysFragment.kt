@@ -177,7 +177,7 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
         val base = baseUrl
         val team = teamId
         val creds = credentials
-        val offlineMode = (activity as? DashboardActivity)?.isOfflineModeActive() == true
+        val offlineMode = (activity as? TeamsDashboard)?.isOfflineModeActive() == true
         if (base.isNullOrBlank()) {
             showError(getString(R.string.dashboard_surveys_missing_server))
             swipeRefresh.isRefreshing = false
@@ -348,13 +348,13 @@ class DashboardTeamSurveysFragment : Fragment(R.layout.fragment_dashboard_team_s
                 document,
                 teamId,
                 teamName,
-                offlineMode = (activity as? DashboardActivity)?.isOfflineModeActive() == true,
+                offlineMode = (activity as? TeamsDashboard)?.isOfflineModeActive() == true,
             ),
         )
     }
 
     private fun openDraft(entry: DraftEntry) {
-        val offlineMode = (activity as? DashboardActivity)?.isOfflineModeActive() == true
+        val offlineMode = (activity as? TeamsDashboard)?.isOfflineModeActive() == true
         val surveyId = entry.document.id
         if (offlineMode && (surveyId.isNullOrBlank() || surveyId !in savedSurveyIds)) {
             com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())

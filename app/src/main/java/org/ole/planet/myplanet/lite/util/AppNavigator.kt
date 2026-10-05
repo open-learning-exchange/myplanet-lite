@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.lite.util
 import android.content.Context
 import android.content.Intent
 import org.ole.planet.myplanet.lite.DashboardActivity
+import org.ole.planet.myplanet.lite.TeamsDashboard
 import org.ole.planet.myplanet.lite.MyPlanetLite
 import org.ole.planet.myplanet.lite.SplashScreen
 import org.ole.planet.myplanet.lite.SurveyWizardActivity
@@ -19,9 +20,11 @@ object AppNavigator {
     }
 
     fun navigateToDashboard(context: Context, postId: String?, isOfflineMode: Boolean = false) {
-        val intent = Intent(context, DashboardActivity::class.java).apply {
+        val destination = if (isOfflineMode) TeamsDashboard::class.java else DashboardActivity::class.java
+        val intent = Intent(context, destination).apply {
             if (isOfflineMode) {
                 putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
+                putExtra(TeamsDashboard.EXTRA_OPEN_SURVEYS, true)
             }
             if (postId != null) {
                 putExtra(DashboardActivity.EXTRA_DEEP_LINK_POST_ID, postId)

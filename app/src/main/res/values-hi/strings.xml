@@ -91,6 +91,7 @@
     <string name="signup_username_checking">उपयोगकर्ता नाम उपलब्धता की जाँच हो रही है…</string>
     <string name="signup_username_error_taken">यह उपयोगकर्ता नाम पहले से उपयोग में है।</string>
     <string name="dashboard_offline_mode_only_surveys">ऑफ़लाइन मोड: केवल सर्वे, डाउनलोड किए गए कोर्स और डाउनलोड किए गए संसाधन उपलब्ध हैं।</string>
+    <string name="dashboard_learning_offline_hint">ऑफ़लाइन मोड: पाठ्यक्रम और संसाधन यहाँ उपलब्ध हैं। ऑफ़लाइन सर्वेक्षणों के लिए टीमें खोलें।</string>
     <string name="dashboard_online_mode_restored">कनेक्शन पुनर्स्थापित: सभी पैनल सक्षम हैं।</string>
     <string name="dashboard_survey_download">डाउनलोड</string>
     <string name="dashboard_survey_downloaded">डाउनलोड हो गया</string>

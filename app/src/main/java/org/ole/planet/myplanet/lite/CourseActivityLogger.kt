@@ -20,7 +20,7 @@ internal fun DashboardCourseDetailsBottomSheet.recordCourseDescriptionVisit(
     courseId: String,
     title: String,
 ) {
-    if ((activity as? DashboardActivity)?.isOfflineModeActive() == true || !NetworkUtils.isDeviceOnline(requireContext())) {
+    if ((activity as? DashboardActivity)?.isOfflineModeActive() == true || (activity as? TeamsDashboard)?.isOfflineModeActive() == true || !NetworkUtils.isDeviceOnline(requireContext())) {
         return
     }
     val context = requireContext().applicationContext

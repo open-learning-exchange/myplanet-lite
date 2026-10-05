@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.drawerlayout.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/teamsDashboardDrawerLayout"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <androidx.coordinatorlayout.widget.CoordinatorLayout
+        android:id="@+id/teamsDashboardRoot"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/white">
+
+        <com.google.android.material.appbar.AppBarLayout
+            android:id="@+id/teamsDashboardAppBar"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@color/white"
+            app:elevation="0dp">
+
+            <androidx.constraintlayout.widget.ConstraintLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@color/white"
+                android:elevation="4dp"
+                android:minHeight="@dimen/dashboard_top_bar_height"
+                android:paddingStart="@dimen/dashboard_horizontal_padding"
+                android:paddingTop="@dimen/dashboard_top_padding"
+                android:paddingEnd="@dimen/dashboard_horizontal_padding"
+                android:paddingBottom="@dimen/dashboard_top_bar_bottom_padding">
+
+                <ImageView
+                    android:id="@+id/teamsDashboardAvatar"
+                    android:layout_width="@dimen/dashboard_avatar_size"
+                    android:layout_height="@dimen/dashboard_avatar_size"
+                    android:background="@drawable/avatar_placeholder_background"
+                    android:clipToOutline="true"
+                    android:contentDescription="@string/dashboard_avatar_content_description"
+                    android:scaleType="centerCrop"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageView
+                    android:layout_width="@dimen/dashboard_logo_size"
+                    android:layout_height="@dimen/dashboard_logo_size"
+                    android:contentDescription="@string/dashboard_logo_content_description"
+                    android:scaleType="centerInside"
+                    android:src="@drawable/ole_logo"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintStart_toStartOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+
+                <ImageButton
+                    android:id="@+id/teamsDashboardSettings"
+                    android:layout_width="0dp"
+                android:layout_weight="1"
+                    android:layout_height="@dimen/dashboard_icon_button_size"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/dashboard_settings_content_description"
+                    android:padding="@dimen/dashboard_icon_padding"
+                    android:src="@drawable/ic_settings_24"
+                    app:layout_constraintBottom_toBottomOf="parent"
+                    app:layout_constraintEnd_toEndOf="parent"
+                    app:layout_constraintTop_toTopOf="parent" />
+            </androidx.constraintlayout.widget.ConstraintLayout>
+        </com.google.android.material.appbar.AppBarLayout>
+
+        <FrameLayout
+            android:id="@+id/teamsDashboardContent"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@color/white"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+        <FrameLayout
+            android:id="@+id/teamsDashboardMyTeamsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="60dp"
+            android:background="@color/white"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+        <FrameLayout
+            android:id="@+id/teamsDashboardVoicesSection"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="60dp"
+            android:visibility="gone"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+            <FrameLayout
+                android:id="@+id/teamsDashboardVoicesContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent" />
+
+            <TextView
+                android:id="@+id/teamsDashboardVoicesEmpty"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:gravity="center"
+                android:padding="@dimen/dashboard_horizontal_padding"
+                android:text="@string/dashboard_teams_select_team_hint"
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="@dimen/text_size_16sp" />
+        </FrameLayout>
+
+        <FrameLayout
+            android:id="@+id/teamsDashboardSurveysContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="60dp"
+            android:background="@color/white"
+            android:visibility="gone"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+        <FrameLayout
+            android:id="@+id/teamsDashboardMembersContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="60dp"
+            android:background="@color/white"
+            android:visibility="gone"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+        <FrameLayout
+            android:id="@+id/teamsDashboardResourcesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="60dp"
+            android:background="@color/white"
+            android:visibility="gone"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+        <FrameLayout
+            android:id="@+id/teamsDashboardCoursesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="60dp"
+            android:background="@color/white"
+            android:visibility="gone"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
+        <LinearLayout
+            android:id="@+id/teamsDashboardBottomNavigation"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:layout_gravity="bottom"
+            android:background="@color/white"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingStart="@dimen/dashboard_horizontal_padding"
+            android:paddingEnd="@dimen/dashboard_horizontal_padding"
+            android:paddingBottom="12dp"
+            android:paddingTop="8dp"
+            app:layout_behavior="@string/hide_bottom_view_on_scroll_behavior">
+
+            <ImageView
+                android:id="@+id/teamsDashboardMyTeamsIcon"
+                android:layout_width="0dp"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:layout_weight="1"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dashboard_teams_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
+                android:src="@drawable/ic_groups_24" />
+
+            <ImageView
+                android:id="@+id/teamsDashboardHomeIcon"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dashboard_voices_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
+                android:src="@drawable/ic_home_24" />
+
+            <ImageView
+                android:id="@+id/teamsDashboardSurveysIcon"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dashboard_surveys_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
+                android:src="@drawable/ic_surveys_24" />
+
+            <ImageView
+                android:id="@+id/teamsDashboardTeamMembersIcon"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dashboard_team_members_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
+                android:src="@drawable/ic_team_members_24" />
+
+            <ImageView
+                android:id="@+id/teamsDashboardCoursesIcon"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dashboard_courses_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
+                android:src="@drawable/ic_courses_24" />
+
+            <ImageView
+                android:id="@+id/teamsDashboardResourcesIcon"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dashboard_resources_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
+                android:src="@drawable/ic_resources_24" />
+
+        </LinearLayout>
+
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/teamsDashboardCreateFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="@dimen/dashboard_fab_margin_end"
+            android:layout_marginBottom="76dp"
+            android:contentDescription="@string/teams_action_button_content_description"
+            app:backgroundTint="@color/C6F6F6F"
+            app:fabCustomSize="@dimen/dashboard_fab_size"
+            app:fabSize="normal"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyPlanet.Circle"
+            app:srcCompat="@drawable/ic_add_24"
+            app:tint="@color/white" />
+        <com.google.android.material.floatingactionbutton.FloatingActionButton
+            android:id="@+id/teamsDashboardAddVoiceFab"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_marginEnd="@dimen/dashboard_fab_margin_end"
+            android:layout_marginBottom="76dp"
+            android:backgroundTint="@color/C6F6F6F"
+            app:tint="@color/white"
+            app:fabCustomSize="@dimen/dashboard_fab_size"
+            app:fabSize="normal"
+            app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyPlanet.Circle"
+            android:contentDescription="@string/dashboard_add_voice_content_description"
+            app:srcCompat="@drawable/ic_add_24" />
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
+
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/teamsProfileDrawer"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        android:background="@color/white"
+        android:fitsSystemWindows="true"
+        app:headerLayout="@layout/drawer_dashboard_profile_header"
+        app:itemIconPadding="@dimen/dashboard_drawer_item_icon_padding"
+        app:itemTextAppearance="@style/TextAppearance.MyPlanet.DashboardDrawerItem"
+        app:menu="@menu/menu_dashboard_profile_drawer" />
+
+    <com.google.android.material.navigation.NavigationView
+        android:id="@+id/teamsSettingsDrawer"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="end"
+        android:background="@color/white"
+        android:fitsSystemWindows="true"
+        app:headerLayout="@layout/drawer_dashboard_settings_header"
+        app:itemIconPadding="@dimen/dashboard_drawer_item_icon_padding"
+        app:itemTextAppearance="@style/TextAppearance.MyPlanet.DashboardDrawerItem"
+        app:menu="@menu/menu_dashboard_settings_drawer" />
+</androidx.drawerlayout.widget.DrawerLayout>
