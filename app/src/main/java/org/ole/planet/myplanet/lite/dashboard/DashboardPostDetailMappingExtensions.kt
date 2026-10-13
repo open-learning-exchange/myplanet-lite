@@ -168,5 +168,12 @@ internal fun DashboardPostDetailActivity.launchEditVoice(item: PostDetailItem.He
     document?.let { intent.putExtra(CreateVoiceActivity.EXTRA_EDIT_DOCUMENT, it) }
     selectedTeamId?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_TEAM_ID, it) }
     selectedTeamName?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_TEAM_NAME, it) }
+    intent.putExtra(
+        CreateVoiceActivity.EXTRA_TARGET_ENTERPRISE,
+        this.intent.getBooleanExtra(CreateVoiceActivity.EXTRA_TARGET_ENTERPRISE, false) ||
+            document?.viewIn?.any { it.mode == "enterprise" } == true,
+    )
+    document?.messageType?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_ENTERPRISE_TYPE, it) }
+    document?.messagePlanetCode?.let { intent.putExtra(CreateVoiceActivity.EXTRA_TARGET_ENTERPRISE_PLANET_CODE, it) }
     editVoiceLauncher.launch(intent)
 }

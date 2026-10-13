@@ -142,7 +142,7 @@ internal fun DashboardActivity.setVoicePageSize(pageSize: Int): Boolean {
 
 
 internal fun DashboardActivity.notifyVoicePageSizeChanged() {
-        val voicesFragment = supportFragmentManager.findFragmentByTag("f0") as? DashboardVoicesFragment
+        val voicesFragment = supportFragmentManager.findFragmentById(R.id.dashboardVoicesContainer) as? DashboardVoicesFragment
         voicesFragment?.onPageSizeChanged(getVoicePageSize())
     }
 
@@ -168,15 +168,15 @@ internal fun DashboardActivity.applyConnectivityState(
             }
         } else {
             if (!isOfflineMode && showMessages) {
-                Toast.makeText(this, R.string.dashboard_offline_mode_only_surveys, Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.dashboard_learning_offline_hint, Toast.LENGTH_SHORT).show()
             }
             isOfflineMode = true
-            showSurveysSection()
+            showCoursesSection()
             updateBottomNavigationState()
         }
     }
 
 
 internal fun DashboardActivity.showOfflineModeMessage() {
-        Toast.makeText(this, R.string.dashboard_offline_mode_only_surveys, Toast.LENGTH_SHORT).show()
+        Toast.makeText(this, R.string.dashboard_learning_offline_hint, Toast.LENGTH_SHORT).show()
     }

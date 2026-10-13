@@ -430,6 +430,7 @@ class CreateVoiceActivity : BaseActivity() {
                     images = images,
                     teamId = targetTeamId,
                     teamName = targetTeamName,
+                    enterpriseMode = targetEnterprise,
                 )
             result
                 .onSuccess {

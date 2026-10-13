@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/white">
+    <androidx.core.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true"
+        android:clipToPadding="false"
+        android:paddingBottom="88dp">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+        <TextView
+            android:id="@+id/calendarTeamName"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceSubtitle1"
+            android:paddingBottom="8dp" />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical">
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/calendarPreviousMonth"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="@string/calendar_previous_month"
+                android:text="‹"
+                android:textSize="28sp"
+                android:padding="0dp"
+                android:minWidth="0dp" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/calendarMonthTitle"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceHeadline6"
+                android:textAllCaps="false"
+                android:contentDescription="@string/calendar_choose_date" />
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/calendarNextMonth"
+                style="@style/Widget.MaterialComponents.Button.TextButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:contentDescription="@string/calendar_next_month"
+                android:text="›"
+                android:textSize="28sp"
+                android:padding="0dp"
+                android:minWidth="0dp" />
+        </LinearLayout>
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/calendarToday"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@string/calendar_today" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/calendarRefresh"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_horizontal"
+            android:text="@string/calendar_refresh" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/calendarGoogleConnect"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/calendar_google_connect"
+            app:icon="@drawable/ic_google_24"
+            app:iconGravity="textStart"
+            app:iconSize="24dp"
+            app:iconTint="@null" />
+        <TextView
+            android:id="@+id/calendarGoogleStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingBottom="8dp"
+            android:accessibilityLiveRegion="polite"
+            android:text="@string/calendar_google_hint" />
+        <ProgressBar
+            android:id="@+id/calendarLoading"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center_horizontal"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/calendarStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="8dp"
+            android:gravity="center"
+            android:visibility="gone" />
+        <LinearLayout
+            android:id="@+id/calendarWeekdays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+        <GridLayout
+            android:id="@+id/calendarDays"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="7"
+            android:rowCount="6" />
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:layout_marginTop="16dp"
+            android:layout_marginBottom="16dp"
+            android:background="@drawable/dashboard_divider" />
+        <TextView
+            android:id="@+id/calendarSelectedDate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="?attr/textAppearanceHeadline6" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/calendar_events"
+            android:textAppearance="?attr/textAppearanceSubtitle1"
+            android:paddingTop="8dp"
+            android:paddingBottom="8dp" />
+        <LinearLayout
+            android:id="@+id/calendarEvents"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+        <TextView
+            android:id="@+id/calendarEmpty"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/calendar_no_events"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp" />
+    </LinearLayout>
+    </androidx.core.widget.NestedScrollView>
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/calendarCreate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/calendar_create_event"
+        android:backgroundTint="@color/C6F6F6F"
+        app:fabCustomSize="@dimen/dashboard_fab_size"
+        app:fabSize="normal"
+        app:shapeAppearanceOverlay="@style/ShapeAppearanceOverlay.MyPlanet.Circle"
+        app:tint="@color/white"
+        app:srcCompat="@drawable/ic_add_24" />
+</FrameLayout>

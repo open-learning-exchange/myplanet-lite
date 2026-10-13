@@ -19,7 +19,8 @@ private const val KEY_LEFT_COURSE = "left_course"
 private val pendingRefreshTabs = mutableSetOf<Int>()
 
 fun DashboardCoursePageFragment.isOfflineModeActive(): Boolean {
-    return (activity as? DashboardActivity)?.isOfflineModeActive() == true
+    return (activity as? DashboardActivity)?.isOfflineModeActive() == true ||
+        (activity as? TeamsDashboard)?.isOfflineModeActive() == true
 }
 
 fun DashboardCoursePageFragment.showOfflineDownloadedCourses(

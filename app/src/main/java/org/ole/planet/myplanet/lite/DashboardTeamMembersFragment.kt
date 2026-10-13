@@ -166,7 +166,7 @@ class DashboardTeamMembersFragment : Fragment() {
         }
     }
 
-    private fun refreshSelectionState() {
+    internal fun refreshSelectionState() {
         val selectedTeamId = DashboardTeamSelectionPreferences.getSelectedTeamId(requireContext())
         if (selectedTeamId == currentTeamId && currentMembers.isNotEmpty()) {
             applySearchFilter()

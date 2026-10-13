@@ -2,6 +2,8 @@ package org.ole.planet.myplanet.lite
 
 import android.view.KeyEvent
 import android.view.View
+import android.view.ViewGroup
+import androidx.core.view.updateLayoutParams
 import android.view.inputmethod.EditorInfo
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -144,6 +146,11 @@ private fun DashboardResourcesPageFragment.setupSortOrderToggle(sortOrderToggle:
 }
 
 private fun DashboardResourcesPageFragment.setupFab(fab: FloatingActionButton) {
+    if (!isTeamResourcesTab) {
+        fab.updateLayoutParams<ViewGroup.MarginLayoutParams> {
+            bottomMargin *= 2
+        }
+    }
     fab.setOnClickListener {
         showAddResourceMenu(fab)
     }

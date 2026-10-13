@@ -43,14 +43,13 @@ class DashboardCoursesFragmentTest {
         val viewPager = view?.findViewById<ViewPager2>(R.id.dashboardCoursesViewPager)
         assertNotNull(viewPager)
 
-        assertEquals(3, tabLayout?.tabCount)
+        assertEquals(2, tabLayout?.tabCount)
         assertEquals("My courses", tabLayout?.getTabAt(0)?.text)
         assertEquals("Courses", tabLayout?.getTabAt(1)?.text)
-        assertEquals("Team courses", tabLayout?.getTabAt(2)?.text)
 
         val adapter = viewPager?.adapter
         assertNotNull(adapter)
-        assertEquals(3, adapter?.itemCount)
+        assertEquals(2, adapter?.itemCount)
     }
 
     @Test
@@ -75,8 +74,21 @@ class DashboardCoursesFragmentTest {
         assertTrue(fragment1 is DashboardCoursePageFragment)
         assertEquals(1, (fragment1 as DashboardCoursePageFragment).arguments?.getInt("tab_position"))
 
-        val fragment2 = method.invoke(adapter, 2)
-        assertTrue(fragment2 is DashboardCoursePageFragment)
-        assertEquals(2, (fragment2 as DashboardCoursePageFragment).arguments?.getInt("tab_position"))
+
     }
+    @Test
+    fun `teams courses contains my courses and team courses`() {
+        val teams = DashboardCoursesFragment.newTeamsInstance()
+        activity.supportFragmentManager.beginTransaction()
+            .replace(android.R.id.content, teams).commitNow()
+        val tabs = teams.requireView().findViewById<TabLayout>(R.id.dashboardCoursesTabs)
+        assertEquals(2, tabs.tabCount)
+        assertEquals("My courses", tabs.getTabAt(0)?.text)
+        assertEquals("Team courses", tabs.getTabAt(1)?.text)
+        val adapter = teams.requireView().findViewById<ViewPager2>(R.id.dashboardCoursesViewPager).adapter
+            as androidx.viewpager2.adapter.FragmentStateAdapter
+        assertEquals(0, adapter.createFragment(0).requireArguments().getInt("tab_position"))
+        assertEquals(2, adapter.createFragment(1).requireArguments().getInt("tab_position"))
+    }
+
 }

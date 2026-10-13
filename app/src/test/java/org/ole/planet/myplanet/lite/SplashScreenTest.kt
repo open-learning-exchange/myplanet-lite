@@ -179,7 +179,7 @@ class SplashScreenTest {
     }
 
     @Test
-    fun `test splash screen routes to DashboardActivity OFFLINE when network is offline`() {
+    fun `test splash screen routes to Teams surveys OFFLINE when network is offline`() {
         mockPrefs.edit().putString("server_url", "https://example.com").commit()
         val mockAuth = MockAuthService()
         mockAuth.storedToken = "valid_token"
@@ -191,7 +191,8 @@ class SplashScreenTest {
         ActivityScenario.launch<SplashScreen>(SplashScreen::class.java).use { scenario ->
             val nextIntent = waitForNextIntent(scenario)
             assertNotNull("Expected nextIntent to not be null for offline", nextIntent)
-            assertEquals(DashboardActivity::class.java.name, nextIntent?.component?.className)
+            assertEquals(TeamsDashboard::class.java.name, nextIntent?.component?.className)
+            assertTrue(nextIntent?.getBooleanExtra(TeamsDashboard.EXTRA_OPEN_SURVEYS, false) ?: false)
             assertTrue(nextIntent?.getBooleanExtra(DashboardActivity.EXTRA_OFFLINE_MODE, false) ?: false)
             Shadows.shadowOf(Looper.getMainLooper()).idle()
         }

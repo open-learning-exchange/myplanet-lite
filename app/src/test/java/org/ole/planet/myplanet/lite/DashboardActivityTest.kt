@@ -7,7 +7,6 @@ import android.widget.FrameLayout
 import android.widget.ImageView
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
-import androidx.viewpager2.widget.ViewPager2
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -96,28 +95,14 @@ class DashboardActivityTest {
     }
 
     @Test
-    fun `activity initializes views correctly`() {
+    fun `learning starts with offline courses and has no surveys option`() {
         ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
                 Shadows.shadowOf(Looper.getMainLooper()).idle()
-
-                val viewPager = activity.findViewById<ViewPager2>(R.id.dashboardViewPager)
-                val surveysContainer = activity.findViewById<FrameLayout>(R.id.dashboardSurveysContainer)
-                val homeIcon = activity.findViewById<ImageView>(R.id.dashboardHomeIcon)
-                val surveysIcon = activity.findViewById<ImageView>(R.id.dashboardSurveysIcon)
-                val coursesIcon = activity.findViewById<ImageView>(R.id.dashboardCoursesIcon)
-                val teamMembersIcon = activity.findViewById<ImageView>(R.id.dashboardTeamMembersIcon)
-
-                // For robolectric the offline mode kicks in. Offline mode only shows surveys
-                assertEquals("Surveys Container should be visible in offline mode", View.VISIBLE, surveysContainer.visibility)
-                assertEquals("ViewPager should be gone in offline mode", View.GONE, viewPager.visibility)
-
-                assertEquals("Home Icon should be visible", View.VISIBLE, homeIcon.visibility)
-                assertEquals("Surveys Icon should be visible", View.VISIBLE, surveysIcon.visibility)
-                assertEquals("Courses Icon should be visible", View.VISIBLE, coursesIcon.visibility)
-                assertEquals("Team Members Icon should be visible", View.VISIBLE, teamMembersIcon.visibility)
+                assertEquals(View.VISIBLE, activity.findViewById<FrameLayout>(R.id.dashboardCoursesContainer).visibility)
+                assertEquals(View.GONE, activity.findViewById<FrameLayout>(R.id.dashboardVoicesContainer).visibility)
+                assertEquals(3, activity.findViewById<android.widget.LinearLayout>(R.id.dashboardBottomNavigation).childCount)
             }
-            Shadows.shadowOf(Looper.getMainLooper()).idle()
         }
     }
 
@@ -235,50 +220,79 @@ class DashboardActivityTest {
     }
 
     @Test
-    fun `bottom navigation switches sections correctly`() {
+    fun `learning bottom navigation switches between resources and offline courses`() {
         ActivityScenario.launch<DashboardActivity>(DashboardActivity::class.java).use { scenario ->
             scenario.onActivity { activity ->
+                val courses = activity.findViewById<FrameLayout>(R.id.dashboardCoursesContainer)
+                val resources = activity.findViewById<FrameLayout>(R.id.dashboardResourcesContainer)
+                activity.findViewById<ImageView>(R.id.dashboardResourcesIcon).performClick()
                 Shadows.shadowOf(Looper.getMainLooper()).idle()
-
-                val viewPager = activity.findViewById<ViewPager2>(R.id.dashboardViewPager)
-                val surveysContainer = activity.findViewById<FrameLayout>(R.id.dashboardSurveysContainer)
-                val coursesContainer = activity.findViewById<FrameLayout>(R.id.dashboardCoursesContainer)
-                val teamMembersContainer = activity.findViewById<FrameLayout>(R.id.dashboardTeamMembersContainer)
-
-                val surveysIcon = activity.findViewById<ImageView>(R.id.dashboardSurveysIcon)
-                val coursesIcon = activity.findViewById<ImageView>(R.id.dashboardCoursesIcon)
-                val teamMembersIcon = activity.findViewById<ImageView>(R.id.dashboardTeamMembersIcon)
-                val homeIcon = activity.findViewById<ImageView>(R.id.dashboardHomeIcon)
-
-                // Offline mode defaults to Surveys
-                assertEquals("Surveys Container should be visible initially in offline mode", View.VISIBLE, surveysContainer.visibility)
-                assertEquals("ViewPager should be gone initially in offline mode", View.GONE, viewPager.visibility)
-
-                // Click Courses
-                coursesIcon.performClick()
+                assertEquals(View.VISIBLE, resources.visibility)
+                val resourcePage = activity.supportFragmentManager.findFragmentById(R.id.dashboardResourcesContainer)
+                assertTrue(resourcePage is DashboardResourcesPageFragment)
+                assertFalse((resourcePage as DashboardResourcesPageFragment).isTeamResourcesTab)
+                assertEquals(View.GONE, courses.visibility)
+                activity.findViewById<ImageView>(R.id.dashboardCoursesIcon).performClick()
                 Shadows.shadowOf(Looper.getMainLooper()).idle()
-                assertEquals("Surveys Container should be gone after clicking Courses", View.GONE, surveysContainer.visibility)
-                assertEquals("Courses Container should be visible after clicking Courses", View.VISIBLE, coursesContainer.visibility)
-
-                // Click Surveys
-                surveysIcon.performClick()
-                Shadows.shadowOf(Looper.getMainLooper()).idle()
-                assertEquals("Courses Container should be gone after clicking Surveys", View.GONE, coursesContainer.visibility)
-                assertEquals("Surveys Container should be visible after clicking Surveys", View.VISIBLE, surveysContainer.visibility)
-
-                // Click Team Members (Disabled in offline mode so it shouldn't work)
-                teamMembersIcon.performClick()
-                Shadows.shadowOf(Looper.getMainLooper()).idle()
-                assertEquals("Surveys Container should remain visible", View.VISIBLE, surveysContainer.visibility)
-                assertEquals("Team Members Container should remain gone", View.GONE, teamMembersContainer.visibility)
-
-                // Click Home (Disabled in offline mode so it shouldn't work)
-                homeIcon.performClick()
-                Shadows.shadowOf(Looper.getMainLooper()).idle()
-                assertEquals("Surveys Container should remain visible", View.VISIBLE, surveysContainer.visibility)
-                assertEquals("ViewPager should remain gone", View.GONE, viewPager.visibility)
+                assertEquals(View.VISIBLE, courses.visibility)
+                assertEquals(View.GONE, resources.visibility)
             }
-            Shadows.shadowOf(Looper.getMainLooper()).idle()
         }
     }
+
+    @Test
+    fun `teams surveys opens full survey section and hides creation buttons`() {
+        val intent = Intent(context, TeamsDashboard::class.java).apply {
+            putExtra(TeamsDashboard.EXTRA_OPEN_SURVEYS, true)
+            putExtra(DashboardActivity.EXTRA_OFFLINE_MODE, true)
+        }
+        ActivityScenario.launch<TeamsDashboard>(intent).use { scenario ->
+            scenario.onActivity { activity ->
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertTrue(activity.isOfflineModeActive())
+                assertTrue(activity.supportFragmentManager.findFragmentById(R.id.teamsDashboardSurveysContainer) is DashboardSurveysFragment)
+                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.teamsDashboardSurveysContainer).visibility)
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.teamsDashboardCreateFab).visibility)
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.teamsDashboardAddVoiceFab).visibility)
+                activity.findViewById<ImageView>(R.id.teamsDashboardMyTeamsIcon).performClick()
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.teamsDashboardSurveysContainer).visibility)
+                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.teamsDashboardMyTeamsContainer).visibility)
+            }
+        }
+    }
+    @Test
+    fun `teams members opens existing members section`() {
+        ActivityScenario.launch<TeamsDashboard>(TeamsDashboard::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.findViewById<ImageView>(R.id.teamsDashboardTeamMembersIcon).performClick()
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertTrue(activity.supportFragmentManager.findFragmentById(R.id.teamsDashboardMembersContainer) is DashboardTeamMembersFragment)
+                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.teamsDashboardMembersContainer).visibility)
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.teamsDashboardMyTeamsContainer).visibility)
+                activity.findViewById<ImageView>(R.id.teamsDashboardMyTeamsIcon).performClick()
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.teamsDashboardMembersContainer).visibility)
+            }
+        }
+    }
+
+    @Test
+    fun `teams resources opens team resource page and hides other sections`() {
+        ActivityScenario.launch<TeamsDashboard>(TeamsDashboard::class.java).use { scenario ->
+            scenario.onActivity { activity ->
+                activity.findViewById<ImageView>(R.id.teamsDashboardResourcesIcon).performClick()
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                val resources = activity.supportFragmentManager.findFragmentById(R.id.teamsDashboardResourcesContainer)
+                assertTrue(resources is DashboardResourcesPageFragment)
+                assertTrue((resources as DashboardResourcesPageFragment).isTeamResourcesTab)
+                assertEquals(View.VISIBLE, activity.findViewById<View>(R.id.teamsDashboardResourcesContainer).visibility)
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.teamsDashboardMyTeamsContainer).visibility)
+                activity.findViewById<ImageView>(R.id.teamsDashboardMyTeamsIcon).performClick()
+                Shadows.shadowOf(Looper.getMainLooper()).idle()
+                assertEquals(View.GONE, activity.findViewById<View>(R.id.teamsDashboardResourcesContainer).visibility)
+            }
+        }
+    }
+
 }
