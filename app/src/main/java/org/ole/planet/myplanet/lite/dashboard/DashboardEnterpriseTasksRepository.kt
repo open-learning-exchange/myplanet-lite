@@ -46,7 +46,7 @@ class DashboardEnterpriseTasksRepository(
                     .put(JSONObject().put("status", JSONObject().put("$" + "ne", "archived"))))
             val docs = find(baseUrl, "tasks", taskSelector, 1000, credentials, sessionCookie)
             val tasks = (0 until docs.length()).mapNotNull { docs.optJSONObject(it)?.toTaskDocument() }
-                .sortedWith(compareBy<EnterpriseTaskDocument> { it.completed }.thenBy { it.deadline })
+                .sortedWith(compareBy<EnterpriseTaskDocument> { it.completed }.thenByDescending { it.deadline })
             EnterpriseTasksSnapshot.Success(
                 enterpriseId = enterpriseId,
                 enterpriseType = enterprise.optString("teamType").ifBlank { "sync" },

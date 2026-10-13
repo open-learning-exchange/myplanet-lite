@@ -75,6 +75,32 @@ class DashboardEnterpriseTasksRepositoryTest {
     }
 
     @Test
+    fun `orders pending tasks by newest deadline and completed tasks last`() = runTest {
+        server.enqueue(MockResponse().setBody(
+            """{"_id":"enterprise-1","type":"enterprise","status":"active","public":true}""",
+        ))
+        server.enqueue(MockResponse().setBody("""{"docs":[]}"""))
+        server.enqueue(MockResponse().setBody(
+            """{"docs":[
+                {"_id":"completed-new","deadline":4000,"completed":true},
+                {"_id":"pending-old","deadline":1000,"completed":false},
+                {"_id":"completed-old","deadline":2000,"completed":true},
+                {"_id":"pending-new","deadline":3000,"completed":false}
+            ]}""",
+        ))
+
+        val result = repository.fetchTasks(
+            server.url("/").toString(), null, null, "enterprise-1",
+            "org.couchdb.user:ana", "planet-a",
+        ).getOrThrow() as DashboardEnterpriseTasksRepository.EnterpriseTasksSnapshot.Success
+
+        assertEquals(
+            listOf("pending-new", "pending-old", "completed-new", "completed-old"),
+            result.tasks.map { it.id },
+        )
+    }
+
+    @Test
     fun `fetch task loads current complete document for editing`() = runTest {
         server.enqueue(MockResponse().setBody(
             """{"_id":"task-1","_rev":"4-current","title":"Updated","description":"**Markdown**","deadline":2000,"completed":false,"customField":"preserved"}""",
