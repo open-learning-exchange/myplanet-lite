@@ -83,9 +83,12 @@ class TeamsDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
     }
 
     private fun setupBottomNavigation() {
+        // Keep saved section identifiers stable when adding navigation destinations.
+        val sections = listOf(0, 1, 6, 2, 3, 4, 5)
         val icons = listOf<ImageView>(
             findViewById(R.id.teamsDashboardMyTeamsIcon),
             findViewById(R.id.teamsDashboardHomeIcon),
+            findViewById(R.id.teamsDashboardCalendarIcon),
             findViewById(R.id.teamsDashboardSurveysIcon),
             findViewById(R.id.teamsDashboardTeamMembersIcon),
             findViewById(R.id.teamsDashboardCoursesIcon),
@@ -94,13 +97,13 @@ class TeamsDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
         fun updateSelection() {
             showSelectedSection()
             icons.forEachIndexed { index, icon ->
-                icon.alpha = if (index == selectedNavigationIndex) 1f else 0.5f
-                icon.isSelected = index == selectedNavigationIndex
+                icon.alpha = if (sections[index] == selectedNavigationIndex) 1f else 0.5f
+                icon.isSelected = sections[index] == selectedNavigationIndex
             }
         }
         icons.forEachIndexed { index, icon ->
             icon.setOnClickListener {
-                selectedNavigationIndex = index
+                selectedNavigationIndex = sections[index]
                 updateSelection()
             }
         }
@@ -108,6 +111,18 @@ class TeamsDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
     }
 
     private fun showSelectedSection() {
+        val isCalendar = selectedNavigationIndex == 6
+        findViewById<View>(R.id.teamsDashboardCalendarContainer).isVisible = isCalendar
+        if (isCalendar) {
+            val existing = supportFragmentManager.findFragmentById(R.id.teamsDashboardCalendarContainer)
+            if (existing is TeamCalendarFragment) {
+                existing.refreshTeam()
+            } else {
+                supportFragmentManager.beginTransaction()
+                    .replace(R.id.teamsDashboardCalendarContainer, TeamCalendarFragment())
+                    .commitNow()
+            }
+        }
         val isMyTeams = selectedNavigationIndex == 0
         val isVoices = selectedNavigationIndex == 1
         val isSurveys = selectedNavigationIndex == 2
@@ -163,7 +178,7 @@ class TeamsDashboard : BaseActivity(), CreateTeamDialogFragment.Listener {
                     .commitNow()
             }
         }
-        findViewById<View>(R.id.teamsDashboardContent).isVisible = !isMyTeams && !isVoices && !isSurveys && !isMembers && !isResources && !isCourses
+        findViewById<View>(R.id.teamsDashboardContent).isVisible = !isMyTeams && !isVoices && !isSurveys && !isMembers && !isResources && !isCourses && !isCalendar
         findViewById<View>(R.id.teamsDashboardVoicesSection).isVisible = isVoices
         findViewById<View>(R.id.teamsDashboardAddVoiceFab).isVisible = false
         if (isVoices) showTeamVoices()
