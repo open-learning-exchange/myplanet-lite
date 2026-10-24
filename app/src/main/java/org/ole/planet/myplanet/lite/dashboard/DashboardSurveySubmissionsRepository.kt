@@ -244,7 +244,7 @@ class DashboardSurveySubmissionsRepository(
         @param:Json(name = "value") val value: Any?,
         @param:Json(name = "mistakes") val mistakes: Int = 0,
         @param:Json(name = "passed") val passed: Boolean = true,
-        @param:Json(name = "grade") val grade: Int = 0,
+        @param:Json(name = "grade") val grade: Int? = 0,
     )
 
     @JsonClass(generateAdapter = true)

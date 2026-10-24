@@ -29,7 +29,8 @@ internal fun SurveyWizardFragment.buildSubmissionPayload(): Pair<List<Submission
             val answer = answers[index] ?: throw IllegalStateException("Missing answer for question $index")
             if (isExam) {
                 val correct = isAnswerCorrect(question, answer)
-                val grade = if (correct) question.marks ?: 1 else 0
+                val written = question.type.equals("input", ignoreCase = true) || question.type.equals("textarea", ignoreCase = true)
+                val grade = if (written) null else if (correct) 1 else 0
                 val mistakes = if (correct) 0 else 1
                 val value =
                     when (answer) {
@@ -70,7 +71,7 @@ internal fun SurveyWizardFragment.buildSubmissionPayload(): Pair<List<Submission
         }
     val totalGrade =
         if (isExam) {
-            answersPayload.sumOf { it.grade }
+            questions.indices.sumOf { (questions[it].marks ?: 1) * (answersPayload[it].grade ?: 0) }
         } else {
             0
         }

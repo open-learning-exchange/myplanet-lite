@@ -1,5 +1,6 @@
 package org.ole.planet.myplanet.lite
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -57,6 +58,26 @@ class SurveyWizardGradingExtensionsTest {
         fragment.isExam = true
 
         assertFalse(fragment.isExamAttemptPassing("complete"))
+    }
+
+    @Test
+    fun `exam answers are graded 1 or 0 and written answers are left for grading`() {
+        val questions = listOf(
+            SurveyQuestion(body = "Pick", type = "select", correctChoice = "right", marks = 2,
+                choices = listOf(SurveyChoice(id = "right", text = "Right"), SurveyChoice(id = "wrong", text = "Wrong"))),
+            SurveyQuestion(body = "Explain", type = "textarea", marks = 3),
+        )
+        fragment.document = SurveyDocument(id = "exam1", passingPercentage = 100, questions = questions)
+        fragment.questions = questions
+        fragment.isExam = true
+        fragment.answers.clear()
+        fragment.answers[0] = SurveyAnswer.SingleChoice(SelectedOption(id = "right", text = "Right"))
+        fragment.answers[1] = SurveyAnswer.Text("Because")
+
+        val (answers, totalGrade) = fragment.buildSubmissionPayload()
+
+        assertEquals(listOf(1, null), answers.map { it.grade })
+        assertEquals(2, totalGrade)
     }
 
     private fun givenExam(
