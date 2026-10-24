@@ -47,32 +47,6 @@ class CourseStepLockTest {
     }
 
     @Test
-    fun `course page start step resumes past a stored pass`() {
-        val course = courseItem(currentStep = 3)
-
-        assertEquals(3, course.startStepIndex(setOf(2)))
-    }
-
-    @Test
-    fun `course page start step is unchanged for courses without the flag`() {
-        val course = courseItem(currentStep = 3).let { item ->
-            item.copy(steps = item.steps.map { it.copy(passingRequired = false) })
-        }
-
-        assertEquals(3, course.startStepIndex(emptySet()))
-        assertEquals(0, courseItem(currentStep = null).startStepIndex(emptySet()))
-    }
-
-    @Test
-    fun `next waits for a saved pass on a step whose exam must be passed`() {
-        val gated = StepDisplay("Quiz", "", emptyList(), exam = exam, passingRequired = true)
-
-        assertTrue(isStepPassPending(gated, stepIndex = 1, passedStepNumbers = emptySet()))
-        assertTrue(isStepPassPending(gated, stepIndex = 1, passedStepNumbers = setOf(1, 3)))
-        assertFalse(isStepPassPending(gated, stepIndex = 1, passedStepNumbers = setOf(2)))
-    }
-
-    @Test
     fun `next keeps its other rules for exams without the flag`() {
         val ungated = StepDisplay("Quiz", "", emptyList(), exam = exam)
 

@@ -1,16 +1,8 @@
-/*
- * Author: Claude
- * Email: noreply@anthropic.com
- * Creation date: 2026-10-24
- */
-
 package org.ole.planet.myplanet.lite.dashboard
 
 import android.content.Context
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 
-// Course steps whose exam pass this device knows about, so the step lock also works offline.
-// A pass is never taken away once known.
 class DashboardCoursePassStore(
     context: Context,
     private val username: String? = null,
@@ -26,7 +18,6 @@ class DashboardCoursePassStore(
         addSteps(namespacedKey(KEY_PASSED, courseId), stepNumbers)
     }
 
-    // Passes that couldn't be saved to the server yet; flushed with the course's pending progress
     fun getPendingPasses(courseId: String?): Set<Int> = readSteps(namespacedKey(KEY_PENDING, courseId))
 
     fun addPendingPass(

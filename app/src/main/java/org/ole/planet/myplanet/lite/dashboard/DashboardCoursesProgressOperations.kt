@@ -221,7 +221,6 @@ suspend fun DashboardCoursesRepository.fetchCoursesProgressDocumentsImpl(
 }
 
 
-// Step numbers with a stored pass, per course; a step can have several progress docs and any passed one counts
 suspend fun DashboardCoursesRepository.fetchCoursesPassedStepsImpl(
     baseUrl: String,
     credentials: StoredCredentials,

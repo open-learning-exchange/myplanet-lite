@@ -15,7 +15,6 @@ import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 suspend fun CourseWizardActivity.resolveInitialStepIndex(fallbackIndex: Int): Int {
     val progressIndex = resolveProgressStepIndex(fallbackIndex)
     loadPassedSteps()
-    // Resume never lands past a step whose exam must be passed first
     return CourseStepGating.reachableStepIndex(progressIndex, steps.map { it.requiresPass }, passedStepNumbers)
 }
 
@@ -52,7 +51,6 @@ suspend fun CourseWizardActivity.loadPassedSteps() {
     passStore.addPassedSteps(id, fetched)
 }
 
-// Records an exam pass on a step that requires one; the pass is queued when it can't reach the server
 suspend fun CourseWizardActivity.recordStepPass(stepNumber: Int) {
     val id = courseId?.takeIf { it.isNotBlank() } ?: return
     val saved = runCatching { saveStepPassProgress(stepNumber) }.getOrDefault(false)
@@ -73,7 +71,6 @@ suspend fun CourseWizardActivity.flushPendingStepPasses() {
     }
 }
 
-// Saves passed = true on the step's own progress doc, the one Planet reads for the step lock; never un-passes
 private suspend fun CourseWizardActivity.saveStepPassProgress(stepNumber: Int): Boolean {
     val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return false
     val creds = credentials ?: return false
@@ -105,11 +102,9 @@ private suspend fun CourseWizardActivity.saveStepPassProgress(stepNumber: Int): 
     return result.any { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
 }
 
-// A step that requires a pass keeps its own progress doc: moving it forward would lose that step's pass
 internal fun CourseWizardActivity.isPassRecordStep(stepNumber: Int?): Boolean =
     stepNumber != null && steps.getOrNull(stepNumber - 1)?.requiresPass == true
 
-// Reaching a step that requires a pass doesn't pass it; only a passing attempt does
 internal fun CourseWizardActivity.passedOnReaching(stepNumber: Int): Boolean =
     !isPassRecordStep(stepNumber) || stepNumber in passedStepNumbers
 

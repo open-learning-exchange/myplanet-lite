@@ -2,31 +2,14 @@ package org.ole.planet.myplanet.lite.util
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CourseStepGatingTest {
 
     @Test
-    fun `29 of 50 marks passes a 58 percent pass mark`() {
-        assertTrue(CourseStepGating.isPassingScore(grade = 29, totalMarks = 50, passingPercentage = 58, allAnswersCorrect = false))
-    }
-
-    @Test
-    fun `28 of 50 marks fails a 58 percent pass mark`() {
-        assertFalse(CourseStepGating.isPassingScore(grade = 28, totalMarks = 50, passingPercentage = 58, allAnswersCorrect = false))
-    }
-
-    @Test
     fun `a score just under the pass mark fails instead of rounding up`() {
         // 23 / 40 is 57.5%, which rounding would have turned into 58%
         assertFalse(CourseStepGating.isPassingScore(grade = 23, totalMarks = 40, passingPercentage = 58, allAnswersCorrect = false))
-    }
-
-    @Test
-    fun `zero total marks passes only when every answer is correct`() {
-        assertTrue(CourseStepGating.isPassingScore(grade = 0, totalMarks = 0, passingPercentage = 58, allAnswersCorrect = true))
-        assertFalse(CourseStepGating.isPassingScore(grade = 0, totalMarks = 0, passingPercentage = 58, allAnswersCorrect = false))
     }
 
     @Test

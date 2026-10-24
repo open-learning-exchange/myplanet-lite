@@ -285,7 +285,6 @@ class CourseWizardActivity : BaseActivity() {
 
     private fun isRequiredStepPending(step: StepDisplay): Boolean {
         val hasSurvey = step.survey?.questions?.isNotEmpty() == true
-        // An exam that must be passed is gated on its saved pass instead (isStepPassPending)
         val hasExam = step.exam?.questions?.isNotEmpty() == true && !step.requiresPass
         return (hasSurvey || hasExam) && !completedRequiredSteps.contains(currentIndex)
     }

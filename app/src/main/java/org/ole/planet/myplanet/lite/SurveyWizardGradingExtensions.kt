@@ -28,7 +28,6 @@ internal fun SurveyWizardFragment.isExamPassing(): Boolean {
     return CourseStepGating.isPassingScore(earned, totalMarks, passingPercentage, correct.all { it })
 }
 
-// Only a completed attempt passes a course step; one waiting for grading can't yet
 internal fun SurveyWizardFragment.isExamAttemptPassing(status: String?): Boolean =
     isExam && status == CourseStepGating.STATUS_COMPLETE && isExamPassing()
 
