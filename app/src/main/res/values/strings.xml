@@ -670,6 +670,8 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="course_wizard_finish">Finish course</string>
     <string name="course_wizard_step_position">Step %1$d of %2$d</string>
     <string name="course_wizard_complete_required_step">Complete the test or survey to continue.</string>
+    <string name="course_wizard_pass_exam_to_continue">You must pass the exam to unlock the next step.</string>
+    <string name="course_wizard_pass_exam_to_finish">You must pass the exam to finish the course.</string>
     <string name="course_wizard_open_survey">Open survey</string>
     <string name="course_wizard_open_exam">Open exam</string>
     <string name="dashboard_exam_title">Exam</string>

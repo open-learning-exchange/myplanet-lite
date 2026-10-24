@@ -21,6 +21,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
+import org.ole.planet.myplanet.lite.dashboard.DashboardCoursePassStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardPostImageLoader
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
@@ -289,7 +290,13 @@ class DashboardCoursePageFragment : Fragment(R.layout.fragment_dashboard_courses
                 ).show()
             return
         }
-        val startStep = course.currentStep?.coerceIn(0, course.steps.lastIndex) ?: 0
+        val passedSteps =
+            if (course.steps.any { it.requiresPass }) {
+                DashboardCoursePassStore(requireContext(), credentials?.username).getPassedSteps(course.id)
+            } else {
+                emptySet()
+            }
+        val startStep = course.startStepIndex(passedSteps)
         courseWizardLauncher.launch(
             CourseWizardActivity.createIntent(
                 requireContext(),

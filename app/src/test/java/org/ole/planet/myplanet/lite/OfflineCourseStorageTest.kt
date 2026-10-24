@@ -179,6 +179,19 @@ class OfflineCourseStorageTest {
     }
 
     @Test
+    fun `saved manifest keeps passingRequired on its steps`() {
+        val course = createDummyCourse("gated-course").let { item ->
+            item.copy(steps = item.steps.mapIndexed { index, step -> step.copy(passingRequired = index == 0) })
+        }
+        OfflineCourseStorage.saveCourseManifest(context, course, OfflineCourseStorage.DownloadSource.MY_COURSES)
+
+        val loaded = OfflineCourseStorage.loadDownloadedCourses(context).single { it.id == "gated-course" }
+
+        assertEquals(course.steps.map { it.passingRequired }, loaded.steps.map { it.passingRequired })
+        assertTrue(loaded.steps.first().passingRequired)
+    }
+
+    @Test
     fun testLoadDownloadedCourses_withCorruptedJson() {
         val dir = File(File(context.filesDir, ".offline_courses"), "corrupted-course")
         dir.mkdirs()

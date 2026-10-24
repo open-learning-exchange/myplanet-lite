@@ -8,10 +8,18 @@ import kotlinx.coroutines.launch
 import org.json.JSONArray
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
+import org.ole.planet.myplanet.lite.util.CourseStepGating
 import org.ole.planet.myplanet.lite.util.NetworkUtils
 import org.ole.planet.myplanet.lite.util.PlanetAppIdentity
 
 suspend fun CourseWizardActivity.resolveInitialStepIndex(fallbackIndex: Int): Int {
+    val progressIndex = resolveProgressStepIndex(fallbackIndex)
+    loadPassedSteps()
+    // Resume never lands past a step whose exam must be passed first
+    return CourseStepGating.reachableStepIndex(progressIndex, steps.map { it.requiresPass }, passedStepNumbers)
+}
+
+private suspend fun CourseWizardActivity.resolveProgressStepIndex(fallbackIndex: Int): Int {
     if (cachedProgressDocument != null) {
         val progressStep = cachedProgressDocument?.stepNum
         val resolvedIndex = progressStep?.minus(1) ?: fallbackIndex
@@ -31,6 +39,79 @@ suspend fun CourseWizardActivity.resolveInitialStepIndex(fallbackIndex: Int): In
     val resolvedIndex = progressStep?.minus(1) ?: fallbackIndex
     return resolvedIndex.coerceIn(0, steps.lastIndex)
 }
+
+suspend fun CourseWizardActivity.loadPassedSteps() {
+    if (steps.none { it.requiresPass }) return
+    val id = courseId?.takeIf { it.isNotBlank() } ?: return
+    passedStepNumbers.addAll(passStore.getPassedSteps(id))
+    val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return
+    val creds = credentials ?: return
+    val fetched = coursesRepository.fetchCoursesPassedSteps(normalizedBase, creds, listOf(id))
+        .getOrNull()?.get(id) ?: return
+    passedStepNumbers.addAll(fetched)
+    passStore.addPassedSteps(id, fetched)
+}
+
+// Records an exam pass on a step that requires one; the pass is queued when it can't reach the server
+suspend fun CourseWizardActivity.recordStepPass(stepNumber: Int) {
+    val id = courseId?.takeIf { it.isNotBlank() } ?: return
+    val saved = runCatching { saveStepPassProgress(stepNumber) }.getOrDefault(false)
+    if (!saved) {
+        passStore.addPendingPass(id, stepNumber)
+    }
+    passStore.addPassedSteps(id, listOf(stepNumber))
+    passedStepNumbers.add(stepNumber)
+}
+
+suspend fun CourseWizardActivity.flushPendingStepPasses() {
+    val id = courseId?.takeIf { it.isNotBlank() } ?: return
+    if (!NetworkUtils.isDeviceOnline(this)) return
+    passStore.getPendingPasses(id).sorted().forEach { stepNumber ->
+        if (runCatching { saveStepPassProgress(stepNumber) }.getOrDefault(false)) {
+            passStore.removePendingPass(id, stepNumber)
+        }
+    }
+}
+
+// Saves passed = true on the step's own progress doc, the one Planet reads for the step lock; never un-passes
+private suspend fun CourseWizardActivity.saveStepPassProgress(stepNumber: Int): Boolean {
+    val normalizedBase = baseUrl?.trim()?.trimEnd('/')?.takeIf { it.isNotEmpty() } ?: return false
+    val creds = credentials ?: return false
+    val id = courseId?.takeIf { it.isNotBlank() } ?: return false
+    if (!NetworkUtils.isDeviceOnline(this)) return false
+    val lookup = coursesRepository.fetchCoursesProgressDocuments(normalizedBase, creds, listOf(id), stepNumber)
+    if (lookup.isFailure) return false
+    val existingDoc = lookup.getOrNull()?.get(id)
+    if (existingDoc?.passed == true) return true
+    val now = System.currentTimeMillis()
+    val document = DashboardCoursesRepository.CourseProgressUpdateDocument(
+        id = existingDoc?.id,
+        rev = existingDoc?.rev,
+        userId = "org.couchdb.user:${creds.username}",
+        courseId = id,
+        stepNum = stepNumber,
+        passed = true,
+        createdOn = existingDoc?.createdOn
+            ?: DashboardServerPreferences.getServerCode(applicationContext),
+        parentCode = existingDoc?.parentCode
+            ?: DashboardServerPreferences.getServerParentCode(applicationContext),
+        createdDate = existingDoc?.createdDate ?: now,
+        updatedDate = now,
+        androidId = existingDoc?.androidId,
+        app = resolveCourseProgressApp(existingDoc),
+    )
+    val result = coursesRepository.saveCourseProgress(normalizedBase, creds, listOf(document))
+        .getOrNull() ?: return false
+    return result.any { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
+}
+
+// A step that requires a pass keeps its own progress doc: moving it forward would lose that step's pass
+internal fun CourseWizardActivity.isPassRecordStep(stepNumber: Int?): Boolean =
+    stepNumber != null && steps.getOrNull(stepNumber - 1)?.requiresPass == true
+
+// Reaching a step that requires a pass doesn't pass it; only a passing attempt does
+internal fun CourseWizardActivity.passedOnReaching(stepNumber: Int): Boolean =
+    !isPassRecordStep(stepNumber) || stepNumber in passedStepNumbers
 
 fun CourseWizardActivity.maybeAutoCompleteFirstStep() {
     if (hasAutoCompletedFirstStep || currentIndex != 0) return
@@ -63,7 +144,7 @@ suspend fun CourseWizardActivity.updateCourseProgressIfNeeded(targetStepNumber: 
     val existingDoc = existingDocuments?.get(id)
     val existingStep = existingDoc?.stepNum ?: 0
     if (existingStep >= targetStepNumber) return
-    val progressDoc = existingDoc ?: cachedProgressDocument
+    val progressDoc = (existingDoc ?: cachedProgressDocument)?.takeUnless { isPassRecordStep(it.stepNum) }
     val now = System.currentTimeMillis()
     val document = DashboardCoursesRepository.CourseProgressUpdateDocument(
         id = progressDoc?.id,
@@ -71,7 +152,7 @@ suspend fun CourseWizardActivity.updateCourseProgressIfNeeded(targetStepNumber: 
         userId = "org.couchdb.user:${creds.username}",
         courseId = id,
         stepNum = targetStepNumber,
-        passed = true,
+        passed = passedOnReaching(targetStepNumber),
         createdOn = progressDoc?.createdOn
             ?: DashboardServerPreferences.getServerCode(applicationContext),
         parentCode = progressDoc?.parentCode
@@ -136,22 +217,23 @@ suspend fun CourseWizardActivity.flushPendingCourseProgress() {
         return
     }
 
+    val reusableDoc = existingDoc?.takeUnless { isPassRecordStep(it.stepNum) }
     val now = System.currentTimeMillis()
     val document = DashboardCoursesRepository.CourseProgressUpdateDocument(
-        id = existingDoc?.id,
-        rev = existingDoc?.rev,
+        id = reusableDoc?.id,
+        rev = reusableDoc?.rev,
         userId = "org.couchdb.user:${creds.username}",
         courseId = id,
         stepNum = maxPendingStep,
-        passed = true,
-        createdOn = existingDoc?.createdOn
+        passed = passedOnReaching(maxPendingStep),
+        createdOn = reusableDoc?.createdOn
             ?: DashboardServerPreferences.getServerCode(applicationContext),
-        parentCode = existingDoc?.parentCode
+        parentCode = reusableDoc?.parentCode
             ?: DashboardServerPreferences.getServerParentCode(applicationContext),
-        createdDate = existingDoc?.createdDate ?: now,
+        createdDate = reusableDoc?.createdDate ?: now,
         updatedDate = now,
-        androidId = existingDoc?.androidId,
-        app = resolveCourseProgressApp(existingDoc),
+        androidId = reusableDoc?.androidId,
+        app = resolveCourseProgressApp(reusableDoc),
     )
 
     val result = coursesRepository.saveCourseProgress(normalizedBase, creds, listOf(document))
@@ -159,14 +241,14 @@ suspend fun CourseWizardActivity.flushPendingCourseProgress() {
         removePendingProgressBatch(id, pendingSteps.toSet())
         val persistedDoc = result.getOrNull()
             ?.firstOrNull { it.ok == true || (!it.id.isNullOrBlank() && !it.rev.isNullOrBlank()) }
-        val resolvedId = persistedDoc?.id ?: existingDoc?.id
-        val resolvedRev = persistedDoc?.rev ?: existingDoc?.rev
+        val resolvedId = persistedDoc?.id ?: reusableDoc?.id
+        val resolvedRev = persistedDoc?.rev ?: reusableDoc?.rev
         cachedProgressDocument = DashboardCoursesRepository.CourseProgressDocument(
             id = resolvedId,
             rev = resolvedRev,
             courseId = id,
             stepNum = maxPendingStep,
-            passed = true,
+            passed = document.passed,
             createdDate = document.createdDate,
             updatedDate = now,
             createdOn = document.createdOn,

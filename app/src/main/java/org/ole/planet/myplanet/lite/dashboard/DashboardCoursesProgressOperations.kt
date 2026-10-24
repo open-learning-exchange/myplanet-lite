@@ -221,6 +221,61 @@ suspend fun DashboardCoursesRepository.fetchCoursesProgressDocumentsImpl(
 }
 
 
+// Step numbers with a stored pass, per course; a step can have several progress docs and any passed one counts
+suspend fun DashboardCoursesRepository.fetchCoursesPassedStepsImpl(
+    baseUrl: String,
+    credentials: StoredCredentials,
+    courseIds: List<String>,
+): Result<Map<String, Set<Int>>> {
+    return withContext(dispatcher) {
+        runCatching {
+            val normalizedBase = baseUrl.trim().trimEnd('/')
+            if (normalizedBase.isEmpty()) {
+                throw IOException("Missing server base URL")
+            }
+            val sanitizedIds = courseIds.filter { it.isNotBlank() }
+            if (sanitizedIds.isEmpty()) return@runCatching emptyMap()
+
+            val requestUrl = "$normalizedBase/db/courses_progress/_find"
+            val payload =
+                coursesProgressRequestAdapter.toJson(
+                    CoursesProgressFindRequest(
+                        selector =
+                            CoursesProgressSelector(
+                                userId = "org.couchdb.user:${credentials.username}",
+                                courseId = CourseInSelector(included = sanitizedIds),
+                                passed = true,
+                            ),
+                        limit = 50000,
+                    ),
+                )
+            val mediaType = "application/json; charset=utf-8".toMediaType()
+            val request =
+                Request
+                    .Builder()
+                    .url(requestUrl)
+                    .post(payload.toRequestBody(mediaType))
+                    .addHeader("Authorization", Credentials.basic(credentials.username, credentials.password))
+                    .build()
+
+            client.newCall(request).await().use { response ->
+                if (!response.isSuccessful) {
+                    response.body.string()
+                    throw IOException("Unexpected response ${response.code}")
+                }
+                val parsed =
+                    coursesProgressResponseAdapter.fromJson(response.body.string())
+                        ?: throw IOException("Invalid response body")
+                parsed.docs
+                    .filter { !it.courseId.isNullOrBlank() && it.stepNum != null && it.passed == true }
+                    .groupBy { it.courseId!! }
+                    .mapValues { entry -> entry.value.mapNotNullTo(mutableSetOf()) { it.stepNum } }
+            }
+        }
+    }
+}
+
+
 suspend fun DashboardCoursesRepository.saveCourseProgressImpl(
     baseUrl: String,
     credentials: StoredCredentials,

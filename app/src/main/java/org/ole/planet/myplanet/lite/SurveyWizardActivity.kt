@@ -72,6 +72,7 @@ class SurveyWizardActivity : AppCompatActivity() {
 
     companion object {
         const val EXTRA_DOCUMENT = "extra_document"
+        const val EXTRA_RESULT_EXAM_PASSED = "extra_result_exam_passed"
         private const val EXTRA_TEAM_ID = "extra_team_id"
         private const val EXTRA_TEAM_NAME = "extra_team_name"
         private const val EXTRA_COURSE_ID = "extra_course_id"

@@ -170,6 +170,7 @@ object OfflineCourseStorage {
                         .put("mediaTypes", JSONArray(step.mediaTypes))
                         .put("survey", serializeSurveyDocument(step.survey))
                         .put("exam", serializeSurveyDocument(step.exam))
+                        .put("passingRequired", step.passingRequired)
                         .put(
                             "resources",
                             JSONArray().apply {
@@ -224,7 +225,8 @@ object OfflineCourseStorage {
                 mediaTypes = mediaTypes,
                 resources = resources,
                 survey = parseSurveyDocument(step.optJSONObject("survey")),
-                exam = parseSurveyDocument(step.optJSONObject("exam"))
+                exam = parseSurveyDocument(step.optJSONObject("exam")),
+                passingRequired = step.optBoolean("passingRequired", false)
             )
         }
 

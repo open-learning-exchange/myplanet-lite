@@ -3,6 +3,7 @@ package org.ole.planet.myplanet.lite
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseStep
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
+import org.ole.planet.myplanet.lite.util.CourseStepGating
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 import java.security.SecureRandom
@@ -28,7 +29,8 @@ data class CourseItem(
         val mediaTypes: List<String>,
         val resources: List<LessonResource> = emptyList(),
         val survey: SurveyDocument? = null,
-        val exam: SurveyDocument? = null
+        val exam: SurveyDocument? = null,
+        val passingRequired: Boolean = false
     ) : java.io.Serializable
 
     data class LessonResource(
@@ -36,6 +38,16 @@ data class CourseItem(
         val filename: String,
         val mediaType: String
     ) : java.io.Serializable
+}
+
+// A step whose exam must be passed before the next step unlocks
+val CourseItem.LessonStep.requiresPass: Boolean
+    get() = passingRequired && exam?.questions?.isNotEmpty() == true
+
+// The course page opens a course where the learner left off, but never past a step whose exam must be passed first
+fun CourseItem.startStepIndex(passedStepNumbers: Set<Int>): Int {
+    val resumeIndex = currentStep?.coerceIn(0, steps.lastIndex) ?: 0
+    return CourseStepGating.reachableStepIndex(resumeIndex, steps.map { it.requiresPass }, passedStepNumbers)
 }
 
 data class CourseCategory(
@@ -118,7 +130,8 @@ private fun CourseStep.toLessonStep(): CourseItem.LessonStep? {
         mediaTypes = mediaTypes,
         resources = mappedResources,
         survey = survey,
-        exam = exam
+        exam = exam,
+        passingRequired = passingRequired == true
     )
 }
 

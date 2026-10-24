@@ -109,6 +109,12 @@ class DashboardCoursesRepository(
         stepNum: Int? = null,
     ): Result<Map<String, CourseProgressDocument>> = fetchCoursesProgressDocumentsImpl(baseUrl, credentials, courseIds, stepNum)
 
+    suspend fun fetchCoursesPassedSteps(
+        baseUrl: String,
+        credentials: StoredCredentials,
+        courseIds: List<String>,
+    ): Result<Map<String, Set<Int>>> = fetchCoursesPassedStepsImpl(baseUrl, credentials, courseIds)
+
     suspend fun saveCourseProgress(
         baseUrl: String,
         credentials: StoredCredentials,
@@ -177,6 +183,7 @@ class DashboardCoursesRepository(
         val resources: List<CourseResource>? = emptyList(),
         val survey: SurveyDocument? = null,
         val exam: SurveyDocument? = null,
+        val passingRequired: Boolean? = null,
     )
 
     @JsonClass(generateAdapter = true)
@@ -203,6 +210,7 @@ class DashboardCoursesRepository(
         val userId: String,
         val courseId: CourseInSelector,
         val stepNum: Int? = null,
+        val passed: Boolean? = null,
     )
 
     @JsonClass(generateAdapter = true)

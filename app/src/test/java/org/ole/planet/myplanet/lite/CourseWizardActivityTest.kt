@@ -29,6 +29,7 @@ import org.junit.runner.RunWith
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseProgressDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
+import org.ole.planet.myplanet.lite.util.FakeSharedPreferences
 import org.ole.planet.myplanet.lite.util.SecurePreferencesProvider
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
@@ -155,6 +156,146 @@ class CourseWizardActivityTest {
     }
 
     @Test
+    fun `next shows pass message and stays when the exam pass isn't saved`() = runTest(testDispatcher) {
+        val controller = Robolectric.buildActivity(
+            CourseWizardActivity::class.java,
+            createCourseIntent(
+                listOf(
+                    lessonStep(title = "Step 1", exam = requiredSurveyDocument("exam1"), passingRequired = true),
+                    lessonStep(title = "Step 2")
+                )
+            )
+        )
+        val activity = controller.create().start().resume().visible().get()
+        advanceUntilIdle()
+
+        activity.findViewById<MaterialButton>(R.id.courseWizardNext).performClick()
+        advanceUntilIdle()
+        ShadowLooper.idleMainLooper()
+
+        assertEquals("Step 1", activity.findViewById<TextView>(R.id.courseWizardStepTitle).text.toString())
+        assertTrue(
+            activity.window.decorView.containsText(
+                activity.getString(R.string.course_wizard_pass_exam_to_continue)
+            )
+        )
+        controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun `next moves on once the exam pass is saved`() = runTest(testDispatcher) {
+        val prefs = FakeSharedPreferences()
+        prefs.edit().putString("passed:course1", "1").apply()
+        SecurePreferencesProvider.injectedPreferences = prefs
+        val controller = Robolectric.buildActivity(
+            CourseWizardActivity::class.java,
+            createCourseIntent(
+                listOf(
+                    lessonStep(title = "Step 1", exam = requiredSurveyDocument("exam1"), passingRequired = true),
+                    lessonStep(title = "Step 2")
+                )
+            )
+        )
+        val activity = controller.create().start().resume().visible().get()
+        advanceUntilIdle()
+
+        activity.findViewById<MaterialButton>(R.id.courseWizardNext).performClick()
+        advanceUntilIdle()
+        ShadowLooper.idleMainLooper()
+
+        assertEquals("Step 2", activity.findViewById<TextView>(R.id.courseWizardStepTitle).text.toString())
+        controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun `finish shows pass message on a last step whose exam must be passed`() = runTest(testDispatcher) {
+        val controller = Robolectric.buildActivity(
+            CourseWizardActivity::class.java,
+            createCourseIntent(
+                listOf(
+                    lessonStep(title = "Step 1", exam = requiredSurveyDocument("exam1"), passingRequired = true)
+                )
+            )
+        )
+        val activity = controller.create().start().resume().visible().get()
+        advanceUntilIdle()
+
+        activity.findViewById<MaterialButton>(R.id.courseWizardNext).performClick()
+        advanceUntilIdle()
+        ShadowLooper.idleMainLooper()
+
+        assertFalse(activity.isFinishing)
+        assertTrue(
+            activity.window.decorView.containsText(
+                activity.getString(R.string.course_wizard_pass_exam_to_finish)
+            )
+        )
+        controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun `opening past an unpassed required exam starts at that exam's step`() = runTest(testDispatcher) {
+        val controller = Robolectric.buildActivity(
+            CourseWizardActivity::class.java,
+            createCourseIntent(gatedCourseSteps(), startStep = 3)
+        )
+        val activity = controller.create().start().resume().visible().get()
+        advanceUntilIdle()
+
+        assertEquals("Step 2", activity.findViewById<TextView>(R.id.courseWizardStepTitle).text.toString())
+        controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun `resume stops at the step whose exam must be passed`() = runTest(testDispatcher) {
+        val controller = Robolectric.buildActivity(
+            CourseWizardActivity::class.java,
+            createCourseIntent(gatedCourseSteps())
+        )
+        val activity = controller.create().start().resume().visible().get()
+        advanceUntilIdle()
+        activity.cachedProgressDocument = CourseProgressDocument(courseId = "course1", stepNum = 4)
+
+        assertEquals(1, activity.resolveInitialStepIndex(0))
+        controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun `resume goes past a stored pass`() = runTest(testDispatcher) {
+        val prefs = FakeSharedPreferences()
+        prefs.edit().putString("passed:course1", "2").apply()
+        SecurePreferencesProvider.injectedPreferences = prefs
+        val controller = Robolectric.buildActivity(
+            CourseWizardActivity::class.java,
+            createCourseIntent(gatedCourseSteps())
+        )
+        val activity = controller.create().start().resume().visible().get()
+        advanceUntilIdle()
+        activity.cachedProgressDocument = CourseProgressDocument(courseId = "course1", stepNum = 4)
+
+        assertEquals(3, activity.resolveInitialStepIndex(0))
+        controller.pause().stop().destroy()
+    }
+
+    @Test
+    fun `reaching a step whose exam must be passed doesn't record a pass`() = runTest(testDispatcher) {
+        val controller = Robolectric.buildActivity(
+            CourseWizardActivity::class.java,
+            createCourseIntent(gatedCourseSteps())
+        )
+        val activity = controller.create().start().resume().visible().get()
+        advanceUntilIdle()
+
+        assertTrue(activity.passedOnReaching(1))
+        assertFalse(activity.passedOnReaching(2))
+        assertTrue(activity.isPassRecordStep(2))
+        assertFalse(activity.isPassRecordStep(3))
+        activity.passedStepNumbers.add(2)
+        assertTrue(activity.passedOnReaching(2))
+        controller.pause().stop().destroy()
+    }
+
+    @Test
     fun `course progress attribution is added only to new documents`() {
         assertEquals("myplanet-lite", resolveCourseProgressApp(null))
         assertEquals(
@@ -166,19 +307,28 @@ class CourseWizardActivityTest {
         )
     }
 
-    private fun createCourseIntent(steps: List<CourseItem.LessonStep>): Intent {
+    private fun createCourseIntent(steps: List<CourseItem.LessonStep>, startStep: Int = 0): Intent {
         return Intent(context, CourseWizardActivity::class.java).apply {
             putExtra("extra_course_id", "course1")
             putExtra("extra_title", "Test Course")
             putExtra("extra_steps", ArrayList(steps))
-            putExtra("extra_start_step", 0)
+            putExtra("extra_start_step", startStep)
         }
     }
+
+    private fun gatedCourseSteps(): List<CourseItem.LessonStep> =
+        listOf(
+            lessonStep(title = "Step 1"),
+            lessonStep(title = "Step 2", exam = requiredSurveyDocument("exam1"), passingRequired = true),
+            lessonStep(title = "Step 3"),
+            lessonStep(title = "Step 4")
+        )
 
     private fun lessonStep(
         title: String,
         survey: SurveyDocument? = null,
-        exam: SurveyDocument? = null
+        exam: SurveyDocument? = null,
+        passingRequired: Boolean = false
     ): CourseItem.LessonStep {
         return CourseItem.LessonStep(
             title = title,
@@ -186,7 +336,8 @@ class CourseWizardActivityTest {
             mediaTypes = emptyList(),
             resources = emptyList(),
             exam = exam,
-            survey = survey
+            survey = survey,
+            passingRequired = passingRequired
         )
     }
 

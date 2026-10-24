@@ -330,6 +330,7 @@ internal suspend fun SurveyWizardFragment.processSubmission(
     )
 
     setSubmitting(false)
+    val examPassed = isExamAttemptPassing(submission.status)
 
     when (outcome) {
         SubmitOutcome.SUBMITTED_ONLINE -> {
@@ -350,7 +351,7 @@ internal suspend fun SurveyWizardFragment.processSubmission(
                     ),
                     Toast.LENGTH_SHORT,
                 ).show()
-            finishWithResult()
+            finishWithResult(examPassed)
         }
         SubmitOutcome.QUEUED_OFFLINE -> {
             deleteDraft()
@@ -360,7 +361,7 @@ internal suspend fun SurveyWizardFragment.processSubmission(
                     getString(R.string.dashboard_survey_submission_saved_offline),
                     Toast.LENGTH_SHORT,
                 ).show()
-            finishWithResult()
+            finishWithResult(examPassed)
         }
         SubmitOutcome.FAILED -> {
             showValidationMessage(R.string.dashboard_survey_wizard_submission_failed)
