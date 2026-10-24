@@ -278,24 +278,6 @@ class CourseWizardActivityTest {
     }
 
     @Test
-    fun `reaching a step whose exam must be passed doesn't record a pass`() = runTest(testDispatcher) {
-        val controller = Robolectric.buildActivity(
-            CourseWizardActivity::class.java,
-            createCourseIntent(gatedCourseSteps())
-        )
-        val activity = controller.create().start().resume().visible().get()
-        advanceUntilIdle()
-
-        assertTrue(activity.passedOnReaching(1))
-        assertFalse(activity.passedOnReaching(2))
-        assertTrue(activity.isPassRecordStep(2))
-        assertFalse(activity.isPassRecordStep(3))
-        activity.passedStepNumbers.add(2)
-        assertTrue(activity.passedOnReaching(2))
-        controller.pause().stop().destroy()
-    }
-
-    @Test
     fun `course progress attribution is added only to new documents`() {
         assertEquals("myplanet-lite", resolveCourseProgressApp(null))
         assertEquals(

@@ -2,9 +2,11 @@ package org.ole.planet.myplanet.lite
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseDocument
+import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseProgressDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository.CourseStep
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyDocument
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
@@ -51,6 +53,27 @@ class CourseStepLockTest {
         val ungated = StepDisplay("Quiz", "", emptyList(), exam = exam)
 
         assertFalse(isStepPassPending(ungated, stepIndex = 1, passedStepNumbers = emptySet()))
+    }
+
+    @Test
+    fun `a step is saved as passed on opening only when it has no test questions`() {
+        assertTrue(StepDisplay("Read", "", emptyList()).passesOnOpen)
+        assertTrue(StepDisplay("Survey", "", emptyList(), survey = exam).passesOnOpen)
+        assertTrue(StepDisplay("Empty", "", emptyList(), exam = SurveyDocument(id = "empty", questions = emptyList())).passesOnOpen)
+        assertFalse(StepDisplay("Quiz", "", emptyList(), exam = exam).passesOnOpen)
+    }
+
+    @Test
+    fun `a step's progress is created, upgraded to passed and never downgraded`() {
+        val notPassed = CourseProgressDocument(courseId = "course1", stepNum = 2, passed = false)
+        val passed = CourseProgressDocument(courseId = "course1", stepNum = 2, passed = true)
+
+        assertEquals(false, progressToWrite(null, passed = false))
+        assertEquals(true, progressToWrite(null, passed = true))
+        assertEquals(true, progressToWrite(notPassed, passed = true))
+        assertNull(progressToWrite(notPassed, passed = false))
+        assertNull(progressToWrite(passed, passed = false))
+        assertNull(progressToWrite(passed, passed = true))
     }
 
     private fun courseItem(currentStep: Int?): CourseItem =

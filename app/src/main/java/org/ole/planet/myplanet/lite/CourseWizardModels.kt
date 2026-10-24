@@ -14,6 +14,9 @@ data class StepDisplay(
 val StepDisplay.requiresPass: Boolean
     get() = passingRequired && exam?.questions?.isNotEmpty() == true
 
+val StepDisplay.passesOnOpen: Boolean
+    get() = exam?.questions.isNullOrEmpty()
+
 fun isStepPassPending(
     step: StepDisplay,
     stepIndex: Int,

@@ -43,16 +43,4 @@ class DashboardCoursePassStoreTest {
         assertTrue(DashboardCoursePassStore(context, "other").getPassedSteps("course1").isEmpty())
     }
 
-    @Test
-    fun `pending passes are removed once saved`() {
-        val store = DashboardCoursePassStore(context, "learner")
-
-        store.addPendingPass("course1", 2)
-        store.addPendingPass("course1", 3)
-        store.removePendingPass("course1", 2)
-
-        assertEquals(setOf(3), store.getPendingPasses("course1"))
-        store.removePendingPass("course1", 3)
-        assertTrue(store.getPendingPasses("course1").isEmpty())
-    }
 }

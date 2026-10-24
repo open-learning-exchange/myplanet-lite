@@ -96,7 +96,7 @@ class CourseWizardActivity : BaseActivity() {
             val examPassed =
                 result.resultCode == RESULT_OK &&
                     result.data?.getBooleanExtra(SurveyWizardActivity.EXTRA_RESULT_EXAM_PASSED, false) == true
-            if (examPassed && stepIndex != null && steps.getOrNull(stepIndex)?.requiresPass == true) {
+            if (examPassed && stepIndex != null) {
                 lifecycleScope.launch {
                     recordStepPass(stepIndex + 1)
                     if (this@CourseWizardActivity::stepPositionView.isInitialized) {
@@ -127,7 +127,6 @@ class CourseWizardActivity : BaseActivity() {
         lifecycleScope.launch {
             flushPendingExamSubmissions()
             flushPendingCourseProgress()
-            flushPendingStepPasses()
             currentIndex = resolveInitialStepIndex(startIndex)
             bindStep()
             maybeAutoCompleteFirstStep()

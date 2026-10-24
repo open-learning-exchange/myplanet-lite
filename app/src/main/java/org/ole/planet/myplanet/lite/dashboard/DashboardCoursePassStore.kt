@@ -18,28 +18,6 @@ class DashboardCoursePassStore(
         addSteps(namespacedKey(KEY_PASSED, courseId), stepNumbers)
     }
 
-    fun getPendingPasses(courseId: String?): Set<Int> = readSteps(namespacedKey(KEY_PENDING, courseId))
-
-    fun addPendingPass(
-        courseId: String?,
-        stepNumber: Int,
-    ) {
-        addSteps(namespacedKey(KEY_PENDING, courseId), listOf(stepNumber))
-    }
-
-    fun removePendingPass(
-        courseId: String?,
-        stepNumber: Int,
-    ) {
-        val key = namespacedKey(KEY_PENDING, courseId) ?: return
-        val remaining = readSteps(key) - stepNumber
-        if (remaining.isEmpty()) {
-            prefs.edit().remove(key).apply()
-        } else {
-            prefs.edit().putString(key, remaining.sorted().joinToString(",")).apply()
-        }
-    }
-
     private fun readSteps(key: String?): Set<Int> {
         key ?: return emptySet()
         val stored = prefs.getString(key, null).orEmpty()
@@ -72,6 +50,5 @@ class DashboardCoursePassStore(
     companion object {
         private const val PREFS_NAME = "encrypted_course_step_passes"
         private const val KEY_PASSED = "passed"
-        private const val KEY_PENDING = "pending"
     }
 }
