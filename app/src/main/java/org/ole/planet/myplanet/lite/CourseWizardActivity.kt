@@ -25,6 +25,7 @@ import io.noties.markwon.ext.tables.TablePlugin
 import io.noties.markwon.html.HtmlPlugin
 import io.noties.markwon.image.glide.GlideImagesPlugin
 import kotlinx.coroutines.launch
+import org.ole.planet.myplanet.lite.dashboard.DashboardCoursePassStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardCoursesRepository
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
@@ -68,6 +69,8 @@ class CourseWizardActivity : BaseActivity() {
     private val completedRequiredSteps = mutableSetOf<Int>()
     var pendingRequiredStepIndex: Int? = null
     var cachedProgressDocument: DashboardCoursesRepository.CourseProgressDocument? = null
+    val passStore by lazy { DashboardCoursePassStore(applicationContext, credentials?.username) }
+    val passedStepNumbers = mutableSetOf<Int>()
 
     val fullscreenLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
@@ -82,12 +85,24 @@ class CourseWizardActivity : BaseActivity() {
 
     val requiredStepLauncher =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+            val stepIndex = pendingRequiredStepIndex
             if (result.resultCode == RESULT_OK) {
-                pendingRequiredStepIndex?.let { completedRequiredSteps.add(it) }
+                stepIndex?.let { completedRequiredSteps.add(it) }
             }
             pendingRequiredStepIndex = null
             if (this::stepPositionView.isInitialized) {
                 bindStep()
+            }
+            val examPassed =
+                result.resultCode == RESULT_OK &&
+                    result.data?.getBooleanExtra(SurveyWizardActivity.EXTRA_RESULT_EXAM_PASSED, false) == true
+            if (examPassed && stepIndex != null) {
+                lifecycleScope.launch {
+                    recordStepPass(stepIndex + 1)
+                    if (this@CourseWizardActivity::stepPositionView.isInitialized) {
+                        bindStep()
+                    }
+                }
             }
         }
 
@@ -145,6 +160,7 @@ class CourseWizardActivity : BaseActivity() {
                         resources = step.resources,
                         survey = step.survey,
                         exam = step.exam,
+                        passingRequired = step.passingRequired,
                     )
                 }.orEmpty()
         return Pair(courseTitle, startIndex)
@@ -233,11 +249,14 @@ class CourseWizardActivity : BaseActivity() {
 
     private fun bindNextButton(step: StepDisplay) {
         val requiredStepPending = isRequiredStepPending(step)
+        val passPending = isStepPassPending(step, currentIndex, passedStepNumbers)
         if (currentIndex >= steps.lastIndex) {
             nextButton.isEnabled = true
             (nextButton as? TextView)?.text = getString(R.string.course_wizard_finish)
             nextButton.setOnClickListener {
-                if (requiredStepPending) {
+                if (passPending) {
+                    showPassExamSnackbar(R.string.course_wizard_pass_exam_to_finish)
+                } else if (requiredStepPending) {
                     showCompleteRequiredStepSnackbar()
                 } else {
                     nextButton.isEnabled = false
@@ -250,7 +269,9 @@ class CourseWizardActivity : BaseActivity() {
             nextButton.isEnabled = true
             (nextButton as? TextView)?.text = getString(R.string.course_wizard_next)
             nextButton.setOnClickListener {
-                if (requiredStepPending) {
+                if (passPending) {
+                    showPassExamSnackbar(R.string.course_wizard_pass_exam_to_continue)
+                } else if (requiredStepPending) {
                     showCompleteRequiredStepSnackbar()
                 } else if (currentIndex < steps.lastIndex) {
                     lifecycleScope.launch {
@@ -263,8 +284,17 @@ class CourseWizardActivity : BaseActivity() {
 
     private fun isRequiredStepPending(step: StepDisplay): Boolean {
         val hasSurvey = step.survey?.questions?.isNotEmpty() == true
-        val hasExam = step.exam?.questions?.isNotEmpty() == true
+        val hasExam = step.exam?.questions?.isNotEmpty() == true && !step.requiresPass
         return (hasSurvey || hasExam) && !completedRequiredSteps.contains(currentIndex)
+    }
+
+    private fun showPassExamSnackbar(messageRes: Int) {
+        Snackbar
+            .make(
+                findViewById(R.id.courseWizardRoot),
+                getString(messageRes),
+                Snackbar.LENGTH_SHORT,
+            ).show()
     }
 
     private fun showCompleteRequiredStepSnackbar() {

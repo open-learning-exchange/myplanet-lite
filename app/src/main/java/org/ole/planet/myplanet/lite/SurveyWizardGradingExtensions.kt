@@ -7,7 +7,7 @@
 package org.ole.planet.myplanet.lite
 
 import org.ole.planet.myplanet.lite.dashboard.DashboardSurveysRepository.SurveyQuestion
-import kotlin.math.roundToInt
+import org.ole.planet.myplanet.lite.util.CourseStepGating
 
 internal fun SurveyWizardFragment.isExamPassing(): Boolean {
     val survey = document ?: return true
@@ -15,19 +15,21 @@ internal fun SurveyWizardFragment.isExamPassing(): Boolean {
     if (questions.isEmpty()) return true
     val passingPercentage = survey.passingPercentage ?: DEFAULT_EXAM_PASSING_PERCENTAGE
     val totalMarks = questions.sumOf { it.marks ?: 1 }
-    if (totalMarks == 0) return true
+    val correct = questions.mapIndexed { index, question -> isAnswerCorrect(question, answers[index]) }
     val earned =
         questions
             .mapIndexed { index, question ->
-                if (isAnswerCorrect(question, answers[index])) {
+                if (correct[index]) {
                     question.marks ?: 1
                 } else {
                     0
                 }
             }.sum()
-    val percentage = (earned * 100.0 / totalMarks).roundToInt()
-    return percentage >= passingPercentage
+    return CourseStepGating.isPassingScore(earned, totalMarks, passingPercentage, correct.all { it })
 }
+
+internal fun SurveyWizardFragment.isExamAttemptPassing(status: String?): Boolean =
+    isExam && status == CourseStepGating.STATUS_COMPLETE && isExamPassing()
 
 internal fun SurveyWizardFragment.isAnswerCorrect(
     question: SurveyQuestion,
