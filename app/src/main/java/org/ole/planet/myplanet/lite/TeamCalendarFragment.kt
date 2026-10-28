@@ -24,7 +24,6 @@ import org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
 import org.ole.planet.myplanet.lite.dashboard.DashboardServerPreferences
 import org.ole.planet.myplanet.lite.dashboard.TeamCalendarRepository
 import org.ole.planet.myplanet.lite.dashboard.CalendarAccessDeniedException
-import org.ole.planet.myplanet.lite.dashboard.exportOccurrence
 import org.ole.planet.myplanet.lite.dashboard.TeamMeetup
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.datepicker.MaterialDatePicker
@@ -48,6 +47,7 @@ internal data class TeamCalendarEvent(
     val location: String = "",
     val planetMeetup: TeamMeetup? = null,
     val occurrenceStart: LocalDate? = null,
+    val googleEvent: org.ole.planet.myplanet.lite.dashboard.ExternalCalendarEvent? = null,
 )
 
 class TeamCalendarFragment : Fragment(R.layout.fragment_team_calendar) {
@@ -56,7 +56,17 @@ class TeamCalendarFragment : Fragment(R.layout.fragment_team_calendar) {
     internal var visibleMonth: YearMonth = YearMonth.from(selectedDate)
         private set
     private var events: List<TeamCalendarEvent> = emptyList()
+    private var visibleEvents: List<TeamCalendarEvent> = emptyList()
     private var googleEvents: List<TeamCalendarEvent> = emptyList()
+    private lateinit var googleSyncRetry: CalendarGoogleSyncRetryController
+    private val googleSyncPermission = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { _ -> if (view != null && ::googleSyncRetry.isInitialized) googleSyncRetry.refresh() }
+    private lateinit var eventActions: TeamCalendarEventActions
+    private val exportPermission = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
+    ) { granted -> if (view != null && ::eventActions.isInitialized) eventActions.permissionResult(granted) }
+    private lateinit var notificationRetry: CalendarNotificationRetryController
     private lateinit var googleConnection: GoogleCalendarConnection
     private val googlePermission = registerForActivityResult(
         androidx.activity.result.contract.ActivityResultContracts.RequestPermission(),
@@ -84,7 +94,7 @@ class TeamCalendarFragment : Fragment(R.layout.fragment_team_calendar) {
         view.findViewById<View>(R.id.calendarNextMonth).setOnClickListener { moveMonth(1) }
         view.findViewById<View>(R.id.calendarToday).setOnClickListener { selectDate(LocalDate.now()) }
         view.findViewById<View>(R.id.calendarMonthTitle).setOnClickListener { showDatePicker() }
-        view.findViewById<View>(R.id.calendarRefresh).setOnClickListener { loadEvents(force = true); googleConnection.refresh() }
+        view.findViewById<View>(R.id.calendarRefresh).setOnClickListener { loadEvents(force = true); googleConnection.refresh(); notificationRetry.refresh(); googleSyncRetry.refresh() }
         view.findViewById<View>(R.id.calendarCreate).setOnClickListener {
             val teamId = currentTeamId ?: return@setOnClickListener
             if (childFragmentManager.findFragmentByTag("create_team_event") == null) {
@@ -97,18 +107,29 @@ class TeamCalendarFragment : Fragment(R.layout.fragment_team_calendar) {
             if (result.getString("teamId") == currentTeamId) {
                 result.getString("startDate")?.let { selectDate(LocalDate.parse(it)) }
                 loadEvents(force = true)
+                notificationRetry.refresh()
+                googleSyncRetry.refresh()
             }
         }
+        eventActions = TeamCalendarEventActions(this, { currentTeamId },
+            { exportPermission.launch(android.Manifest.permission.READ_CALENDAR) },
+            { markwon.toMarkdown(it).toString() })
+        notificationRetry = CalendarNotificationRetryController(this, view)
         googleConnection = GoogleCalendarConnection(this, view,
             requestPermission = { googlePermission.launch(android.Manifest.permission.READ_CALENDAR) },
             onEvents = { googleEvents = it; renderCalendar() },
         )
+        googleSyncRetry = CalendarGoogleSyncRetryController(this, view,
+            { googleSyncPermission.launch(arrayOf(android.Manifest.permission.READ_CALENDAR, android.Manifest.permission.WRITE_CALENDAR)) },
+            { googleConnection.refresh(); renderCalendar() })
         refreshTeam()
         renderCalendar()
     }
 
     override fun onResume() {
         super.onResume()
+        if (::notificationRetry.isInitialized) notificationRetry.refresh()
+        if (::googleSyncRetry.isInitialized) googleSyncRetry.refresh()
         refreshTeam()
         renderCalendar()
     }
@@ -212,7 +233,13 @@ class TeamCalendarFragment : Fragment(R.layout.fragment_team_calendar) {
             events = documents.flatMap { it.occurrences(visibleDays.first(), visibleDays.last()) }
                 .distinctBy { it.id to it.date }
         }
-        val displayedEvents = events + googleEvents
+        val base = DashboardServerPreferences.getServerBaseUrl(requireContext()).orEmpty()
+        val user = ProfileCredentialsStore.getStoredCredentials(requireContext())?.username.orEmpty()
+        val known = meetups?.map { it.id }?.toSet() ?: events.mapNotNull { it.planetMeetup?.id }.toSet()
+        val links = org.ole.planet.myplanet.lite.dashboard.GoogleEventLinkStore(requireContext(), base, user)
+        visibleEvents = preferPlanetCalendarEvents(base, currentTeamId.orEmpty(), events, googleEvents, known,
+            links.hiddenIds() + links.linkedIds(currentTeamId.orEmpty(), known)) { markwon.toMarkdown(it).toString() }
+        val displayedEvents = visibleEvents
         root.findViewById<View>(R.id.calendarLoading).isVisible = isLoadingEvents
         root.findViewById<TextView>(R.id.calendarStatus).apply {
             isVisible = loadError != null
@@ -278,10 +305,11 @@ class TeamCalendarFragment : Fragment(R.layout.fragment_team_calendar) {
         root.findViewById<TextView>(R.id.calendarSelectedDate).text = selectedDate.format(dateFormat)
         val container = root.findViewById<LinearLayout>(R.id.calendarEvents)
         container.removeAllViews()
-        val dayEvents = (events + googleEvents).filter { it.date == selectedDate }.sortedBy { it.timeLabel }
+        val dayEvents = visibleEvents.filter { it.date == selectedDate }.sortedBy { it.timeLabel }
         root.findViewById<View>(R.id.calendarEmpty).isVisible = dayEvents.isEmpty() && !isLoadingEvents && loadError == null
-        dayEvents.forEach { event ->
-            container.addView(LinearLayout(requireContext()).apply {
+        CalendarDayTimeline.render(container, selectedDate, dayEvents) { event ->
+            LinearLayout(requireContext()).apply {
+                tag = "calendarEventCard"
                 orientation = LinearLayout.VERTICAL
                 setPadding(dp(16), dp(12), dp(16), dp(12))
                 background = GradientDrawable().apply {
@@ -291,11 +319,7 @@ class TeamCalendarFragment : Fragment(R.layout.fragment_team_calendar) {
                     })
                 }
                 layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) }
-                addView(TextView(context).apply {
-                    text = event.title
-                    textSize = 16f
-                    setTypeface(typeface, Typeface.BOLD)
-                })
+                addView(eventActions.header(event))
                 addView(TextView(context).apply {
                     text = event.timeLabel.ifBlank { getString(R.string.calendar_all_day) }
                 })
@@ -318,40 +342,7 @@ class TeamCalendarFragment : Fragment(R.layout.fragment_team_calendar) {
                     }
                     movementMethod = android.text.method.LinkMovementMethod.getInstance()
                 })
-                val username = ProfileCredentialsStore.getStoredCredentials(context)?.username
-                if (!username.isNullOrBlank() && event.planetMeetup?.createdBy == username) addView(MaterialButton(context).apply {
-                    setText(R.string.calendar_edit_event)
-                    setOnClickListener {
-                        val team = currentTeamId ?: return@setOnClickListener
-                        if (childFragmentManager.findFragmentByTag("create_team_event") == null) {
-                            CreateTeamEventDialogFragment.editInstance(team, event.id)
-                                .show(childFragmentManager, "create_team_event")
-                        }
-                    }
-                })
-                if (event.planetMeetup != null && event.occurrenceStart != null) addView(MaterialButton(context).apply {
-                    setText(R.string.calendar_google_add_event)
-                    setIconResource(R.drawable.ic_google_24)
-                    iconTint = null
-                    setOnClickListener { exportToGoogle(event) }
-                })
-            })
-        }
-    }
-
-    private fun exportToGoogle(event: TeamCalendarEvent) {
-        val meetup = event.planetMeetup ?: return
-        val occurrence = event.occurrenceStart ?: return
-        try {
-            val export = meetup.exportOccurrence(occurrence, markwon.toMarkdown(meetup.description).toString())
-            try {
-                startActivity(export.appIntent())
-            } catch (_: android.content.ActivityNotFoundException) {
-                startActivity(export.webIntent())
             }
-        } catch (_: Exception) {
-            android.widget.Toast.makeText(requireContext(), R.string.calendar_google_export_error,
-                android.widget.Toast.LENGTH_LONG).show()
         }
     }
 

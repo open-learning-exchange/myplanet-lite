@@ -86,6 +86,32 @@
             android:paddingBottom="8dp"
             android:accessibilityLiveRegion="polite"
             android:text="@string/calendar_google_hint" />
+        <TextView
+            android:id="@+id/calendarNotificationsStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/calendar_notifications_pending"
+            android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/calendarNotificationsRetry"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/calendar_notifications_retry"
+            android:visibility="gone" />
+        <TextView
+            android:id="@+id/calendarGoogleSyncStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/calendar_google_sync_pending"
+            android:visibility="gone" />
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/calendarGoogleSyncRetry"
+            style="@style/Widget.MaterialComponents.Button.TextButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/calendar_google_sync_retry"
+            android:visibility="gone" />
         <ProgressBar
             android:id="@+id/calendarLoading"
             android:layout_width="32dp"

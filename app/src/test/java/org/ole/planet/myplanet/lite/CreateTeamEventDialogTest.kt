@@ -109,6 +109,39 @@ class CreateTeamEventDialogTest {
         }
     }
 
+    @Test fun `start and end time open on their first touch without focusing the text field`() {
+        launchFragmentInContainer<TeamCalendarFragment>(themeResId = R.style.Theme_MyPlanetLite).use { scenario ->
+            scenario.onFragment { calendar ->
+                calendar.requireView().findViewById<View>(R.id.calendarCreate).performClick()
+                calendar.childFragmentManager.executePendingTransactions()
+                val form = calendar.childFragmentManager.findFragmentByTag("create_team_event") as CreateTeamEventDialogFragment
+                val root = form.requireDialog().window!!.decorView
+                descendants(root).filterIsInstance<android.widget.CheckBox>().single {
+                    it.text.toString() == form.getString(R.string.calendar_all_day)
+                }.isChecked = false
+                for (label in listOf(R.string.calendar_start_time, R.string.calendar_end_time)) {
+                    val input = descendants(root).filterIsInstance<TextInputLayout>().single {
+                        it.hint.toString() == form.getString(label)
+                    }.editText!!
+                    assertFalse(input.isFocusableInTouchMode)
+                    val now = android.os.SystemClock.uptimeMillis()
+                    val down = android.view.MotionEvent.obtain(now, now, android.view.MotionEvent.ACTION_DOWN, 10f, 10f, 0)
+                    val up = android.view.MotionEvent.obtain(now, now + 50, android.view.MotionEvent.ACTION_UP, 10f, 10f, 0)
+                    input.measure(View.MeasureSpec.makeMeasureSpec(300, View.MeasureSpec.EXACTLY),
+                        View.MeasureSpec.makeMeasureSpec(80, View.MeasureSpec.EXACTLY))
+                    input.layout(0, 0, 300, 80)
+                    input.dispatchTouchEvent(down); input.dispatchTouchEvent(up)
+                    org.robolectric.Shadows.shadowOf(android.os.Looper.getMainLooper()).idle()
+                    down.recycle(); up.recycle()
+                    form.childFragmentManager.executePendingTransactions()
+                    val picker = form.childFragmentManager.findFragmentByTag("event_time") as? TeamEventTimePickerFragment
+                    assertNotNull("The first touch must open the clock", picker)
+                    picker!!.dismissNow()
+                }
+            }
+        }
+    }
+
     @Test fun `clock picker offers durations restores state and calculates next day end`() {
         launchFragmentInContainer<TeamCalendarFragment>(themeResId = R.style.Theme_MyPlanetLite).use { scenario ->
             scenario.onFragment { calendar ->

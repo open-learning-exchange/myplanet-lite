@@ -803,4 +803,24 @@ Si vous n\'êtes pas d\'accord, vous devez sélectionner « Annuler » et cess
     <string name="calendar_edit_event">Modifier le(s) événement(s)</string>
     <string name="calendar_edit_conflict">Cet événement a changé sur le serveur. La dernière version a été chargée. Vérifiez-la avant de réenregistrer.</string>
     <string name="calendar_edit_denied">Seul l’utilisateur qui a créé cet événement peut le modifier.</string>
+    <string name="calendar_delete_event">Supprimer le(s) événement(s)</string>
+    <string name="calendar_delete_confirm">Supprimer « %1$s » et toutes ses occurrences ? Cette action est irréversible.</string>
+    <string name="calendar_delete_error">Impossible de supprimer cet événement. Réessayez.</string>
+    <string name="calendar_delete_conflict">Cet événement a changé sur le serveur. Sa dernière version a été chargée. Vérifiez-la avant de confirmer à nouveau la suppression.</string>
+    <string name="calendar_notifications_pending">Cet événement a été enregistré. Certaines notifications aux participants sont en attente.</string>
+    <string name="calendar_notifications_retry">Réessayer les notifications</string>
+    <string name="calendar_event_actions">Actions de l’événement</string>
+    <string name="calendar_google_already_added">Cet événement est déjà dans Google Calendar.</string>
+    <string name="calendar_delete_denied">Seuls le créateur de l’événement, un administrateur ou le propriétaire de l’équipe peuvent supprimer cet événement.</string>
+    <string name="calendar_google_sync_permission">Autorisez la lecture et l’écriture du calendrier pour modifier ou supprimer la copie Google associée.</string>
+    <string name="calendar_google_sync_pending">La modification a été enregistrée dans MyPlanet. La copie Google associée reste à synchroniser.</string>
+    <string name="calendar_google_sync_retry">Synchroniser Google Calendar</string>
+    <string name="calendar_delete_both">Supprimer les deux</string>
+    <string name="calendar_delete_both_confirm">Supprimer « %1$s » et toutes ses occurrences de MyPlanet et Google Calendar ? Cette action est irréversible.</string>
+    <string name="calendar_delete_checking">Vérification de l’événement et de son lien avec Google Calendar…</string>
+    <string name="calendar_delete_google_checkbox">Supprimer également de Google Calendar</string>
+    <string name="calendar_overlap_planet">Cet horaire chevauche un autre événement Planet.</string>
+    <string name="calendar_overlap_google">Cet horaire chevauche un événement Google Calendar.</string>
+    <string name="calendar_overlap_check_failed">Impossible de vérifier les calendriers Google connectés. Vérifiez la connexion et les autorisations, puis réessayez.</string>
+    <string name="calendar_add_anyway">Ajouter quand même</string>
 </resources>

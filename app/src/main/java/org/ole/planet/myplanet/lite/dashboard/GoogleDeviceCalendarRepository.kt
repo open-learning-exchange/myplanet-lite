@@ -16,11 +16,12 @@ internal data class GoogleDeviceCalendar(val id: Long, val name: String, val acc
 
 /** Reads Android's Google calendar cache. Never writes to the provider or to Planet. */
 internal class GoogleDeviceCalendarRepository(private val resolver: ContentResolver) {
-    fun calendars(): List<GoogleDeviceCalendar> {
+    fun calendars(includeHidden: Boolean = false): List<GoogleDeviceCalendar> {
         val projection = arrayOf(Calendars._ID, Calendars.CALENDAR_DISPLAY_NAME, Calendars.ACCOUNT_NAME)
         val result = mutableListOf<GoogleDeviceCalendar>()
         val cursor = resolver.query(Calendars.CONTENT_URI, projection,
-            "${Calendars.ACCOUNT_TYPE} = ? AND ${Calendars.SYNC_EVENTS} = 1 AND ${Calendars.VISIBLE} = 1",
+            "${Calendars.ACCOUNT_TYPE} = ? AND ${Calendars.SYNC_EVENTS} = 1" +
+                if (includeHidden) "" else " AND ${Calendars.VISIBLE} = 1",
             arrayOf("com.google"), "${Calendars.CALENDAR_DISPLAY_NAME} ASC") ?: throw IOException("Calendar provider unavailable")
         cursor.use {
             while (it.moveToNext()) {

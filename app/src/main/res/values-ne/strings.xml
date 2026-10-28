@@ -804,4 +804,24 @@
     <string name="calendar_edit_event">कार्यक्रम सम्पादन गर्नुहोस्</string>
     <string name="calendar_edit_conflict">सर्भरमा कार्यक्रम परिवर्तन भयो। पछिल्लो संस्करण लोड गरिएको छ। फेरि सुरक्षित गर्नुअघि जाँच्नुहोस्।</string>
     <string name="calendar_edit_denied">यो कार्यक्रम सिर्जना गर्ने प्रयोगकर्ताले मात्र यसलाई सम्पादन गर्न सक्छ।</string>
+    <string name="calendar_delete_event">कार्यक्रम मेटाउनुहोस्</string>
+    <string name="calendar_delete_confirm">“%1$s” र यसका सबै पुनरावृत्ति मेटाउने हो? यो कार्य उल्टाउन सकिँदैन।</string>
+    <string name="calendar_delete_error">कार्यक्रम मेटाउन सकिएन। फेरि प्रयास गर्नुहोस्।</string>
+    <string name="calendar_delete_conflict">सर्भरमा कार्यक्रम परिवर्तन भयो। पछिल्लो संस्करण लोड गरिएको छ। फेरि मेटाउन पुष्टि गर्नुअघि जाँच्नुहोस्।</string>
+    <string name="calendar_notifications_pending">कार्यक्रम सुरक्षित भयो। केही सहभागीका सूचनाहरू बाँकी छन्।</string>
+    <string name="calendar_notifications_retry">सूचनाहरू फेरि पठाउनुहोस्</string>
+    <string name="calendar_event_actions">कार्यक्रमका कार्यहरू</string>
+    <string name="calendar_google_already_added">यो कार्यक्रम Google Calendar मा पहिले नै छ।</string>
+    <string name="calendar_delete_denied">कार्यक्रम सिर्जनाकर्ता, प्रशासक वा टोली मालिकले मात्र यो कार्यक्रम मेटाउन सक्छन्।</string>
+    <string name="calendar_google_sync_permission">जोडिएको Google प्रतिलिपि अद्यावधिक गर्न वा मेटाउन पात्रो पढ्न र लेख्न अनुमति दिनुहोस्।</string>
+    <string name="calendar_google_sync_pending">परिवर्तन MyPlanet मा सुरक्षित भयो। जोडिएको Google प्रतिलिपि सिङ्क गर्न बाँकी छ।</string>
+    <string name="calendar_google_sync_retry">Google Calendar सिङ्क गर्नुहोस्</string>
+    <string name="calendar_delete_both">दुवै मेटाउनुहोस्</string>
+    <string name="calendar_delete_both_confirm">MyPlanet र Google Calendar बाट “%1$s” र यसका सबै पुनरावृत्तिहरू मेटाउने? यो कार्य उल्ट्याउन सकिँदैन।</string>
+    <string name="calendar_delete_checking">कार्यक्रम र Google Calendar सँगको लिंक जाँच गर्दै…</string>
+    <string name="calendar_delete_google_checkbox">Google Calendar बाट पनि मेटाउनुहोस्</string>
+    <string name="calendar_overlap_planet">यो समय अर्को Planet कार्यक्रमसँग जुध्छ।</string>
+    <string name="calendar_overlap_google">यो समय Google Calendar कार्यक्रमसँग जुध्छ।</string>
+    <string name="calendar_overlap_check_failed">जडान गरिएका Google पात्रो जाँच गर्न सकिएन। जडान र अनुमतिहरू जाँच गरी फेरि प्रयास गर्नुहोस्।</string>
+    <string name="calendar_add_anyway">तैपनि थप्नुहोस्</string>
 </resources>

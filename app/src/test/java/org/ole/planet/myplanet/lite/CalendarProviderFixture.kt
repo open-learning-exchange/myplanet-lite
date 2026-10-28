@@ -10,6 +10,11 @@ import java.time.Instant
 
 internal class CalendarProviderFixture : ContentProvider() {
     var queries = 0
+    var description = "Personal event"
+    var location = "Online"
+    var begin = Instant.parse("2026-10-13T12:00:00Z").toEpochMilli()
+    var end = Instant.parse("2026-10-13T13:00:00Z").toEpochMilli()
+    var allDay = 0
     var title: String? = "Google meeting"
     var instanceSelection = ""
     var instanceArguments: List<String> = emptyList()
@@ -30,12 +35,22 @@ internal class CalendarProviderFixture : ContentProvider() {
         if (calendarQuery) {
             check(selection!!.contains(CalendarContract.Calendars.ACCOUNT_TYPE))
             check(selection.contains(CalendarContract.Calendars.SYNC_EVENTS))
-            check(selection.contains(CalendarContract.Calendars.VISIBLE))
             check(selectionArgs!!.single() == "com.google")
-            if (visible) {
+            if (visible || !selection.contains(CalendarContract.Calendars.VISIBLE)) {
                 val row: Map<String, Any?> = mapOf(CalendarContract.Calendars._ID to 1L,
                     CalendarContract.Calendars.CALENDAR_DISPLAY_NAME to "Personal",
                     CalendarContract.Calendars.ACCOUNT_NAME to calendarAccount)
+                cursor.addRow(columns.map { row[it] }.toTypedArray())
+            }
+        } else if (uri.pathSegments.first() == "events") {
+            instanceSelection = selection.orEmpty(); instanceArguments = selectionArgs.orEmpty().toList()
+            val pattern = selectionArgs!![selectionArgs.size - 2].removePrefix("%").removeSuffix("%")
+            val matches = description.contains(pattern) || begin.toString() == selectionArgs.last()
+            if (title != null && matches) {
+                val row: Map<String, Any?> = mapOf(CalendarContract.Events.TITLE to title,
+                    CalendarContract.Events.DESCRIPTION to description, CalendarContract.Events.DTSTART to begin,
+                    CalendarContract.Events.DTEND to end, CalendarContract.Events.ALL_DAY to allDay,
+                    CalendarContract.Events.EVENT_LOCATION to location)
                 cursor.addRow(columns.map { row[it] }.toTypedArray())
             }
         } else {

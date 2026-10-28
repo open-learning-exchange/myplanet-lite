@@ -10,6 +10,7 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import org.json.JSONArray
 import org.json.JSONObject
 import org.ole.planet.myplanet.lite.auth.AuthDependencies
 import org.ole.planet.myplanet.lite.profile.StoredCredentials
@@ -102,7 +103,13 @@ internal class TeamCalendarRepository(
         }
     }
 
-    internal fun request(url: String, payload: JSONObject?, credentials: StoredCredentials, cookie: String?): JSONObject {
+    internal fun request(url: String, payload: JSONObject?, credentials: StoredCredentials, cookie: String?): JSONObject =
+        JSONObject(responseText(url, payload, credentials, cookie))
+
+    internal fun requestArray(url: String, payload: JSONObject, credentials: StoredCredentials, cookie: String?): JSONArray =
+        JSONArray(responseText(url, payload, credentials, cookie))
+
+    private fun responseText(url: String, payload: JSONObject?, credentials: StoredCredentials, cookie: String?): String {
         val builder = Request.Builder().url(url)
             .header("Authorization", Credentials.basic(credentials.username, credentials.password))
             .header("Accept", "application/json")
@@ -116,7 +123,7 @@ internal class TeamCalendarRepository(
                 if (response.code == 403) throw CalendarAccessDeniedException()
                 throw CalendarHttpException(response.code)
             }
-            JSONObject(responseBody)
+            responseBody
         }
     }
 }

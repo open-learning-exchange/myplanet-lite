@@ -807,4 +807,24 @@
     <string name="calendar_edit_event">تعديل الحدث (الأحداث)</string>
     <string name="calendar_edit_conflict">تغير الحدث على الخادم. تم تحميل أحدث إصدار. راجعه قبل الحفظ مجددًا.</string>
     <string name="calendar_edit_denied">يمكن فقط للمستخدم الذي أنشأ هذا الحدث تعديله.</string>
+    <string name="calendar_delete_event">حذف الحدث (الأحداث)</string>
+    <string name="calendar_delete_confirm">هل تريد حذف «%1$s» وجميع مرات تكراره؟ لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="calendar_delete_error">تعذر حذف الحدث. حاول مجددًا.</string>
+    <string name="calendar_delete_conflict">تغير الحدث على الخادم. تم تحميل أحدث إصدار. راجعه قبل تأكيد الحذف مجددًا.</string>
+    <string name="calendar_notifications_pending">تم حفظ الحدث. بعض إشعارات المشاركين معلقة.</string>
+    <string name="calendar_notifications_retry">إعادة محاولة الإشعارات</string>
+    <string name="calendar_event_actions">إجراءات الحدث</string>
+    <string name="calendar_google_already_added">هذا الحدث موجود بالفعل في تقويم Google.</string>
+    <string name="calendar_delete_denied">يمكن فقط لمنشئ الحدث أو المسؤول أو مالك الفريق حذف هذا الحدث.</string>
+    <string name="calendar_google_sync_permission">اسمح بقراءة التقويم والكتابة فيه لتحديث نسخة Google المرتبطة أو حذفها.</string>
+    <string name="calendar_google_sync_pending">تم حفظ التغيير في MyPlanet. لا تزال نسخة Google المرتبطة بحاجة إلى المزامنة.</string>
+    <string name="calendar_google_sync_retry">مزامنة تقويم Google</string>
+    <string name="calendar_delete_both">حذف كليهما</string>
+    <string name="calendar_delete_both_confirm">هل تريد حذف «%1$s» وجميع تكراراته من MyPlanet وتقويم Google؟ لا يمكن التراجع عن هذا الإجراء.</string>
+    <string name="calendar_delete_checking">جارٍ التحقق من الحدث وارتباطه بتقويم Google…</string>
+    <string name="calendar_delete_google_checkbox">الحذف أيضًا من تقويم Google</string>
+    <string name="calendar_overlap_planet">يتداخل هذا الموعد مع حدث آخر في Planet.</string>
+    <string name="calendar_overlap_google">يتداخل هذا الموعد مع حدث في تقويم Google.</string>
+    <string name="calendar_overlap_check_failed">تعذر التحقق من تقاويم Google المتصلة. تحقق من الاتصال والأذونات وحاول مجددًا.</string>
+    <string name="calendar_add_anyway">الإضافة على أي حال</string>
 </resources>

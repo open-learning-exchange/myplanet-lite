@@ -112,4 +112,88 @@ class TeamEventEditorRepositoryTest {
             assertEquals("/db/meetups/event-1", paths[3])
         }
     }
+    @Test fun `deletion sends a revisioned tombstone and checks each bulk result`() = runTest {
+        MockWebServer().use { server ->
+            server.start(); server.body(event()); server.body(user())
+            server.body("""[{"ok":true,"id":"event-1","rev":"2-deleted"}]""")
+            assertEquals("2-deleted", TeamEventEditorRepository().delete(server.url("/").toString(), credentials,
+                "cookie", "team-1", "event-1", "1-abc").getOrThrow())
+            server.takeRequest(); server.takeRequest()
+            val request = server.takeRequest()
+            assertEquals("/db/meetups/_bulk_docs", request.path)
+            val docs = JSONObject(request.body.readUtf8()).getJSONArray("docs")
+            val tombstone = docs.getJSONObject(0)
+            assertEquals(1, docs.length()); assertEquals(3, tombstone.length())
+            assertEquals("event-1", tombstone.getString("_id"))
+            assertEquals("1-abc", tombstone.getString("_rev"))
+            assertTrue(tombstone.getBoolean("_deleted"))
+            assertEquals(3, server.requestCount)
+        }
+    }
+
+    @Test fun `deletion rejects unauthorized users and HTTP 200 bulk errors`() = runTest {
+        for (otherCreator in listOf(true, false)) {
+            MockWebServer().use { server ->
+                server.start(); server.body(event(creator = if (otherCreator) "juan" else "ana")); server.body(user())
+                if (!otherCreator) server.body("""[{"id":"event-1","error":"forbidden","reason":"denied"}]""")
+                else server.body("""{"_id":"team-1","createdBy":"org.couchdb.user:juan"}""")
+                assertTrue(TeamEventEditorRepository().delete(server.url("/").toString(), credentials, null,
+                    "team-1", "event-1", "1-abc").exceptionOrNull() is CalendarAccessDeniedException)
+                assertEquals(3, server.requestCount)
+            }
+        }
+    }
+
+    @Test fun `bulk deletion conflict reloads latest event without deleting again`() = runTest {
+        MockWebServer().use { server ->
+            server.start(); server.body(event()); server.body(user())
+            server.body("""[{"id":"event-1","error":"conflict"}]""")
+            server.body(event("2-new")); server.body(user())
+            val failure = TeamEventEditorRepository().delete(server.url("/").toString(), credentials, null,
+                "team-1", "event-1", "1-abc").exceptionOrNull() as CalendarEditConflictException
+            assertEquals("2-new", failure.latest.meetup.revision)
+            assertEquals(5, server.requestCount)
+        }
+    }
+
+    @Test fun `admins and team owners can delete but still cannot edit others events`() = runTest {
+        for (kind in listOf("admin", "owner", "couchdb-admin")) {
+            MockWebServer().use { server ->
+                server.start(); server.body(event(creator = "juan"))
+                server.body(user(if (kind == "couchdb-admin") listOf("_admin") else emptyList(), kind == "admin"))
+                if (kind == "owner") server.body("""{"_id":"team-1","createdBy":"org.couchdb.user:ana"}""")
+                server.body("""[{"ok":true,"id":"event-1","rev":"2-deleted"}]""")
+                assertEquals("2-deleted", TeamEventEditorRepository().delete(server.url("/").toString(), credentials,
+                    null, "team-1", "event-1", "1-abc").getOrThrow())
+            }
+        }
+    }
+
+    @Test fun `team leader is not automatically team owner for deletion`() = runTest {
+        MockWebServer().use { server ->
+            server.start(); server.body(event(creator = "juan")); server.body(user(listOf("leader")))
+            server.body("""{"_id":"team-1","createdBy":"org.couchdb.user:juan"}""")
+            assertTrue(TeamEventEditorRepository().delete(server.url("/").toString(), credentials, null,
+                "team-1", "event-1", "1-abc").exceptionOrNull() is CalendarAccessDeniedException)
+            assertEquals(3, server.requestCount)
+        }
+    }
+
+    @Test fun `menu permissions separate editing from deletion privileges`() = runTest {
+        for (kind in listOf("creator", "admin", "owner", "member")) {
+            MockWebServer().use { server ->
+                server.start(); server.body(event(creator = if (kind == "creator") "ana" else "juan"))
+                server.body(user(admin = kind == "admin"))
+                if (kind in listOf("owner", "member")) {
+                    server.body(JSONObject().put("_id", "team-1").put("createdBy",
+                        if (kind == "owner") "org.couchdb.user:ana" else "org.couchdb.user:juan"))
+                }
+                val permissions = TeamEventEditorRepository().permissions(server.url("/").toString(), credentials,
+                    null, "team-1", "event-1").getOrThrow()
+                assertEquals(kind == "creator", permissions.canEdit)
+                assertEquals(kind != "member", permissions.canDelete)
+            }
+        }
+    }
+
 }

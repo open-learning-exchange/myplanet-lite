@@ -45,6 +45,11 @@ class CreateTeamEventDialogFragment : DialogFragment() {
     private var endDate: LocalDate? = null
     private var durationMinutes = 30
     private var observerJob: kotlinx.coroutines.Job? = null
+    private var launchedPermission: String? = null
+    private val googleWritePermission = registerForActivityResult(
+        androidx.activity.result.contract.ActivityResultContracts.RequestMultiplePermissions(),
+    ) { result -> model.permissionResult(result.isNotEmpty() && result.values.all { it }) }
+    private var overlapDialog: AlertDialog? = null
     private var appliedRevision: String? = null
     private lateinit var dates: MaterialButton
     private val editingId get() = arguments?.getString("editingId")
@@ -56,6 +61,7 @@ class CreateTeamEventDialogFragment : DialogFragment() {
         val initialDate = LocalDate.parse(state.getString("startDate") ?: LocalDate.now().toString())
         startDate = if (editingId == null) maxOf(LocalDate.now(), initialDate) else initialDate
         appliedRevision = state.getString("appliedRevision")
+        launchedPermission = state.getString("launchedPermission")
         endDate = state.getString("endDate")?.let(LocalDate::parse)?.takeIf { it >= startDate }
         durationMinutes = state.getInt("duration", 30)
         val context = requireContext()
@@ -103,6 +109,9 @@ class CreateTeamEventDialogFragment : DialogFragment() {
         listOf(start, end).forEach { input ->
             input.keyListener = null
             input.showSoftInputOnFocus = false
+            input.isFocusable = false
+            input.isFocusableInTouchMode = false
+            input.isCursorVisible = false
             input.setOnClickListener {
                 if (childFragmentManager.findFragmentByTag("event_time") == null) {
                     val time = runCatching { LocalTime.parse(input.text) }.getOrDefault(LocalTime.of(9, 0))
@@ -194,6 +203,10 @@ class CreateTeamEventDialogFragment : DialogFragment() {
         observerJob = lifecycleScope.launch {
             repeatOnLifecycle(Lifecycle.State.STARTED) {
                 model.state.collect { state ->
+                    if (state.permissions != null && state.permissionId != launchedPermission) {
+                        launchedPermission = state.permissionId
+                        googleWritePermission.launch(state.permissions)
+                    }
                     state.editable?.let { if (appliedRevision != it.meetup.revision) populate(it) }
                     val busy = state.saving || state.loading
                     isCancelable = !state.saving
@@ -206,8 +219,21 @@ class CreateTeamEventDialogFragment : DialogFragment() {
                         fields.getValue("startTime").isEnabled = false
                         fields.getValue("endTime").isEnabled = false
                     }
+                    if (state.overlapRes != null && overlapDialog == null) {
+                        overlapDialog = MaterialAlertDialogBuilder(requireContext())
+                            .setMessage(state.overlapRes)
+                            .setNegativeButton(android.R.string.cancel) { _, _ -> model.resolveOverlap(false) }
+                            .setPositiveButton(R.string.calendar_add_anyway) { _, _ -> model.resolveOverlap(true) }
+                            .setOnCancelListener { model.resolveOverlap(false) }
+                            .create().also { popup ->
+                                popup.setOnDismissListener { overlapDialog = null }
+                                popup.show()
+                            }
+                    }
                     state.errorRes?.let { error.setText(it); error.isVisible = true }
                     state.saved?.let {
+                        if (state.syncWarning) android.widget.Toast.makeText(requireContext(), R.string.calendar_google_sync_pending,
+                            android.widget.Toast.LENGTH_LONG).show()
                         parentFragmentManager.setFragmentResult(RESULT_KEY, Bundle().apply {
                             putString("meetupId", it.id)
                             putString("meetupRev", it.revision)
@@ -223,6 +249,7 @@ class CreateTeamEventDialogFragment : DialogFragment() {
 
     override fun onStop() {
         observerJob?.cancel()
+        overlapDialog?.dismiss(); overlapDialog = null
         super.onStop()
     }
 
@@ -260,6 +287,7 @@ class CreateTeamEventDialogFragment : DialogFragment() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
+        outState.putString("launchedPermission", launchedPermission)
         outState.putString("appliedRevision", appliedRevision)
         outState.putString("startDate", startDate.toString()); outState.putString("endDate", endDate?.toString())
         fields.forEach { (key, input) -> outState.putString(key, input.text.toString()) }

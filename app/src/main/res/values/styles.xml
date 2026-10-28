@@ -41,4 +41,11 @@
         <item name="cornerFamily">rounded</item>
         <item name="cornerSize">50%</item>
     </style>
+    <style name="Widget.MyPlanet.CalendarActions" parent="ThemeOverlay.AppCompat.Light">
+        <item name="android:textColorPrimary">@android:color/black</item>
+        <item name="popupMenuStyle">@style/Widget.MyPlanet.CalendarActionsStyle</item>
+    </style>
+    <style name="Widget.MyPlanet.CalendarActionsStyle" parent="Widget.AppCompat.PopupMenu">
+        <item name="android:popupBackground">@android:color/white</item>
+    </style>
 </resources>

@@ -30,7 +30,7 @@ internal data class ExternalCalendarEvent(
         val time = if (allDay) "" else start.format(format) + " – " + end.format(format)
         return generateSequence(first) { it.plusDays(1) }.takeWhile { it <= last }.map { date ->
             TeamCalendarEvent("google:$id:$startMillis", date, title, time,
-                description, sourceCalendar = calendarName, location = location)
+                description, sourceCalendar = calendarName, location = location, googleEvent = this)
         }.toList()
     }
 }

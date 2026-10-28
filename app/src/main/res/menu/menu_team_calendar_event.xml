@@ -1,0 +1,5 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/calendarActionEdit" android:title="@string/calendar_edit_event" android:icon="@drawable/ic_dashboard_edit_24" />
+    <item android:id="@+id/calendarActionGoogle" android:title="@string/calendar_google_add_event" android:icon="@drawable/ic_google_24" />
+    <item android:id="@+id/calendarActionDelete" android:title="@string/calendar_delete_event" android:icon="@drawable/ic_dashboard_delete_24" />
+</menu>

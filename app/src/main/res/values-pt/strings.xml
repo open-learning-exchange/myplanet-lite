@@ -834,4 +834,24 @@ Se você não concordar, deve selecionar "Cancelar" e parar de usar o aplicativo
     <string name="calendar_edit_event">Editar evento(s)</string>
     <string name="calendar_edit_conflict">O evento mudou no servidor. A versão mais recente foi carregada. Revise antes de salvar novamente.</string>
     <string name="calendar_edit_denied">Somente o usuário que criou este evento pode editá-lo.</string>
+    <string name="calendar_delete_event">Excluir evento(s)</string>
+    <string name="calendar_delete_confirm">Excluir “%1$s” e todas as suas ocorrências? Esta ação não pode ser desfeita.</string>
+    <string name="calendar_delete_error">Não foi possível excluir o evento. Tente novamente.</string>
+    <string name="calendar_delete_conflict">O evento mudou no servidor. A versão mais recente foi carregada. Revise antes de confirmar a exclusão novamente.</string>
+    <string name="calendar_notifications_pending">O evento foi salvo. Algumas notificações aos participantes estão pendentes.</string>
+    <string name="calendar_notifications_retry">Reenviar notificações</string>
+    <string name="calendar_event_actions">Ações do evento</string>
+    <string name="calendar_google_already_added">Este evento já está no Google Calendar.</string>
+    <string name="calendar_delete_denied">Somente o criador do evento, um administrador ou o proprietário da equipe pode excluir este evento.</string>
+    <string name="calendar_google_sync_permission">Permita ler e gravar no calendário para atualizar ou excluir também a cópia vinculada do Google.</string>
+    <string name="calendar_google_sync_pending">A alteração foi salva no MyPlanet. A cópia vinculada do Google ainda precisa ser sincronizada.</string>
+    <string name="calendar_google_sync_retry">Sincronizar Google Calendar</string>
+    <string name="calendar_delete_both">Eliminar ambos</string>
+    <string name="calendar_delete_both_confirm">Eliminar “%1$s” e todas as suas ocorrências do MyPlanet e do Google Calendar? Esta ação não pode ser desfeita.</string>
+    <string name="calendar_delete_checking">Verificando o evento e seu vínculo com o Google Calendar…</string>
+    <string name="calendar_delete_google_checkbox">Eliminar também do Google Calendar</string>
+    <string name="calendar_overlap_planet">Este horário se sobrepõe a outro evento do Planet.</string>
+    <string name="calendar_overlap_google">Este horário se sobrepõe a um evento do Google Calendar.</string>
+    <string name="calendar_overlap_check_failed">Não foi possível verificar os calendários Google conectados. Verifique a conexão e as permissões e tente novamente.</string>
+    <string name="calendar_add_anyway">Adicionar mesmo assim</string>
 </resources>

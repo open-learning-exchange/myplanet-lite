@@ -858,4 +858,24 @@ If you do not agree, you must select "Cancel" and stop using the application.</s
     <string name="calendar_edit_event">Edit event(s)</string>
     <string name="calendar_edit_conflict">The event changed on the server. The latest version has been loaded. Review it before saving again.</string>
     <string name="calendar_edit_denied">Only the user who created this event can edit it.</string>
+    <string name="calendar_delete_event">Delete event(s)</string>
+    <string name="calendar_delete_confirm">Delete “%1$s” and all its occurrences? This cannot be undone.</string>
+    <string name="calendar_delete_error">Unable to delete the event. Try again.</string>
+    <string name="calendar_delete_conflict">The event changed on the server. Its latest version has been loaded. Review it before confirming deletion again.</string>
+    <string name="calendar_notifications_pending">The event was saved. Some participant notifications are pending.</string>
+    <string name="calendar_notifications_retry">Retry notifications</string>
+    <string name="calendar_event_actions">Event actions</string>
+    <string name="calendar_google_already_added">This event is already in Google Calendar.</string>
+    <string name="calendar_delete_denied">Only the event creator, an administrator or the team owner can delete this event.</string>
+    <string name="calendar_google_sync_permission">Allow calendar read and write access to update or delete the linked Google copy.</string>
+    <string name="calendar_google_sync_pending">The change was saved in MyPlanet. The linked Google copy still needs to sync.</string>
+    <string name="calendar_google_sync_retry">Sync Google Calendar</string>
+    <string name="calendar_delete_both">Delete both</string>
+    <string name="calendar_delete_both_confirm">Delete “%1$s” and all its occurrences from MyPlanet and Google Calendar? This cannot be undone.</string>
+    <string name="calendar_delete_checking">Checking the event and its Google Calendar link…</string>
+    <string name="calendar_delete_google_checkbox">Also delete from Google Calendar</string>
+    <string name="calendar_overlap_planet">This time overlaps another Planet event.</string>
+    <string name="calendar_overlap_google">This time overlaps a Google Calendar event.</string>
+    <string name="calendar_overlap_check_failed">Could not check the connected Google calendars. Check your connection and permissions, then try again.</string>
+    <string name="calendar_add_anyway">Add anyway</string>
 </resources>

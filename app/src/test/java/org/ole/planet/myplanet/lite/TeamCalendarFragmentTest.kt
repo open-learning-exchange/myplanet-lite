@@ -36,6 +36,9 @@ class TeamCalendarFragmentTest {
         SecurePreferencesProvider.resetForTesting()
     }
 
+    private fun eventCardCount(view: View): Int = (if (view.tag == "calendarEventCard") 1 else 0) +
+        if (view is android.view.ViewGroup) (0 until view.childCount).sumOf { eventCardCount(view.getChildAt(it)) } else 0
+
     @Test
     fun `calendar month grid handles leap year and locale week starts`() {
         val month = YearMonth.of(2024, 2)
@@ -59,10 +62,10 @@ class TeamCalendarFragmentTest {
                     TeamCalendarEvent("two", fragment.selectedDate.plusDays(1), "Tomorrow"),
                 ))
                 val agenda = fragment.requireView().findViewById<LinearLayout>(R.id.calendarEvents)
-                assertEquals(1, agenda.childCount)
+                assertEquals(1, eventCardCount(agenda))
                 assertEquals(View.GONE, fragment.requireView().findViewById<View>(R.id.calendarEmpty).visibility)
                 fragment.selectDate(LocalDate.of(2024, 3, 2))
-                assertEquals(0, agenda.childCount)
+                assertEquals(0, eventCardCount(agenda))
                 assertEquals(View.VISIBLE, fragment.requireView().findViewById<View>(R.id.calendarEmpty).visibility)
                 fragment.requireView().findViewById<View>(R.id.calendarToday).performClick()
                 assertEquals(LocalDate.now(), fragment.selectedDate)
@@ -80,7 +83,7 @@ class TeamCalendarFragmentTest {
                 assertEquals(date, fragment.selectedDate)
                 assertEquals(YearMonth.of(2027, 12), fragment.visibleMonth)
                 fragment.showEvents("another-team", listOf(TeamCalendarEvent("event", date, "Private event")))
-                assertEquals(0, fragment.requireView().findViewById<LinearLayout>(R.id.calendarEvents).childCount)
+                assertEquals(0, eventCardCount(fragment.requireView().findViewById<LinearLayout>(R.id.calendarEvents)))
             }
         }
     }
@@ -143,7 +146,7 @@ class TeamCalendarFragmentTest {
         }
     }
 
-    @Test fun `edit action is only shown for events created by current user`() {
+    @Test fun `Planet cards show actions in top header instead of inline buttons`() {
         val credentials = org.ole.planet.myplanet.lite.profile.ProfileCredentialsStore
         credentials.setSessionCredentials(org.ole.planet.myplanet.lite.profile.StoredCredentials("ana", "password"))
         try {
@@ -156,14 +159,13 @@ class TeamCalendarFragmentTest {
                     val other = own.copy(id = "other", title = "Other", createdBy = "juan")
                     fragment.showEvents("team-1", (own.occurrences(date, date) + other.occurrences(date, date)))
                     val agenda = fragment.requireView().findViewById<LinearLayout>(R.id.calendarEvents)
-                    fun editCount(index: Int): Int {
+                    for (index in 0..1) {
                         val card = agenda.getChildAt(index) as LinearLayout
-                        return (0 until card.childCount).map { card.getChildAt(it) }
-                            .filterIsInstance<com.google.android.material.button.MaterialButton>()
-                            .count { it.text.toString() == fragment.getString(R.string.calendar_edit_event) }
+                        assertNotNull(card.findViewWithTag<View>("calendarEventActions"))
+                        assertTrue((0 until card.childCount).none {
+                            card.getChildAt(it) is com.google.android.material.button.MaterialButton
+                        })
                     }
-                    assertEquals(1, editCount(0))
-                    assertEquals(0, editCount(1))
                 }
             }
         } finally { credentials.setSessionCredentials(null) }

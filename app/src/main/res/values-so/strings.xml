@@ -804,4 +804,24 @@ Haddii aadan oggolayn, waa inaad doorataa "Jooji" oo aad joojisaa isticmaalka ba
     <string name="calendar_edit_event">Wax ka beddel dhacdooyinka</string>
     <string name="calendar_edit_conflict">Dhacdadu waxay ku beddelantay serverka. Noocii ugu dambeeyey ayaa la raray. Hubi ka hor intaadan mar kale kaydin.</string>
     <string name="calendar_edit_denied">Isticmaalaha abuuray dhacdadan oo keliya ayaa wax ka beddeli kara.</string>
+    <string name="calendar_delete_event">Tirtir dhacdooyinka</string>
+    <string name="calendar_delete_confirm">Ma tirtiraysaa “%1$s” iyo dhammaan soo noqnoqoshadiisa? Tallaabadan lama celin karo.</string>
+    <string name="calendar_delete_error">Lama tirtiri karin dhacdada. Isku day mar kale.</string>
+    <string name="calendar_delete_conflict">Dhacdadu waxay ku beddelantay serverka. Noocii ugu dambeeyey ayaa la raray. Hubi ka hor intaadan mar kale xaqiijin tirtirka.</string>
+    <string name="calendar_notifications_pending">Dhacdada waa la kaydiyey. Ogeysiisyada ka qaybgalayaasha qaarkood ayaa sugaya.</string>
+    <string name="calendar_notifications_retry">Dib u dir ogeysiisyada</string>
+    <string name="calendar_event_actions">Ficillada dhacdada</string>
+    <string name="calendar_google_already_added">Dhacdadan hore ayay ugu jirtaa Google Calendar.</string>
+    <string name="calendar_delete_denied">Abuuraha dhacdada, maamulaha ama milkiilaha kooxda oo keliya ayaa tirtiri kara dhacdadan.</string>
+    <string name="calendar_google_sync_permission">Oggolow akhrinta iyo qorista jadwalka si loo cusboonaysiiyo ama loo tirtiro nuqulka Google ee ku xidhan.</string>
+    <string name="calendar_google_sync_pending">Isbeddelka waxaa lagu kaydiyey MyPlanet. Nuqulka Google ee ku xidhan weli wuxuu u baahan yahay waafajin.</string>
+    <string name="calendar_google_sync_retry">Waafaji Google Calendar</string>
+    <string name="calendar_delete_both">Tirtir labadaba</string>
+    <string name="calendar_delete_both_confirm">Ma ka tirtirtaa “%1$s” iyo dhammaan soo noqnoqoshadiisa MyPlanet iyo Google Calendar? Ficilkan lama celin karo.</string>
+    <string name="calendar_delete_checking">Waxaa la hubinayaa dhacdada iyo xiriirkeeda Google Calendar…</string>
+    <string name="calendar_delete_google_checkbox">Sidoo kale ka tirtir Google Calendar</string>
+    <string name="calendar_overlap_planet">Waqtigani wuxuu isku beegmayaa dhacdo kale oo Planet ah.</string>
+    <string name="calendar_overlap_google">Waqtigani wuxuu isku beegmayaa dhacdo Google Calendar ah.</string>
+    <string name="calendar_overlap_check_failed">Lama hubin karin jadwallada Google ee ku xiran. Hubi xiriirka iyo oggolaanshaha oo isku day mar kale.</string>
+    <string name="calendar_add_anyway">Ku dar si kastaba</string>
 </resources>
