@@ -143,6 +143,15 @@
             android:visibility="gone"
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
+        <FrameLayout
+            android:id="@+id/teamsDashboardCalendarContainer"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_marginBottom="60dp"
+            android:background="@color/white"
+            android:visibility="gone"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior" />
+
         <LinearLayout
             android:id="@+id/teamsDashboardBottomNavigation"
             android:layout_width="match_parent"
@@ -178,6 +187,17 @@
                 android:padding="@dimen/dashboard_icon_padding"
                 android:scaleType="center"
                 android:src="@drawable/ic_home_24" />
+
+            <ImageView
+                android:id="@+id/teamsDashboardCalendarIcon"
+                android:layout_width="0dp"
+                android:layout_weight="1"
+                android:layout_height="@dimen/dashboard_icon_button_size"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="@string/dashboard_calendar_title"
+                android:padding="@dimen/dashboard_icon_padding"
+                android:scaleType="center"
+                android:src="@drawable/ic_calendar_24" />
 
             <ImageView
                 android:id="@+id/teamsDashboardSurveysIcon"

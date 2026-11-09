@@ -39,6 +39,8 @@ internal class DashboardEnterpriseTasksAdapter(
         super.onCurrentListChanged(previousList, currentList)
         stickerOrder = buildStickerOrder(currentList.size)
         decorations = buildDecorations(currentList.size)
+        // Margins and decorations depend on position, including rows moved by the diff.
+        if (currentList.isNotEmpty()) notifyItemRangeChanged(0, currentList.size)
     }
 
     private fun buildDecorations(size: Int): Array<StickerDecoration> {
